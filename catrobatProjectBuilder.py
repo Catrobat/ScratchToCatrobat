@@ -1,7 +1,12 @@
 import sys
 import os
 import re
+import tempfile
+import hashlib
+import Image
 from xml.dom.minidom import Document
+
+TEMP_FOLDER = tempfile.mkdtemp()
 
 def add_project(document, project_name):
     project = document.createElement("Content.Project")
@@ -64,14 +69,46 @@ def parse_and_add_sprite(document, sprite_list, unparsed_sprite, project_path):
 
     name_node.appendChild(document.createTextNode(sprite_name))
     
-    parse_and_add_costumes(document, costume_data_list_node, costumes, project_path)
+    parse_and_add_costumes(document, costume_data_list_node, sprite_name, costumes, project_path)
     parse_and_add_sounds(document, sound_list_node, sounds, project_path)
     parse_and_add_scripts(document, script_list_node, unparsed_bricks)
 
     
-def parse_and_add_costumes(document, costume_data_list_node, costumes, project_path):
+def parse_and_add_costumes(document, costume_data_list_node, sprite_name, costumes, project_path):
     costumes = re.findall(r"'(.+?)'", costumes)
-    # TODO
+    costume_filenames = os.listdir(os.path.join(project_path, sprite_name, 'images'))
+    for costume in costumes:
+        for costume_filename in costume_filenames:
+            if costume_filename.startswith(costume + '.'):
+                filename = costume_filename
+                break      
+
+        Image.open(os.path.join(project_path, sprite_name, 'images', filename))\
+             .save(os.path.join(TEMP_FOLDER, 'images', sprite_name + '_' + costume + '.png'))
+
+        filename = sprite_name + '_' + costume + '.png'
+
+        file_contents = open(os.path.join(TEMP_FOLDER, 'images', filename), 'rb').read()
+        checksum = hashlib.md5(file_contents).hexdigest().upper()
+
+        os.rename(os.path.join(TEMP_FOLDER, 'images', filename),\
+                  os.path.join(TEMP_FOLDER, 'images', checksum + '_' + filename))
+        filename = checksum + '_' + filename
+
+
+        costume_data = document.createElement("Common.CostumeData")
+        
+        name_node = document.createElement("name")
+        name_node.appendChild(document.createTextNode(costume))
+        
+        filename_node = document.createElement("fileName")
+        filename_node.appendChild(document.createTextNode(filename))
+
+        costume_data.appendChild(name_node)
+        costume_data.appendChild(filename_node)
+
+        costume_data_list_node.appendChild(costume_data)
+        
     
 def parse_and_add_sounds(document, sound_list_node, sounds, project_path):
     sounds = re.findall(r"'(.+?)'", sounds)
@@ -88,6 +125,9 @@ def main():
         return 1
     project_name = sys.argv[1]
     project_path = sys.argv[2]
+
+    os.makedirs(os.path.join(TEMP_FOLDER, 'images'))
+    os.makedirs(os.path.join(TEMP_FOLDER, 'sounds'))
 
     project_data = open(os.path.join(project_path, 'blocks.txt'), 'U').read()
     unparsed_sprites = project_data.split("\n\n\n")

@@ -1,5 +1,6 @@
 import sys
 import os
+import shutil
 import re
 import tempfile
 import hashlib
@@ -70,7 +71,7 @@ def parse_and_add_sprite(document, sprite_list, unparsed_sprite, project_path):
     name_node.appendChild(document.createTextNode(sprite_name))
     
     parse_and_add_costumes(document, costume_data_list_node, sprite_name, costumes, project_path)
-    parse_and_add_sounds(document, sound_list_node, sounds, project_path)
+    parse_and_add_sounds(document, sound_list_node, sprite_name, sounds, project_path)
     parse_and_add_scripts(document, script_list_node, unparsed_bricks)
 
     
@@ -110,9 +111,41 @@ def parse_and_add_costumes(document, costume_data_list_node, sprite_name, costum
         costume_data_list_node.appendChild(costume_data)
         
     
-def parse_and_add_sounds(document, sound_list_node, sounds, project_path):
+def parse_and_add_sounds(document, sound_list_node, sprite_name, sounds, project_path):
     sounds = re.findall(r"'(.+?)'", sounds)
-    # TODO
+    sounds.remove('-')
+    sounds.remove('record...')
+    sounds_filenames = os.listdir(os.path.join(project_path, sprite_name, 'sounds'))
+    for sound in sounds:
+        for sound_filename in sounds_filenames:
+            if sound_filename.startswith(sound + '.'):
+                filename = sound_filename
+                break      
+
+        shutil.copy(os.path.join(project_path, sprite_name, 'sounds', filename),\
+                    os.path.join(TEMP_FOLDER, 'sounds', sprite_name + '_' + sound_filename))
+
+        filename = sprite_name + '_' + sound_filename
+
+        file_contents = open(os.path.join(TEMP_FOLDER, 'sounds', filename), 'rb').read()
+        checksum = hashlib.md5(file_contents).hexdigest().upper()
+
+        os.rename(os.path.join(TEMP_FOLDER, 'sounds', filename),\
+                  os.path.join(TEMP_FOLDER, 'sounds', checksum + '_' + filename))
+        filename = checksum + '_' + filename
+
+        sound_info = document.createElement("Common.SoundInfo")
+        
+        name_node = document.createElement("name")
+        name_node.appendChild(document.createTextNode(sound))
+        
+        filename_node = document.createElement("fileName")
+        filename_node.appendChild(document.createTextNode(filename))
+
+        sound_info.appendChild(name_node)
+        sound_info.appendChild(filename_node)
+
+        sound_list_node.appendChild(sound_info)
     
 def parse_and_add_scripts(document, script_list_node, unparsed_bricks):
     pass

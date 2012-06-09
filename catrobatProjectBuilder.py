@@ -148,8 +148,35 @@ def parse_and_add_sounds(document, sound_list_node, sprite_name, sounds, project
         sound_list_node.appendChild(sound_info)
     
 def parse_and_add_scripts(document, script_list_node, unparsed_bricks):
-    pass
-    # TODO
+    scripts_data = re.split(".*?EventHatMorph", unparsed_bricks)
+    for script_data in scripts_data:
+        if script_data:
+            script_data = script_data.splitlines()
+            if "'when I receive'" in script_data[0]:
+                script_node = document.createElement("Content.BroadcastScript")
+                action_node = document.createElement("receivedMessage")
+                action_node.appendChild(document.createTextNode(script_data[1]))
+                script_node.appendChild(action_node)
+
+            elif "'when'" in script_data[0]:
+                if script_data[1] == "Scratch-StartClicked":
+                    script_node = document.createElement("Content.StartScript")
+                    
+                elif script_data[1] == "Scratch-MouseClickEvent":
+                    script_node = document.createElement("Content.WhenScript")
+                    action_node = document.createElement("action")
+                    action_node.appendChild(document.createTextNode("Tapped"))
+                    script_node.appendChild(action_node)
+
+            brick_list = document.createElement("brickList")
+            script_node.appendChild(brick_list)
+
+            sprite_node = document.createElement("sprite")
+            sprite_node.setAttribute("reference", "../../..")
+            script_node.appendChild(sprite_node)
+
+            script_list_node.appendChild(script_node)
+
 
 def main():
     if len(sys.argv) != 4:

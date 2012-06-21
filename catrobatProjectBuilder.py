@@ -167,9 +167,11 @@ def parse_and_add_scripts(document, script_list_node, unparsed_bricks):
                     action_node = document.createElement("action")
                     action_node.appendChild(document.createTextNode("Tapped"))
                     script_node.appendChild(action_node)
+                elif script_data[1] == "Scratch-KeyPressedEvent":
+                    continue #TODO
 
-            brick_list = document.createElement("brickList")
-            script_node.appendChild(brick_list)
+            brick_list_node = document.createElement("brickList")
+            script_node.appendChild(brick_list_node)
 
             sprite_node = document.createElement("sprite")
             sprite_node.setAttribute("reference", "../../..")
@@ -177,6 +179,120 @@ def parse_and_add_scripts(document, script_list_node, unparsed_bricks):
 
             script_list_node.appendChild(script_node)
 
+            parse_and_add_bricks(document, brick_list_node, script_data[2:])
+
+def parse_and_add_bricks(document, brick_list_node, script_data):
+    while script_data:
+        brick_name = script_data.pop(0)
+        if "'show'" in brick_name:
+            pass
+        elif "'hide'" in brick_name:
+            pass
+        elif "'forever'" in brick_name:
+            pass
+        elif "'broadcast'" in brick_name:
+            add_broadcast_brick(document, brick_list_node, script_data)
+        elif "'set'" in brick_name:
+            pass
+        elif "'wait'" in brick_name:
+            add_wait_brick(document, brick_list_node, script_data)
+        elif "'next costume'" in brick_name:
+            add_next_costume_brick(document, brick_list_node, script_data)
+        elif "'set size to'" in brick_name:
+            add_set_size_to_brick(document, brick_list_node, script_data)
+        elif "'go to x:'" in brick_name:
+            add_place_at_brick(document, brick_list_node, script_data)
+        elif "'switch to costume'" in brick_name:
+            add_set_costume_brick(document, brick_list_node, script_data)
+
+def add_broadcast_brick(document, brick_list_node, script_data):
+    brick_node = document.createElement("Bricks.BroadcastBrick")
+    brick_list_node.appendChild(brick_node)
+    
+    broadcast_message_node = document.createElement("broadcastMessage")
+    broadcast_message_node.appendChild(document.createTextNode(re.findall(r"'(.+?)'", script_data.pop(0))[0]))
+    brick_node.appendChild(broadcast_message_node)    
+
+    sprite_node = document.createElement("sprite")
+    sprite_node.setAttribute("reference", "../../../../..")
+    brick_node.appendChild(sprite_node)
+
+    script_data.pop(0)
+
+def add_wait_brick(document, brick_list_node, script_data):
+    script_data.pop(0)
+
+    brick_node = document.createElement("Bricks.WaitBrick")
+    brick_list_node.appendChild(brick_node)
+    
+    time_node = document.createElement("timeToWaitInMilliSeconds")
+    time_node.appendChild(document.createTextNode(re.findall(r"'(.+?)'", script_data.pop(0))[0]))
+    brick_node.appendChild(time_node)    
+
+    sprite_node = document.createElement("sprite")
+    sprite_node.setAttribute("reference", "../../../../..")
+    brick_node.appendChild(sprite_node)
+
+def add_next_costume_brick(document, brick_list_node, script_data):
+    brick_node = document.createElement("Bricks.NextCostumeBrick")
+    brick_list_node.appendChild(brick_node)
+
+    sprite_node = document.createElement("sprite")
+    sprite_node.setAttribute("reference", "../../../../..")
+    brick_node.appendChild(sprite_node)
+
+def add_set_size_to_brick(document, brick_list_node, script_data):
+    script_data.pop(0)
+
+    brick_node = document.createElement("Bricks.SetSizeToBrick")
+    brick_list_node.appendChild(brick_node)
+    
+    size_node = document.createElement("size")
+    size_node.appendChild(document.createTextNode(re.findall(r"'(.+?)'", script_data.pop(0))[0]))
+    brick_node.appendChild(size_node)    
+
+    sprite_node = document.createElement("sprite")
+    sprite_node.setAttribute("reference", "../../../../..")
+    brick_node.appendChild(sprite_node)
+
+def add_place_at_brick(document, brick_list_node, script_data):
+    script_data.pop(0)
+
+    brick_node = document.createElement("Bricks.PlaceAtBrick")
+    brick_list_node.appendChild(brick_node)
+    
+    x_position_node = document.createElement("xPosition")
+    x_position_node.appendChild(document.createTextNode(re.findall(r"'(.+?)'", script_data.pop(0))[0]))
+    brick_node.appendChild(x_position_node) 
+    
+    y_position_node = document.createElement("yPosition")
+    y_position_node.appendChild(document.createTextNode(re.findall(r"'(.+?)'", script_data.pop(0))[0]))
+    brick_node.appendChild(y_position_node)    
+
+    sprite_node = document.createElement("sprite")
+    sprite_node.setAttribute("reference", "../../../../..")
+    brick_node.appendChild(sprite_node)
+
+def add_set_costume_brick(document, brick_list_node, script_data):
+    script_data.pop(0)
+    costume_name = re.findall(r"'(.+?)'", script_data.pop(0))[0]
+
+    brick_node = document.createElement("Bricks.PlaceAtBrick")
+    brick_list_node.appendChild(brick_node)
+    
+    sprite_node = document.createElement("sprite")
+    sprite_node.setAttribute("reference", "../../../../..")
+    brick_node.appendChild(sprite_node)
+
+    costume_list_node = filter(lambda node: node.nodeName == "costumeDataList", brick_list_node.parentNode.parentNode.parentNode.childNodes)[0]
+
+    for index, costume_node in enumerate(costume_list_node.childNodes):
+        costume_name_node = filter(lambda node: node.nodeName == "name", costume_node.childNodes)[0]
+        if costume_name_node.firstChild.nodeValue == costume_name:
+            costume_date_node = document.createElement("costumeData")
+            costume_date_node.setAttribute("reference", "../../../../../costumeDataList/Common.CostumeData[" + str(ndex) + "]")
+            brick_node.appendChild(costume_date_node)
+            break
 
 def main():
     if len(sys.argv) != 4:

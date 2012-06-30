@@ -4,6 +4,8 @@ import shutil
 import re
 import tempfile
 import hashlib
+import subprocess
+import time
 import Image
 import xml.dom.minidom
 
@@ -211,6 +213,14 @@ def parse_and_add_bricks(document, brick_list_node, script_data):
                 script_data.pop(0)
                 size = re.findall(r"'(.+?)'", script_data.pop(0))[0]
                 brick_list_node.appendChild(get_brick_node(document, "Bricks.ChangeSizeByNBrick", {"size": size}))
+            elif "turn %n degrees" in brick_name:
+                direction = script_data.pop(0)
+                script_data.pop(0)
+                degrees = re.findall(r"'(.+?)'", script_data.pop(0))[0]
+                if "#turnLeft" in direction:
+                    brick_list_node.appendChild(get_brick_node(document, "Bricks.TurnLeftBrick", {"degrees": degrees}))
+                else:
+                    brick_list_node.appendChild(get_brick_node(document, "Bricks.TurnRightBrick", {"degrees": degrees}))
             elif "go to x:%n y:%n" in brick_name:
                 script_data.pop(0)
                 x = re.findall(r"'(.+?)'", script_data.pop(0))[0]
@@ -292,6 +302,12 @@ def parse_and_add_bricks(document, brick_list_node, script_data):
                 script_data.pop(0)
                 steps = re.findall(r"'(.+?)'", script_data.pop(0))[0]
                 brick_list_node.appendChild(get_brick_node(document, "Bricks.GoNStepsBackBrick", {"steps": steps}))
+            elif "point towards %m" in brick_name:
+                script_data.pop(0)
+                sprite_name = script_data.pop(0)
+                script_data.pop(0)
+                script_data.pop(0)
+                #brick_list_node.appendChild(get_brick_node(document, "Bricks.PointToBrick", {"pointedSprite": steps}))
 
 def get_brick_node(document, brick_name, params):
     brick_node = document.createElement(brick_name)
@@ -321,17 +337,41 @@ def add_set_costume_brick(document, brick_list_node, script_data):
     for index, costume_node in enumerate(costume_list_node.childNodes):
         costume_name_node = filter(lambda node: node.nodeName == "name", costume_node.childNodes)[0]
         if costume_name_node.firstChild.nodeValue == costume_name:
-            costume_date_node = document.createElement("costumeData")
+            costume_data_node = document.createElement("costumeData")
             if index == 0:
-                costume_date_node.setAttribute("reference", "../../../../../costumeDataList/Common.CostumeData")
+                costume_data_node.setAttribute("reference", "../../../../../costumeDataList/Common.CostumeData")
             else:
-                costume_date_node.setAttribute("reference", "../../../../../costumeDataList/Common.CostumeData[" + str(index) + "]")
-            brick_node.appendChild(costume_date_node)
+                costume_data_node.setAttribute("reference", "../../../../../costumeDataList/Common.CostumeData[" + str(index) + "]")
+            brick_node.appendChild(costume_data_node)
+            break
+
+def add_point_to_brick(document, brick_list_node, script_data):
+    script_data.pop(0)
+    sprite_name = re.findall(r"'(.+?)'", script_data.pop(0))[0]
+
+    brick_node = document.createElement("Bricks.PointToBrick")
+    brick_list_node.appendChild(brick_node)
+     
+    sprite_node = document.createElement("sprite")
+    sprite_node.setAttribute("reference", "../../../../..")
+    brick_node.appendChild(sprite_node)
+
+    sprite_nodes = filter(lambda node: node.nodeName == "Content.Sprite", brick_list_node.parentNode.parentNode.parentNode.parentNode.childNodes)
+
+    for index, sprite_node in enumerate(sprite_nodes.childNodes):
+        sprite_name_node = filter(lambda node: node.nodeName == "name", costume_node.childNodes)[0]
+        if sprite_node.firstChild.nodeValue == sprite_name:
+            referenced_sprite_node = document.createElement("pointedSprite")
+            if index == 0:
+                referenced_sprite_node.setAttribute("reference", "../../../../../../Content.Sprite")
+            else:
+                referenced_sprite_node.setAttribute("reference", "../../../../../../Content.Sprite[" + str(index) + "]")
+            brick_node.appendChild(referenced_sprite_node)
             break
 
 def add_play_sound_brick(document, brick_list_node, script_data):
     script_data.pop(0)
-    costume_name = re.findall(r"'(.+?)'", script_data.pop(0))[0]
+    sound_name = re.findall(r"'(.+?)'", script_data.pop(0))[0]
 
     brick_node = document.createElement("Bricks.PlaySoundBrick")
     brick_list_node.appendChild(brick_node)
@@ -340,17 +380,17 @@ def add_play_sound_brick(document, brick_list_node, script_data):
     sprite_node.setAttribute("reference", "../../../../..")
     brick_node.appendChild(sprite_node)
 
-    costume_list_node = filter(lambda node: node.nodeName == "soundList", brick_list_node.parentNode.parentNode.parentNode.childNodes)[0]
+    sound_list_node = filter(lambda node: node.nodeName == "soundList", brick_list_node.parentNode.parentNode.parentNode.childNodes)[0]
 
-    for index, costume_node in enumerate(costume_list_node.childNodes):
-        costume_name_node = filter(lambda node: node.nodeName == "name", costume_node.childNodes)[0]
-        if costume_name_node.firstChild.nodeValue == costume_name:
-            costume_date_node = document.createElement("soundInfo")
+    for index, costume_node in enumerate(sound_list_node.childNodes):
+        sound_name_node = filter(lambda node: node.nodeName == "name", costume_node.childNodes)[0]
+        if sound_name_node.firstChild.nodeValue == sound_name:
+            soundinfo_node = document.createElement("soundInfo")
             if index == 0:
-                costume_date_node.setAttribute("reference", "../../../../../soundList/Common.SoundInfo")
+                soundinfo_node.setAttribute("reference", "../../../../../soundList/Common.SoundInfo")
             else:
-                costume_date_node.setAttribute("reference", "../../../../../soundList/Common.SoundInfo[" + str(index) + "]")
-            brick_node.appendChild(costume_date_node)
+                soundinfo_node.setAttribute("reference", "../../../../../soundList/Common.SoundInfo[" + str(index) + "]")
+            brick_node.appendChild(soundinfo_node)
             break
  
 def newwritexml(self, writer, indent='', addindent='', newl=''):
@@ -361,15 +401,7 @@ def newwritexml(self, writer, indent='', addindent='', newl=''):
     else:
         self.oldwritexml(writer, indent, addindent, newl)
 
-def main():
-    if len(sys.argv) != 4:
-        print 'Invalid arguments. Correct usage:'
-        print 'python catrobatProjectBuilder.py <project_title> <path_to_project_folder> <ouput_file>'
-        return 1
-    project_name = sys.argv[1]
-    project_path = sys.argv[2]
-    output_file = sys.argv[3]
-
+def parseProject(project_name, project_path):
     xml.dom.minidom.Element.oldwritexml = xml.dom.minidom.Element.writexml
     xml.dom.minidom.Element.writexml = newwritexml
 
@@ -392,7 +424,31 @@ def main():
     
     projectcode_file.close()
 
-    shutil.copytree(TEMP_FOLDER, output_file)
+def main():
+    if len(sys.argv) != 5:
+        print 'Invalid arguments. Correct usage:'
+        print 'python catrobatProjectBuilder.py <path_to_scratch_image> <path_to_scratch_project> <project_title> <path_to_output>'
+        return 1
+    path_to_scratch_image = sys.argv[1]
+    path_to_scratch_project = sys.argv[2]
+    project_title = sys.argv[3]
+    path_to_output = sys.argv[4]
+
+
+    scratch_temp_folder = tempfile.mkdtemp()
+    pipe = subprocess.Popen(['/Applications/Scratch 1.4/Scratch.app/Contents/MacOS/Scratch', '-headless',path_to_scratch_image, 'filename', path_to_scratch_project, scratch_temp_folder])
+    scratch_pid = pipe.pid
+
+    elapsed_time = 0
+    while not os.path.isfile(os.path.join(scratch_temp_folder, 'finished.txt')) and elapsed_time < 300:
+        time.sleep(1)
+        elapsed_time += 1
+
+    subprocess.Popen(['kill', '-9', str(scratch_pid)])
+
+    parseProject(project_title, scratch_temp_folder)
+
+    shutil.make_archive(os.path.join(path_to_output, project_title), 'zip', TEMP_FOLDER)
 
 
 if __name__ == '__main__':

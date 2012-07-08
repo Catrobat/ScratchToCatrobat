@@ -10,11 +10,12 @@ class ScratchOutputParser:
     def __init__(self, project_path, project_name):
         self.project_path = project_path
         self.project_name = project_name
-        self.xml_writer = XmlWriter(project_name)
+        self.xml_writer = XmlWriter()
+        self.xml_writer.create_project(project_name)
 
-        self.TEMP_FOLDER = tempfile.mkdtemp()
-        os.makedirs(os.path.join(self.TEMP_FOLDER, 'images'))
-        os.makedirs(os.path.join(self.TEMP_FOLDER, 'sounds'))
+        self.temp_folder = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.temp_folder, 'images'))
+        os.makedirs(os.path.join(self.temp_folder, 'sounds'))
 
     def process_project(self):
         project_data = open(os.path.join(self.project_path, 'blocks.txt'), 'U').read()
@@ -30,7 +31,7 @@ class ScratchOutputParser:
                 self.process_sounds(sounds, sprite_name)
                 self.process_scripts(unparsed_bricks, sprite_name)
         
-        self.xml_writer.write_to_file(os.path.join(self.TEMP_FOLDER, 'projectcode.xml'))
+        self.xml_writer.write_to_file(os.path.join(self.temp_folder, 'projectcode.xml'))
 
 
     def process_costumes(self, costumes, sprite_name):
@@ -43,15 +44,15 @@ class ScratchOutputParser:
                     break      
 
             Image.open(os.path.join(self.project_path, sprite_name, 'images', filename))\
-                 .save(os.path.join(self.TEMP_FOLDER, 'images', sprite_name + '_' + costume + '.png'))
+                 .save(os.path.join(self.temp_folder, 'images', sprite_name + '_' + costume + '.png'))
 
             filename = sprite_name + '_' + costume + '.png'
 
-            file_contents = open(os.path.join(self.TEMP_FOLDER, 'images', filename), 'rb').read()
+            file_contents = open(os.path.join(self.temp_folder, 'images', filename), 'rb').read()
             checksum = hashlib.md5(file_contents).hexdigest().upper()
 
-            os.rename(os.path.join(self.TEMP_FOLDER, 'images', filename),\
-                      os.path.join(self.TEMP_FOLDER, 'images', checksum + '_' + filename))
+            os.rename(os.path.join(self.temp_folder, 'images', filename),\
+                      os.path.join(self.temp_folder, 'images', checksum + '_' + filename))
             filename = checksum + '_' + filename
 
             self.xml_writer.add_costume(costume, filename, sprite_name)
@@ -68,15 +69,15 @@ class ScratchOutputParser:
                     break      
 
             shutil.copy(os.path.join(self.project_path, sprite_name, 'sounds', filename),\
-                        os.path.join(self.TEMP_FOLDER, 'sounds', sprite_name + '_' + sound_filename))
+                        os.path.join(self.temp_folder, 'sounds', sprite_name + '_' + sound_filename))
 
             filename = sprite_name + '_' + sound_filename
 
-            file_contents = open(os.path.join(self.TEMP_FOLDER, 'sounds', filename), 'rb').read()
+            file_contents = open(os.path.join(self.temp_folder, 'sounds', filename), 'rb').read()
             checksum = hashlib.md5(file_contents).hexdigest().upper()
 
-            os.rename(os.path.join(self.TEMP_FOLDER, 'sounds', filename),\
-                      os.path.join(self.TEMP_FOLDER, 'sounds', checksum + '_' + filename))
+            os.rename(os.path.join(self.temp_folder, 'sounds', filename),\
+                      os.path.join(self.temp_folder, 'sounds', checksum + '_' + filename))
             filename = checksum + '_' + filename
 
             self.xml_writer.add_sound(sound, filename, sprite_name)
@@ -230,4 +231,4 @@ class ScratchOutputParser:
                 self.xml_writer.add_script(sprite_name, script_type, bricks_params, broadcasted_message)
 
     def save_to(self, path_to_output):
-        shutil.make_archive(os.path.join(path_to_output, self.project_name), 'zip', self.TEMP_FOLDER)
+        shutil.make_archive(os.path.join(path_to_output, self.project_name), 'zip', self.temp_folder)

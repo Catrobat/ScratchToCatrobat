@@ -1,50 +1,47 @@
 import xml.dom.minidom
 
 class XmlWriter:
-    def __init__(self, project_name):
+    def __init__(self):
         xml.dom.minidom.Element.oldwritexml = xml.dom.minidom.Element.writexml
         xml.dom.minidom.Element.writexml = newwritexml
 
-        self.document = xml.dom.minidom.Document()
-        self.project = self.create_project(project_name)
-
     def create_project(self, project_name):
-        project = self.document.createElement("Content.Project")
+        self.document = xml.dom.minidom.Document()
+
+        self.project = self.document.createElement("Content.Project")
 
         project_name_field = self.document.createElement("projectName")
         project_name_field.appendChild(self.document.createTextNode(project_name))
-        project.appendChild(project_name_field)
+        self.project.appendChild(project_name_field)
 
         device_name = self.document.createElement("deviceName")
         device_name.appendChild(self.document.createTextNode("Scratch"))
-        project.appendChild(device_name)
+        self.project.appendChild(device_name)
 
         android_version = self.document.createElement("androidVersion")
         android_version.appendChild(self.document.createTextNode("10"))
-        project.appendChild(android_version)
+        self.project.appendChild(android_version)
 
         catroid_version_code = self.document.createElement("catroidVersionCode")
         catroid_version_code.appendChild(self.document.createTextNode("820"))
-        project.appendChild(catroid_version_code)
+        self.project.appendChild(catroid_version_code)
 
         catroid_version_name = self.document.createElement("catroidVersionName")
         catroid_version_name.appendChild(self.document.createTextNode("0.6.0beta-820-debug"))
-        project.appendChild(catroid_version_name)
+        self.project.appendChild(catroid_version_name)
         
         screen_height = self.document.createElement("screenHeight")
         screen_height.appendChild(self.document.createTextNode("360"))
-        project.appendChild(screen_height)
+        self.project.appendChild(screen_height)
         
         screen_width = self.document.createElement("screenWidth")
         screen_width.appendChild(self.document.createTextNode("480"))
-        project.appendChild(screen_width)
+        self.project.appendChild(screen_width)
         
         sprite_list = self.document.createElement("spriteList")
-        project.appendChild(sprite_list)
+        self.project.appendChild(sprite_list)
 
-        self.document.appendChild(project)
-
-        return project
+        self.document.appendChild(self.project)
 
     def add_sprite(self, sprite_name):
         sprite_node = self.document.createElement("Content.Sprite")

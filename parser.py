@@ -12,6 +12,7 @@ class ScratchOutputParser:
         self.project_name = project_name
         self.xml_writer = XmlWriter()
         self.xml_writer.create_project(project_name)
+        self.sprites = []
 
         self.temp_folder = tempfile.mkdtemp()
         os.makedirs(os.path.join(self.temp_folder, 'images'))
@@ -228,6 +229,7 @@ class ScratchOutputParser:
                             script_data.pop(0)
                             #brick_list_node.appendChild(add_brick(brick_list_node, document, "Bricks.PointToBrick", {"pointedSprite": steps}))
 
+                self.sprites.append((sprite_name, bricks_params))
                 self.xml_writer.add_script(sprite_name, script_type, bricks_params, broadcasted_message)
 
     def save_to(self, path_to_output):

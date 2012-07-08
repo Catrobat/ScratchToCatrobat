@@ -2,8 +2,7 @@ import xml.dom.minidom
 
 class XmlWriter:
     def __init__(self):
-        xml.dom.minidom.Element.oldwritexml = xml.dom.minidom.Element.writexml
-        xml.dom.minidom.Element.writexml = newwritexml
+        pass
 
     def create_project(self, project_name):
         self.document = xml.dom.minidom.Document()
@@ -189,9 +188,12 @@ class XmlWriter:
         return path
 
     def write_to_file(self, path):
+        xml.dom.minidom.Element.oldwritexml = xml.dom.minidom.Element.writexml
+        xml.dom.minidom.Element.writexml = newwritexml
         projectcode_file = open(path, 'w')
         self.document.writexml(projectcode_file, addindent='  ', newl="\n")
         projectcode_file.close()
+        xml.dom.minidom.Element.writexml = xml.dom.minidom.Element.oldwritexml
  
 def newwritexml(self, writer, indent='', addindent='', newl=''):
     if len(self.childNodes) == 1 and self.firstChild.nodeType == xml.dom.minidom.Node.TEXT_NODE:

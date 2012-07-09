@@ -6,18 +6,17 @@ import time
 from parser import ScratchOutputParser
 
 def main():
-    if len(sys.argv) != 5:
+    if len(sys.argv) != 4:
         print 'Invalid arguments. Correct usage:'
-        print 'python catrobatProjectBuilder.py <path_to_scratch_image> <path_to_scratch_project> <project_title> <path_to_output>'
+        print 'python catrobatProjectBuilder.py <path_to_scratch_project> <project_title> <path_to_output>'
         return 1
-    path_to_scratch_image = sys.argv[1]
-    path_to_scratch_project = sys.argv[2]
-    project_title = sys.argv[3]
-    path_to_output = sys.argv[4]
+    path_to_scratch_project = sys.argv[1]
+    project_title = sys.argv[2]
+    path_to_output = sys.argv[3]
 
 
     scratch_temp_folder = tempfile.mkdtemp()
-    pipe = subprocess.Popen(['/Applications/Scratch 1.4/Scratch.app/Contents/MacOS/Scratch', '-headless', path_to_scratch_image, 'filename', path_to_scratch_project, scratch_temp_folder])
+    pipe = subprocess.Popen(['./squeak/scratch', 'squeak/ScratchSourceCode1.4.image', path_to_scratch_project, scratch_temp_folder])
     scratch_pid = pipe.pid
 
     elapsed_time = 0

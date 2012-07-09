@@ -1,10 +1,11 @@
 #!/bin/sh
 # Squeakvm wrapper to load Scratch image.
 #------------------------------------------------------------
-
+cd squeak;
 ./scratch_squeak_vm \
--plugins /usr/lib/scratch/Plugins \
--vm-sound-pulse \
+-plugins Plugins/ \
+-vm-sound-null \
+-vm-display-null \
 ./ScratchSourceCode1.4.image "${@}"
 
 

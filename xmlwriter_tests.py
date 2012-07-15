@@ -1,4 +1,5 @@
 import unittest
+import xmlrunner
 import xml.dom.minidom
 from xmlwriter import XmlWriter
 
@@ -190,3 +191,6 @@ class TestXmlWriter(unittest.TestCase):
         self.assertEquals(brick2_node.getElementsByTagName(brick_param2)[0].firstChild.nodeValue, brick_value2)
         self.assertEquals(brick2_node.getElementsByTagName(brick_param3)[0].firstChild.nodeValue, brick_value3)
         self.assertFalse(brick2_node.getElementsByTagName("sprite")[0].hasChildNodes())
+
+if __name__ == '__main__':
+    unittest.main(testRunner=xmlrunner.XMLTestRunner(output='test-reports'))

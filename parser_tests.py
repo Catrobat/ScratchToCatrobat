@@ -1,4 +1,5 @@
 import unittest
+import xmlrunner
 import os
 import xml.dom.minidom
 from parser import ScratchOutputParser
@@ -41,3 +42,6 @@ class TestScratchOutputParser(unittest.TestCase):
 
         self.assertTrue(costumes[0].endswith(self.sprite_name + '_' + costume_name + '.png'))
         self.assertTrue(sounds[0].endswith(self.sprite_name + '_' + sound_filename))
+
+if __name__ == '__main__':
+    unittest.main(testRunner=xmlrunner.XMLTestRunner(output='test-reports'))

@@ -223,11 +223,15 @@ class ScratchOutputParser:
                             steps = re.findall(r"'(.+?)'", script_data.pop(0))[0]
                             bricks_params.append(("Bricks.GoNStepsBackBrick", {"steps": steps}))
                         elif "point towards %m" in brick_name:
-                            script_data.pop(0)
-                            pointed_sprite = script_data.pop(0)
-                            script_data.pop(0)
-                            script_data.pop(0)
-                            #brick_list_node.appendChild(add_brick(brick_list_node, document, "Bricks.PointToBrick", {"pointedSprite": steps}))
+                            if script_data.pop(0) == '(#mouse)':
+                                script_data.pop(0)
+                                script_data.pop(0)
+                                continue
+                            else:
+                                pointed_sprite = script_data.pop(0)
+                                script_data.pop(0)
+                                script_data.pop(0)
+                                bricks_params.append(("Bricks.PointToBrick", {"pointedSprite": pointed_sprite}))
 
                 self.sprites.append((sprite_name, bricks_params))
                 self.xml_writer.add_script(sprite_name, script_type, bricks_params, broadcasted_message)

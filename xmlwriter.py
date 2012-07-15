@@ -2,7 +2,7 @@ import xml.dom.minidom
 
 class XmlWriter:
     def __init__(self):
-        pass
+        self.bricks_defining_sprites = {}
 
     def create_project(self, project_name):
         self.document = xml.dom.minidom.Document()
@@ -43,7 +43,11 @@ class XmlWriter:
         self.document.appendChild(self.project)
 
     def add_sprite(self, sprite_name):
-        sprite_node = self.document.createElement("Content.Sprite")
+        if sprite_name in self.bricks_defining_sprites.keys():
+            sprite_node = self.bricks_defining_sprites[sprite_name]
+        else:
+            sprite_node = self.document.createElement("Content.Sprite")
+            self.project.getElementsByTagName('spriteList')[0].appendChild(sprite_node)
 
         name_node = self.document.createElement("name")
         name_node.appendChild(self.document.createTextNode(sprite_name))
@@ -58,12 +62,16 @@ class XmlWriter:
         script_list_node = self.document.createElement("scriptList")
         sprite_node.appendChild(script_list_node)
 
-        self.project.getElementsByTagName('spriteList')[0].appendChild(sprite_node)
-
     def get_sprite_node(self, sprite_name):
         sprite_list_node = self.project.getElementsByTagName('spriteList')[0]
         sprite_nodes = sprite_list_node.getElementsByTagName('Content.Sprite')
-        return filter(lambda node: node.getElementsByTagName('name')[0].firstChild.nodeValue == sprite_name, sprite_nodes)[0]
+        if len(self.bricks_defining_sprites) > 0:
+            sprite_nodes = sprite_nodes + self.bricks_defining_sprites.values()
+        sprite_nodes = filter(lambda node: len(node.getElementsByTagName('name')) > 0, sprite_nodes)
+        try:
+            return filter(lambda node: node.getElementsByTagName('name')[0].firstChild.nodeValue == sprite_name, sprite_nodes)[0]
+        except IndexError:
+            return None
 
     def add_costume(self, name, filename, sprite_name):
         costume_data = self.document.createElement("Common.CostumeData")
@@ -135,6 +143,16 @@ class XmlWriter:
             sound_info_node = self.document.createElement("soundInfo")
             brick_node.appendChild(sound_info_node)
             sound_info_node.setAttribute("reference", self.get_path_to_sound(sound_info_node, params["sound_name"]))
+        elif brick_name == "Bricks.PointToBrick":
+            pointed_sprite_node = self.document.createElement("pointedSprite")
+            brick_node.appendChild(pointed_sprite_node)
+
+            path = self.get_path_to_sprite(pointed_sprite_node, params["pointedSprite"])
+            if path:
+                pointed_sprite_node.setAttribute("reference", path)
+            else:
+                self.bricks_defining_sprites[params["pointedSprite"]] = pointed_sprite_node
+
         else:
             for key, value in params.items():
                 brick_parameter_node = self.document.createElement(key)
@@ -147,7 +165,7 @@ class XmlWriter:
 
     def get_path_to_costume(self, node, costume_name):
         path = ""
-        while node.tagName != "Content.Sprite":
+        while node.tagName != "Content.Sprite" and node.tagName != "pointedSprite":
             path += "../"
             node = node.parentNode
 
@@ -162,13 +180,13 @@ class XmlWriter:
                     path += "Common.CostumeData[" + str(index) + "]"
                 break
         else:
-            raise Exception("No costume found")
+            return None
             
         return path
 
     def get_path_to_sound(self, node, sound_name):
         path = ""
-        while node.tagName != "Content.Sprite":
+        while node.tagName != "Content.Sprite" and node.tagName != "pointedSprite":
             path += "../"
             node = node.parentNode
 
@@ -183,7 +201,25 @@ class XmlWriter:
                     path += "Common.SoundInfo[" + str(index) + "]"
                 break
         else:
-            raise Exception("No sound found")
+            return None
+            
+        return path
+
+    def get_path_to_sprite(self, node, sprite_name):
+        path = ""
+        while node.tagName != "spriteList":
+            path += "../"
+            node = node.parentNode
+
+        for index, sprite_node in enumerate(node.childNodes):
+            if sprite_node.getElementsByTagName('name')[0].firstChild.nodeValue == sprite_name:
+                if index == 0:
+                    path += "Content.Sprite"
+                else:
+                    path += "Content.Sprite[" + str(index) + "]"
+                break
+        else:
+            return None
             
         return path
 

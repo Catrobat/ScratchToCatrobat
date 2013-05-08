@@ -11,7 +11,6 @@ class TestScratchReader(unittest.TestCase):
         
     def test_can_read_sb2_json(self):
         json_file = os.path.join(testing_common.get_json_path() ,  "simple/project.json") 
-        #~ print json_file
                                           
         scratch_reader = ScratchReader(json_file)
         json_dict = scratch_reader.get_dict()

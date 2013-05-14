@@ -14,6 +14,10 @@ INFO_KEY = "info"
 SOUNDNAME_KEY = "soundName"
 SOUNDID_KEY = "soundID"
 MD5_KEY = "md5"
+BASELAYERMD5_KEY = "baseLayerMD5"
+BASELAYERID_KEY = "baseLayerID"
+COSTUMENAME_KEY = "costumeName"
+
 
 
 # ---------- CATROBAT XML TAGS ----------
@@ -186,8 +190,55 @@ class CatrobatWriter(object):
         self.object_list.appendChild(object)
         
         sound_list_node = self.process_sound_list(sprite_dict[SOUNDS_KEY])
+        look_list_node = self.process_look_list(sprite_dict[CUSTUMES_KEY])
+        
+        object_name = self.document.createElement(CATROBAT_TAG_NAME)
+        object_name.appendChild(self.document.createTextNode(sprite_dict[OBJNAME_KEY]))
+        
+        object.appendChild(look_list_node)
         object.appendChild(sound_list_node)
+        object.appendChild(object_name)
+        script_list_node = self.process_script_list(sprite_dict.get(SCRIPTS_KEY))
+        object.appendChild(script_list_node)
     
+    def process_script_list(self, script_list):
+        script_list_node = self.document.createElement(CATROBAT_TAG_SCRIPTLIST)
+        
+        if script_list is not None:
+            for script in script_list:
+                script_node = self.process_script(script)
+                if script_node is not None:
+                    script_list_node.appendChild(script_node)
+                
+        return script_list_node
+
+    def process_script(self):
+        # NOT IMPLEMENTED YET
+        return None
+
+    def process_look_list(self, look_list):
+        look_list_node = self.document.createElement(CATROBAT_TAG_LOOKLIST)
+        
+        for look_dict in look_list:
+            look_node = self.process_look(look_dict)
+            look_list_node.appendChild(look_node)
+        
+        return look_list_node  
+        
+    def process_look(self, look_dict):
+        look_node = self.document.createElement(CATROBAT_TAG_LOOK)
+        file_name_node = self.document.createElement(CATROBAT_TAG_FILENAME)
+        file_name_node.appendChild(self.document.createTextNode(
+            str(look_dict[BASELAYERID_KEY]) +  os.path.splitext(look_dict[BASELAYERMD5_KEY])[1]))
+        
+        name_node = self.document.createElement(CATROBAT_TAG_NAME)
+        name_node.appendChild(self.document.createTextNode(look_dict[COSTUMENAME_KEY]))
+        
+        look_node.appendChild(file_name_node)
+        look_node.appendChild(name_node)
+        return look_node
+
+
     def process_sound_list(self, sound_list):
         sound_list_node = self.document.createElement(CATROBAT_TAG_SOUNDLIST)
         

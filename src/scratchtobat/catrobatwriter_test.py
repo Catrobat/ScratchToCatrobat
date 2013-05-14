@@ -29,7 +29,7 @@ class TestCatrobatWriter(unittest.TestCase):
         getElementsByTagName("screenHeight")[0].firstChild.nodeValue, "800")
         
         self.assertEquals(catrobat_writer.document.
-        getElementsByTagName("screenWidth")[0].firstChild.nodeValue, "600")
+        getElementsByTagName("screenWidth")[0].firstChild.nodeValue, "480")
         
         print catrobat_writer.document.toprettyxml()
 

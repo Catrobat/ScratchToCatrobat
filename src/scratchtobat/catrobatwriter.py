@@ -1,4 +1,5 @@
 import xml.dom.minidom
+import os
 
 from scratchreader import ScratchReader
 
@@ -10,6 +11,12 @@ CUSTUMES_KEY = "costumes"
 CHILDREN_KEY = "children"
 SCRIPTS_KEY = "scripts"
 INFO_KEY = "info"
+SOUNDNAME_KEY = "soundName"
+SOUNDID_KEY = "soundID"
+MD5_KEY = "md5"
+
+
+# ---------- CATROBAT XML TAGS ----------
 
 # -------------- <program> --------------
 CATROBAT_TAG_PROGRAM = "program" #root element
@@ -42,6 +49,14 @@ CATROBAT_TAG_USERHANDLE = "userHandle"
 # -------------- <objectList> --------------
 
 CATROBAT_TAG_OBJECTLIST = "objectList"
+CATROBAT_TAG_OBJECT = "object"
+CATROBAT_TAG_LOOKLIST = "lookList"
+CATROBAT_TAG_LOOK = "look"
+CATROBAT_TAG_FILENAME = "fileName"
+CATROBAT_TAG_NAME = "name"
+CATROBAT_TAG_SCRIPTLIST = "scriptList"
+CATROBAT_TAG_SOUNDLIST = "soundList"
+CATROBAT_TAG_SOUND = "sound"
 
 # -------------- <variables> --------------
 
@@ -110,7 +125,7 @@ class CatrobatWriter(object):
         self.header.appendChild(self.document.createElement(CATROBAT_TAG_MEDIALICENCE))
         
         # <platform>Android</platform>
-        platform = self.document.createElement(CATROBAT_TAG_DEVICENAME)
+        platform = self.document.createElement(CATROBAT_TAG_PLATFORM)
         platform.appendChild(self.document.createTextNode("Android"))
         self.header.appendChild(platform)
         
@@ -141,9 +156,9 @@ class CatrobatWriter(object):
         screen_height.appendChild(self.document.createTextNode("800"))
         self.header.appendChild(screen_height)
         
-        # <screenWidth>600</screenWidth>
+        # <screenWidth>480</screenWidth>
         screen_width = self.document.createElement(CATROBAT_TAG_SCREENWIDTH)
-        screen_width.appendChild(self.document.createTextNode("600"))
+        screen_width.appendChild(self.document.createTextNode("480"))
         self.header.appendChild(screen_width)
         
         #<tags></tags>
@@ -159,7 +174,43 @@ class CatrobatWriter(object):
         #<objectList>
         self.object_list = self.document.createElement(CATROBAT_TAG_OBJECTLIST)
         self.program.appendChild(self.object_list)
+        self.process_sprite_list()
         
+    def process_sprite_list(self):
+        self.process_sprite(self.json_dict) #stage
+        for child in self.json_dict[CHILDREN_KEY]:
+            self.process_sprite(child)
+    
+    def process_sprite(self, sprite_dict):
+        object = self.document.createElement(CATROBAT_TAG_OBJECT)
+        self.object_list.appendChild(object)
+        
+        sound_list_node = self.process_sound_list(sprite_dict[SOUNDS_KEY])
+        object.appendChild(sound_list_node)
+    
+    def process_sound_list(self, sound_list):
+        sound_list_node = self.document.createElement(CATROBAT_TAG_SOUNDLIST)
+        
+        for sound_dict in sound_list:
+            sound_node = self.process_sound(sound_dict)
+            sound_list_node.appendChild(sound_node)
+        
+        return sound_list_node
+    
+    def process_sound(self, sound_dict):
+        sound_node = self.document.createElement(CATROBAT_TAG_SOUND)
+        file_name_node = self.document.createElement(CATROBAT_TAG_FILENAME)
+        file_name_node.appendChild(self.document.createTextNode(
+            str(sound_dict[SOUNDID_KEY]) +  os.path.splitext(sound_dict[MD5_KEY])[1]))
+        
+        name_node = self.document.createElement(CATROBAT_TAG_NAME)
+        name_node.appendChild(self.document.createTextNode(sound_dict[SOUNDNAME_KEY]))
+        
+        sound_node.appendChild(file_name_node)
+        sound_node.appendChild(name_node)
+        return sound_node
+
+
     def create_variables(self):
         #<variables>
         self.variables = self.document.createElement(CATROBAT_TAG_VARIABLES)

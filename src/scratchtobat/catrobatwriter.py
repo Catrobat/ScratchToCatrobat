@@ -2,6 +2,8 @@ import xml.dom.minidom
 
 from scratchreader import ScratchReader
 
+# -------------- JSON KEYS --------------
+
 OBJNAME_KEY = "objName"
 SOUNDS_KEY = "sounds"
 CUSTUMES_KEY = "costumes"
@@ -9,9 +11,11 @@ CHILDREN_KEY = "children"
 SCRIPTS_KEY = "scripts"
 INFO_KEY = "info"
 
+# -------------- <program> --------------
 CATROBAT_TAG_PROGRAM = "program" #root element
 
-#header fields
+# -------------- <header> --------------
+
 CATROBAT_TAG_HEADER = "header"
 CATROBAT_TAG_APPLICATIONBUILDNAME = "applicationBuildName"
 CATROBAT_TAG_APPLICATIONBUILDNUMBER = "applicationBuildNumber"
@@ -35,6 +39,17 @@ CATROBAT_TAG_URL = "url"
 CATROBAT_TAG_USERHANDLE = "userHandle"
 
 
+# -------------- <objectList> --------------
+
+CATROBAT_TAG_OBJECTLIST = "objectList"
+
+# -------------- <variables> --------------
+
+CATROBAT_TAG_VARIABLES = "variables"
+CATROBAT_TAG_OBJECTVARIABLELIST = "objectVariableList"
+
+CATROBAT_TAG_PROGRAMVARIABLELIST = "programVariableList"
+
 
 class CatrobatWriter(object):
     def __init__(self, json_dict):
@@ -43,6 +58,8 @@ class CatrobatWriter(object):
         
     def process_dict(self):
         self.create_header()
+        self.create_object_list()
+        self.create_variables()
         
         
     def create_header(self):
@@ -137,8 +154,23 @@ class CatrobatWriter(object):
         
         #<userHandle></userHandle>
         self.header.appendChild(self.document.createElement(CATROBAT_TAG_USERHANDLE))
+            
+    def create_object_list(self):
+        #<objectList>
+        self.object_list = self.document.createElement(CATROBAT_TAG_OBJECTLIST)
+        self.program.appendChild(self.object_list)
         
+    def create_variables(self):
+        #<variables>
+        self.variables = self.document.createElement(CATROBAT_TAG_VARIABLES)
+        self.program.appendChild(self.variables)
         
+        #<objectVariableList>
+        self.object_variable_list = self.document.createElement(CATROBAT_TAG_OBJECTVARIABLELIST)
+        self.variables.appendChild(self.object_variable_list)
         
+        #<programVariableList>
+        self.program_variable_list = self.document.createElement(CATROBAT_TAG_PROGRAMVARIABLELIST)
+        self.variables.appendChild(self.program_variable_list)
         
         

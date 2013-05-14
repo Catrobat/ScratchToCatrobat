@@ -31,7 +31,7 @@ class TestCatrobatWriter(unittest.TestCase):
         self.assertEquals(catrobat_writer.document.
         getElementsByTagName("screenWidth")[0].firstChild.nodeValue, "600")
         
-        print catrobat_writer.document.toxml()
+        print catrobat_writer.document.toprettyxml()
 
     
 if __name__ == '__main__':

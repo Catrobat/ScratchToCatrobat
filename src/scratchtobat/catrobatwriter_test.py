@@ -21,8 +21,15 @@ class TestCatrobatWriter(unittest.TestCase):
         
         catrobat_writer = CatrobatWriter(json_dict)
         catrobat_writer.process_dict()
+        
         self.assertEquals(catrobat_writer.document.
         getElementsByTagName("applicationBuildNumber")[0].firstChild.nodeValue, "0")
+        
+        self.assertEquals(catrobat_writer.document.
+        getElementsByTagName("screenHeight")[0].firstChild.nodeValue, "800")
+        
+        self.assertEquals(catrobat_writer.document.
+        getElementsByTagName("screenWidth")[0].firstChild.nodeValue, "600")
         
         print catrobat_writer.document.toxml()
 

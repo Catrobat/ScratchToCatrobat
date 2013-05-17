@@ -1,5 +1,6 @@
 import xml.dom.minidom
 import os
+import shutil
 
 from scratchreader import ScratchReader
 
@@ -71,11 +72,12 @@ CATROBAT_TAG_PROGRAMVARIABLELIST = "programVariableList"
 
 
 class CatrobatWriter(object):
-    def __init__(self, json_dict):
+    def __init__(self, json_dict, working_dir):
         self.json_dict = json_dict
         self.document = xml.dom.minidom.Document()
         self.costume_files = []
         self.sound_files = []
+        self.working_dir = working_dir
         
     def process_dict(self):
         self.create_header()
@@ -227,6 +229,10 @@ class CatrobatWriter(object):
         
         return look_list_node  
     
+    def get_scratch_costume_file(self, look_dict):
+        scratch_costume_file= str(look_dict[BASELAYERID_KEY]) + os.path.splitext(look_dict[BASELAYERMD5_KEY])[1]
+        return scratch_costume_file
+    
     def get_look_file_name(self, look_dict):
         file_name = os.path.splitext(look_dict[BASELAYERMD5_KEY])[0].upper() + \
                            "_" + look_dict[COSTUMENAME_KEY]
@@ -240,6 +246,11 @@ class CatrobatWriter(object):
         self.costume_files.append(file_name)
                            
         file_name_node.appendChild(self.document.createTextNode(file_name))
+        
+        scratch_costume_file = self.get_scratch_costume_file(look_dict)
+        scratch_costume_file = os.path.join(self.working_dir, scratch_costume_file)
+        
+        shutil.copy(scratch_costume_file, os.path.join(self.working_dir, file_name))
         
         name_node = self.document.createElement(CATROBAT_TAG_NAME)
         name_node.appendChild(self.document.createTextNode(look_dict[COSTUMENAME_KEY]))
@@ -255,6 +266,10 @@ class CatrobatWriter(object):
                            os.path.splitext(sound_dict[MD5_KEY])[1]
         return file_name
     
+    def get_scratch_sound_file(self, sound_dict):
+        scratch_sound_file = str(sound_dict[SOUNDID_KEY]) + os.path.splitext(sound_dict[MD5_KEY])[1]
+        return scratch_sound_file
+    
     def process_sound_list(self, sound_list):
         sound_list_node = self.document.createElement(CATROBAT_TAG_SOUNDLIST)
         
@@ -269,6 +284,11 @@ class CatrobatWriter(object):
         file_name_node = self.document.createElement(CATROBAT_TAG_FILENAME)
         
         file_name = self.get_sound_file_name(sound_dict)
+        
+        scratch_sound_file = self.get_scratch_sound_file(sound_dict)
+        scratch_sound_file = os.path.join(self.working_dir, scratch_sound_file)
+        
+        shutil.copy(scratch_sound_file, os.path.join(self.working_dir, file_name))
         
         file_name_node.appendChild(self.document.createTextNode(file_name))
         self.sound_files.append(file_name)

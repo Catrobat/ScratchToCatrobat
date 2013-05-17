@@ -14,7 +14,7 @@ class TestCatrobatWriter(unittest.TestCase):
         self.json_dict = self.scratch_reader.get_dict()
 
     def test_can_write_simple(self):
-        catrobat_writer = CatrobatWriter(self.json_dict)
+        catrobat_writer = CatrobatWriter(self.json_dict, os.path.join(testing_common.get_json_path(), "simple/"))
         catrobat_writer.process_dict()
 
         self.assertEquals(catrobat_writer.document.
@@ -29,7 +29,7 @@ class TestCatrobatWriter(unittest.TestCase):
         print catrobat_writer.document.toprettyxml()
 
     def test_can_get_media_files(self):
-        catrobat_writer = CatrobatWriter(self.json_dict)
+        catrobat_writer = CatrobatWriter(self.json_dict, os.path.join(testing_common.get_json_path(), "simple/"))
         catrobat_writer.process_dict()
         sound_files = catrobat_writer.sound_files
         costume_files = catrobat_writer.costume_files

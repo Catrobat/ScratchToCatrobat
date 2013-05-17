@@ -229,6 +229,10 @@ class CatrobatWriter(object):
         
         return look_list_node  
     
+    def get_scratch_costume_file(self, look_dict):
+        scratch_costume_file= str(look_dict[BASELAYERID_KEY]) + os.path.splitext(look_dict[BASELAYERMD5_KEY])[1]
+        return scratch_costume_file
+    
     def get_look_file_name(self, look_dict):
         file_name = os.path.splitext(look_dict[BASELAYERMD5_KEY])[0].upper() + \
                            "_" + look_dict[COSTUMENAME_KEY]
@@ -242,6 +246,11 @@ class CatrobatWriter(object):
         self.costume_files.append(file_name)
                            
         file_name_node.appendChild(self.document.createTextNode(file_name))
+        
+        scratch_costume_file = self.get_scratch_costume_file(look_dict)
+        scratch_costume_file = os.path.join(self.working_dir, scratch_costume_file)
+        
+        shutil.copy(scratch_costume_file, os.path.join(self.working_dir, file_name))
         
         name_node = self.document.createElement(CATROBAT_TAG_NAME)
         name_node.appendChild(self.document.createTextNode(look_dict[COSTUMENAME_KEY]))

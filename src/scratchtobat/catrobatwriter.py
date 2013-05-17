@@ -7,7 +7,7 @@ from scratchreader import ScratchReader
 
 OBJNAME_KEY = "objName"
 SOUNDS_KEY = "sounds"
-CUSTUMES_KEY = "costumes"
+COSTUMES_KEY = "costumes"
 CHILDREN_KEY = "children"
 SCRIPTS_KEY = "scripts"
 INFO_KEY = "info"
@@ -74,6 +74,8 @@ class CatrobatWriter(object):
     def __init__(self, json_dict):
         self.json_dict = json_dict
         self.document = xml.dom.minidom.Document()
+        self.costume_files = []
+        self.sound_files = []
         
     def process_dict(self):
         self.create_header()
@@ -190,7 +192,7 @@ class CatrobatWriter(object):
         self.object_list.appendChild(object)
         
         sound_list_node = self.process_sound_list(sprite_dict[SOUNDS_KEY])
-        look_list_node = self.process_look_list(sprite_dict[CUSTUMES_KEY])
+        look_list_node = self.process_look_list(sprite_dict[COSTUMES_KEY])
         
         object_name = self.document.createElement(CATROBAT_TAG_NAME)
         object_name.appendChild(self.document.createTextNode(sprite_dict[OBJNAME_KEY]))
@@ -224,12 +226,20 @@ class CatrobatWriter(object):
             look_list_node.appendChild(look_node)
         
         return look_list_node  
-        
+    
+    def get_look_file_name(self, look_dict):
+        file_name = os.path.splitext(look_dict[BASELAYERMD5_KEY])[0].upper() + \
+                           "_" + look_dict[COSTUMENAME_KEY]
+        return file_name
+
     def process_look(self, look_dict):
         look_node = self.document.createElement(CATROBAT_TAG_LOOK)
         file_name_node = self.document.createElement(CATROBAT_TAG_FILENAME)
-        file_name_node.appendChild(self.document.createTextNode(
-            str(look_dict[BASELAYERID_KEY]) +  os.path.splitext(look_dict[BASELAYERMD5_KEY])[1]))
+        
+        file_name = self.get_look_file_name(look_dict)
+        self.costume_files.append(file_name)
+                           
+        file_name_node.appendChild(self.document.createTextNode(file_name))
         
         name_node = self.document.createElement(CATROBAT_TAG_NAME)
         name_node.appendChild(self.document.createTextNode(look_dict[COSTUMENAME_KEY]))
@@ -238,7 +248,13 @@ class CatrobatWriter(object):
         look_node.appendChild(name_node)
         return look_node
 
-
+    
+    def get_sound_file_name(self, sound_dict):
+        file_name = os.path.splitext(sound_dict[MD5_KEY])[0].upper() + \
+                           "_" + sound_dict[SOUNDNAME_KEY] + \
+                           os.path.splitext(sound_dict[MD5_KEY])[1]
+        return file_name
+    
     def process_sound_list(self, sound_list):
         sound_list_node = self.document.createElement(CATROBAT_TAG_SOUNDLIST)
         
@@ -251,8 +267,11 @@ class CatrobatWriter(object):
     def process_sound(self, sound_dict):
         sound_node = self.document.createElement(CATROBAT_TAG_SOUND)
         file_name_node = self.document.createElement(CATROBAT_TAG_FILENAME)
-        file_name_node.appendChild(self.document.createTextNode(
-            str(sound_dict[SOUNDID_KEY]) +  os.path.splitext(sound_dict[MD5_KEY])[1]))
+        
+        file_name = self.get_sound_file_name(sound_dict)
+        
+        file_name_node.appendChild(self.document.createTextNode(file_name))
+        self.sound_files.append(file_name)
         
         name_node = self.document.createElement(CATROBAT_TAG_NAME)
         name_node.appendChild(self.document.createTextNode(sound_dict[SOUNDNAME_KEY]))

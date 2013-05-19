@@ -1,14 +1,12 @@
-'''
-Created on 17.05.2013
-
-@author: chr
-'''
 import logging
 
-logging.basicConfig()
+logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("scratchtobat")
 
 
 def isList(obj):
     return isinstance(obj, list)
 
+
+class ScratchtobatError(Exception):
+    pass

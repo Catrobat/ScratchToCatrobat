@@ -2,8 +2,6 @@ import xml.dom.minidom
 import os
 import shutil
 
-from scratchreader import ScratchReader
-
 # -------------- JSON KEYS --------------
 
 OBJNAME_KEY = "objName"
@@ -24,7 +22,7 @@ COSTUMENAME_KEY = "costumeName"
 # ---------- CATROBAT XML TAGS ----------
 
 # -------------- <program> --------------
-CATROBAT_TAG_PROGRAM = "program" #root element
+CATROBAT_TAG_PROGRAM = "program"  # root element
 
 # -------------- <header> --------------
 
@@ -34,10 +32,10 @@ CATROBAT_TAG_APPLICATIONBUILDNUMBER = "applicationBuildNumber"
 CATROBAT_TAG_APPLICATIONNAME = "applicationName"
 CATROBAT_TAG_APPLICATIONVERSION = "applicationVersion"
 CATROBAT_TAG_LANGUAGEVERSION = "catrobatLanguageVersion"
-CATROBAT_TAG_DATETIMEUPLOAD= "dateTimeUpload"
-CATROBAT_TAG_DESCRIPTION  = "description"
-CATROBAT_TAG_DEVICENAME= "deviceName"
-CATROBAT_TAG_MEDIALICENCE= "mediaLicense"
+CATROBAT_TAG_DATETIMEUPLOAD = "dateTimeUpload"
+CATROBAT_TAG_DESCRIPTION = "description"
+CATROBAT_TAG_DEVICENAME = "deviceName"
+CATROBAT_TAG_MEDIALICENCE = "mediaLicense"
 CATROBAT_TAG_PLATFORM = "platform"
 CATROBAT_TAG_PLATFORMVERSION = "platformVersion"
 CATROBAT_TAG_PROGRAMLICENCE = "programLicense"
@@ -87,15 +85,15 @@ class CatrobatWriter(object):
         
     def create_header(self):
         
-        #<program>
+        # <program>
         self.program = self.document.createElement(CATROBAT_TAG_PROGRAM)
         self.document.appendChild(self.program)
         
-        #<header>
+        # <header>
         self.header = self.document.createElement(CATROBAT_TAG_HEADER)
         self.program.appendChild(self.header)
         
-        #<applicationBuildName></applicationBuildName>
+        # <applicationBuildName></applicationBuildName>
         self.header.appendChild(self.document.createElement(CATROBAT_TAG_APPLICATIONBUILDNAME))
         
         # <applicationBuildNumber>0</applicationBuildNumber>
@@ -118,10 +116,10 @@ class CatrobatWriter(object):
         cat_lang_ver.appendChild(self.document.createTextNode("0.7"))
         self.header.appendChild(cat_lang_ver)
         
-        #<dateTimeUpload></dateTimeUpload>
+        # <dateTimeUpload></dateTimeUpload>
         self.header.appendChild(self.document.createElement(CATROBAT_TAG_DATETIMEUPLOAD))
         
-        #<description></description>
+        # <description></description>
         self.header.appendChild(self.document.createElement(CATROBAT_TAG_DESCRIPTION))
         
         # <deviceName>unknown</deviceName>
@@ -129,7 +127,7 @@ class CatrobatWriter(object):
         device_name.appendChild(self.document.createTextNode("unknown"))
         self.header.appendChild(device_name)
         
-        #<mediaLicense></mediaLicense>
+        # <mediaLicense></mediaLicense>
         self.header.appendChild(self.document.createElement(CATROBAT_TAG_MEDIALICENCE))
         
         # <platform>Android</platform>
@@ -142,13 +140,13 @@ class CatrobatWriter(object):
         platform_version.appendChild(self.document.createTextNode("10"))
         self.header.appendChild(platform_version)
         
-        #<programLicense></programLicense>
+        # <programLicense></programLicense>
         self.header.appendChild(self.document.createElement(CATROBAT_TAG_PROGRAMLICENCE))
         
         
         # <programName>Scratch App</programName>
         prog_name = self.document.createElement(CATROBAT_TAG_PROGRAMNAME)
-        prog_name.appendChild(self.document.createTextNode("Scratch App")) #todo get app name from filename e.g project.sb2
+        prog_name.appendChild(self.document.createTextNode("Scratch App"))  # todo get app name from filename e.g project.sb2
         self.header.appendChild(prog_name)
         
         # <programScreenshotManuallyTaken>false</programScreenshotManuallyTaken>
@@ -156,7 +154,7 @@ class CatrobatWriter(object):
         prog_screen_taken.appendChild(self.document.createTextNode("false"))
         self.header.appendChild(prog_screen_taken)
         
-        #<remixOf></remixOf>
+        # <remixOf></remixOf>
         self.header.appendChild(self.document.createElement(CATROBAT_TAG_REMIXOF))
         
          # <screenHeight>800</screenHeight>
@@ -169,23 +167,23 @@ class CatrobatWriter(object):
         screen_width.appendChild(self.document.createTextNode("480"))
         self.header.appendChild(screen_width)
         
-        #<tags></tags>
+        # <tags></tags>
         self.header.appendChild(self.document.createElement(CATROBAT_TAG_TAGS))
         
-        #<url></url>
+        # <url></url>
         self.header.appendChild(self.document.createElement(CATROBAT_TAG_URL))
         
-        #<userHandle></userHandle>
+        # <userHandle></userHandle>
         self.header.appendChild(self.document.createElement(CATROBAT_TAG_USERHANDLE))
             
     def create_object_list(self):
-        #<objectList>
+        # <objectList>
         self.object_list = self.document.createElement(CATROBAT_TAG_OBJECTLIST)
         self.program.appendChild(self.object_list)
         self.process_sprite_list()
         
     def process_sprite_list(self):
-        self.process_sprite(self.json_dict) #stage
+        self.process_sprite(self.json_dict)  # stage
         for child in self.json_dict[CHILDREN_KEY]:
             self.process_sprite(child)
     
@@ -230,7 +228,7 @@ class CatrobatWriter(object):
         return look_list_node  
     
     def get_scratch_costume_file(self, look_dict):
-        scratch_costume_file= str(look_dict[BASELAYERID_KEY]) + os.path.splitext(look_dict[BASELAYERMD5_KEY])[1]
+        scratch_costume_file = str(look_dict[BASELAYERID_KEY]) + os.path.splitext(look_dict[BASELAYERMD5_KEY])[1]
         return scratch_costume_file
     
     def get_look_file_name(self, look_dict):
@@ -302,15 +300,15 @@ class CatrobatWriter(object):
 
 
     def create_variables(self):
-        #<variables>
+        # <variables>
         self.variables = self.document.createElement(CATROBAT_TAG_VARIABLES)
         self.program.appendChild(self.variables)
         
-        #<objectVariableList>
+        # <objectVariableList>
         self.object_variable_list = self.document.createElement(CATROBAT_TAG_OBJECTVARIABLELIST)
         self.variables.appendChild(self.object_variable_list)
         
-        #<programVariableList>
+        # <programVariableList>
         self.program_variable_list = self.document.createElement(CATROBAT_TAG_PROGRAMVARIABLELIST)
         self.variables.appendChild(self.program_variable_list)
         

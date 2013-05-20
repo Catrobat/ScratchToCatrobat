@@ -1,6 +1,6 @@
 from scratchtobat import sb2, testing_common
 import unittest
-import os
+
 
 EASY_SCRIPTS = [[23, 125,
         [["whenGreenFlag"],
@@ -31,19 +31,39 @@ class TestProjectInit(unittest.TestCase):
 
 
 class TestProjectFunc(unittest.TestCase):
+    
+    def __init__(self, methodName='runTest', project_name='simple'):
+        unittest.TestCase.__init__(self, methodName=methodName)
+        self.project_name = project_name
+        
     def setUp(self):
-        self.scratch_reader = sb2.Project(testing_common.get_test_project_path("simple"))
+        self.project = sb2.Project(testing_common.get_test_project_path(self.project_name))
 
     def test_can_read_sb2_json(self):
-        json_dict = self.scratch_reader.get_raw_data()
+        json_dict = self.project.get_raw_data()
         self.assertEquals(json_dict["objName"], "Stage")
         self.assertTrue(json_dict["info"])
 
+    def test_can_access_sb2_objects(self):
+        for obj_data in self.project.objects_data:
+            self.assertTrue(sb2.Object.is_valid_class_input(obj_data))
+            self.assertTrue(sb2.Object(obj_data))
 
-# class TestCanCreateSb2ObjectInstance(unittest.TestCase):
-#      
-#     def testCanCreateSingleOnCorrectInput(self):
-#         self.fail("Not implemented")
+
+class TestObjectInit(TestProjectFunc):
+      
+    def test_can_on_correct_input(self):
+        for obj_data in self.project.objects_data:
+            self.assertTrue(sb2.Object.is_valid_class_input(obj_data))
+            self.assertTrue(sb2.Object(obj_data))
+    
+    def test_fail_on_wrong_input(self):
+        faulty_object_structures = [{},
+            ]
+        for faulty_input in faulty_object_structures:
+            self.assertFalse(sb2.Object.is_valid_class_input(faulty_input), "Wrong input not detected: {}".format(faulty_input))
+            with self.assertRaises(sb2.ObjectError):
+                sb2.Object(faulty_input)
 
 
 class TestScriptInit(unittest.TestCase):
@@ -70,10 +90,12 @@ class TestScriptFunc(unittest.TestCase):
     def setUp(self):
         unittest.TestCase.setUp(self)
         self.script = sb2.Script(EASY_SCRIPTS[0])
-        
-    def test_can_access_bricks(self):
-        self.assertEqual(['whenGreenFlag', 'say:duration:elapsed:from:', 'doRepeat', 'forward:', 'playDrum', 'forward:', 'playDrum'], self.script.get_bricks())
 
+    def test_can_read_sb2_script_data(self):
+        self.assertEqual('whenGreenFlag', self.script.get_type())
+        expected_brick_names = ['say:duration:elapsed:from:', 'doRepeat', 'forward:', 'playDrum', 'forward:', 'playDrum']
+        self.assertEqual(expected_brick_names, self.script.get_raw_bricks())
+        
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']

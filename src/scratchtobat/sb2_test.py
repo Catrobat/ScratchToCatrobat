@@ -32,7 +32,7 @@ class TestProjectInit(unittest.TestCase):
 
 class TestProjectFunc(unittest.TestCase):
     
-    def __init__(self, methodName='runTest', project_name='simple'):
+    def __init__(self, methodName='runTest', project_name='dancing_castle'):
         unittest.TestCase.__init__(self, methodName=methodName)
         self.project_name = project_name
         
@@ -44,10 +44,13 @@ class TestProjectFunc(unittest.TestCase):
         self.assertEquals(json_dict["objName"], "Stage")
         self.assertTrue(json_dict["info"])
 
+    def test_can_access_project_name(self):
+        self.assertEqual(self.project_name, self.project.name)
+        
     def test_can_access_sb2_objects(self):
-        for obj_data in self.project.objects_data:
-            self.assertTrue(sb2.Object.is_valid_class_input(obj_data))
-            self.assertTrue(sb2.Object(obj_data))
+        for sb2_object in self.project.objects:
+            self.assertTrue(sb2_object)
+            self.assertTrue(isinstance(sb2_object, sb2.Object))
 
 
 class TestObjectInit(TestProjectFunc):
@@ -65,6 +68,28 @@ class TestObjectInit(TestProjectFunc):
             with self.assertRaises(sb2.ObjectError):
                 sb2.Object(faulty_input)
 
+
+class TestObjectFunc(TestProjectFunc):
+    
+    def __init__(self, methodName='runTest', project_name='dancing_castle'):
+        TestProjectFunc.__init__(self, methodName=methodName, project_name=project_name)
+    
+    def setUp(self):
+        TestProjectFunc.setUp(self)
+        self.sb2_objects = self.project.objects
+    
+    def test_fail_on_wrong_data_access_key(self):
+        with self.assertRaises(AttributeError):
+            self.sb2_objects[0].get_wrongkey()
+        
+    def test_can_access_scripts(self):
+        self.assertEquals(['Sprite1', 'Cassy Dance'], [_.get_objName() for _ in self.sb2_objects])
+        for sb2_object in self.sb2_objects:
+            self.assertTrue(len(sb2_object.scripts) > 0)
+            for sb2_script in sb2_object.scripts:
+                self.assertTrue(sb2_script)
+                self.assertTrue(isinstance(sb2_script, sb2.Script))
+            
 
 class TestScriptInit(unittest.TestCase):
 

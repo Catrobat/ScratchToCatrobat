@@ -35,6 +35,9 @@ class TestConvertExampleProject(testing_common.ScratchtobatTestCase):
         catr_project = converter.convert_to_catrobat_project(self.project)
         self.assertTrue(isinstance(catr_project, catbase.Project), "Converted project is not a catroid project class.")
         
+        self.assertEqual(800, catr_project.getXmlHeader().virtualScreenHeight)
+        self.assertEqual(480, catr_project.getXmlHeader().virtualScreenWidth)
+        
         catr_sprites = catr_project.getSpriteList()
         self.assertTrue(catr_sprites, "No sprites in converted project.")
         self.assertTrue(all(isinstance(_, catbase.Sprite) for _ in catr_sprites), "Sprites of converted project are not catroid sprite classes.")
@@ -45,9 +48,7 @@ class TestConvertExampleProject(testing_common.ScratchtobatTestCase):
         
         sprite_0 = sprites[0] 
         self.assertEqual("Stage", sprite_0.getName())
-        # FIXME: add implicit script and brick
-#         self.assertEqual(1, sprite_0.getNumberOfScripts())
-#         self.assertEqual(1, sprite_0.getNumberOfBricks())
+        self.assertEqual([catbase.StartScript], [_.__class__ for _ in sprite_0.scriptList])
         sprite0_looks = sprite_0.getLookDataList()
         self.assertTrue(sprite0_looks, "No looks in sprite1")
         self.assertTrue(all(isinstance(_, catcommon.LookData) for _ in sprite0_looks), "Wrong classes in look list1")
@@ -57,9 +58,7 @@ class TestConvertExampleProject(testing_common.ScratchtobatTestCase):
         
         sprite_1 = sprites[1]
         self.assertEqual("Sprite1", sprite_1.getName())
-        # FIXME: add implicit script and brick
-        self.assertEqual(2, sprite_1.getNumberOfScripts())
-        self.assertEqual(8, sprite_1.getNumberOfBricks())
+        self.assertEqual([catbase.StartScript, catbase.BroadcastScript], [_.__class__ for _ in sprite_1.scriptList])
         sprite1_looks = sprite_1.getLookDataList()
         self.assertTrue(sprite1_looks, "No looks in sprite1")
         self.assertTrue(all(isinstance(_, catcommon.LookData) for _ in sprite1_looks), "Wrong classes in look list1")
@@ -69,9 +68,7 @@ class TestConvertExampleProject(testing_common.ScratchtobatTestCase):
         
         sprite_2 = sprites[2]
         self.assertEqual("Cassy Dance", sprite_2.getName())
-        # FIXME: add implicit script and brick
-        self.assertEqual(1, sprite_2.getNumberOfScripts())
-        self.assertEqual(5, sprite_2.getNumberOfBricks())
+        self.assertEqual([catbase.StartScript], [_.__class__ for _ in sprite_2.scriptList])
         sprite2_looks = sprite_2.getLookDataList()
         self.assertTrue(sprite2_looks, "No looks in sprite2")
         self.assertTrue(all(isinstance(_, catcommon.LookData) for _ in sprite2_looks), "Wrong classes in look list2")

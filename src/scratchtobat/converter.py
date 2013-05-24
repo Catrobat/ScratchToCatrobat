@@ -177,6 +177,8 @@ def _convert_script(sb2script_name, sprite):
 
 def convert_to_catrobat_project(sb2_project):
     catr_project = catbase.Project(None, sb2_project.name)
+    catr_project.getXmlHeader().virtualScreenHeight = 800
+    catr_project.getXmlHeader().virtualScreenWidth = 480
     for _ in sb2_project.objects:
         catr_sprite = _convert_to_catrobat_sprite(_)
         catr_project.addSprite(catr_sprite)
@@ -197,8 +199,28 @@ def _convert_to_catrobat_sprite(sb2_obj):
         spriteSounds.add(_convert_to_catrobat_sound(sb2_sound))
     
     # looks and sounds has to added first because of cross-validations 
-    for sb2_script in sb2_obj.scripts:
+    for idx, sb2_script in enumerate(sb2_obj.scripts):
         sprite.addScript(_convert_to_catrobat_script(sb2_script, sprite))
+    
+    # add implicit scratch behaviour: setLookBrick to scratch object's currentCostumeIndex
+    spriteStartupLookIdx = sb2_obj.get_currentCostumeIndex()
+    if spriteStartupLookIdx is not None:
+        spriteStartupLook = sprite.getLookDataList()[spriteStartupLookIdx]
+        setLookBrick = catbricks.SetLookBrick(sprite)
+        setLookBrick.setLook(spriteStartupLook)
+        
+        def get_or_add_startscript(sprite):
+            for script in sprite.scriptList:
+                if isinstance(script, catbase.StartScript):    
+                    return script
+            else:
+                start_script = catbase.StartScript(sprite)
+                sprite.addScript(0, start_script)
+                return start_script
+        
+        start_script = get_or_add_startscript(sprite)
+        start_script.addBrick(0, setLookBrick)
+    
     return sprite
 
 

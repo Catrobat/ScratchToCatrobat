@@ -1,7 +1,6 @@
 from scratchtobat import common
 import os
 import json
-import java
 
 SCRATCH_SCRIPTS = {
     "whenGreenFlag": None,
@@ -9,7 +8,7 @@ SCRATCH_SCRIPTS = {
     "whenKeyPressed": None,
     "whenSensorGreaterThan": None,
     "whenSceneStarts": None,
-    } 
+    }
 
 
 class DictAccessWrapper(object):
@@ -21,7 +20,7 @@ class DictAccessWrapper(object):
                     return self._raw_data[json_key]
                 return access_json_data
         
-        raise AttributeError
+        raise AttributeError("'{}' object has no attribute '{}'".format(self.__class__.__name__, name))
 
 
 class Project(object):
@@ -36,7 +35,7 @@ class Project(object):
         # TODO: property
         self.stage_data = None
         self.objects_data = [_ for _ in self.project_data["children"] if "objName" in _]
-        self.objects = [Object(_) for _ in self.objects_data]
+        self.objects = [Object(_) for _ in [self.project_data] + self.objects_data]
         
     def load_json_file(self, json_file):
         if not os.path.exists(json_file):
@@ -58,7 +57,6 @@ class Project(object):
 
 class ProjectError(common.ScratchtobatError):
     pass
-
 
 
 class Object(DictAccessWrapper):
@@ -88,10 +86,10 @@ class Script(object):
         if not self.is_valid_script_input(json_input):
             raise ScriptError("Input is no valid Scratch sb2 json script.")
         script_content = json_input[2]
-        self.script_id = script_content[0][0]
-        if not self.script_id in SCRATCH_SCRIPTS:
-            raise ScriptError("Unknown sb2 script type: {}".format(self.script_id))
-        self.script_bricks = script_content[1:]
+        self.script_type = script_content[0][0]
+        if not self.script_type in SCRATCH_SCRIPTS:
+            raise ScriptError("Unknown sb2 script type: {}".format(self.script_type))
+        self.bricks = script_content[1:]
 
     @classmethod
     def is_valid_script_input(cls, json_input):
@@ -100,7 +98,7 @@ class Script(object):
             isinstance(json_input[0], int) and isinstance(json_input[1], int) and isinstance(json_input[2], list))
     
     def get_type(self):
-        return self.script_id
+        return self.script_type
         
     def get_raw_bricks(self):
         def get_bricks_recursively(nested_bricks):
@@ -120,8 +118,16 @@ class Script(object):
                     continue
             return result
         
-        return get_bricks_recursively(self.script_bricks)
+        return get_bricks_recursively(self.bricks)
 
 
 class ScriptError(common.ScratchtobatError):
+    pass
+
+
+class Costume(object):
+    pass
+
+
+class CostumeError(common.ScratchtobatError):
     pass

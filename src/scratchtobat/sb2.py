@@ -10,15 +10,18 @@ SCRATCH_SCRIPTS = {
     "whenSceneStarts": None,
     }
 
+STAGE_HEIGHT_IN_PIXELS = 360
+STAGE_WIDTH_IN_PIXELS = 480
+
 
 class DictAccessWrapper(object):
     def __getattr__(self, name):
         if name.startswith("get_"):
             json_key = name.replace("get_", "")
-            if json_key in self._raw_data:
-                def access_json_data():
-                    return self._raw_data.get(json_key)
-                return access_json_data
+            
+            def access_json_data():
+                return self._raw_data.get(json_key)
+            return access_json_data
         
         raise AttributeError("'{}' object has no attribute '{}'".format(self.__class__.__name__, name))
 

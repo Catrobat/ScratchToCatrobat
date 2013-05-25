@@ -83,9 +83,8 @@ class TestObjectFunc(unittest.TestCase):
         self.project = sb2.Project(testing_common.get_test_project_path(TEST_PROJECT_NAME))
         self.sb2_objects = self.project.objects
     
-    def test_fail_on_wrong_data_access_key(self):
-        with self.assertRaises(AttributeError):
-            self.sb2_objects[0].get_wrongkey()
+    def test_can_call_for_wrong_key_like_regular_dict_get(self):
+        self.assertEqual(None, self.sb2_objects[0].get_wrongkey())
         
     def test_can_access_sb2_scripts(self):
         for sb2_object in self.sb2_objects:

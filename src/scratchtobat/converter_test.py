@@ -35,8 +35,8 @@ class TestConvertExampleProject(testing_common.ScratchtobatTestCase):
         catr_project = converter.convert_to_catrobat_project(self.project)
         self.assertTrue(isinstance(catr_project, catbase.Project), "Converted project is not a catroid project class.")
         
-        self.assertEqual(800, catr_project.getXmlHeader().virtualScreenHeight)
-        self.assertEqual(480, catr_project.getXmlHeader().virtualScreenWidth)
+        self.assertEqual(360, catr_project.getXmlHeader().virtualScreenHeight, "Project height not at Scratch stage size")
+        self.assertEqual(480, catr_project.getXmlHeader().virtualScreenWidth, "Project width not at Scratch stage size")
         
         catr_sprites = catr_project.getSpriteList()
         self.assertTrue(catr_sprites, "No sprites in converted project.")
@@ -49,6 +49,11 @@ class TestConvertExampleProject(testing_common.ScratchtobatTestCase):
         sprite_0 = sprites[0] 
         self.assertEqual("Stage", sprite_0.getName())
         self.assertEqual([catbase.StartScript], [_.__class__ for _ in sprite_0.scriptList])
+        start_script = sprite_0.scriptList[0]
+        # TODO into own test case
+        set_look_brick = start_script.getBrick(0)
+        self.assertTrue(isinstance(set_look_brick, catbricks.SetLookBrick), "Mismatch to Scratch behavior: Implicit SetLookBrick is missing")
+         
         sprite0_looks = sprite_0.getLookDataList()
         self.assertTrue(sprite0_looks, "No looks in sprite1")
         self.assertTrue(all(isinstance(_, catcommon.LookData) for _ in sprite0_looks), "Wrong classes in look list1")
@@ -59,6 +64,16 @@ class TestConvertExampleProject(testing_common.ScratchtobatTestCase):
         sprite_1 = sprites[1]
         self.assertEqual("Sprite1", sprite_1.getName())
         self.assertEqual([catbase.StartScript, catbase.BroadcastScript], [_.__class__ for _ in sprite_1.scriptList])
+        
+        start_script = sprite_1.scriptList[0]
+        # TODO into own test case
+        place_at_brick = start_script.getBrick(1)
+        self.assertTrue(isinstance(place_at_brick, catbricks.PlaceAtBrick), "Mismatch to Scratch behavior: Implicit PlaceAtBrick is missing")
+        self.assertEqual(place_at_brick.xPosition.formulaTree.type, catformula.FormulaElement.ElementType.NUMBER)
+        self.assertEqual(place_at_brick.xPosition.formulaTree.value, str(self.project.objects[1].get_scratchX()))
+        self.assertEqual(place_at_brick.yPosition.formulaTree.type, catformula.FormulaElement.ElementType.NUMBER)
+        self.assertEqual(place_at_brick.yPosition.formulaTree.value, str(self.project.objects[1].get_scratchY())) 
+        
         sprite1_looks = sprite_1.getLookDataList()
         self.assertTrue(sprite1_looks, "No looks in sprite1")
         self.assertTrue(all(isinstance(_, catcommon.LookData) for _ in sprite1_looks), "Wrong classes in look list1")

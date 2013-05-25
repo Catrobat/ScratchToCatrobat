@@ -177,37 +177,37 @@ def _convert_script(sb2script_name, sprite):
 
 def convert_to_catrobat_project(sb2_project):
     catr_project = catbase.Project(None, sb2_project.name)
-    catr_project.getXmlHeader().virtualScreenHeight = 800
-    catr_project.getXmlHeader().virtualScreenWidth = 480
+    catr_project.getXmlHeader().virtualScreenHeight = sb2.STAGE_HEIGHT_IN_PIXELS
+    catr_project.getXmlHeader().virtualScreenWidth = sb2.STAGE_WIDTH_IN_PIXELS
     for _ in sb2_project.objects:
         catr_sprite = _convert_to_catrobat_sprite(_)
         catr_project.addSprite(catr_sprite)
     return catr_project
 
 
-def _convert_to_catrobat_sprite(sb2_obj):
-    if not isinstance(sb2_obj, sb2.Object):
-        raise common.ScratchtobatError("Input must be of type={}, but is={}".format(sb2.Object, type(sb2_obj)))
-    sprite = catbase.Sprite(sb2_obj.get_objName())
+def _convert_to_catrobat_sprite(sb2_object):
+    if not isinstance(sb2_object, sb2.Object):
+        raise common.ScratchtobatError("Input must be of type={}, but is={}".format(sb2.Object, type(sb2_object)))
+    sprite = catbase.Sprite(sb2_object.get_objName())
         
     spriteLooks = sprite.getLookDataList()
-    for sb2_costume in sb2_obj.get_costumes():
+    for sb2_costume in sb2_object.get_costumes():
         spriteLooks.add(_convert_to_catrobat_look(sb2_costume))
         
     spriteSounds = sprite.getSoundList()
-    for sb2_sound in sb2_obj.get_sounds():
+    for sb2_sound in sb2_object.get_sounds():
         spriteSounds.add(_convert_to_catrobat_sound(sb2_sound))
     
     # looks and sounds has to added first because of cross-validations 
-    for idx, sb2_script in enumerate(sb2_obj.scripts):
+    for idx, sb2_script in enumerate(sb2_object.scripts):
         sprite.addScript(_convert_to_catrobat_script(sb2_script, sprite))
     
-    # add implicit scratch behaviour: setLookBrick to scratch object's currentCostumeIndex
-    spriteStartupLookIdx = sb2_obj.get_currentCostumeIndex()
+    # add implicit Scratch behaviour: object's currentCostumeIndex determines active costume at startup
+    spriteStartupLookIdx = sb2_object.get_currentCostumeIndex()
     if spriteStartupLookIdx is not None:
         spriteStartupLook = sprite.getLookDataList()[spriteStartupLookIdx]
-        setLookBrick = catbricks.SetLookBrick(sprite)
-        setLookBrick.setLook(spriteStartupLook)
+        set_look_brick = catbricks.SetLookBrick(sprite)
+        set_look_brick.setLook(spriteStartupLook)
         
         def get_or_add_startscript(sprite):
             for script in sprite.scriptList:
@@ -219,7 +219,14 @@ def _convert_to_catrobat_sprite(sb2_obj):
                 return start_script
         
         start_script = get_or_add_startscript(sprite)
-        start_script.addBrick(0, setLookBrick)
+        start_script.addBrick(0, set_look_brick)
+        # add implicit Scratch behaviour: object's scratchX and scratchY Keys determines object and therefore costume position
+        if sb2_object.get_scratchX() or sb2_object.get_scratchY():
+            # sets possible None to 0
+            x_pos = sb2_object.get_scratchX() or 0
+            y_pos = sb2_object.get_scratchY() or 0
+            place_at_brick = catbricks.PlaceAtBrick(sprite, x_pos, y_pos)
+            start_script.addBrick(1, place_at_brick)
     
     return sprite
 

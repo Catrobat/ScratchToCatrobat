@@ -179,7 +179,7 @@ def convert_to_catrobat_project(sb2_project):
     catr_project = catbase.Project(None, sb2_project.name)
     catr_project.getXmlHeader().virtualScreenHeight = sb2.STAGE_HEIGHT_IN_PIXELS
     catr_project.getXmlHeader().virtualScreenWidth = sb2.STAGE_WIDTH_IN_PIXELS
-    for _ in sb2_project.objects:
+    for _ in sb2_project.project_code.objects:
         catr_sprite = _convert_to_catrobat_sprite(_)
         catr_project.addSprite(catr_sprite)
     return catr_project

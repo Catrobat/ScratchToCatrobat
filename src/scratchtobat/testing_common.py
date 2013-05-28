@@ -1,6 +1,8 @@
 import os
 import unittest
 
+TEST_PROJECT_URLS = ['http://scratch.mit.edu/projects/10205819/'] 
+
 
 def get_test_resources_path():
     return os.path.abspath(os.path.join(os.path.dirname(__file__), "../../test/res"))

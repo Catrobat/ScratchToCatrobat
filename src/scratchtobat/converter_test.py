@@ -29,10 +29,11 @@ class TestConvertExampleProject(testing_common.ScratchtobatTestCase):
         assert System.getProperty("python.security.respectJavaAccessibility") == 'false', "Jython registry property 'python.security.respectJavaAccessibility' must be set to 'false'"
     
     def setUp(self):
-        self.project = TEST_PROJECT
+        self.project_parent = TEST_PROJECT
+        self.project = self.project_parent.project_code
         
     def test_can_convert_complete_project_to_catrobat_project_class(self):
-        catr_project = converter.convert_to_catrobat_project(self.project)
+        catr_project = converter.convert_to_catrobat_project(self.project_parent)
         self.assertTrue(isinstance(catr_project, catbase.Project), "Converted project is not a catroid project class.")
         
         self.assertEqual(360, catr_project.getXmlHeader().virtualScreenHeight, "Project height not at Scratch stage size")
@@ -115,8 +116,8 @@ class TestConvertExampleProject(testing_common.ScratchtobatTestCase):
             self.assertEqual(soundinfo.getSoundFileName(), expected_values[1], "Sound file name wrong")
     
     def test_can_write_sb2_project_to_catrobat_xml(self):
-        catr_project = converter.convert_to_catrobat_project(self.project)
-        common.log.info(catio.StorageHandler.getInstance().getXMLStringOfAProject(catr_project))        
+        catr_project = converter.convert_to_catrobat_project(self.project_parent)
+        common.log.info(catio.StorageHandler.getInstance().getXMLStringOfAProject(catr_project))
 
 
 class TestConvertBricks(unittest.TestCase):

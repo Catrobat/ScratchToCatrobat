@@ -1,5 +1,6 @@
-from scratchtobat import sb2, testing_common
+from scratchtobat import sb2, testing_common, common
 import unittest
+import os
 
 
 EASY_SCRIPTS = [[23, 125,
@@ -30,11 +31,20 @@ class TestProjectInit(unittest.TestCase):
     def test_fail_on_corrupt_sb2_json_input(self):
         with self.assertRaises(sb2.ProjectError):
             # TODO: check error type
-            sb2.Project(testing_common.get_test_project_path("wrong"))
+            sb2.Project(testing_common.get_test_project_path("faulty_json_file"))
 
-
+    def test_fail_on_project_with_missing_image_and_sound_files(self):
+        with self.assertRaises(sb2.ProjectError):
+            # TODO: check error type
+            sb2.Project(testing_common.get_test_project_path("missing_resources"))
+            
+    def test_fail_on_project_with_missing_sound_files(self):
+        with self.assertRaises(sb2.ProjectError):
+            # TODO: check error type
+            sb2.Project(testing_common.get_test_project_path("missing_image_resources"))
+            
+            
 class TestProjectFunc(unittest.TestCase):
-    
     def __init__(self, methodName='runTest', project_name='dancing_castle'):
         unittest.TestCase.__init__(self, methodName=methodName)
         self.project_name = project_name
@@ -42,20 +52,38 @@ class TestProjectFunc(unittest.TestCase):
     def setUp(self):
         self.project = sb2.Project(testing_common.get_test_project_path(self.project_name))
 
+    def test_can_access_project_name(self):
+        self.assertEqual(self.project_name, self.project.name)
+
+
+class TestProjectCodeInit(unittest.TestCase):
+        
+    def test_can_create_on_correct_file(self):
+        self.assertTrue(sb2.ProjectCode(os.path.join(testing_common.get_test_project_path("dancing_castle"), sb2.Project.SCRATCH_PROJECT_CODE_FILE)))
+        self.assertTrue(sb2.ProjectCode(os.path.join(testing_common.get_test_project_path("simple"), sb2.Project.SCRATCH_PROJECT_CODE_FILE)))
+    
+    def test_fail_on_corrupt_file(self):
+        with self.assertRaises(sb2.ProjectCodeError):
+            sb2.ProjectCode(os.path.join(testing_common.get_test_project_path("faulty_json_file"), sb2.Project.SCRATCH_PROJECT_CODE_FILE))
+
+
+class TestProjectCodeFunc(unittest.TestCase):
+    
+    def setUp(self):
+        unittest.TestCase.setUp(self)    
+        self.project_code = sb2.ProjectCode(os.path.join(testing_common.get_test_project_path("dancing_castle"), sb2.Project.SCRATCH_PROJECT_CODE_FILE))
+        
     def test_can_access_input_data(self):
-        json_dict = self.project.get_raw_data()
+        json_dict = self.project_code.get_raw_dict()
         self.assertEquals(json_dict["objName"], "Stage")
         self.assertTrue(json_dict["info"])
 
-    def test_can_access_project_name(self):
-        self.assertEqual(self.project_name, self.project.name)
-        
     def test_can_access_sb2_objects(self):
-        for sb2_object in self.project.objects:
+        for sb2_object in self.project_code.objects:
             self.assertTrue(sb2_object)
             self.assertTrue(isinstance(sb2_object, sb2.Object))
-        self.assertEqual("Stage", self.project.objects[0].get_objName(), "Stage object missing")
-        self.assertEqual(['Stage', 'Sprite1', 'Cassy Dance'], [_.get_objName() for _ in self.project.objects])
+        self.assertEqual("Stage", self.project_code.objects[0].get_objName(), "Stage object missing")
+        self.assertEqual(['Stage', 'Sprite1', 'Cassy Dance'], [_.get_objName() for _ in self.project_code.objects])
 
 
 class TestObjectInit(unittest.TestCase):
@@ -64,7 +92,7 @@ class TestObjectInit(unittest.TestCase):
         self.project = sb2.Project(testing_common.get_test_project_path(TEST_PROJECT_NAME))
         
     def test_can_construct_on_correct_input(self):
-        for obj_data in self.project.objects_data:
+        for obj_data in self.project.project_code.objects_data:
             self.assertTrue(sb2.Object.is_valid_class_input(obj_data))
             self.assertTrue(sb2.Object(obj_data))
     
@@ -81,7 +109,7 @@ class TestObjectFunc(unittest.TestCase):
      
     def setUp(self):
         self.project = sb2.Project(testing_common.get_test_project_path(TEST_PROJECT_NAME))
-        self.sb2_objects = self.project.objects
+        self.sb2_objects = self.project.project_code.objects
     
     def test_can_call_for_wrong_key_like_regular_dict_get(self):
         self.assertEqual(None, self.sb2_objects[0].get_wrongkey())

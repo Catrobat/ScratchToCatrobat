@@ -214,7 +214,7 @@ class CatrobatWriter(object):
                 
         return script_list_node
 
-    def process_script(self):
+    def process_script(self, script):
         # NOT IMPLEMENTED YET
         return None
 

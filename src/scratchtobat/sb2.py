@@ -49,21 +49,20 @@ class Project(object):
         # TODO: property
         self.stage_data = None
         
-        md5_to_resource_path_map = {}
+        self.md5_to_resource_path_map = {}
         for project_dir_file in os.listdir(project_path):
             project_file_path = os.path.join(project_path, project_dir_file)
             with open(project_file_path, 'rb') as fp:
                 file_hash = hashlib.md5(fp.read()).hexdigest()
-            md5_to_resource_path_map[file_hash] = project_file_path 
-        common.log.info(md5_to_resource_path_map)
+            self.md5_to_resource_path_map[file_hash + os.path.splitext(project_file_path)[1]] = project_file_path 
+        common.log.info(self.md5_to_resource_path_map)
         
         def verify_resources(resources):
             for res_dict  in resources:
                 assert sb2keys.MD5_KEY in res_dict or sb2keys.BASELAYERMD5_KEY in res_dict
                 md5_file = res_dict[sb2keys.MD5_KEY] if sb2keys.SOUNDNAME_KEY in res_dict else res_dict[sb2keys.BASELAYERMD5_KEY]
-                resource_path = os.path.join(project_path, md5_file)
                 resource_md5 = os.path.splitext(md5_file)[0]
-                if not resource_md5 in md5_to_resource_path_map:
+                if not md5_file in self.md5_to_resource_path_map:
                     raise ProjectError("Missing resource file. Provide resource with md5: {}".format(resource_md5))
         
         for sb2_object in self.project_code.objects:
@@ -105,7 +104,18 @@ class ProjectCode(DictAccessWrapper):
             return result
         
         return itertools.chain.from_iterable(verify_resources(sb2_object.get_sounds() + sb2_object.get_costumes()) for sb2_object in self.objects)
-            
+    
+    def resource_dict_of_md5_name(self, md5_name):
+        for resource in itertools.chain.from_iterable((sb2_object.get_sounds() + sb2_object.get_costumes()) for sb2_object in self.objects):
+            if resource.get(sb2keys.SOUNDNAME_KEY):
+                if resource[sb2keys.MD5_KEY] == md5_name:
+                    return resource
+            else:
+                if resource[sb2keys.BASELAYERMD5_KEY] == md5_name:
+                    return resource
+        else:
+            return None
+
 
 class Object(DictAccessWrapper):
     

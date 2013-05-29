@@ -7,12 +7,19 @@ import org.catrobat.catroid.content.bricks as catbricks
 import org.catrobat.catroid.io as catio
 import org.catrobat.catroid.formulaeditor as catformula
 from scratchtobat import sb2_test, converter, sb2, common, testing_common, \
-    catrobat
+    catrobat, sb2webapi
 from java.lang import System
+from tempfile import tempdir
+import tempfile
+import shutil
+from zipfile import ZipFile
+import zipfile
+import os
+import glob
 
 
 DUMMY_CATR_SPRITE = catbase.Sprite("Dummy")
-TEST_PROJECT = sb2.Project(testing_common.get_test_project_path("dancing_castle"))
+TEST_PROJECT_PATH = testing_common.get_test_project_path("dancing_castle")
 
 
 class TestConvertExampleProject(testing_common.ScratchtobatTestCase):
@@ -29,9 +36,48 @@ class TestConvertExampleProject(testing_common.ScratchtobatTestCase):
         assert System.getProperty("python.security.respectJavaAccessibility") == 'false', "Jython registry property 'python.security.respectJavaAccessibility' must be set to 'false'"
     
     def setUp(self):
-        self.project_parent = TEST_PROJECT
+        self.project_parent = sb2.Project(TEST_PROJECT_PATH)
         self.project = self.project_parent.project_code
+        self.temp_dir = tempfile.mkdtemp()
+    
+    def test_can_convert_to_catroid_folder_structure_with_svg_to_png(self):
+        count_svg_and_png_files = 0 
+        for md5_name in self.project_parent.md5_to_resource_path_map:
+            common.log.info(md5_name)
+            if os.path.splitext(md5_name)[1] in {".png", ".svg"}:
+                count_svg_and_png_files += 1
+            
+        converter.convert_sb2_project_to_catroid_project_structure(self.project_parent, self.temp_dir)
         
+        images_dir = converter.images_path_of_project(self.temp_dir)
+        self.assertTrue(os.path.exists(images_dir))
+        self.assertTrue(os.listdir(images_dir))
+        sounds_dir = converter.sounds_path_of_project(self.temp_dir)
+        self.assertTrue(os.path.exists(sounds_dir))
+        self.assertTrue(os.listdir(sounds_dir))
+        code_xml_path = os.path.join(self.temp_dir, converter.CATROID_PROJECT_FILE)
+        self.assertTrue(os.path.exists(code_xml_path))
+        self.assertFalse(glob.glob(os.path.join(images_dir, "*.svg")), "Unsupported svg files are in catroid folder.")
+        actual_count = len(glob.glob(os.path.join(images_dir, "*.png")))
+        # TODO: + 1 because of missing penLayerMD5 file
+        self.assertEqual(count_svg_and_png_files, actual_count + 1)
+    
+    def test_can_get_catroid_resource_file_name_of_sb2_resources(self):
+        resource_names_sb2_to_catroid_map = {
+            "83a9787d4cb6f3b7632b4ddfebf74367.wav": "83a9787d4cb6f3b7632b4ddfebf74367_pop.wav",
+            "510da64cf172d53750dffd23fbf73563.png": "510da64cf172d53750dffd23fbf73563_backdrop1.png",
+            "033f926829a446a28970f59302b0572d.png":"033f926829a446a28970f59302b0572d_castle1.png",
+            "83c36d806dc92327b9e7049a565c6bff.wav":"83c36d806dc92327b9e7049a565c6bff_meow.wav"}
+        for resource_name in resource_names_sb2_to_catroid_map:
+            self.assertEqual(resource_names_sb2_to_catroid_map[resource_name], converter.catroid_resource_name_of_sb2_resource(self.project_parent, resource_name))
+    
+    def test_can_convert_to_catroid_zip_from_scratch_url(self):
+        catroid_zip_file = tempfile.NamedTemporaryFile(suffix=".zip")
+        converter.convert_sb2_project_to_catroid_zip(self.project_parent, catroid_zip_file.name)
+        with open(catroid_zip_file.name) as fp:
+            zip_file = zipfile.ZipFile(fp)
+            self.assertTrue(zip_file.testzip())
+    
     def test_can_convert_complete_project_to_catrobat_project_class(self):
         catr_project = converter.convert_to_catrobat_project(self.project_parent)
         self.assertTrue(isinstance(catr_project, catbase.Project), "Converted project is not a catroid project class.")
@@ -118,7 +164,11 @@ class TestConvertExampleProject(testing_common.ScratchtobatTestCase):
     def test_can_write_sb2_project_to_catrobat_xml(self):
         catr_project = converter.convert_to_catrobat_project(self.project_parent)
         common.log.info(catio.StorageHandler.getInstance().getXMLStringOfAProject(catr_project))
-
+        
+    def tearDown(self):
+        testing_common.ScratchtobatTestCase.tearDown(self)
+        shutil.rmtree(self.temp_dir)
+        
 
 class TestConvertBricks(unittest.TestCase):
     

@@ -1,9 +1,18 @@
 import org.catrobat.catroid.common as catcommon
 import org.catrobat.catroid.content as catbase
 import org.catrobat.catroid.content.bricks as catbricks
+import org.catrobat.catroid.io as catio
 from scratchtobat import common, sb2
 from scratchtobat import catrobatwriter as sb2keys
 import os
+import shutil
+import hashlib
+from scratchtobat.tools import svgtopng
+from tempfile import mkstemp
+import tempfile
+import zipfile
+
+CATROID_PROJECT_FILE = "code.xml"
 
 # based on: http://code.google.com/p/sb2-js/source/browse/trunk/editor.htm
 SCRATCH_TO_CATROBAT_MAPPING = {
@@ -323,3 +332,82 @@ def _convert_to_catrobat_sound(sound):
 
 class ConversionError(common.ScratchtobatError):
         pass
+
+
+def convert_sb2_project_to_catroid_zip(project, catroid_zip_file_path):
+    temp_dir = tempfile.mkdtemp()
+    convert_sb2_project_to_catroid_project_structure(project, temp_dir)
+    
+    def zipdir(path, fpzip):
+        for root, dirs, files in os.walk(path):
+            for file in files:
+                fpzip.write(os.path.join(root, file))
+
+    with zipfile.ZipFile(catroid_zip_file_path, 'w') as fpzip:
+        zipdir(temp_dir, fpzip)
+        
+
+def images_path_of_project(temp_dir):
+    return os.path.join(temp_dir, "images")
+
+
+def sounds_path_of_project(temp_dir):
+    return os.path.join(temp_dir, "sounds")
+
+
+def convert_sb2_project_to_catroid_project_structure(project, temp_dir):
+
+    sounds_path = sounds_path_of_project(temp_dir)
+    os.mkdir(sounds_path)
+    images_path = images_path_of_project(temp_dir)
+    os.mkdir(images_path)
+    
+    for md5_name in project.md5_to_resource_path_map:
+        src_path = project.md5_to_resource_path_map[md5_name]
+        file_ext = os.path.splitext(md5_name)[1]
+        converted_file = False                
+        if file_ext == ".svg":
+            # TODO: refactor
+            resource = project.project_code.resource_dict_of_md5_name(md5_name)
+            assert resource, md5_name
+            png_path = svgtopng.convert(src_path)
+            with open(png_path, "rb") as fp:
+                md5_hash = hashlib.md5(fp.read()).hexdigest()
+            assert sb2keys.BASELAYERMD5_KEY in resource, resource
+            md5_name = resource[sb2keys.BASELAYERMD5_KEY] = md5_hash + ".png"
+            src_path = png_path
+            converted_file = True
+        elif file_ext in {".png"}:
+            target_dir = images_path
+        elif file_ext in {".wav"}:
+            target_dir = sounds_path
+        else:
+            assert file_ext in {".json"}, md5_name
+            continue
+        
+        catroid_file_name = catroid_resource_name_of_sb2_resource(project, md5_name)
+        # WORKAROUND: for  "penLayerMD5": "279467d0d49e152706ed66539b577c00.png",
+        if not catroid_file_name:
+            continue
+        shutil.copyfile(src_path, os.path.join(target_dir, catroid_file_name))
+        if converted_file:
+            os.remove(src_path)
+
+    catroid_project = convert_to_catrobat_project(project)
+    code_xml_content = catio.StorageHandler().getInstance().getXMLStringOfAProject(catroid_project)
+    with open(os.path.join(temp_dir, CATROID_PROJECT_FILE), "wb") as fp:
+        fp.write(code_xml_content)    
+
+
+def catroid_resource_name_of_sb2_resource(project, md5_name):
+    resource = project.project_code.resource_dict_of_md5_name(md5_name)
+    if not resource:
+        return None
+    try:
+        resource_name = resource[sb2keys.SOUNDNAME_KEY] if sb2keys.SOUNDNAME_KEY in resource else resource[sb2keys.COSTUMENAME_KEY]
+    except KeyError:
+        raise ConversionError("Error with: {}, {}".format(md5_name, resource))
+    resource_ext = os.path.splitext(md5_name)[1]
+    catroid_resource_name = md5_name.replace(resource_ext, "_" + resource_name + resource_ext)
+    return catroid_resource_name
+

@@ -85,6 +85,17 @@ class TestProjectCodeFunc(unittest.TestCase):
         self.assertEqual("Stage", self.project_code.objects[0].get_objName(), "Stage object missing")
         self.assertEqual(['Stage', 'Sprite1', 'Cassy Dance'], [_.get_objName() for _ in self.project_code.objects])
 
+    def test_can_access_sound_and_costume_by_md5_name(self):
+        resource_names_sb2_to_catroid_map = {
+            "83a9787d4cb6f3b7632b4ddfebf74367.wav": "83a9787d4cb6f3b7632b4ddfebf74367_pop.wav",
+            "510da64cf172d53750dffd23fbf73563.png": "510da64cf172d53750dffd23fbf73563_backdrop1.png",
+            "033f926829a446a28970f59302b0572d.png":"033f926829a446a28970f59302b0572d_castle1.png",
+            "83c36d806dc92327b9e7049a565c6bff.wav":"83c36d806dc92327b9e7049a565c6bff_meow.wav"}
+        for resource_name in resource_names_sb2_to_catroid_map:
+            data_dict = self.project_code.resource_dict_of_md5_name(resource_name)
+            self.assertTrue(data_dict)
+            self.assertTrue("soundName" in data_dict or "costumeName" in data_dict, "No sound or costume data dict")
+
 
 class TestObjectInit(unittest.TestCase):
       

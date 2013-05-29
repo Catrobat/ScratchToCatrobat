@@ -163,7 +163,7 @@ class TestConvertExampleProject(testing_common.ScratchtobatTestCase):
     
     def test_can_write_sb2_project_to_catrobat_xml(self):
         catr_project = converter.convert_to_catrobat_project(self.project_parent)
-        common.log.info(catio.StorageHandler.getInstance().getXMLStringOfAProject(catr_project))
+#         common.log.info(catio.StorageHandler.getInstance().getXMLStringOfAProject(catr_project))
         
     def tearDown(self):
         testing_common.ScratchtobatTestCase.tearDown(self)
@@ -197,7 +197,9 @@ class TestConvertBricks(unittest.TestCase):
         sb2_brick = ["wait:elapsed:from:", 1]
         [catr_brick] = converter._convert_to_catrobat_bricks(sb2_brick, DUMMY_CATR_SPRITE)
         self.assertTrue(isinstance(catr_brick, catbricks.WaitBrick))
-        self.assertTrue(catrobat.compare_formulas(catr_brick.timeToWaitInSeconds, catformula.Formula(1.0 / 1000)))
+        formula_seconds = catr_brick.timeToWaitInSeconds.formulaTree
+        self.assertEqual(formula_seconds.type, catformula.FormulaElement.ElementType.NUMBER)
+        self.assertEqual(formula_seconds.value, "1.0")
 
     def test_fail_convert_playsound_brick_if_sound_missing(self):
         sb2_brick = ["playSound:", "bird"]

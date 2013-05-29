@@ -32,7 +32,7 @@ SCRATCH_TO_CATROBAT_MAPPING = {
     "broadcast:": None,
     "doReturn": None,
     "doWaitUntil": None,
-    "wait:elapsed:from:": catbricks.WaitBrick,
+    "wait:elapsed:from:": lambda sprite, time_value: catbricks.WaitBrick(sprite, time_value * 1000),
     "stopAll": None,
     
     # conditionals
@@ -53,6 +53,7 @@ SCRATCH_TO_CATROBAT_MAPPING = {
     "glideSecs:toX:y:elapsed:from:": None,
     "changeXposBy:": None,
     "changeYposBy:": None,
+    "bounceOffEdge": None,
     
     # variables
     "setVar:to:": None,
@@ -71,6 +72,7 @@ SCRATCH_TO_CATROBAT_MAPPING = {
     "putPenDown": None,
     "putPenUp": None,
     "penColor:": None,
+    "changePenSizeBy:": None,
     "changePenHueBy:": None,
     "setPenHueTo:": None,
     "changePenShadeBy:": None,
@@ -270,6 +272,9 @@ def _convert_to_catrobat_bricks(sb2_brick, cat_sprite):
         if brick_name in {'doRepeat', 'doForever'}:
             if brick_name == 'doRepeat':
                 times_value, nested_bricks = brick_arguments
+                if isinstance(times_value, list):
+                    common.log.warning("Unsupported times_value: {}. Set to default (1).".format(times_value))
+                    times_value = 1
                 catr_loop_start_brick = _get_catrobat_class(brick_name)(cat_sprite, times_value)
             elif brick_name == 'doForever':
                 [nested_bricks] = brick_arguments
@@ -365,20 +370,21 @@ def convert_sb2_project_to_catroid_project_structure(project, temp_dir):
     for md5_name in project.md5_to_resource_path_map:
         src_path = project.md5_to_resource_path_map[md5_name]
         file_ext = os.path.splitext(md5_name)[1]
-        converted_file = False                
-        if file_ext == ".svg":
-            # TODO: refactor
-            resource = project.project_code.resource_dict_of_md5_name(md5_name)
-            assert resource, md5_name
-            png_path = svgtopng.convert(src_path)
-            with open(png_path, "rb") as fp:
-                md5_hash = hashlib.md5(fp.read()).hexdigest()
-            assert sb2keys.BASELAYERMD5_KEY in resource, resource
-            md5_name = resource[sb2keys.BASELAYERMD5_KEY] = md5_hash + ".png"
-            src_path = png_path
-            converted_file = True
-        elif file_ext in {".png"}:
+        converted_file = False
+        
+        if file_ext in {".png", ".svg"}:
             target_dir = images_path
+            if file_ext == ".svg":
+                # TODO: refactor
+                resource = project.project_code.resource_dict_of_md5_name(md5_name)
+                assert resource, md5_name
+                png_path = svgtopng.convert(src_path)
+                with open(png_path, "rb") as fp:
+                    md5_hash = hashlib.md5(fp.read()).hexdigest()
+                assert sb2keys.BASELAYERMD5_KEY in resource, resource
+                md5_name = resource[sb2keys.BASELAYERMD5_KEY] = md5_hash + ".png"
+                src_path = png_path
+                converted_file = True
         elif file_ext in {".wav"}:
             target_dir = sounds_path
         else:

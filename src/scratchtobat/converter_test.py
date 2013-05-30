@@ -1,21 +1,14 @@
-from __future__ import unicode_literals
-
-import unittest
+from java.lang import System
+from scratchtobat import converter, sb2, common, testing_common
+import glob
 import org.catrobat.catroid.common as catcommon
 import org.catrobat.catroid.content as catbase
 import org.catrobat.catroid.content.bricks as catbricks
-import org.catrobat.catroid.io as catio
 import org.catrobat.catroid.formulaeditor as catformula
-from scratchtobat import sb2_test, converter, sb2, common, testing_common, \
-    catrobat, sb2webapi
-from java.lang import System
-from tempfile import tempdir
-import tempfile
-import shutil
-from zipfile import ZipFile
-import zipfile
 import os
-import glob
+import shutil
+import tempfile
+import unittest
 
 
 DUMMY_CATR_SPRITE = catbase.Sprite("Dummy")
@@ -36,6 +29,7 @@ class TestConvertExampleProject(testing_common.ScratchtobatTestCase):
         assert System.getProperty("python.security.respectJavaAccessibility") == 'false', "Jython registry property 'python.security.respectJavaAccessibility' must be set to 'false'"
     
     def setUp(self):
+        testing_common.ScratchtobatTestCase.setUp(self)
         self.project_parent = sb2.Project(TEST_PROJECT_PATH)
         self.project = self.project_parent.project_code
         self.temp_dir = tempfile.mkdtemp()
@@ -46,7 +40,7 @@ class TestConvertExampleProject(testing_common.ScratchtobatTestCase):
             common.log.info(md5_name)
             if os.path.splitext(md5_name)[1] in {".png", ".svg"}:
                 count_svg_and_png_files += 1
-            
+                
         converter.convert_sb2_project_to_catroid_project_structure(self.project_parent, self.temp_dir)
         
         images_dir = converter.images_path_of_project(self.temp_dir)
@@ -61,6 +55,14 @@ class TestConvertExampleProject(testing_common.ScratchtobatTestCase):
         actual_count = len(glob.glob(os.path.join(images_dir, "*.png")))
         # TODO: + 1 because of missing penLayerMD5 file
         self.assertEqual(count_svg_and_png_files, actual_count + 1)
+        
+        self.assertCorrectCatroidProjectStructure(self.temp_dir, self.project_parent.name)
+    
+#     def test_can_convert_to_catroid_folder_structure_with_utf_input_json(self):
+#         project = sb2.Project(testing_common.get_test_project_path("simple_utf_test"))
+#         converter.convert_sb2_project_to_catroid_project_structure(project, self.temp_dir)
+#         
+#         self.assertCorrectCatroidProjectStructure(self.temp_dir, project.name)
     
     def test_can_get_catroid_resource_file_name_of_sb2_resources(self):
         resource_names_sb2_to_catroid_map = {
@@ -69,15 +71,25 @@ class TestConvertExampleProject(testing_common.ScratchtobatTestCase):
             "033f926829a446a28970f59302b0572d.png":"033f926829a446a28970f59302b0572d_castle1.png",
             "83c36d806dc92327b9e7049a565c6bff.wav":"83c36d806dc92327b9e7049a565c6bff_meow.wav"}
         for resource_name in resource_names_sb2_to_catroid_map:
-            self.assertEqual(resource_names_sb2_to_catroid_map[resource_name], converter.catroid_resource_name_of_sb2_resource(self.project_parent, resource_name))
+            expected = resource_names_sb2_to_catroid_map[resource_name]
+            self.assertEqual(expected, converter.catroid_resource_name_of_sb2_resource(self.project_parent, resource_name))
+
+    def test_can_convert_sb2_project_to_catroid_zip(self):        
+#         self.addCleanup(lambda: shutil.rmtree(temp_dir))
+        catroid_zip_file_name = os.path.join(self.temp_dir, "project.catroid") 
+        
+        converter.convert_sb2_project_to_catroid_zip(self.project_parent, catroid_zip_file_name) 
+        
+        self.assertCorrectZipFile(catroid_zip_file_name, self.project_parent.name)
     
-    def test_can_convert_to_catroid_zip_from_scratch_url(self):
-        catroid_zip_file = tempfile.NamedTemporaryFile(suffix=".zip")
-        converter.convert_sb2_project_to_catroid_zip(self.project_parent, catroid_zip_file.name)
-        with open(catroid_zip_file.name) as fp:
-            zip_file = zipfile.ZipFile(fp)
-            self.assertTrue(zip_file.testzip())
-    
+#     def test_can_convert_sb2_project_with_utf_to_catroid_zip(self):        
+# #         self.addCleanup(lambda: shutil.rmtree(temp_dir))
+#         catroid_zip_file_name = os.path.join(self.temp_dir, "project.catroid") 
+#         project = sb2.Project(testing_common.get_test_project_path("simple_utf_test"))
+#         converter.convert_sb2_project_to_catroid_zip(project, catroid_zip_file_name) 
+#         
+#         self.assertCorrectZipFile(catroid_zip_file_name, project.name)
+        
     def test_can_convert_complete_project_to_catrobat_project_class(self):
         catr_project = converter.convert_to_catrobat_project(self.project_parent)
         self.assertTrue(isinstance(catr_project, catbase.Project), "Converted project is not a catroid project class.")
@@ -167,6 +179,8 @@ class TestConvertExampleProject(testing_common.ScratchtobatTestCase):
         
     def tearDown(self):
         testing_common.ScratchtobatTestCase.tearDown(self)
+        # FIXME: jython / windows workaround.. reason?
+        
         shutil.rmtree(self.temp_dir)
         
 

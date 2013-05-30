@@ -1,9 +1,8 @@
-from scratchtobat import common
-import os
-import json
+from scratchtobat import catrobatwriter as sb2keys, common
 import hashlib
-from scratchtobat import catrobatwriter as sb2keys
 import itertools
+import json
+import os
 
 SCRATCH_SCRIPTS = {
     "whenGreenFlag": None,
@@ -39,12 +38,13 @@ class Project(object):
         common.log.info("Project for {}".format(project_path))
         if not os.path.isdir(project_path):
             raise ProjectError("Create project path: {}".format(project_path))
-        self.name = os.path.basename(project_path)
+
         json_path = os.path.join(project_path, self.SCRATCH_PROJECT_CODE_FILE)
         try:
             self.project_code = ProjectCode(json_path)
         except ProjectCodeError as e:
             raise ProjectError(e)
+        self.name = self.project_code.get_info().get("projectID")
             
         # TODO: property
         self.stage_data = None
@@ -94,19 +94,19 @@ class ProjectCode(DictAccessWrapper):
     def get_raw_dict(self):
         return self.project_code
 
+    def _resources_of_objects(self):
+        return itertools.chain.from_iterable(_.get_sounds() + _.get_costumes() for _ in self.objects)
+            
     def md5_file_names_of_referenced_resources(self):    
-        def verify_resources(resources):
-            result = []
-            for res_dict  in resources:
-                assert sb2keys.MD5_KEY in res_dict or sb2keys.BASELAYERMD5_KEY in res_dict
-                md5_file_name = res_dict[sb2keys.MD5_KEY] if sb2keys.SOUNDNAME_KEY in res_dict else res_dict[sb2keys.BASELAYERMD5_KEY]
-                result += [md5_file_name]
-            return result
-        
-        return itertools.chain.from_iterable(verify_resources(sb2_object.get_sounds() + sb2_object.get_costumes()) for sb2_object in self.objects)
+        def get_md5_name_of_resource(res_dict):
+            assert sb2keys.MD5_KEY in res_dict or sb2keys.BASELAYERMD5_KEY in res_dict
+            md5_file_name = res_dict[sb2keys.MD5_KEY] if sb2keys.SOUNDNAME_KEY in res_dict else res_dict[sb2keys.BASELAYERMD5_KEY]
+            return md5_file_name
+                
+        return (get_md5_name_of_resource(_) for _ in self._resources_of_objects())
     
     def resource_dict_of_md5_name(self, md5_name):
-        for resource in itertools.chain.from_iterable((sb2_object.get_sounds() + sb2_object.get_costumes()) for sb2_object in self.objects):
+        for resource in self._resources_of_objects():
             if resource.get(sb2keys.SOUNDNAME_KEY):
                 if resource[sb2keys.MD5_KEY] == md5_name:
                     return resource
@@ -123,11 +123,11 @@ class Object(DictAccessWrapper):
         self.object_data = object_data
         if not self.is_valid_class_input(self.object_data):
             raise ObjectError("Input is no valid Scratch json sb2 object.")
-        scripts_data = self.object_data.get('scripts')
-        if scripts_data:
-            self.scripts = [Script(_) for _ in scripts_data]
-        else:
-            self.scripts = []
+        for key in (sb2keys.SOUNDS_KEY, sb2keys.COSTUMES_KEY, sb2keys.SCRIPTS_KEY):
+            if not key in self.object_data:
+                self.object_data[key] = []
+        
+        self.scripts = [Script(_) for _ in self.get_scripts()]
     
     @classmethod
     def is_valid_class_input(cls, object_data):

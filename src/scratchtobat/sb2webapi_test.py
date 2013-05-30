@@ -12,7 +12,7 @@ class WebApiTest(unittest.TestCase):
         self.temp_dir = tempfile.mkdtemp()
 
     def test_can_download_complete_project_from_project_url(self):
-        for project_url in testing_common.TEST_PROJECT_URLS:
+        for project_url in testing_common.TEST_PROJECT_URL_TO_NAME_MAP:
             sb2webapi.download_project(project_url, self.temp_dir)
             self.assertTrue(sb2.Project(self.temp_dir))
 
@@ -22,7 +22,7 @@ class WebApiTest(unittest.TestCase):
                 sb2webapi.download_project(wrong_url, self.temp_dir)
 
     def test_can_get_project_files_from_project_url(self):
-        for project_url in testing_common.TEST_PROJECT_URLS:
+        for project_url in testing_common.TEST_PROJECT_URL_TO_NAME_MAP:
             sb2webapi
 
     def tearDown(self):

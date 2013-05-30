@@ -18,6 +18,7 @@ def download_project(project_url, target_dir):
             HTTP_PROJECT_URL_PREFIX + '<project id>', project_url))
     
     def data_of_request_response(url):
+        common.log.info("Requesting web api url: {}".format(url))
         return urllib2.urlopen(url).read()
     
     def request_project_data(project_id):
@@ -28,7 +29,6 @@ def download_project(project_url, target_dir):
 
     def request_resource_data(md5_file_name):
         request_url = project_resource_request_url(md5_file_name)
-        common.log.info("Resource web api url: {}".format(request_url))
         try:
             response_data = data_of_request_response(request_url)
             verify_hash = hashlib.md5(response_data).hexdigest()

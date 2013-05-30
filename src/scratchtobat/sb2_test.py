@@ -1,6 +1,10 @@
 from scratchtobat import sb2, testing_common, common
-import unittest
+from zipfile import ZipFile
 import os
+import shutil
+import tempfile
+import unittest
+import zipfile
 
 
 EASY_SCRIPTS = [[23, 125,
@@ -15,7 +19,7 @@ EASY_SCRIPTS = [[23, 125,
     [30, 355, [["whenKeyPressed", "space"], ["changeGraphicEffect:by:", "color", 25]]]]
 
 
-TEST_PROJECT_NAME = "dancing_castle"
+TEST_PROJECT_FOLDER = "dancing_castle"
 
 
 class TestProjectInit(unittest.TestCase):
@@ -45,16 +49,20 @@ class TestProjectInit(unittest.TestCase):
             
             
 class TestProjectFunc(unittest.TestCase):
-    def __init__(self, methodName='runTest', project_name='dancing_castle'):
+    def __init__(self, methodName='runTest',):
         unittest.TestCase.__init__(self, methodName=methodName)
-        self.project_name = project_name
+        self.project_folder = TEST_PROJECT_FOLDER
         
     def setUp(self):
-        self.project = sb2.Project(testing_common.get_test_project_path(self.project_name))
+        self.project = sb2.Project(testing_common.get_test_project_path(self.project_folder))
 
     def test_can_access_project_name(self):
-        self.assertEqual(self.project_name, self.project.name)
-
+        test_project_folder_to_project_name = {
+            "dancing_castle": "10205819",
+            }
+        for project_folder, project_name in test_project_folder_to_project_name.iteritems():
+            project_path = testing_common.get_test_project_path(project_folder)
+            self.assertEqual(project_name, sb2.Project(project_path).name)
 
 class TestProjectCodeInit(unittest.TestCase):
         
@@ -100,7 +108,7 @@ class TestProjectCodeFunc(unittest.TestCase):
 class TestObjectInit(unittest.TestCase):
       
     def setUp(self):
-        self.project = sb2.Project(testing_common.get_test_project_path(TEST_PROJECT_NAME))
+        self.project = sb2.Project(testing_common.get_test_project_path(TEST_PROJECT_FOLDER))
         
     def test_can_construct_on_correct_input(self):
         for obj_data in self.project.project_code.objects_data:
@@ -119,7 +127,7 @@ class TestObjectInit(unittest.TestCase):
 class TestObjectFunc(unittest.TestCase):
      
     def setUp(self):
-        self.project = sb2.Project(testing_common.get_test_project_path(TEST_PROJECT_NAME))
+        self.project = sb2.Project(testing_common.get_test_project_path(TEST_PROJECT_FOLDER))
         self.sb2_objects = self.project.project_code.objects
     
     def test_can_call_for_wrong_key_like_regular_dict_get(self):

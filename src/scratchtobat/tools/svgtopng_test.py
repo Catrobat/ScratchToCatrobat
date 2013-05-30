@@ -3,11 +3,11 @@ Created on 25.05.2013
 
 @author: chr
 '''
-import unittest
-from scratchtobat.tools import svgtopng
 from scratchtobat import testing_common
-import os
+from scratchtobat.tools import svgtopng
 import imghdr
+import os
+import unittest
 
 
 class SvgToPngTest(unittest.TestCase):

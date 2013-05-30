@@ -1,6 +1,6 @@
-import subprocess
-import os
 from scratchtobat import common
+import os
+import subprocess
 
 BATIK_RASTERIZER_JAR_PATH = os.path.join(common.get_project_base_path(), 'lib/batik-1.7/batik-rasterizer.jar')
 

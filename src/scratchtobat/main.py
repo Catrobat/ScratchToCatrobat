@@ -1,5 +1,5 @@
 import sys
-from scratchtobat import sb2webapi, sb2, converter
+from scratchtobat import sb2webapi, sb2, converter, common
 import tempfile
 
 
@@ -12,7 +12,8 @@ def scratchtobat_main(argv):
         sb2webapi.download_project(scratch_project_url, temp_download_dir)
         project = sb2.Project(temp_download_dir)
         converter.convert_sb2_project_to_catroid_zip(project, catroid_zip_path)
-    except Exception:
+    except Exception as e:
+        common.log.exception(e)
         return 1
     return 0
 

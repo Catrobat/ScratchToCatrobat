@@ -28,7 +28,7 @@ if ((!isset($_FILES["filename"]["tmp_name"]) || empty($_FILES["filename"]["tmp_n
 
 $file_or_url = isset($_POST['url']) ? $_POST['url'] : $_FILES["filename"]["tmp_name"];
 $zip_file = replace_extension(tempnam( '/tmp' , 's2c' ), 'zip');
-$cmd = JYTHON_EXE.' '.S2C_MAIN.' '.$file_or_url.' '.$zip_file;
+$cmd = JYTHON_EXE.' '.S2C_MAIN.' '.escapeshellcmd($file_or_url).' '.$zip_file;
 $sys_rv = exec($cmd);
 if ($sys_rv == 1 || !file_exists($zip_file))
 {

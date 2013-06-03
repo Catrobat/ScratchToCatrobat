@@ -16,6 +16,10 @@ TEST_PROJECT_URL_TO_NAME_MAP = {
    
     }
 
+TEST_PROJECT_FILES_TO_NAME_MAP = {
+    'dancing_castle.sb2' : '10205819'
+    
+    }
 
 def get_test_resources_path():
     return os.path.abspath(os.path.join(os.path.dirname(__file__), "../../test/res"))
@@ -23,6 +27,10 @@ def get_test_resources_path():
 
 def get_test_project_path(project_folder):
     return os.path.join(get_test_resources_path(), "sb2", project_folder)
+
+def get_test_project_unpacked_file(sb2_file):
+    return os.path.join(get_test_resources_path(), "sb2_unpacked", sb2_file)
+
 
 
 class ScratchtobatTestCase(unittest.TestCase):

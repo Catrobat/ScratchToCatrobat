@@ -1,5 +1,5 @@
 import unittest
-import testing_common
+import common_testing
 
 from catrobatwriter import CatrobatWriter
 from scratchtobat import sb2
@@ -8,11 +8,11 @@ from scratchtobat import sb2
 class TestCatrobatWriter(unittest.TestCase):
     
     def setUp(self):
-        self.scratch_reader = sb2.Project(testing_common.get_test_project_path("simple"))
+        self.scratch_reader = sb2.Project(common_testing.get_test_project_path("simple"))
         self.json_dict = self.scratch_reader.get_raw_data()
 
     def test_can_write_simple(self):
-        catrobat_writer = CatrobatWriter(self.json_dict, testing_common.get_test_project_path("simple"))
+        catrobat_writer = CatrobatWriter(self.json_dict, common_testing.get_test_project_path("simple"))
         catrobat_writer.process_dict()
 
         self.assertEquals(catrobat_writer.document.
@@ -27,7 +27,7 @@ class TestCatrobatWriter(unittest.TestCase):
         print catrobat_writer.document.toprettyxml()
 
     def test_can_get_media_files(self):
-        catrobat_writer = CatrobatWriter(self.json_dict, testing_common.get_test_project_path("simple"))
+        catrobat_writer = CatrobatWriter(self.json_dict, common_testing.get_test_project_path("simple"))
         catrobat_writer.process_dict()
         sound_files = catrobat_writer.sound_files
         costume_files = catrobat_writer.costume_files

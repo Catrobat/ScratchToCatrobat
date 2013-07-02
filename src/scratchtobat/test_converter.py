@@ -1,5 +1,5 @@
 from java.lang import System
-from scratchtobat import converter, sb2, common, testing_common
+from scratchtobat import converter, sb2, common, common_testing
 import glob
 import org.catrobat.catroid.common as catcommon
 import org.catrobat.catroid.content as catbase
@@ -12,10 +12,10 @@ import unittest
 
 
 DUMMY_CATR_SPRITE = catbase.Sprite("Dummy")
-TEST_PROJECT_PATH = testing_common.get_test_project_path("dancing_castle")
+TEST_PROJECT_PATH = common_testing.get_test_project_path("dancing_castle")
 
 
-class TestConvertExampleProject(testing_common.ScratchtobatTestCase):
+class TestConvertExampleProject(common_testing.ScratchtobatTestCase):
     
     dummy_sb2_object = sb2.Object({"objName" : "Dummy"})
     
@@ -25,11 +25,11 @@ class TestConvertExampleProject(testing_common.ScratchtobatTestCase):
             catbricks.WaitBrick, catbricks.LoopEndBrick], []]
     
     def __init__(self, methodName='runTest'):
-        testing_common.ScratchtobatTestCase.__init__(self, methodName=methodName)
+        common_testing.ScratchtobatTestCase.__init__(self, methodName=methodName)
         assert System.getProperty("python.security.respectJavaAccessibility") == 'false', "Jython registry property 'python.security.respectJavaAccessibility' must be set to 'false'"
     
     def setUp(self):
-        testing_common.ScratchtobatTestCase.setUp(self)
+        common_testing.ScratchtobatTestCase.setUp(self)
         self.project_parent = sb2.Project(TEST_PROJECT_PATH)
         self.project = self.project_parent.project_code
         self.temp_dir = tempfile.mkdtemp()
@@ -59,7 +59,7 @@ class TestConvertExampleProject(testing_common.ScratchtobatTestCase):
         self.assertCorrectCatroidProjectStructure(self.temp_dir, self.project_parent.name)
     
 #     def test_can_convert_to_catroid_folder_structure_with_utf_input_json(self):
-#         project = sb2.Project(testing_common.get_test_project_path("simple_utf_test"))
+#         project = sb2.Project(common_testing.get_test_project_path("simple_utf_test"))
 #         converter.convert_sb2_project_to_catroid_project_structure(project, self.temp_dir)
 #         
 #         self.assertCorrectCatroidProjectStructure(self.temp_dir, project.name)
@@ -85,7 +85,7 @@ class TestConvertExampleProject(testing_common.ScratchtobatTestCase):
 #     def test_can_convert_sb2_project_with_utf_to_catroid_zip(self):        
 # #         self.addCleanup(lambda: shutil.rmtree(temp_dir))
 #         catroid_zip_file_name = os.path.join(self.temp_dir, "project.catroid") 
-#         project = sb2.Project(testing_common.get_test_project_path("simple_utf_test"))
+#         project = sb2.Project(common_testing.get_test_project_path("simple_utf_test"))
 #         converter.convert_sb2_project_to_catroid_zip(project, catroid_zip_file_name) 
 #         
 #         self.assertCorrectZipFile(catroid_zip_file_name, project.name)
@@ -178,7 +178,7 @@ class TestConvertExampleProject(testing_common.ScratchtobatTestCase):
 #         common.log.info(catio.StorageHandler.getInstance().getXMLStringOfAProject(catr_project))
         
     def tearDown(self):
-        testing_common.ScratchtobatTestCase.tearDown(self)
+        common_testing.ScratchtobatTestCase.tearDown(self)
         # FIXME: jython / windows workaround.. reason?
         
         shutil.rmtree(self.temp_dir)

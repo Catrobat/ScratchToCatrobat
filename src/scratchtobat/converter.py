@@ -22,44 +22,44 @@ SCRATCH_TO_CATROBAT_MAPPING = {
     #===========================================================================
     "whenGreenFlag": catbase.StartScript,
     "whenIReceive": catbase.BroadcastScript,
-    "whenKeyPressed": catbase.BroadcastScript,
+    "whenKeyPressed": lambda sprite, key: catbase.BroadcastScript(sprite, _keyPressedToBroadcastMessage(key)),
     "whenSensorGreaterThan": None,
-    "whenSceneStarts": None, # easy: stage msg broadcast
+    "whenSceneStarts": None,  # easy: stage msg broadcast
     # easy: missing whenSpriteClicked
     
     #===============================================================================
     #  Bricks  
     #===============================================================================
-    "broadcast:": None, # easy
+    "broadcast:": None,  # easy
     "doReturn": None,
     "doWaitUntil": None,
     "wait:elapsed:from:": lambda sprite, time_value: catbricks.WaitBrick(sprite, int(time_value * 1000)),
-    "stopAll": None, 
+    "stopAll": None,
     "stopScripts": None,
     
     # conditionals
     "doForever": catbricks.ForeverBrick,
-    "doIf": None, # easy
-    "doIfElse": None, # easy
+    "doIf": None,  # easy
+    "doIfElse": None,  # easy
     "doRepeat": catbricks.RepeatBrick,
     "doUntil": None,
     
-    "turnRight:": None, # easy
-    "turnLeft:": None, # easy
-    "heading:": None, # easy
+    "turnRight:": None,  # easy
+    "turnLeft:": None,  # easy
+    "heading:": None,  # easy
     "forward:": catbricks.MoveNStepsBrick,
-    "pointTowards:": None, # easy
-    "gotoX:y:": None,# easy
+    "pointTowards:": None,  # easy
+    "gotoX:y:": None,  # easy
    # "xpos:": None, # easy
    # "ypos:": None, # easy
-    "glideSecs:toX:y:elapsed:from:": None, # easy
-    "changeXposBy:": None, # easy
-    "changeYposBy:": None, # easy
-    "bounceOffEdge": None, # easy (screen as now)
+    "glideSecs:toX:y:elapsed:from:": None,  # easy
+    "changeXposBy:": None,  # easy
+    "changeYposBy:": None,  # easy
+    "bounceOffEdge": None,  # easy (screen as now)
     
     # variables
-    "setVar:to:": None, # easy
-    "changeVar:by:": None, # easy
+    "setVar:to:": None,  # easy
+    "changeVar:by:": None,  # easy
     "showVariable:": None,
     "hideVariable:": None,
     
@@ -85,22 +85,22 @@ SCRATCH_TO_CATROBAT_MAPPING = {
     # looks
     "lookLike:": None,
     "nextCostume": catbricks.NextLookBrick,
-    "startScene": catbricks.SetLookBrick, # FIXME: wrong / easy: msg broadcast
-    "nextScene": catbricks.NextLookBrick, # FIXME: wrong / easy: msg broadcast
+    "startScene": catbricks.SetLookBrick,  # FIXME: wrong / easy: msg broadcast
+    "nextScene": catbricks.NextLookBrick,  # FIXME: wrong / easy: msg broadcast
     
     "say:duration:elapsed:from:": None,
     "say:": None,
     "think:duration:elapsed:from:": None,
     "think:": None,
-    "changeGraphicEffect:by:": None, # easy: for ghost, brightness 
-    "setGraphicEffect:to:": None, # easy: for ghost, brightness
-    "filterReset": None, # easy
-    "changeSizeBy:": None, # easy
-    "setSizeTo:": None, # easy
-    "show": None, # easy
-    "hide": None, # easy
-    "comeToFront": None, # easy
-    "goBackByLayers:": None, # easy
+    "changeGraphicEffect:by:": None,  # easy: for ghost, brightness 
+    "setGraphicEffect:to:": None,  # easy: for ghost, brightness
+    "filterReset": None,  # easy
+    "changeSizeBy:": None,  # easy
+    "setSizeTo:": None,  # easy
+    "show": None,  # easy
+    "hide": None,  # easy
+    "comeToFront": None,  # easy
+    "goBackByLayers:": None,  # easy
     
     # sound
     "playSound:": catbricks.PlaySoundBrick,
@@ -122,7 +122,7 @@ SCRATCH_TO_CATROBAT_MAPPING = {
     ###############################
     # reporter blocks
     ################################
-    "+": None, # easy start
+    "+": None,  # easy start
     "-": None,
     "*": None,
     "\/": None,
@@ -132,16 +132,16 @@ SCRATCH_TO_CATROBAT_MAPPING = {
     ">": None,
     "&": None,
     "|": None,
-    "not": None, # easy end
+    "not": None,  # easy end
     "concatenate:with:": None,
     "letter:of:": None,
     "stringLength:": None,
     "\\\\": None,
-    "rounded": None, # easy
-    "computeFunction:of:": None, # easy
+    "rounded": None,  # easy
+    "computeFunction:of:": None,  # easy
     
     # variables
-    "readVariable": None, # easy
+    "readVariable": None,  # easy
     
     # lists
     "getLine:ofList:": None,
@@ -162,13 +162,13 @@ SCRATCH_TO_CATROBAT_MAPPING = {
     "getAttribute:of:": None,
     
     # motion
-    "xpos": None, # easy
-    "ypos": None, # easy
-    "heading": None, # easy
+    "xpos": None,  # easy
+    "ypos": None,  # easy
+    "heading": None,  # easy
     
     # looks
-    "costumeIndex": None, 
-    "scale": None, # easy
+    "costumeIndex": None,
+    "scale": None,  # easy
 }
 
 
@@ -187,8 +187,8 @@ def _get_catrobat_class(sb2name):
     return java_class
 
 
-def _convert_script(sb2script_name, sprite):
-    return _get_catrobat_class(sb2script_name)(sprite)
+def _convert_script(sb2script_name, sprite, arguments):
+    return _get_catrobat_class(sb2script_name)(sprite, *arguments)
 
 
 def convert_to_catrobat_project(sb2_project):
@@ -258,7 +258,7 @@ def _convert_to_catrobat_script(sb2_script, sprite):
     if sprite and not isinstance(sprite, catbase.Sprite):
         raise common.ScratchtobatError("Arg2 must be of type={}, but is={}".format(catbase.Sprite, type(sprite)))
 
-    cat_script = _convert_script(sb2_script.script_type, sprite)
+    cat_script = _convert_script(sb2_script.type, sprite, sb2_script.arguments)
     for sb2_brick in sb2_script.bricks:
         cat_bricks = _convert_to_catrobat_bricks(sb2_brick, sprite)
         for brick in cat_bricks:
@@ -269,7 +269,7 @@ def _convert_to_catrobat_script(sb2_script, sprite):
 def _convert_to_catrobat_bricks(sb2_brick, cat_sprite):
     common.log.debug("Brick to convert={}".format(sb2_brick))
     if not sb2_brick or not (isinstance(sb2_brick, list) and isinstance(sb2_brick[0], (str, unicode))):
-        raise common.ScratchtobatError("Wrong arg1, must be list with string as first element: {}".format(sb2_brick))
+        raise common.ScratchtobatError("Wrong arg1, must be list with string as first element: {!r}".format(sb2_brick))
     if not isinstance(cat_sprite, catbase.Sprite):
         raise common.ScratchtobatError("Wrong arg2, must be of type={}, but is={}".format(catbase.Sprite, type(cat_sprite)))
     if not sb2_brick[0] in SCRATCH_TO_CATROBAT_MAPPING:
@@ -447,4 +447,8 @@ def catroid_resource_name_of_sb2_resource(project, md5_name):
     resource_ext = os.path.splitext(md5_name)[1]
     catroid_resource_name = md5_name.replace(resource_ext, "_" + resource_name + resource_ext)
     return catroid_resource_name
+
+
+def _keyPressedToBroadcastMessage(keyName):
+    return "key" + keyName + "Pressed"
 

@@ -143,9 +143,11 @@ class Script(object):
         if not self.is_valid_script_input(json_input):
             raise ScriptError("Input is no valid Scratch sb2 json script.")
         script_content = json_input[2]
-        self.script_type = script_content[0][0]
-        if not self.script_type in SCRATCH_SCRIPTS:
-            raise ScriptError("Unknown sb2 script type: {}".format(self.script_type))
+        script_settings = script_content[0]
+        self.type = script_settings[0]
+        self.arguments = script_settings[1:]
+        if not self.type in SCRATCH_SCRIPTS:
+            raise ScriptError("Unknown sb2 script type: {}".format(self.type))
         self.bricks = script_content[1:]
 
     @classmethod
@@ -155,7 +157,7 @@ class Script(object):
             isinstance(json_input[0], int) and isinstance(json_input[1], int) and isinstance(json_input[2], list))
     
     def get_type(self):
-        return self.script_type
+        return self.type
         
     def get_raw_bricks(self):
         def get_bricks_recursively(nested_bricks):

@@ -130,8 +130,10 @@ class TestConvertExampleProject(common_testing.ScratchtobatTestCase):
         self.assertTrue(isinstance(place_at_brick, catbricks.PlaceAtBrick), "Mismatch to Scratch behavior: Implicit PlaceAtBrick is missing")
         self.assertEqual(place_at_brick.xPosition.formulaTree.type, catformula.FormulaElement.ElementType.NUMBER)
         self.assertEqual(place_at_brick.xPosition.formulaTree.value, str(self.project.objects[1].get_scratchX()))
-        self.assertEqual(place_at_brick.yPosition.formulaTree.type, catformula.FormulaElement.ElementType.NUMBER)
-        self.assertEqual(place_at_brick.yPosition.formulaTree.value, str(self.project.objects[1].get_scratchY())) 
+        self.assertEqual(place_at_brick.yPosition.formulaTree.type, catformula.FormulaElement.ElementType.OPERATOR)
+        self.assertEqual(place_at_brick.yPosition.formulaTree.value, "MINUS")
+        self.assertEqual(place_at_brick.yPosition.formulaTree.rightChild.type, catformula.FormulaElement.ElementType.NUMBER)
+        self.assertEqual(place_at_brick.yPosition.formulaTree.rightChild.value, str(-self.project.objects[1].get_scratchY())) 
         
         sprite1_looks = sprite_1.getLookDataList()
         self.assertTrue(sprite1_looks, "No looks in sprite1")
@@ -231,6 +233,22 @@ class TestConvertBricks(unittest.TestCase):
         sb2_brick = ["nextCostume"]
         [catr_brick] = converter._convert_to_catrobat_bricks(sb2_brick, DUMMY_CATR_SPRITE)
         self.assertTrue(isinstance(catr_brick, catbricks.NextLookBrick))
+
+
+class TestConvertScripts(unittest.TestCase):
+    
+    def test_can_convert_broadcast_script(self):
+        sb2_script = sb2.Script([30, 355, [["whenIReceive", "space"], ["changeGraphicEffect:by:", "color", 25]]])
+        catr_script = converter._convert_to_catrobat_script(sb2_script, DUMMY_CATR_SPRITE)
+        self.assertTrue(isinstance(catr_script, catbase.BroadcastScript))
+        self.assertEqual("space", catr_script.getBroadcastMessage())
+        
+    def test_can_convert_keypressed_script(self):
+        sb2_script = sb2.Script([30, 355, [["whenKeyPressed", "space"], ["changeGraphicEffect:by:", "color", 25]]])
+        catr_script = converter._convert_to_catrobat_script(sb2_script, DUMMY_CATR_SPRITE)
+        # KeyPressed-scripts are represented with broadcast-scripts with a special key-message
+        self.assertTrue(isinstance(catr_script, catbase.BroadcastScript))
+        self.assertEqual(converter._keyPressedToBroadcastMessage("space"), catr_script.getBroadcastMessage())
 
 
 if __name__ == "__main__":

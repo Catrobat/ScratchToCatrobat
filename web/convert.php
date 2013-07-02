@@ -11,7 +11,7 @@ DEFINE('S2C_MAIN', '..\src\scratchtobat\main.py');
 function replace_extension($filename, $new_extension) 
 {
     $info = pathinfo($filename);
-    return $info['filename'] . '.' . $new_extension;
+    return $info['dirname'].DIRECTORY_SEPARATOR.$info['filename'] . '.' . $new_extension;
 }
 
 
@@ -26,26 +26,22 @@ if ((!isset($_FILES["filename"]["tmp_name"]) || empty($_FILES["filename"]["tmp_n
     die("No file selected to convert!");
 }
 
+$file_or_url = isset($_POST['url']) ? $_POST['url'] : $_FILES["filename"]["tmp_name"];
+$zip_file = replace_extension(tempnam( '/tmp' , 's2c' ), 'zip');
+$cmd = JYTHON_EXE.' '.S2C_MAIN.' '.escapeshellcmd($file_or_url).' '.$zip_file;
+$sys_rv = exec($cmd);
+if ($sys_rv == 1 || !file_exists($zip_file))
+{
+    die("Conversion failed!");
+}
 
-echo $_FILES["filename"]["tmp_name"];
-$tmpfile =  replace_extension(tempnam( '/tmp' , 's2c' ), 'zip');
-echo $tmpfile;
-
-exit;
-
-$cmd = JYTHON_EXE.' '.S2C_MAIN;
-system($cmd);
-
-
-#dummy download 
-$yourfile = "hello.sb2.zip";
-
-$file_name = basename($yourfile);
+# force download
+$file_name = basename($zip_file);
 
 header("Content-Type: application/zip");
 header("Content-Disposition: attachment; filename=$file_name");
-header("Content-Length: " . filesize($yourfile));
+header("Content-Length: " . filesize($zip_file));
 
-readfile($yourfile);
+readfile($zip_file);
 
 ?>

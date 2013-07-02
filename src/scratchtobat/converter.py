@@ -24,41 +24,42 @@ SCRATCH_TO_CATROBAT_MAPPING = {
     "whenIReceive": catbase.BroadcastScript,
     "whenKeyPressed": catbase.BroadcastScript,
     "whenSensorGreaterThan": None,
-    "whenSceneStarts": None,
+    "whenSceneStarts": None, # easy: stage msg broadcast
+    # easy: missing whenSpriteClicked
     
     #===============================================================================
     #  Bricks  
     #===============================================================================
-    "broadcast:": None,
+    "broadcast:": None, # easy
     "doReturn": None,
     "doWaitUntil": None,
     "wait:elapsed:from:": lambda sprite, time_value: catbricks.WaitBrick(sprite, int(time_value * 1000)),
-    "stopAll": None,
+    "stopAll": None, 
     "stopScripts": None,
     
     # conditionals
     "doForever": catbricks.ForeverBrick,
-    "doIf": None,
-    "doIfElse": None,
+    "doIf": None, # easy
+    "doIfElse": None, # easy
     "doRepeat": catbricks.RepeatBrick,
     "doUntil": None,
     
-    "turnRight:": None,
-    "turnLeft:": None,
-    "heading:": None,
+    "turnRight:": None, # easy
+    "turnLeft:": None, # easy
+    "heading:": None, # easy
     "forward:": catbricks.MoveNStepsBrick,
-    "pointTowards:": None,
-    "gotoX:y:": None,
-    "xpos:": None,
-    "ypos:": None,
-    "glideSecs:toX:y:elapsed:from:": None,
-    "changeXposBy:": None,
-    "changeYposBy:": None,
-    "bounceOffEdge": None,
+    "pointTowards:": None, # easy
+    "gotoX:y:": None,# easy
+   # "xpos:": None, # easy
+   # "ypos:": None, # easy
+    "glideSecs:toX:y:elapsed:from:": None, # easy
+    "changeXposBy:": None, # easy
+    "changeYposBy:": None, # easy
+    "bounceOffEdge": None, # easy (screen as now)
     
     # variables
-    "setVar:to:": None,
-    "changeVar:by:": None,
+    "setVar:to:": None, # easy
+    "changeVar:by:": None, # easy
     "showVariable:": None,
     "hideVariable:": None,
     
@@ -84,22 +85,22 @@ SCRATCH_TO_CATROBAT_MAPPING = {
     # looks
     "lookLike:": None,
     "nextCostume": catbricks.NextLookBrick,
-    "startScene": catbricks.SetLookBrick,
-    "nextScene": catbricks.NextLookBrick,
+    "startScene": catbricks.SetLookBrick, # FIXME: wrong / easy: msg broadcast
+    "nextScene": catbricks.NextLookBrick, # FIXME: wrong / easy: msg broadcast
     
     "say:duration:elapsed:from:": None,
     "say:": None,
     "think:duration:elapsed:from:": None,
     "think:": None,
-    "changeGraphicEffect:by:": None,
-    "setGraphicEffect:to:": None,
-    "filterReset": None,
-    "changeSizeBy:": None,
-    "setSizeTo:": None,
-    "show": None,
-    "hide": None,
-    "comeToFront": None,
-    "goBackByLayers:": None,
+    "changeGraphicEffect:by:": None, # easy: for ghost, brightness 
+    "setGraphicEffect:to:": None, # easy: for ghost, brightness
+    "filterReset": None, # easy
+    "changeSizeBy:": None, # easy
+    "setSizeTo:": None, # easy
+    "show": None, # easy
+    "hide": None, # easy
+    "comeToFront": None, # easy
+    "goBackByLayers:": None, # easy
     
     # sound
     "playSound:": catbricks.PlaySoundBrick,
@@ -116,12 +117,12 @@ SCRATCH_TO_CATROBAT_MAPPING = {
     
     # sensing
     "doAsk": None,
-    "timerReset"
+    "timerReset": None,
     
     ###############################
     # reporter blocks
     ################################
-    "+": None,
+    "+": None, # easy start
     "-": None,
     "*": None,
     "\/": None,
@@ -131,16 +132,16 @@ SCRATCH_TO_CATROBAT_MAPPING = {
     ">": None,
     "&": None,
     "|": None,
-    "not": None,
+    "not": None, # easy end
     "concatenate:with:": None,
     "letter:of:": None,
     "stringLength:": None,
     "\\\\": None,
-    "rounded": None,
-    "computeFunction:of:": None,
+    "rounded": None, # easy
+    "computeFunction:of:": None, # easy
     
     # variables
-    "readVariable": None,
+    "readVariable": None, # easy
     
     # lists
     "getLine:ofList:": None,
@@ -161,13 +162,13 @@ SCRATCH_TO_CATROBAT_MAPPING = {
     "getAttribute:of:": None,
     
     # motion
-    "xpos": None,
-    "ypos": None,
-    "heading": None,
+    "xpos": None, # easy
+    "ypos": None, # easy
+    "heading": None, # easy
     
     # looks
-    "costumeIndex": None,
-    "scale": None,
+    "costumeIndex": None, 
+    "scale": None, # easy
 }
 
 

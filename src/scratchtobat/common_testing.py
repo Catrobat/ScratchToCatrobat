@@ -8,8 +8,8 @@ import zipfile
 
 TEST_PROJECT_URL_TO_NAME_MAP = {
 #     'http://scratch.mit.edu/projects/10205819/': '10205819',
-    'http://scratch.mit.edu/projects/10132588/': '10132588',
-    'http://scratch.mit.edu/projects/10203872/': '10203872',
+#     'http://scratch.mit.edu/projects/10132588/': '10132588',
+#     'http://scratch.mit.edu/projects/10203872/': '10203872',
 #     'http://scratch.mit.edu/projects/10189712/': '10189712',
 #     'http://scratch.mit.edu/projects/10530876/': '10530876',
    'http://scratch.mit.edu/projects/10453283/':  '10453283',

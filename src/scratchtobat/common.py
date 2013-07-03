@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import hashlib
 try:
     from cStringIO import StringIO
 except:
@@ -36,3 +37,10 @@ def capture_stdout():
 
 class ScratchtobatError(Exception):
     pass
+
+
+def md5_hash(input_path):
+    with open(input_path, "rb") as fp:
+        return hashlib.md5(fp.read()).hexdigest()
+
+

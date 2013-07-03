@@ -1,5 +1,5 @@
 import sys
-from scratchtobat import sb2webapi, sb2, converter, common, sb2extractor
+from scratchtobat import sb2webapi, sb2, sb2tocatrobat, common, sb2extractor
 import tempfile
 
 EXIT_SUCCESS = 0
@@ -16,7 +16,7 @@ def scratchtobat_main(argv):
         else:
             sb2extractor.extract_project(scratch_project_file_or_url, temp_download_dir)
         project = sb2.Project(temp_download_dir)
-        converter.convert_sb2_project_to_catroid_zip(project, catroid_zip_path)
+        sb2tocatrobat.convert_sb2_project_to_catroid_zip(project, catroid_zip_path)
     except Exception as e:
         common.log.exception(e)
         return EXIT_FAILURE

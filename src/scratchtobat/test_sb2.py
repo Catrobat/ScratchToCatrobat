@@ -24,7 +24,7 @@ TEST_PROJECT_FOLDER = "dancing_castle"
 
 class TestProjectInit(unittest.TestCase):
     def test_can_construct_on_correct_input(self):
-        project = sb2.Project(common_testing.get_test_project_path("simple"))
+        project = sb2.Project(common_testing.get_test_project_path("simple"), name="dummy")
         self.assertTrue(project, "No project object")
 
     def test_fail_on_non_existing_input_path(self):
@@ -64,6 +64,11 @@ class TestProjectFunc(unittest.TestCase):
             project_path = common_testing.get_test_project_path(project_folder)
             self.assertEqual(project_name, sb2.Project(project_path).name)
 
+    def test_can_access_md5_name_of_stage_costumes(self):
+        expected_stage_customes_md5_names = set(["510da64cf172d53750dffd23fbf73563.png", "033f926829a446a28970f59302b0572d.png"])
+        self.assertEqual(expected_stage_customes_md5_names, set(self.project.background_md5_names))
+
+
 class TestProjectCodeInit(unittest.TestCase):
         
     def test_can_create_on_correct_file(self):
@@ -100,9 +105,12 @@ class TestProjectCodeFunc(unittest.TestCase):
             "033f926829a446a28970f59302b0572d.png":"033f926829a446a28970f59302b0572d_castle1.png",
             "83c36d806dc92327b9e7049a565c6bff.wav":"83c36d806dc92327b9e7049a565c6bff_meow.wav"}
         for resource_name in resource_names_sb2_to_catroid_map:
-            data_dict = self.project_code.resource_dict_of_md5_name(resource_name)
-            self.assertTrue(data_dict)
-            self.assertTrue("soundName" in data_dict or "costumeName" in data_dict, "No sound or costume data dict")
+            for data_dict in self.project_code.resource_dicts_of_md5_name(resource_name):
+                self.assertTrue("soundName" in data_dict or "costumeName" in data_dict, "No sound or costume data dict")
+
+    def test_can_access_stage_object(self):
+        stage_object = self.project_code.stage_object
+        self.assertEqual("Stage", stage_object.get_objName())
 
 
 class TestObjectInit(unittest.TestCase):

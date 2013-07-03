@@ -53,24 +53,26 @@ class DictAccessWrapper(object):
 class Project(object):
     SCRATCH_PROJECT_CODE_FILE = "project.json"
     
-    def __init__(self, project_path):
-        common.log.info("Project for {}".format(project_path))
-        if not os.path.isdir(project_path):
-            raise ProjectError("Create project path: {}".format(project_path))
+    def __init__(self, input_path, name=None):
+        common.log.info("Project for {}".format(input_path))
+        if not os.path.isdir(input_path):
+            raise ProjectError("Project not found at: {}. Please create project.".format(input_path))
 
-        json_path = os.path.join(project_path, self.SCRATCH_PROJECT_CODE_FILE)
+        json_path = os.path.join(input_path, self.SCRATCH_PROJECT_CODE_FILE)
         try:
             self.project_code = ProjectCode(json_path)
         except ProjectCodeError as e:
             raise ProjectError(e)
-        self.name = self.project_code.get_info().get("projectID")
-            
-        # TODO: property
-        self.stage_data = None
+        if name:
+            self.name = name
+        else:
+            self.name = self.project_code.get_info().get("projectID")
+        if not self.name:
+            raise ProjectError("No project name specified in project file. Please provide project name with constructor.")
         
         self.md5_to_resource_path_map = {}
-        for project_dir_file in os.listdir(project_path):
-            project_file_path = os.path.join(project_path, project_dir_file)
+        for project_dir_file in os.listdir(input_path):
+            project_file_path = os.path.join(input_path, project_dir_file)
             with open(project_file_path, 'rb') as fp:
                 file_hash = hashlib.md5(fp.read()).hexdigest()
             self.md5_to_resource_path_map[file_hash + os.path.splitext(project_file_path)[1]] = project_file_path 
@@ -87,6 +89,8 @@ class Project(object):
         for sb2_object in self.project_code.objects:
             verify_resources(sb2_object.get_sounds() + sb2_object.get_costumes())
     
+        self.background_md5_names = set([costume[JsonKeys.BASELAYERMD5_KEY] for costume in self.project_code.stage_object.get_costumes()])
+
 
 class ProjectCode(DictAccessWrapper):
     
@@ -95,7 +99,8 @@ class ProjectCode(DictAccessWrapper):
         self.project_code = self.load_json_file(self.json_path)
         self.objects_data = [_ for _ in self.get_children() if "objName" in _]
         self.objects = [Object(_) for _ in [self.project_code] + self.objects_data]
-
+        self.stage_object = self.objects[0]
+    
     def load_json_file(self, json_file):
         if not os.path.exists(json_file):
             raise ProjectError("Provide project data file: {}".format(json_file))
@@ -124,16 +129,12 @@ class ProjectCode(DictAccessWrapper):
                 
         return (get_md5_name_of_resource(_) for _ in self._resources_of_objects())
     
-    def resource_dict_of_md5_name(self, md5_name):
+    def resource_dicts_of_md5_name(self, md5_name):
         for resource in self._resources_of_objects():
-            if resource.get(JsonKeys.SOUNDNAME_KEY):
-                if resource[JsonKeys.MD5_KEY] == md5_name:
-                    return resource
-            else:
-                if resource[JsonKeys.BASELAYERMD5_KEY] == md5_name:
-                    return resource
-        else:
-            return None
+            if resource.get(JsonKeys.MD5_KEY) == md5_name:
+                    yield resource
+            elif resource.get(JsonKeys.BASELAYERMD5_KEY) == md5_name:
+                    yield resource
 
 
 class Object(DictAccessWrapper):

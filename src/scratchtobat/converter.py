@@ -1,5 +1,6 @@
 from codecs import open
-from scratchtobat import catrobatwriter as sb2keys, common, sb2
+from scratchtobat import common, sb2
+from scratchtobat.sb2 import JsonKeys as sb2keys 
 from scratchtobat.tools import svgtopng
 import hashlib
 import org.catrobat.catroid.common as catcommon
@@ -25,12 +26,12 @@ SCRATCH_TO_CATROBAT_MAPPING = {
     "whenKeyPressed": lambda sprite, key: catbase.BroadcastScript(sprite, _keyPressedToBroadcastMessage(key)),
     "whenSensorGreaterThan": None,
     "whenSceneStarts": None,  # easy: stage msg broadcast
-    # easy: missing whenSpriteClicked
+    "whenClicked": catbase.WhenScript,  # easy
     
     #===============================================================================
     #  Bricks  
     #===============================================================================
-    "broadcast:": None,  # easy
+    "broadcast:": catbricks.BroadcastBrick,  # easy
     "doReturn": None,
     "doWaitUntil": None,
     "wait:elapsed:from:": lambda sprite, time_value: catbricks.WaitBrick(sprite, int(time_value * 1000)),
@@ -39,27 +40,25 @@ SCRATCH_TO_CATROBAT_MAPPING = {
     
     # conditionals
     "doForever": catbricks.ForeverBrick,
-    "doIf": None,  # easy
-    "doIfElse": None,  # easy
+    "doIf": [catbricks.IfLogicBeginBrick, catbricks.IfLogicEndBrick],  # easy
+    "doIfElse": [catbricks.IfLogicBeginBrick, catbricks.IfLogicElseBrick, catbricks.IfLogicEndBrick],  # easy
     "doRepeat": catbricks.RepeatBrick,
     "doUntil": None,
     
-    "turnRight:": None,  # easy
-    "turnLeft:": None,  # easy
-    "heading:": None,  # easy
+    "turnRight:": catbricks.TurnRightBrick,  # easy
+    "turnLeft:": catbricks.TurnLeftBrick,  # easy
+    "heading:": catbricks.PointInDirectionBrick,  # easy
     "forward:": catbricks.MoveNStepsBrick,
-    "pointTowards:": None,  # easy
-    "gotoX:y:": None,  # easy
-   # "xpos:": None, # easy
-   # "ypos:": None, # easy
-    "glideSecs:toX:y:elapsed:from:": None,  # easy
-    "changeXposBy:": None,  # easy
-    "changeYposBy:": None,  # easy
-    "bounceOffEdge": None,  # easy (screen as now)
+    "pointTowards:": catbricks.PointToBrick,  # easy
+    "gotoX:y:": catbricks.PlaceAtBrick,  # easy
+    "glideSecs:toX:y:elapsed:from:": catbricks.GlideToBrick,  # easy
+    "changeXposBy:": catbricks.SetXBrick,  # easy
+    "changeYposBy:": catbricks.SetYBrick,  # easy
+    "bounceOffEdge": catbricks.IfOnEdgeBounceBrick,  # easy (screen as now)
     
     # variables
-    "setVar:to:": None,  # easy
-    "changeVar:by:": None,  # easy
+    "setVar:to:": catbricks.SetVariableBrick,  # easy
+    "changeVar:by:": catbricks.ChangeVariableBrick,  # easy
     "showVariable:": None,
     "hideVariable:": None,
     
@@ -85,22 +84,26 @@ SCRATCH_TO_CATROBAT_MAPPING = {
     # looks
     "lookLike:": None,
     "nextCostume": catbricks.NextLookBrick,
-    "startScene": catbricks.SetLookBrick,  # FIXME: wrong / easy: msg broadcast
-    "nextScene": catbricks.NextLookBrick,  # FIXME: wrong / easy: msg broadcast
+    "startScene": None,  # easy: msg broadcast
+    "nextScene": None,  # easy: msg broadcast
     
     "say:duration:elapsed:from:": None,
     "say:": None,
     "think:duration:elapsed:from:": None,
     "think:": None,
-    "changeGraphicEffect:by:": None,  # easy: for ghost, brightness 
-    "setGraphicEffect:to:": None,  # easy: for ghost, brightness
-    "filterReset": None,  # easy
-    "changeSizeBy:": None,  # easy
-    "setSizeTo:": None,  # easy
-    "show": None,  # easy
-    "hide": None,  # easy
-    "comeToFront": None,  # easy
-    "goBackByLayers:": None,  # easy
+    "changeGraphicEffect:by:": lambda sprite, effectType, value: \
+        catbricks.ChangeBrightnessByNBrick(sprite, value) if effectType == 'brightness' else \
+            (catbricks.ChangeGhostEffectByNBrick(sprite, value) if effectType == 'ghost' else None) ,  # easy: for ghost, brightness 
+    "setGraphicEffect:to:": lambda sprite, effectType, value: \
+        catbricks.SetBrightnessBrick(sprite, value) if effectType == 'brightness' else \
+            (catbricks.SetGhostEffectBrick(sprite, value) if effectType == 'ghost' else None) ,  # easy: for ghost, brightness
+    "filterReset": catbricks.ClearGraphicEffectBrick,  # easy
+    "changeSizeBy:": catbricks.ChangeSizeByNBrick,  # easy
+    "setSizeTo:": catbricks.SetSizeToBrick,  # easy
+    "show": catbricks.ShowBrick,  # easy
+    "hide": catbricks.HideBrick,  # easy
+    "comeToFront": catbricks.ComeToFrontBrick,  # easy
+    "goBackByLayers:": catbricks.GoNStepsBackBrick,  # easy
     
     # sound
     "playSound:": catbricks.PlaySoundBrick,
@@ -162,8 +165,8 @@ SCRATCH_TO_CATROBAT_MAPPING = {
     "getAttribute:of:": None,
     
     # motion
-    "xpos": None,  # easy
-    "ypos": None,  # easy
+    "xpos:": None,  # easy
+    "ypos:": None,  # easy
     "heading": None,  # easy
     
     # looks
@@ -191,7 +194,7 @@ def _convert_script(sb2script_name, sprite, arguments):
     return _get_catrobat_class(sb2script_name)(sprite, *arguments)
 
 
-def convert_to_catrobat_project(sb2_project):
+def _convert_to_catrobat_project(sb2_project):
     catr_project = catbase.Project(None, sb2_project.name)
     catr_project.getXmlHeader().virtualScreenHeight = sb2.STAGE_HEIGHT_IN_PIXELS
     catr_project.getXmlHeader().virtualScreenWidth = sb2.STAGE_WIDTH_IN_PIXELS
@@ -306,24 +309,25 @@ def _convert_to_catrobat_bricks(sb2_brick, cat_sprite):
             play_sound_brick.setSoundInfo(lookdata)
             catr_bricks += [play_sound_brick]
 
-        # same structure as 'playSound' above
-        elif brick_name == "startScene":
-            [look_name] = brick_arguments
-            matching_lookdatas = [_ for _ in cat_sprite.getLookDataList() if _.getLookName() == look_name]
-            if not matching_lookdatas:
-                raise ConversionError("Sprite does not contain look with name={}".format(look_name))
-            assert len(matching_lookdatas) == 1
-            [lookdata] = matching_lookdatas
-            set_look_brick = _get_catrobat_class(brick_name)(cat_sprite)
-            set_look_brick.setLook(lookdata)
-            catr_bricks += [set_look_brick]
+#         same structure as 'playSound' above
+#         elif brick_name == "startScene":
+#             [look_name] = brick_arguments
+#             matching_lookdatas = [_ for _ in cat_sprite.getLookDataList() if _.getLookName() == look_name]
+#             if not matching_lookdatas:
+#                 raise ConversionError("Sprite does not contain look with name={}".format(look_name))
+#             assert len(matching_lookdatas) == 1
+#             [lookdata] = matching_lookdatas
+#             set_look_brick = _get_catrobat_class(brick_name)(cat_sprite)
+#             set_look_brick.setLook(lookdata)
+#             catr_bricks += [set_look_brick]
              
         else:
             common.log.debug("Get mapping for {} in {}".format(brick_name, cat_sprite))
             catr_bricks += [_get_catrobat_class(brick_name)(cat_sprite, *brick_arguments)]
     except TypeError as e:
         common.log.exception(e)
-        assert False, "Non-matching arguments: {}".format(brick_arguments)
+        assert False, "Non-matching arguments: {} of SB2 brick '{}'".format(brick_arguments, brick_name)
+        
     return catr_bricks
 
 
@@ -385,55 +389,68 @@ def sounds_path_of_project(temp_dir):
     return os.path.join(temp_dir, "sounds")
 
 
-def convert_sb2_project_to_catroid_project_structure(project, temp_path):
-    sounds_path = sounds_path_of_project(temp_path)
-    os.mkdir(sounds_path)
+def convert_sb2_project_to_catroid_project_structure(sb2_project, temp_path):
     
-    images_path = images_path_of_project(temp_path)
-    os.mkdir(images_path)
-    
-    for _ in (temp_path, sounds_path, images_path):
-        open(os.path.join(_, CATROID_NOMEDIA_FILE), 'a').close()
-    
-    for md5_name in project.md5_to_resource_path_map:
-        src_path = project.md5_to_resource_path_map[md5_name]
-        file_ext = os.path.splitext(md5_name)[1]
-        converted_file = False
+    def create_catroid_directory_structure():
+        sounds_path = sounds_path_of_project(temp_path)
+        os.mkdir(sounds_path)
         
-        if file_ext in {".png", ".svg"}:
-            target_dir = images_path
-            if file_ext == ".svg":
-                # TODO: refactor
-                resource = project.project_code.resource_dict_of_md5_name(md5_name)
-                assert resource, md5_name
-                png_path = svgtopng.convert(src_path)
-                with open(png_path, "rb") as fp:
-                    md5_hash = hashlib.md5(fp.read()).hexdigest()
-                assert sb2keys.BASELAYERMD5_KEY in resource, resource
-                md5_name = resource[sb2keys.BASELAYERMD5_KEY] = md5_hash + ".png"
-                src_path = png_path
-                converted_file = True
-        elif file_ext in {".wav"}:
-            target_dir = sounds_path
-        else:
-            assert file_ext in {".json"}, md5_name
-            continue
+        images_path = images_path_of_project(temp_path)
+        os.mkdir(images_path)
         
-        catroid_file_name = catroid_resource_name_of_sb2_resource(project, md5_name)
-        # WORKAROUND: for  "penLayerMD5": "279467d0d49e152706ed66539b577c00.png",
-        if not catroid_file_name:
-            continue
-        shutil.copyfile(src_path, os.path.join(target_dir, catroid_file_name))
-        if converted_file:
-            os.remove(src_path)
+        for _ in (temp_path, sounds_path, images_path):
+            open(os.path.join(_, CATROID_NOMEDIA_FILE), 'a').close()
+        return sounds_path, images_path
 
-    catroid_project = convert_to_catrobat_project(project)
-    storage_handler = catio.StorageHandler().getInstance()
-    code_xml_content = storage_handler.XML_HEADER
-    code_xml_content += storage_handler.getXMLStringOfAProject(catroid_project)
+    def save_mediafiles_into_catroid_directory_structure():
+        for md5_name, src_path in sb2_project.md5_to_resource_path_map.iteritems():
+            file_ext = os.path.splitext(md5_name)[1]
+            converted_file = False
+            
+            if file_ext in {".png", ".svg"}:
+                target_dir = images_path
+                if file_ext == ".svg":
+                    # TODO: refactor
+                    resource = sb2_project.project_code.resource_dict_of_md5_name(md5_name)
+                    assert resource, md5_name
+                    png_path = svgtopng.convert(src_path)
+                    # TODO: refactor
+                    with open(png_path, "rb") as fp:
+                        md5_hash = hashlib.md5(fp.read()).hexdigest()
+                    assert sb2keys.BASELAYERMD5_KEY in resource, resource
+                    md5_name = resource[sb2keys.BASELAYERMD5_KEY] = md5_hash + ".png"
+                    src_path = png_path
+                    converted_file = True
+            elif file_ext in {".wav"}:
+                target_dir = sounds_path
+            else:
+                assert file_ext in {".json"}, md5_name
+                continue
+            
+            catroid_file_name = catroid_resource_name_of_sb2_resource(sb2_project, md5_name)
+            # WORKAROUND: for e.g. "penLayerMD5": "279467d0d49e152706ed66539b577c00.png",
+            if not catroid_file_name:
+                continue
+            assert os.path.exists(src_path), "Not existing: {}".format(src_path)
+            shutil.copyfile(src_path, os.path.join(target_dir, catroid_file_name))
+            if converted_file:
+                os.remove(src_path)
+                
+    def xml_content_of_catroid_project(catroid_project):
+        storage_handler = catio.StorageHandler().getInstance()
+        code_xml_content = storage_handler.XML_HEADER
+        code_xml_content += storage_handler.getXMLStringOfAProject(catroid_project)
+        return code_xml_content
+    
+    def save_xmlfile_into_catroid_directory_structure():
+        code_xml_content = xml_content_of_catroid_project(_convert_to_catrobat_project(sb2_project))
 
-    with open(os.path.join(temp_path, CATROID_PROJECT_FILE), "wb") as fp:
-        fp.write(code_xml_content)
+        with open(os.path.join(temp_path, CATROID_PROJECT_FILE), "wb") as fp:
+            fp.write(code_xml_content)
+            
+    sounds_path, images_path = create_catroid_directory_structure()
+    save_mediafiles_into_catroid_directory_structure()
+    save_xmlfile_into_catroid_directory_structure()
 
 
 def catroid_resource_name_of_sb2_resource(project, md5_name):

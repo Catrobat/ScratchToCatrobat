@@ -15,4 +15,5 @@ def convert(input_svg_path):
     on_error = subprocess.call(['java', '-jar', BATIK_RASTERIZER_JAR_PATH, input_svg_path])
     if on_error:
         raise common.ScratchtobatError("Extern jar call failed. See piped output.")
+    assert os.path.exists(output_png_path)
     return output_png_path

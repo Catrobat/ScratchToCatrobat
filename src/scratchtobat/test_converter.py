@@ -91,7 +91,7 @@ class TestConvertExampleProject(common_testing.ScratchtobatTestCase):
 #         self.assertCorrectZipFile(catroid_zip_file_name, project.name)
         
     def test_can_convert_complete_project_to_catrobat_project_class(self):
-        catr_project = converter.convert_to_catrobat_project(self.project_parent)
+        catr_project = converter._convert_to_catrobat_project(self.project_parent)
         self.assertTrue(isinstance(catr_project, catbase.Project), "Converted project is not a catroid project class.")
         
         self.assertEqual(360, catr_project.getXmlHeader().virtualScreenHeight, "Project height not at Scratch stage size")
@@ -176,13 +176,12 @@ class TestConvertExampleProject(common_testing.ScratchtobatTestCase):
             self.assertEqual(soundinfo.getSoundFileName(), expected_values[1], "Sound file name wrong")
     
     def test_can_write_sb2_project_to_catrobat_xml(self):
-        catr_project = converter.convert_to_catrobat_project(self.project_parent)
+        catr_project = converter._convert_to_catrobat_project(self.project_parent)
 #         common.log.info(catio.StorageHandler.getInstance().getXMLStringOfAProject(catr_project))
         
     def tearDown(self):
         common_testing.ScratchtobatTestCase.tearDown(self)
         # FIXME: jython / windows workaround.. reason?
-        
         shutil.rmtree(self.temp_dir)
         
 
@@ -249,6 +248,28 @@ class TestConvertScripts(unittest.TestCase):
         # KeyPressed-scripts are represented with broadcast-scripts with a special key-message
         self.assertTrue(isinstance(catr_script, catbase.BroadcastScript))
         self.assertEqual(converter._keyPressedToBroadcastMessage("space"), catr_script.getBroadcastMessage())
+
+    def test_can_convert_whenclicked_script(self):
+        sb2_script = sb2.Script([30, 355, [["whenClicked"], ["changeGraphicEffect:by:", "color", 25]]])
+        catr_script = converter._convert_to_catrobat_script(sb2_script, DUMMY_CATR_SPRITE)
+        # KeyPressed-scripts are represented with broadcast-scripts with a special key-message
+        self.assertTrue(isinstance(catr_script, catbase.WhenScript))
+        self.assertEqual('Tapped', catr_script.getAction())
+
+
+class TestConvertProjects(unittest.TestCase):
+
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        self.temp_dir = tempfile.mkdtemp()
+        
+    def test_can_convert_projects(self):
+        full_test_project = sb2.Project(common_testing.get_test_project_path("full_test"))
+        catroid_zip_file_name = os.path.join(self.temp_dir, "project.catroid") 
+        
+        converter.convert_sb2_project_to_catroid_zip(full_test_project, catroid_zip_file_name) 
+        
+        self.assertCorrectZipFile(catroid_zip_file_name, self.project_parent.name)
 
 
 if __name__ == "__main__":

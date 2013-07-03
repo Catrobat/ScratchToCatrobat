@@ -1,15 +1,15 @@
 import unittest
-from scratchtobat import catrobat
+from scratchtobat import common_testing
 import org.catrobat.catroid.formulaeditor as catformula
 
 
 class TestCatrobatFunc(unittest.TestCase):
 
     def test_can_compare_equal_formulas(self):
-        self.assertTrue(catrobat.compare_formulas(catformula.Formula(0.1), catformula.Formula(0.1)))
+        self.assertTrue(common_testing.compare_formulas(catformula.Formula(0.1), catformula.Formula(0.1)))
 
     def test_can_compare_inequal_formulas(self):
-        self.assertFalse(catrobat.compare_formulas(catformula.Formula(0.1), catformula.Formula(0.01)))
+        self.assertFalse(common_testing.compare_formulas(catformula.Formula(0.1), catformula.Formula(0.01)))
         
         
 if __name__ == "__main__":

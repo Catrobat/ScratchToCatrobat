@@ -2,6 +2,7 @@ from codecs import open
 from scratchtobat import converter
 from xml.etree import ElementTree
 import org.catrobat.catroid.io as catio
+import org.catrobat.catroid.formulaeditor as catformula
 import os
 import unittest
 import zipfile
@@ -75,3 +76,17 @@ class ScratchtobatTestCase(unittest.TestCase):
             code_program_name = root.find("header/programName")
             self.assertIsNotNone(code_program_name, "code.xml corrupt: no programName set in header")
             self.assertEqual(project_name, code_program_name.text,)
+
+
+def compare_formulas(formula1, formula2):
+    assert isinstance(formula1, catformula.Formula)
+    assert isinstance(formula2, catformula.Formula)
+   
+    def _compare_formula_elements(elem1, elem2):
+        if not elem1 and not elem2:
+            return True
+        else:
+            return (elem1.type == elem2.type and elem1.value == elem2.value and _compare_formula_elements(elem1.leftChild, elem2.leftChild) and
+                _compare_formula_elements(elem1.rightChild, elem2.rightChild))
+    
+    return _compare_formula_elements(formula1.formulaTree, formula2.formulaTree)

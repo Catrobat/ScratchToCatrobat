@@ -1,19 +1,38 @@
-from scratchtobat import catrobatwriter as sb2keys, common
+from scratchtobat import  common
 import hashlib
 import itertools
 import json
 import os
+import logging
+
+log = logging.getLogger("scratchtobat.sb2") 
 
 SCRATCH_SCRIPTS = {
-    "whenGreenFlag": None,
-    "whenIReceive": None,
-    "whenKeyPressed": None,
-    "whenSensorGreaterThan": None,
-    "whenSceneStarts": None,
+    "whenGreenFlag",
+    "whenIReceive",
+    "whenKeyPressed",
+    "whenSensorGreaterThan",
+    "whenSceneStarts",
+    "whenClicked",
     }
 
 STAGE_HEIGHT_IN_PIXELS = 360
 STAGE_WIDTH_IN_PIXELS = 480
+
+
+class JsonKeys(object):
+    OBJNAME_KEY = "objName"
+    SOUNDS_KEY = "sounds"
+    COSTUMES_KEY = "costumes"
+    CHILDREN_KEY = "children"
+    SCRIPTS_KEY = "scripts"
+    INFO_KEY = "info"
+    SOUNDNAME_KEY = "soundName"
+    SOUNDID_KEY = "soundID"
+    MD5_KEY = "md5"
+    BASELAYERMD5_KEY = "baseLayerMD5"
+    BASELAYERID_KEY = "baseLayerID"
+    COSTUMENAME_KEY = "costumeName"
 
 
 class DictAccessWrapper(object):
@@ -59,8 +78,8 @@ class Project(object):
         
         def verify_resources(resources):
             for res_dict  in resources:
-                assert sb2keys.MD5_KEY in res_dict or sb2keys.BASELAYERMD5_KEY in res_dict
-                md5_file = res_dict[sb2keys.MD5_KEY] if sb2keys.SOUNDNAME_KEY in res_dict else res_dict[sb2keys.BASELAYERMD5_KEY]
+                assert JsonKeys.MD5_KEY in res_dict or JsonKeys.BASELAYERMD5_KEY in res_dict
+                md5_file = res_dict[JsonKeys.MD5_KEY] if JsonKeys.SOUNDNAME_KEY in res_dict else res_dict[JsonKeys.BASELAYERMD5_KEY]
                 resource_md5 = os.path.splitext(md5_file)[0]
                 if not md5_file in self.md5_to_resource_path_map:
                     raise ProjectError("Missing resource file. Provide resource with md5: {}".format(resource_md5))
@@ -99,19 +118,19 @@ class ProjectCode(DictAccessWrapper):
             
     def md5_file_names_of_referenced_resources(self):    
         def get_md5_name_of_resource(res_dict):
-            assert sb2keys.MD5_KEY in res_dict or sb2keys.BASELAYERMD5_KEY in res_dict
-            md5_file_name = res_dict[sb2keys.MD5_KEY] if sb2keys.SOUNDNAME_KEY in res_dict else res_dict[sb2keys.BASELAYERMD5_KEY]
+            assert JsonKeys.MD5_KEY in res_dict or JsonKeys.BASELAYERMD5_KEY in res_dict
+            md5_file_name = res_dict[JsonKeys.MD5_KEY] if JsonKeys.SOUNDNAME_KEY in res_dict else res_dict[JsonKeys.BASELAYERMD5_KEY]
             return md5_file_name
                 
         return (get_md5_name_of_resource(_) for _ in self._resources_of_objects())
     
     def resource_dict_of_md5_name(self, md5_name):
         for resource in self._resources_of_objects():
-            if resource.get(sb2keys.SOUNDNAME_KEY):
-                if resource[sb2keys.MD5_KEY] == md5_name:
+            if resource.get(JsonKeys.SOUNDNAME_KEY):
+                if resource[JsonKeys.MD5_KEY] == md5_name:
                     return resource
             else:
-                if resource[sb2keys.BASELAYERMD5_KEY] == md5_name:
+                if resource[JsonKeys.BASELAYERMD5_KEY] == md5_name:
                     return resource
         else:
             return None
@@ -123,11 +142,11 @@ class Object(DictAccessWrapper):
         self.object_data = object_data
         if not self.is_valid_class_input(self.object_data):
             raise ObjectError("Input is no valid Scratch json sb2 object.")
-        for key in (sb2keys.SOUNDS_KEY, sb2keys.COSTUMES_KEY, sb2keys.SCRIPTS_KEY):
+        for key in (JsonKeys.SOUNDS_KEY, JsonKeys.COSTUMES_KEY, JsonKeys.SCRIPTS_KEY):
             if not key in self.object_data:
                 self.object_data[key] = []
         
-        self.scripts = [Script(_) for _ in self.get_scripts()]
+        self.scripts = [Script(_) for _ in self.get_scripts() if Script.is_valid_script_input(_)]
     
     @classmethod
     def is_valid_class_input(cls, object_data):
@@ -152,9 +171,15 @@ class Script(object):
 
     @classmethod
     def is_valid_script_input(cls, json_input):
-        return (isinstance(json_input, list) and len(json_input) == 3 and
+        if (isinstance(json_input, list) and len(json_input) == 3 and isinstance(json_input[0], int) and isinstance(json_input[1], int) and
+            isinstance(json_input[2], list)):
             # NOTE: could use a json validator instead
-            isinstance(json_input[0], int) and isinstance(json_input[1], int) and isinstance(json_input[2], list))
+            script_content = json_input[2]
+            if script_content[0][0] in SCRATCH_SCRIPTS:
+                return True
+
+        log.warning("No valid Scratch script: {}".format(json_input))
+        return False
     
     def get_type(self):
         return self.type

@@ -7,14 +7,14 @@ import logging
 
 log = logging.getLogger("scratchtobat.sb2") 
 
-SCRATCH_SCRIPTS = {
-    "whenGreenFlag",
+SCRIPT_GREEN_FLAG, SCRIPT_RECEIVE, SCRIPT_KEY_PRESSED, SCRIPT_SENSOR_GREATER_THAN, SCRIPT_SCENE_STARTS, SCRIPT_CLICKED = \
+     SCRATCH_SCRIPTS = [ "whenGreenFlag",
     "whenIReceive",
     "whenKeyPressed",
     "whenSensorGreaterThan",
     "whenSceneStarts",
     "whenClicked",
-    }
+    ]
 
 STAGE_HEIGHT_IN_PIXELS = 360
 STAGE_WIDTH_IN_PIXELS = 480
@@ -88,7 +88,15 @@ class Project(object):
         
         for sb2_object in self.project_code.objects:
             verify_resources(sb2_object.get_sounds() + sb2_object.get_costumes())
-    
+        
+        listened_keys = []
+        for object_ in self.project_code.objects:
+            for script in object_.scripts:
+                if script.type == SCRIPT_KEY_PRESSED:
+                    assert len(script.arguments) == 1
+                    listened_keys += script.arguments
+        self.listened_keys = set(listened_keys)
+        
         self.background_md5_names = set([costume[JsonKeys.BASELAYERMD5_KEY] for costume in self.project_code.stage_object.get_costumes()])
 
 

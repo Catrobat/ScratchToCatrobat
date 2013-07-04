@@ -52,7 +52,7 @@ class TestConvertExampleProject(common_testing.ScratchtobatTestCase):
         
         actual_count = len(glob.glob(os.path.join(images_dir, "*.png")))
         # TODO: + 1 because of missing penLayerMD5 file
-        self.assertEqual(count_svg_and_png_files, actual_count + 1)
+        self.assertEqual(count_svg_and_png_files, actual_count + len(self.project.listened_keys) + 1)
         
         self.assertCorrectCatroidProjectStructure(self.temp_dir, self.project_parent.name)
     
@@ -67,10 +67,10 @@ class TestConvertExampleProject(common_testing.ScratchtobatTestCase):
             "83a9787d4cb6f3b7632b4ddfebf74367.wav": ["83a9787d4cb6f3b7632b4ddfebf74367_pop.wav"] * 2,
             "510da64cf172d53750dffd23fbf73563.png": ["510da64cf172d53750dffd23fbf73563_backdrop1.png"],
             "033f926829a446a28970f59302b0572d.png": ["033f926829a446a28970f59302b0572d_castle1.png"],
-            "83c36d806dc92327b9e7049a565c6bff.wav": ["83c36d806dc92327b9e7049a565c6bff_meow.wav"]}
+            "83c36d806dc92327b9e7049a565c6bff.wav":["83c36d806dc92327b9e7049a565c6bff_meow.wav"]}
         for resource_name in resource_names_sb2_to_catroid_map:
             expected = resource_names_sb2_to_catroid_map[resource_name]
-            self.assertEqual(expected, sb2tocatrobat.convert_resource_name(self.project_parent, resource_name))
+            self.assertEqual(expected, sb2tocatrobat._convert_resource_name(self.project_parent, resource_name))
 
     def test_can_convert_sb2_project_to_catroid_zip(self):        
 #         self.addCleanup(lambda: shutil.rmtree(temp_dir))
@@ -82,7 +82,7 @@ class TestConvertExampleProject(common_testing.ScratchtobatTestCase):
     
     def test_can_convert_sb2_project_with_utf_to_catroid_zip(self):        
 #         self.addCleanup(lambda: shutil.rmtree(temp_dir))
-        catroid_zip_file_name = os.path.join(self.temp_dir, "project.catroid") 
+        catroid_zip_file_name = common_testing.get_testoutput_path("simple_utf_test.zip") 
         project = sb2.Project(common_testing.get_test_project_path("simple_utf_test"))
         sb2tocatrobat.convert_sb2_project_to_catroid_zip(project, catroid_zip_file_name) 
           
@@ -152,8 +152,8 @@ class TestConvertExampleProject(common_testing.ScratchtobatTestCase):
         catr_script = sb2tocatrobat._convert_to_catrobat_script(sb2_script, DUMMY_CATR_SPRITE)
         self.assertTrue(catr_script, "No script from conversion")
         expected_script_class = [catbase.StartScript]
-        expected_brick_classes = [catbricks.WaitBrick, catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.MoveNStepsBrick,
-            catbricks.WaitBrick, catbricks.LoopEndBrick]
+        expected_brick_classes = [catbricks.WaitBrick, catbricks.NoteBrick, catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.MoveNStepsBrick,
+            catbricks.WaitBrick, catbricks.NoteBrick, catbricks.LoopEndBrick]
         self.assertScriptClasses(expected_script_class, expected_brick_classes, catr_script)
     
     def test_can_convert_costume_to_catrobat_lookdata_class(self):
@@ -195,10 +195,10 @@ class TestConvertBricks(unittest.TestCase):
         sb2_do_loop = ["doRepeat", 10, [[u'forward:', 10], [u'playDrum', 1, 0.2], [u'forward:', -10], [u'playDrum', 1, 0.2]]]
         catr_do_loop = sb2tocatrobat._convert_to_catrobat_bricks(sb2_do_loop, DUMMY_CATR_SPRITE)
         self.assertTrue(isinstance(catr_do_loop, list))
-        # 1 loop start + 4 inner loop bricks + 1 loop end = 6
-        self.assertEqual(6, len(catr_do_loop))
-        expected_brick_classes = [catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.MoveNStepsBrick,
-            catbricks.WaitBrick, catbricks.LoopEndBrick]
+        # 1 loop start + 4 inner loop bricks +2 inner note bicks (playDrum not suppored) + 1 loop end = 8
+        self.assertEqual(8, len(catr_do_loop))
+        expected_brick_classes = [catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.MoveNStepsBrick,
+            catbricks.WaitBrick, catbricks.NoteBrick, catbricks.LoopEndBrick]
         self.assertEqual(expected_brick_classes, [_.__class__ for _ in catr_do_loop])
 
     def test_can_convert_waitelapsedfrom_brick(self):
@@ -240,7 +240,7 @@ class TestConvertScripts(unittest.TestCase):
         catr_script = sb2tocatrobat._convert_to_catrobat_script(sb2_script, DUMMY_CATR_SPRITE)
         # KeyPressed-scripts are represented with broadcast-scripts with a special key-message
         self.assertTrue(isinstance(catr_script, catbase.BroadcastScript))
-        self.assertEqual(sb2tocatrobat._keyPressedToBroadcastMessage("space"), catr_script.getBroadcastMessage())
+        self.assertEqual(sb2tocatrobat._key_to_broadcast_message("space"), catr_script.getBroadcastMessage())
 
     def test_can_convert_whenclicked_script(self):
         sb2_script = sb2.Script([30, 355, [["whenClicked"], ["changeGraphicEffect:by:", "color", 25]]])
@@ -252,7 +252,7 @@ class TestConvertScripts(unittest.TestCase):
 
 class TestConvertProjects(common_testing.ScratchtobatTestCase):
         
-    def test_can_convert_projects(self):
+    def test_can_convert_project_with_all_easy_bricks(self):
         dummyname = "Full converter test"
         full_test_project = sb2.Project(common_testing.get_test_project_path("full_test_no_var"), name=dummyname)
         catroid_zip_file_name = common_testing.get_testoutput_path(os.path.join("full_test_no_var", "full_test_no_var.zip")) 
@@ -260,6 +260,15 @@ class TestConvertProjects(common_testing.ScratchtobatTestCase):
         sb2tocatrobat.convert_sb2_project_to_catroid_zip(full_test_project, catroid_zip_file_name) 
         
         self.assertCorrectZipFile(catroid_zip_file_name, dummyname)
+
+    def test_can_convert_project_with_keys(self):
+        project_name = "keys_pressed"
+        project = sb2.Project(common_testing.get_test_project_path(project_name))
+        catroid_zip_file_name = common_testing.get_testoutput_path(project_name + ".zip") 
+        
+        sb2tocatrobat.convert_sb2_project_to_catroid_zip(project, catroid_zip_file_name) 
+        
+        self.assertCorrectZipFile(catroid_zip_file_name, project.name)
 
 
 class TestConverterInternals(unittest.TestCase):

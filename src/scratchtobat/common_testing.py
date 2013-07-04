@@ -20,7 +20,8 @@ TEST_PROJECT_URL_TO_NAME_MAP = {
     }
 
 TEST_PROJECT_FILES_TO_NAME_MAP = {
-    'dancing_castle.sb2' : '10205819'
+    'dancing_castle.sb2' : '10205819',
+    'Dance back.sb2' : '10132588',
     
     }
 
@@ -42,7 +43,7 @@ def get_test_project_unpacked_file(sb2_file):
 
 
 def get_testoutput_path(output_path):
-    output_path = os.path.join(get_project_base_path(), "testoutput", output_path)
+    output_path = os.path.join(get_project_base_path(), "testoutput", "catrobat", output_path)
     return output_path
 
 
@@ -55,8 +56,10 @@ class ScratchtobatTestCase(unittest.TestCase):
         self.assertEqual(expected_script_class, [script.__class__], "Script class is not matching")
         bricks = script.getBrickList()
         self.assertTrue(bricks, "No bricks.")
-        self.assertEqual(len(expected_brick_classes), len(bricks), "Wrong number of bricks.")
-        self.assertEqual(expected_brick_classes, [_.__class__ for _ in bricks], "Wrong brick classes.")
+        expected_len = len(expected_brick_classes)
+        actual_len = len(bricks)
+        self.assertEqual(expected_len, actual_len, "Wrong number of bricks. {0} != {1}".format(expected_len, actual_len))
+        self.assertEqual(expected_brick_classes, [_.__class__ for _ in bricks])
     
     def assertCorrectCatroidProjectStructure(self, project_path, project_name):
         code_filename = os.path.join(project_path, sb2tocatrobat.CATROID_PROJECT_FILE)
@@ -80,9 +83,10 @@ class ScratchtobatTestCase(unittest.TestCase):
             self.assert_(os.path.exists(image_path), "Missing: " + image_path)
         
     def assertCorrectZipFile(self, catroid_zip_file_name, project_name):
-        # TODO: extract and use assertCorrectCatroidProjectStructure
+        assert os.path.exists(self.temp_dir)
         temp_dir = os.path.join(self.temp_dir, "extracted_zip")
-        os.mkdir(temp_dir)
+        if not os.path.exists(temp_dir):
+            os.mkdir(temp_dir)
         
         with zipfile.ZipFile(catroid_zip_file_name) as zip_fp:
             corrupt_zip_content = zip_fp.testzip()

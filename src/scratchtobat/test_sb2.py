@@ -67,6 +67,10 @@ class TestProjectFunc(unittest.TestCase):
     def test_can_access_md5_name_of_stage_costumes(self):
         expected_stage_customes_md5_names = set(["510da64cf172d53750dffd23fbf73563.png", "033f926829a446a28970f59302b0572d.png"])
         self.assertEqual(expected_stage_customes_md5_names, set(self.project.background_md5_names))
+        
+    def test_can_access_listened_pressed_keys(self):
+        project = sb2.Project(common_testing.get_test_project_path("listen_keypressed"))
+        self.assertEqual(set(["d", "c", "a", "4", "8"]), project.listened_keys)
 
 
 class TestProjectCodeInit(unittest.TestCase):

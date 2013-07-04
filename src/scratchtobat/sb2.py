@@ -5,19 +5,15 @@ import json
 import os
 import logging
 
-log = logging.getLogger("scratchtobat.sb2") 
+log = logging.getLogger("scratchtobat.sb2")
 
 SCRIPT_GREEN_FLAG, SCRIPT_RECEIVE, SCRIPT_KEY_PRESSED, SCRIPT_SENSOR_GREATER_THAN, SCRIPT_SCENE_STARTS, SCRIPT_CLICKED = \
-     SCRATCH_SCRIPTS = [ "whenGreenFlag",
-    "whenIReceive",
-    "whenKeyPressed",
-    "whenSensorGreaterThan",
-    "whenSceneStarts",
-    "whenClicked",
-    ]
+     SCRATCH_SCRIPTS = ["whenGreenFlag", "whenIReceive", "whenKeyPressed", "whenSensorGreaterThan", "whenSceneStarts", "whenClicked", ]
 
 STAGE_HEIGHT_IN_PIXELS = 360
 STAGE_WIDTH_IN_PIXELS = 480
+
+LICENSE_URI = "http://creativecommons.org/licenses/by-sa/2.0/deed.en"
 
 
 class JsonKeys(object):
@@ -38,21 +34,21 @@ class JsonKeys(object):
 class DictAccessWrapper(object):
     def get_raw_dict(self):
         raise NotImplementedError("Must be overridden by class '{}'.".format(type(self)))
-        
+
     def __getattr__(self, name):
         if name.startswith("get_"):
             json_key = name.replace("get_", "")
-            
+
             def access_json_data():
                 return self.get_raw_dict().get(json_key)
             return access_json_data
-        
+
         raise AttributeError("'{}' object has no attribute '{}'".format(self.__class__.__name__, name))
 
 
 class Project(object):
     SCRATCH_PROJECT_CODE_FILE = "project.json"
-    
+
     def __init__(self, input_path, name=None):
         common.log.info("Project for {}".format(input_path))
         if not os.path.isdir(input_path):
@@ -69,26 +65,26 @@ class Project(object):
             self.name = self.project_code.get_info().get("projectID")
         if not self.name:
             raise ProjectError("No project name specified in project file. Please provide project name with constructor.")
-        
+
         self.md5_to_resource_path_map = {}
         for project_dir_file in os.listdir(input_path):
             project_file_path = os.path.join(input_path, project_dir_file)
             with open(project_file_path, 'rb') as fp:
                 file_hash = hashlib.md5(fp.read()).hexdigest()
-            self.md5_to_resource_path_map[file_hash + os.path.splitext(project_file_path)[1]] = project_file_path 
+            self.md5_to_resource_path_map[file_hash + os.path.splitext(project_file_path)[1]] = project_file_path
         common.log.info(self.md5_to_resource_path_map)
-        
+
         def verify_resources(resources):
             for res_dict  in resources:
                 assert JsonKeys.MD5_KEY in res_dict or JsonKeys.BASELAYERMD5_KEY in res_dict
                 md5_file = res_dict[JsonKeys.MD5_KEY] if JsonKeys.SOUNDNAME_KEY in res_dict else res_dict[JsonKeys.BASELAYERMD5_KEY]
                 resource_md5 = os.path.splitext(md5_file)[0]
                 if not md5_file in self.md5_to_resource_path_map:
-                    raise ProjectError("Missing resource file. Provide resource with md5: {}".format(resource_md5))
-        
+                    raise ProjectError("Missing resource file at project: {}. Provide resource with md5: {}".format(input_path, resource_md5))
+
         for sb2_object in self.project_code.objects:
             verify_resources(sb2_object.get_sounds() + sb2_object.get_costumes())
-        
+
         listened_keys = []
         for object_ in self.project_code.objects:
             for script in object_.scripts:
@@ -96,19 +92,19 @@ class Project(object):
                     assert len(script.arguments) == 1
                     listened_keys += script.arguments
         self.listened_keys = set(listened_keys)
-        
+
         self.background_md5_names = set([costume[JsonKeys.BASELAYERMD5_KEY] for costume in self.project_code.stage_object.get_costumes()])
 
 
 class ProjectCode(DictAccessWrapper):
-    
+
     def __init__(self, json_path):
         self.json_path = json_path
         self.project_code = self.load_json_file(self.json_path)
         self.objects_data = [_ for _ in self.get_children() if "objName" in _]
         self.objects = [Object(_) for _ in [self.project_code] + self.objects_data]
         self.stage_object = self.objects[0]
-    
+
     def load_json_file(self, json_file):
         if not os.path.exists(json_file):
             raise ProjectError("Provide project data file: {}".format(json_file))
@@ -116,7 +112,7 @@ class ProjectCode(DictAccessWrapper):
             json_dict = json.load(fp)
             self.verify_scratch_json(json_dict)
             return json_dict
-        
+
     def verify_scratch_json(self, json_dict):
         # FIXME: check which tags are really required
         for key in ["objName", "info", "currentCostumeIndex", "penLayerMD5", "tempoBPM", "videoAlpha", "children", "costumes", "sounds"]:
@@ -128,15 +124,15 @@ class ProjectCode(DictAccessWrapper):
 
     def _resources_of_objects(self):
         return itertools.chain.from_iterable(_.get_sounds() + _.get_costumes() for _ in self.objects)
-            
-    def md5_file_names_of_referenced_resources(self):    
+
+    def md5_file_names_of_referenced_resources(self):
         def get_md5_name_of_resource(res_dict):
             assert JsonKeys.MD5_KEY in res_dict or JsonKeys.BASELAYERMD5_KEY in res_dict
             md5_file_name = res_dict[JsonKeys.MD5_KEY] if JsonKeys.SOUNDNAME_KEY in res_dict else res_dict[JsonKeys.BASELAYERMD5_KEY]
             return md5_file_name
-                
+
         return (get_md5_name_of_resource(_) for _ in self._resources_of_objects())
-    
+
     def resource_dicts_of_md5_name(self, md5_name):
         for resource in self._resources_of_objects():
             if resource.get(JsonKeys.MD5_KEY) == md5_name:
@@ -146,7 +142,7 @@ class ProjectCode(DictAccessWrapper):
 
 
 class Object(DictAccessWrapper):
-    
+
     def __init__(self, object_data):
         self.object_data = object_data
         if not self.is_valid_class_input(self.object_data):
@@ -154,19 +150,19 @@ class Object(DictAccessWrapper):
         for key in (JsonKeys.SOUNDS_KEY, JsonKeys.COSTUMES_KEY, JsonKeys.SCRIPTS_KEY):
             if not key in self.object_data:
                 self.object_data[key] = []
-        
+
         self.scripts = [Script(_) for _ in self.get_scripts() if Script.is_valid_script_input(_)]
-    
+
     @classmethod
     def is_valid_class_input(cls, object_data):
         return 'objName' in object_data
-    
+
     def get_raw_dict(self):
         return self.object_data
 
 
 class Script(object):
-    
+
     def __init__(self, json_input):
         if not self.is_valid_script_input(json_input):
             raise ScriptError("Input is no valid Scratch sb2 json script.")
@@ -189,10 +185,10 @@ class Script(object):
 
         log.warning("No valid Scratch script: {}".format(json_input))
         return False
-    
+
     def get_type(self):
         return self.type
-        
+
     def get_raw_bricks(self):
         def get_bricks_recursively(nested_bricks):
             result = []
@@ -210,7 +206,7 @@ class Script(object):
                     assert isinstance(brick, (int, str, float)), "Unhandled brick element type {} for {}".format(type(brick), brick)
                     continue
             return result
-        
+
         return get_bricks_recursively(self.bricks)
 
 

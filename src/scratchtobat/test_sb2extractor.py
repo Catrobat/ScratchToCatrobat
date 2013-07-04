@@ -6,7 +6,7 @@ import os
 
 
 class Sb2ExtractorTest(unittest.TestCase):
-    
+
     def setUp(self):
         unittest.TestCase.setUp(self)
         self.temp_dir = tempfile.mkdtemp()

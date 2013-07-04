@@ -1,10 +1,6 @@
-from scratchtobat import sb2, common_testing, common
-from zipfile import ZipFile
+from scratchtobat import sb2, common_testing
 import os
-import shutil
-import tempfile
 import unittest
-import zipfile
 
 
 EASY_SCRIPTS = [[23, 125,
@@ -31,7 +27,7 @@ class TestProjectInit(unittest.TestCase):
         with self.assertRaises(sb2.ProjectError):
             # TODO: check error type
             sb2.Project(common_testing.get_test_project_path("non_existing_path"))
-        
+
     def test_fail_on_corrupt_sb2_json_input(self):
         with self.assertRaises(sb2.ProjectError):
             # TODO: check error type
@@ -41,18 +37,18 @@ class TestProjectInit(unittest.TestCase):
         with self.assertRaises(sb2.ProjectError):
             # TODO: check error type
             sb2.Project(common_testing.get_test_project_path("missing_resources"))
-            
+
     def test_fail_on_project_with_missing_sound_files(self):
         with self.assertRaises(sb2.ProjectError):
             # TODO: check error type
             sb2.Project(common_testing.get_test_project_path("missing_image_resources"))
-            
-            
+
+
 class TestProjectFunc(unittest.TestCase):
     def __init__(self, methodName='runTest',):
         unittest.TestCase.__init__(self, methodName=methodName)
         self.project_folder = TEST_PROJECT_FOLDER
-        
+
     def setUp(self):
         self.project = sb2.Project(common_testing.get_test_project_path(self.project_folder))
 
@@ -67,29 +63,29 @@ class TestProjectFunc(unittest.TestCase):
     def test_can_access_md5_name_of_stage_costumes(self):
         expected_stage_customes_md5_names = set(["510da64cf172d53750dffd23fbf73563.png", "033f926829a446a28970f59302b0572d.png"])
         self.assertEqual(expected_stage_customes_md5_names, set(self.project.background_md5_names))
-        
+
     def test_can_access_listened_pressed_keys(self):
         project = sb2.Project(common_testing.get_test_project_path("listen_keypressed"))
         self.assertEqual(set(["d", "c", "a", "4", "8"]), project.listened_keys)
 
 
 class TestProjectCodeInit(unittest.TestCase):
-        
+
     def test_can_create_on_correct_file(self):
         self.assertTrue(sb2.ProjectCode(os.path.join(common_testing.get_test_project_path("dancing_castle"), sb2.Project.SCRATCH_PROJECT_CODE_FILE)))
         self.assertTrue(sb2.ProjectCode(os.path.join(common_testing.get_test_project_path("simple"), sb2.Project.SCRATCH_PROJECT_CODE_FILE)))
-    
+
     def test_fail_on_corrupt_file(self):
         with self.assertRaises(sb2.ProjectCodeError):
             sb2.ProjectCode(os.path.join(common_testing.get_test_project_path("faulty_json_file"), sb2.Project.SCRATCH_PROJECT_CODE_FILE))
 
 
 class TestProjectCodeFunc(unittest.TestCase):
-    
+
     def setUp(self):
-        unittest.TestCase.setUp(self)    
+        unittest.TestCase.setUp(self)
         self.project_code = sb2.ProjectCode(os.path.join(common_testing.get_test_project_path("dancing_castle"), sb2.Project.SCRATCH_PROJECT_CODE_FILE))
-        
+
     def test_can_access_input_data(self):
         json_dict = self.project_code.get_raw_dict()
         self.assertEquals(json_dict["objName"], "Stage")
@@ -106,8 +102,8 @@ class TestProjectCodeFunc(unittest.TestCase):
         resource_names_sb2_to_catroid_map = {
             "83a9787d4cb6f3b7632b4ddfebf74367.wav": "83a9787d4cb6f3b7632b4ddfebf74367_pop.wav",
             "510da64cf172d53750dffd23fbf73563.png": "510da64cf172d53750dffd23fbf73563_backdrop1.png",
-            "033f926829a446a28970f59302b0572d.png":"033f926829a446a28970f59302b0572d_castle1.png",
-            "83c36d806dc92327b9e7049a565c6bff.wav":"83c36d806dc92327b9e7049a565c6bff_meow.wav"}
+            "033f926829a446a28970f59302b0572d.png": "033f926829a446a28970f59302b0572d_castle1.png",
+            "83c36d806dc92327b9e7049a565c6bff.wav": "83c36d806dc92327b9e7049a565c6bff_meow.wav"}
         for resource_name in resource_names_sb2_to_catroid_map:
             for data_dict in self.project_code.resource_dicts_of_md5_name(resource_name):
                 self.assertTrue("soundName" in data_dict or "costumeName" in data_dict, "No sound or costume data dict")
@@ -118,15 +114,15 @@ class TestProjectCodeFunc(unittest.TestCase):
 
 
 class TestObjectInit(unittest.TestCase):
-      
+
     def setUp(self):
         self.project = sb2.Project(common_testing.get_test_project_path(TEST_PROJECT_FOLDER))
-        
+
     def test_can_construct_on_correct_input(self):
         for obj_data in self.project.project_code.objects_data:
             self.assertTrue(sb2.Object.is_valid_class_input(obj_data))
             self.assertTrue(sb2.Object(obj_data))
-    
+
     def test_fail_on_wrong_input(self):
         faulty_object_structures = [{},
             ]
@@ -137,14 +133,14 @@ class TestObjectInit(unittest.TestCase):
 
 
 class TestObjectFunc(unittest.TestCase):
-     
+
     def setUp(self):
         self.project = sb2.Project(common_testing.get_test_project_path(TEST_PROJECT_FOLDER))
         self.sb2_objects = self.project.project_code.objects
-    
+
     def test_can_call_for_wrong_key_like_regular_dict_get(self):
         self.assertEqual(None, self.sb2_objects[0].get_wrongkey())
-        
+
     def test_can_access_sb2_scripts(self):
         for sb2_object in self.sb2_objects:
             if sb2_object.get_objName() != "Stage":
@@ -152,7 +148,7 @@ class TestObjectFunc(unittest.TestCase):
             for sb2_script in sb2_object.scripts:
                 self.assertTrue(sb2_script)
                 self.assertTrue(isinstance(sb2_script, sb2.Script))
-            
+
     def test_can_access_sb2_costumes(self):
         for sb2_object in self.sb2_objects:
             self.assertTrue(len(sb2_object.get_costumes()) > 0)
@@ -173,7 +169,7 @@ class TestObjectFunc(unittest.TestCase):
 class TestScriptInit(unittest.TestCase):
 
     def test_can_construct_on_correct_input(self):
-        for script_input in EASY_SCRIPTS: 
+        for script_input in EASY_SCRIPTS:
             script = sb2.Script(script_input)
             self.assertTrue(script)
 
@@ -190,7 +186,7 @@ class TestScriptInit(unittest.TestCase):
 
 
 class TestScriptFunc(unittest.TestCase):
-    
+
     def setUp(self):
         unittest.TestCase.setUp(self)
         self.script = sb2.Script(EASY_SCRIPTS[0])
@@ -199,8 +195,8 @@ class TestScriptFunc(unittest.TestCase):
         self.assertEqual('whenGreenFlag', self.script.get_type())
         expected_brick_names = ['say:duration:elapsed:from:', 'doRepeat', 'forward:', 'playDrum', 'forward:', 'playDrum']
         self.assertEqual(expected_brick_names, self.script.get_raw_bricks())
-        
-        
+
+
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

@@ -5,6 +5,7 @@ import tempfile
 EXIT_SUCCESS = 0
 EXIT_FAILURE = 1
 
+
 def scratchtobat_main(argv):
     # TODO: add with upload zip
     scratch_project_file_or_url = argv[0]
@@ -24,4 +25,3 @@ def scratchtobat_main(argv):
 
 if __name__ == '__main__':
     sys.exit(scratchtobat_main(sys.argv[1:]))
-    

@@ -11,6 +11,8 @@ import contextlib
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("scratchtobat")
 
+APPLICATION_NAME = "Scratch to Catrobat Converter"
+
 
 def isList(obj):
     return isinstance(obj, list)
@@ -42,5 +44,3 @@ class ScratchtobatError(Exception):
 def md5_hash(input_path):
     with open(input_path, "rb") as fp:
         return hashlib.md5(fp.read()).hexdigest()
-
-

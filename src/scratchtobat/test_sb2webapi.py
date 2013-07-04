@@ -6,7 +6,7 @@ import os
 
 
 class WebApiTest(unittest.TestCase):
-    
+
     def setUp(self):
         unittest.TestCase.setUp(self)
         self.temp_dir = tempfile.mkdtemp()
@@ -20,10 +20,6 @@ class WebApiTest(unittest.TestCase):
         for wrong_url in ['http://www.tugraz.at', 'http://www.ist.tugraz.at/', 'http://scratch.mit.edu/', 'http://scratch.mit.edu/projects']:
             with self.assertRaises(common.ScratchtobatError):
                 sb2webapi.download_project(wrong_url, self.temp_dir)
-
-    def test_can_get_project_files_from_project_url(self):
-        for project_url in common_testing.TEST_PROJECT_URL_TO_NAME_MAP:
-            sb2webapi
 
     def tearDown(self):
         unittest.TestCase.tearDown(self)

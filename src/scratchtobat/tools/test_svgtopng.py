@@ -1,4 +1,4 @@
-from scratchtobat import common_testing
+from scratchtobat import common
 from scratchtobat.tools import svgtopng
 import imghdr
 import os
@@ -8,7 +8,7 @@ import unittest
 class SvgToPngTest(unittest.TestCase):
 
     def test_can_convert_file_from_svg_to_png(self):
-        input_svg_path = os.path.join(common_testing.get_test_project_path("dancing_castle"), "1.svg")
+        input_svg_path = os.path.join(common.get_test_project_path("dancing_castle"), "1.svg")
         assert os.path.exists(input_svg_path)
         svgtopng.convert(input_svg_path)
         output_png_path = input_svg_path.replace(".svg", ".png")

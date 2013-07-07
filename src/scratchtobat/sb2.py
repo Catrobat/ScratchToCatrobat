@@ -25,8 +25,8 @@ class JsonKeys(object):
     INFO_KEY = "info"
     SOUNDNAME_KEY = "soundName"
     SOUNDID_KEY = "soundID"
-    MD5_KEY = "md5"
-    BASELAYERMD5_KEY = "baseLayerMD5"
+    SOUND_MD5 = "md5"
+    COSTUME_MD5 = "baseLayerMD5"
     BASELAYERID_KEY = "baseLayerID"
     COSTUMENAME_KEY = "costumeName"
 
@@ -76,8 +76,8 @@ class Project(object):
 
         def verify_resources(resources):
             for res_dict  in resources:
-                assert JsonKeys.MD5_KEY in res_dict or JsonKeys.BASELAYERMD5_KEY in res_dict
-                md5_file = res_dict[JsonKeys.MD5_KEY] if JsonKeys.SOUNDNAME_KEY in res_dict else res_dict[JsonKeys.BASELAYERMD5_KEY]
+                assert JsonKeys.SOUND_MD5 in res_dict or JsonKeys.COSTUME_MD5 in res_dict
+                md5_file = res_dict[JsonKeys.SOUND_MD5] if JsonKeys.SOUNDNAME_KEY in res_dict else res_dict[JsonKeys.COSTUME_MD5]
                 resource_md5 = os.path.splitext(md5_file)[0]
                 if not md5_file in self.md5_to_resource_path_map:
                     raise ProjectError("Missing resource file at project: {}. Provide resource with md5: {}".format(input_path, resource_md5))
@@ -93,7 +93,7 @@ class Project(object):
                     listened_keys += script.arguments
         self.listened_keys = set(listened_keys)
 
-        self.background_md5_names = set([costume[JsonKeys.BASELAYERMD5_KEY] for costume in self.project_code.stage_object.get_costumes()])
+        self.background_md5_names = set([costume[JsonKeys.COSTUME_MD5] for costume in self.project_code.stage_object.get_costumes()])
 
 
 class ProjectCode(DictAccessWrapper):
@@ -127,17 +127,17 @@ class ProjectCode(DictAccessWrapper):
 
     def md5_file_names_of_referenced_resources(self):
         def get_md5_name_of_resource(res_dict):
-            assert JsonKeys.MD5_KEY in res_dict or JsonKeys.BASELAYERMD5_KEY in res_dict
-            md5_file_name = res_dict[JsonKeys.MD5_KEY] if JsonKeys.SOUNDNAME_KEY in res_dict else res_dict[JsonKeys.BASELAYERMD5_KEY]
+            assert JsonKeys.SOUND_MD5 in res_dict or JsonKeys.COSTUME_MD5 in res_dict
+            md5_file_name = res_dict[JsonKeys.SOUND_MD5] if JsonKeys.SOUNDNAME_KEY in res_dict else res_dict[JsonKeys.COSTUME_MD5]
             return md5_file_name
 
         return (get_md5_name_of_resource(_) for _ in self._resources_of_objects())
 
     def resource_dicts_of_md5_name(self, md5_name):
         for resource in self._resources_of_objects():
-            if resource.get(JsonKeys.MD5_KEY) == md5_name:
+            if resource.get(JsonKeys.SOUND_MD5) == md5_name:
                     yield resource
-            elif resource.get(JsonKeys.BASELAYERMD5_KEY) == md5_name:
+            elif resource.get(JsonKeys.COSTUME_MD5) == md5_name:
                     yield resource
 
 

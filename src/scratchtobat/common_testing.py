@@ -25,31 +25,18 @@ TEST_PROJECT_FILES_TO_NAME_MAP = {
     }
 
 
-def get_project_base_path():
-    return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-
-
-def get_test_resources_path():
-    return os.path.join(get_project_base_path(), "test", "res")
-
-
-def get_test_project_path(project_folder):
-    return os.path.join(get_test_resources_path(), "sb2", project_folder)
-
-
-def get_test_project_unpacked_file(sb2_file):
-    return os.path.join(get_test_resources_path(), "sb2_unpacked", sb2_file)
-
-
-def get_testoutput_path(output_path):
-    output_path = os.path.join(get_project_base_path(), "testoutput", "catrobat", output_path)
-    return output_path
-
-
-class ScratchtobatTestCase(unittest.TestCase):
+class BaseTestCase(unittest.TestCase):
 
     def setUp(self):
         self.temp_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        unittest.TestCase.tearDown(self)
+        # FIXME: jython / windows workaround.. reason?
+        shutil.rmtree(self.temp_dir)
+
+
+class ProjectTestCase(BaseTestCase):
 
     def assertScriptClasses(self, expected_script_class, expected_brick_classes, script):
         self.assertEqual(expected_script_class, [script.__class__], "Script class is not matching")
@@ -111,8 +98,3 @@ class ScratchtobatTestCase(unittest.TestCase):
                     _compare_formula_elements(elem1.rightChild, elem2.rightChild))
 
         return _compare_formula_elements(formula1.formulaTree, formula2.formulaTree)
-
-    def tearDown(self):
-        unittest.TestCase.tearDown(self)
-        # FIXME: jython / windows workaround.. reason?
-        shutil.rmtree(self.temp_dir)

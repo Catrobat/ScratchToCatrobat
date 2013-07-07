@@ -10,10 +10,10 @@ import unittest
 
 
 DUMMY_CATR_SPRITE = catbase.Sprite("Dummy")
-TEST_PROJECT_PATH = common_testing.get_test_project_path("dancing_castle")
+TEST_PROJECT_PATH = common.get_test_project_path("dancing_castle")
 
 
-class TestConvertExampleProject(common_testing.ScratchtobatTestCase):
+class TestConvertExampleProject(common_testing.ProjectTestCase):
 
     dummy_sb2_object = sb2.Object({"objName": "Dummy"})
 
@@ -23,11 +23,11 @@ class TestConvertExampleProject(common_testing.ScratchtobatTestCase):
             catbricks.WaitBrick, catbricks.LoopEndBrick], []]
 
     def __init__(self, methodName='runTest'):
-        common_testing.ScratchtobatTestCase.__init__(self, methodName=methodName)
+        common_testing.ProjectTestCase.__init__(self, methodName=methodName)
         assert System.getProperty("python.security.respectJavaAccessibility") == 'false', "Jython registry property 'python.security.respectJavaAccessibility' must be set to 'false'"
 
     def setUp(self):
-        common_testing.ScratchtobatTestCase.setUp(self)
+        common_testing.ProjectTestCase.setUp(self)
         self.project_parent = sb2.Project(TEST_PROJECT_PATH)
         self.project = self.project_parent.project_code
 
@@ -74,15 +74,15 @@ class TestConvertExampleProject(common_testing.ScratchtobatTestCase):
 #         self.addCleanup(lambda: shutil.rmtree(temp_dir))
         catroid_zip_file_name = os.path.join(self.temp_dir, "project.catroid")
 
-        sb2tocatrobat.convert_sb2_project_to_catroid_zip(self.project_parent, catroid_zip_file_name)
+        sb2tocatrobat.convert_sb2_project_to_catrobat_zip(self.project_parent, catroid_zip_file_name)
 
         self.assertCorrectZipFile(catroid_zip_file_name, self.project_parent.name)
 
     def test_can_convert_sb2_project_with_utf_to_catroid_zip(self):
 #         self.addCleanup(lambda: shutil.rmtree(temp_dir))
-        catroid_zip_file_name = common_testing.get_testoutput_path("simple_utf_test.zip")
-        project = sb2.Project(common_testing.get_test_project_path("simple_utf_test"))
-        sb2tocatrobat.convert_sb2_project_to_catroid_zip(project, catroid_zip_file_name)
+        catroid_zip_file_name = common.get_testoutput_path("simple_utf_test.zip")
+        project = sb2.Project(common.get_test_project_path("simple_utf_test"))
+        sb2tocatrobat.convert_sb2_project_to_catrobat_zip(project, catroid_zip_file_name)
 
         self.assertCorrectZipFile(catroid_zip_file_name, project.name)
 
@@ -257,37 +257,47 @@ class TestConvertScripts(unittest.TestCase):
         self.assertEqual('Tapped', catr_script.getAction())
 
 
-class TestConvertProjects(common_testing.ScratchtobatTestCase):
+class TestConvertProjects(common_testing.ProjectTestCase):
 
     def test_can_convert_project_with_all_easy_bricks(self):
-        for project_name in ["full_test", "full_test_no_var"]:
-            full_test_project = sb2.Project(common_testing.get_test_project_path(project_name), name=project_name)
-            catroid_zip_file_name = common_testing.get_testoutput_path(project_name + ".zip")
+        for project_name in ["full_test_no_var", "8 DayDream", "full_test", ]:
+            full_test_project = sb2.Project(common.get_test_project_path(project_name), name=project_name)
+            catroid_zip_file_name = common.get_testoutput_path(project_name + ".zip")
 
-            sb2tocatrobat.convert_sb2_project_to_catroid_zip(full_test_project, catroid_zip_file_name)
+            sb2tocatrobat.convert_sb2_project_to_catrobat_zip(full_test_project, catroid_zip_file_name)
 
             self.assertCorrectZipFile(catroid_zip_file_name, project_name)
 
     def test_can_convert_project_with_keys(self):
         for project_name in ["keys_pressed", "keys_pressed2"]:
-            project = sb2.Project(common_testing.get_test_project_path(project_name))
-            catroid_zip_file_name = common_testing.get_testoutput_path(project_name + ".zip")
+            project = sb2.Project(common.get_test_project_path(project_name))
+            catroid_zip_file_name = common.get_testoutput_path(project_name + ".zip")
 
-            sb2tocatrobat.convert_sb2_project_to_catroid_zip(project, catroid_zip_file_name)
+            sb2tocatrobat.convert_sb2_project_to_catrobat_zip(project, catroid_zip_file_name)
+
+            self.assertCorrectZipFile(catroid_zip_file_name, project.name)
+
+    def test_can_convert_project_with_many_media(self):
+        for project_name in ["Hannah_Montana"]:
+            project = sb2.Project(common.get_test_project_path(project_name))
+            catroid_zip_file_name = common.get_testoutput_path(project_name + ".zip")
+
+            sb2tocatrobat.convert_sb2_project_to_catrobat_zip(project, catroid_zip_file_name)
 
             self.assertCorrectZipFile(catroid_zip_file_name, project.name)
 
 
-class TestConvertFormulas(common_testing.ScratchtobatTestCase):
+class TestConvertFormulas(common_testing.ProjectTestCase):
 
-    def test_can_convert_formulas(self):
-        raw_source_to_formula_mapping = {
-            [u'action', 1]: "",
-            [u'touching:', u'Sprite1']: catformula.Formula(catformula.FormulaElement(catformula.FormulaElement.ElementType.FUNCTION), "1.0")
-        }
-        for raw_source, expected_formula in raw_source_to_formula_mapping.iteritems():
-            formula = sb2tocatrobat._convert_formula(raw_source)
-            self.assertEqualFormulas(expected_formula, formula)
+#     def test_can_convert_formulas(self):
+#         raw_source_to_formula_mapping = {
+#             ['changeVar:by:', [u'action', 1]: "",
+#             [u'touching:', u'Sprite1']: catformula.Formula(catformula.FormulaElement(catformula.FormulaElement.ElementType.FUNCTION), "1.0")
+#         }
+#         for raw_source, expected_formula in raw_source_to_formula_mapping.iteritems():
+#             formula = sb2tocatrobat._convert_formula(raw_source)
+#             self.assertEqualFormulas(expected_formula, formula)
+    pass
 
 
 class TestConverterInternals(unittest.TestCase):
@@ -296,7 +306,6 @@ class TestConverterInternals(unittest.TestCase):
 #         sb2tocatrobat._instantiate_catrobat_class()
         pass
 
-#     def test_
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']

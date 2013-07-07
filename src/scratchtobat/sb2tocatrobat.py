@@ -1,7 +1,7 @@
 from codecs import open
 from scratchtobat import common, sb2, sb2webapi
 from scratchtobat.sb2 import JsonKeys as sb2keys
-from scratchtobat.tools import svgtopng, imageresizer
+from scratchtobat.tools import svgtopng, imageresizer, wavconverter
 import org.catrobat.catroid.common as catcommon
 import org.catrobat.catroid.content as catbase
 import org.catrobat.catroid.content.bricks as catbricks
@@ -47,6 +47,7 @@ class _ScratchToCatrobat(object):
         #  Bricks
         #===============================================================================
         "broadcast:": catbricks.BroadcastBrick,  # easy
+        "doBroadcastAndWait": catbricks.BroadcastBrick,  # FIXME: not correct
         "doReturn": None,
         "doWaitUntil": None,
         "wait:elapsed:from:": lambda sprite, time_value: catbricks.WaitBrick(sprite, int(time_value * 1000)),
@@ -99,7 +100,7 @@ class _ScratchToCatrobat(object):
         "stampCostume": None,
 
         # looks
-        "lookLike:": None,
+        "lookLike:": catbricks.SetLookBrick,
         "nextCostume": catbricks.NextLookBrick,
         "startScene": None,  # easy: msg broadcast
         "nextScene": None,  # easy: msg broadcast
@@ -142,23 +143,24 @@ class _ScratchToCatrobat(object):
         ###############################
         # reporter blocks
         ################################
-        "+": None,  # easy start
-        "-": None,
-        "*": None,
-        "\/": None,
-        "randomFrom:to:": None,
-        "<": None,
-        "=": None,
-        ">": None,
-        "&": None,
-        "|": None,
-        "not": None,  # easy end
+#         "+": None,  # easy start
+#         "-": None,
+#         "*": None,
+#         "\/": None,
+#         "randomFrom:to:": None,
+#         "<": None,
+#         "=": None,
+#         ">": None,
+#         "&": None,
+#         "|": None,
+#         "not": None,  # easy end
         "concatenate:with:": None,
         "letter:of:": None,
         "stringLength:": None,
         "\\\\": None,
         "rounded": None,  # easy
         "computeFunction:of:": None,  # easy
+        "randomFrom:to:": None,  # easy
 
         # variables
         "readVariable": None,  # easy
@@ -186,6 +188,19 @@ class _ScratchToCatrobat(object):
         "scale": None,  # easy
     }
 
+    OPERATORS_MAPPING = {
+        "+": catformula.Operators.PLUS,  # easy start
+        "-": catformula.Operators.MINUS,
+        "*": catformula.Operators.MULT,
+        "/": catformula.Operators.DIVIDE,
+        "<": catformula.Operators.SMALLER_THAN,
+        "=": catformula.Operators.EQUAL,
+        ">": catformula.Operators.GREATER_THAN,
+        "&": catformula.Operators.LOGICAL_AND,
+        "|": catformula.Operators.LOGICAL_OR,
+        "not": catformula.Operators.LOGICAL_NOT,  # easy end
+        }
+
     @classmethod
     def brick(cls, sb2name):
         assert isinstance(sb2name, (str, unicode))
@@ -199,6 +214,10 @@ class _ScratchToCatrobat(object):
             assert False, "Missing script mapping for: " + sb2script_name
         # TODO: separate script and brick mapping
         return cls.brick(sb2script_name)(sprite, *arguments)
+
+    @classmethod
+    def operator(cls, opname):
+        return cls.OPERATORS_MAPPING.get(opname)
 
 
 def _key_image_path_for(key):
@@ -214,8 +233,11 @@ def _key_filename_for(key):
     # TODO: extract method, already used once
     return common.md5_hash(key_path) + "_" + _key_to_broadcast_message(key) + os.path.splitext(key_path)[1]
 
+catr_project = None
+
 
 def _convert_to_catrobat_project(sb2_project):
+    global catr_project
     catr_project = catbase.Project(None, sb2_project.name)
     catr_project.getXmlHeader().virtualScreenHeight = sb2.STAGE_HEIGHT_IN_PIXELS
     catr_project.getXmlHeader().virtualScreenWidth = sb2.STAGE_WIDTH_IN_PIXELS
@@ -350,79 +372,96 @@ def _convert_to_catrobat_script(sb2_script, sprite):
     return cat_script
 
 
-def _convert_to_catrobat_bricks(sb2_brick, cat_sprite):
+def _convert_to_catrobat_bricks(sb2_brick, catr_sprite):
+    global catr_project
     common.log.debug("Brick to convert={}".format(sb2_brick))
     if not sb2_brick or not (isinstance(sb2_brick, list) and isinstance(sb2_brick[0], (str, unicode))):
         raise common.ScratchtobatError("Wrong arg1, must be list with string as first element: {!r}".format(sb2_brick))
-    if not isinstance(cat_sprite, catbase.Sprite):
-        raise common.ScratchtobatError("Wrong arg2, must be of type={}, but is={}".format(catbase.Sprite, type(cat_sprite)))
+    if not isinstance(catr_sprite, catbase.Sprite):
+        raise common.ScratchtobatError("Wrong arg2, must be of type={}, but is={}".format(catbase.Sprite, type(catr_sprite)))
     brick_name = sb2_brick[0]
     brick_arguments = sb2_brick[1:]
     catr_bricks = []
-    catroid_brick_class = _ScratchToCatrobat.brick(brick_name)
+    catrobat_brick_class = _ScratchToCatrobat.brick(brick_name)
     try:
-        # Bricks which special handling because of e.g. argument mismatch
+        # Conditionals for cases which need additional handling after brick object instantiation
         if brick_name in {'doRepeat', 'doForever'}:
             if brick_name == 'doRepeat':
                 times_value, nested_bricks = brick_arguments
                 if isinstance(times_value, list):
                     common.log.warning("Unsupported times_value: {}. Set to default (1).".format(times_value))
                     times_value = 1
-                catr_loop_start_brick = catroid_brick_class(cat_sprite, times_value)
+                catr_loop_start_brick = catrobat_brick_class(catr_sprite, times_value)
             elif brick_name == 'doForever':
                 [nested_bricks] = brick_arguments
-                catr_loop_start_brick = catroid_brick_class(cat_sprite)
+                catr_loop_start_brick = catrobat_brick_class(catr_sprite)
             else:
                 assert False, "Missing conditional branch for: " + brick_name
 
             catr_bricks += [catr_loop_start_brick]
             for brick_arg in nested_bricks:
-                catr_bricks += _convert_to_catrobat_bricks(brick_arg, cat_sprite)
-            catr_bricks += [catbricks.LoopEndBrick(cat_sprite, catr_loop_start_brick)]
+                # Note: recursive call
+                catr_bricks += _convert_to_catrobat_bricks(brick_arg, catr_sprite)
+            catr_bricks += [catbricks.LoopEndBrick(catr_sprite, catr_loop_start_brick)]
 
         elif brick_name in ['doIf']:
-            if_begin_brick = catbricks.IfLogicBeginBrick(cat_sprite, brick_arguments[0])
-            if_else_brick = catbricks.IfLogicElseBrick(cat_sprite, if_begin_brick)
-            if_end_brick = catbricks.IfLogicEndBrick(cat_sprite, if_else_brick, if_begin_brick)
+            assert catr_project
+            if_begin_brick = catbricks.IfLogicBeginBrick(catr_sprite, _convert_formula(brick_arguments[0], catr_sprite, catr_project))
+            if_else_brick = catbricks.IfLogicElseBrick(catr_sprite, if_begin_brick)
+            if_end_brick = catbricks.IfLogicEndBrick(catr_sprite, if_else_brick, if_begin_brick)
 
-            catr_bricks += [catbricks.RepeatBrick(cat_sprite), if_begin_brick]
+            catr_bricks += [catbricks.RepeatBrick(catr_sprite), if_begin_brick]
             nested_bricks = brick_arguments[1:]
             for brick_arg in nested_bricks:
-                catr_bricks += _convert_to_catrobat_bricks(brick_arg, cat_sprite)
+                # Note: recursive call
+                catr_bricks += _convert_to_catrobat_bricks(brick_arg, catr_sprite)
 
-            catr_bricks += [if_else_brick, if_end_brick, catbricks.LoopEndBrick(cat_sprite, catr_bricks[0])]
+            catr_bricks += [if_else_brick, if_end_brick, catbricks.LoopEndBrick(catr_sprite, catr_bricks[0])]
 
         elif brick_name == "playSound:":
             [look_name] = brick_arguments
-            soundinfo_name_to_soundinfo_map = {lookdata.getTitle(): lookdata for lookdata in cat_sprite.getSoundList()}
+            soundinfo_name_to_soundinfo_map = {lookdata.getTitle(): lookdata for lookdata in catr_sprite.getSoundList()}
             lookdata = soundinfo_name_to_soundinfo_map.get(look_name)
             if not lookdata:
                 raise ConversionError("Sprite does not contain sound with name={}".format(look_name))
-            play_sound_brick = catroid_brick_class(cat_sprite)
+            play_sound_brick = catrobat_brick_class(catr_sprite)
             play_sound_brick.setSoundInfo(lookdata)
             catr_bricks += [play_sound_brick]
 
 #         same structure as 'playSound' above
 #         elif brick_name == "startScene":
 #             [look_name] = brick_arguments
-#             matching_lookdatas = [_ for _ in cat_sprite.getLookDataList() if _.getLookName() == look_name]
+#             matching_lookdatas = [_ for _ in catr_sprite.getLookDataList() if _.getLookName() == look_name]
 #             if not matching_lookdatas:
 #                 raise ConversionError("Sprite does not contain look with name={}".format(look_name))
 #             assert len(matching_lookdatas) == 1
 #             [lookdata] = matching_lookdatas
-#             set_look_brick = catrobat_class_for_sb2_name(brick_name)(cat_sprite)
+#             set_look_brick = catrobat_class_for_sb2_name(brick_name)(catr_sprite)
 #             set_look_brick.setLook(lookdata)
 #             catr_bricks += [set_look_brick]
 
+        elif catrobat_brick_class in set([catbricks.SetLookBrick]):
+            set_look_brick = catrobat_brick_class(catr_sprite)
+            [look_name] = brick_arguments
+            [look] = [look for look in catr_sprite.getLookDataList() if look.getLookName() == look_name]
+            set_look_brick.setLook(look)
+            catr_bricks += [set_look_brick]
+
         else:
-            common.log.debug("Get mapping for {} in {}".format(brick_name, cat_sprite))
-            catrobat_class = catroid_brick_class
+            common.log.debug("Get mapping for {} in {}".format(brick_name, catr_sprite))
+            catrobat_class = catrobat_brick_class
+            # conditionalss for argument convertions
             if not catrobat_class:
                 common.log.warning("No mapping for={}, using default class".format(brick_name))
-                catr_bricks += [_DEFAULT_BRICK_CLASS(cat_sprite, 500), catbricks.NoteBrick(cat_sprite, "Missing brick for sb2 identifier: " + brick_name)]
+                catr_bricks += [_DEFAULT_BRICK_CLASS(catr_sprite, 500), catbricks.NoteBrick(catr_sprite, "Missing brick for sb2 identifier: " + brick_name)]
             else:
                 assert not isinstance(catrobat_class, list), "Wrong at: {1}, {0}".format(brick_arguments, brick_name)
-                catr_bricks += [catrobat_class(cat_sprite, *brick_arguments)]
+                if brick_arguments:
+                    if catrobat_class in set([catbricks.ChangeVariableBrick, catbricks.SetVariableBrick]):
+                        assert catr_project
+                        variable, value = brick_arguments
+                        brick_arguments = [_convert_formula(value, catr_sprite, catr_project), catr_project.getUserVariables().getUserVariable(variable, catr_sprite)]
+                catr_bricks += [catrobat_class(catr_sprite, *brick_arguments)]
     except TypeError as e:
         common.log.exception(e)
         assert False, "Non-matching arguments of SB2 brick '{1}'; {0}".format(brick_arguments, brick_name)
@@ -431,7 +470,7 @@ def _convert_to_catrobat_bricks(sb2_brick, cat_sprite):
 
 
 def _convert_to_catrobat_look(costume):
-    if not costume or not (isinstance(costume, dict) and all(_ in costume for _ in (sb2keys.BASELAYERMD5_KEY, sb2keys.COSTUMENAME_KEY))):
+    if not costume or not (isinstance(costume, dict) and all(_ in costume for _ in (sb2keys.COSTUME_MD5, sb2keys.COSTUMENAME_KEY))):
         raise common.ScratchtobatError("Wrong input, must be costume dict: {}".format(costume))
     look = catcommon.LookData()
 
@@ -439,8 +478,8 @@ def _convert_to_catrobat_look(costume):
     costume_name = costume[sb2keys.COSTUMENAME_KEY]
     look.setLookName(costume_name)
 
-    assert sb2keys.BASELAYERMD5_KEY in costume
-    costume_filename = costume[sb2keys.BASELAYERMD5_KEY]
+    assert sb2keys.COSTUME_MD5 in costume
+    costume_filename = costume[sb2keys.COSTUME_MD5]
     costume_filename_ext = os.path.splitext(costume_filename)[1]
     look.setLookFilename(costume_filename.replace(costume_filename_ext, "_" + costume_name + costume_filename_ext))
     return look
@@ -453,10 +492,11 @@ def _convert_to_catrobat_sound(sound):
     sound_name = sound[sb2keys.SOUNDNAME_KEY]
     soundinfo.setTitle(sound_name)
 
-    assert sb2keys.MD5_KEY in sound
-    sound_filename = sound[sb2keys.MD5_KEY]
+    assert sb2keys.SOUND_MD5 in sound
+    sound_filename = sound[sb2keys.SOUND_MD5]
     sound_filename_ext = os.path.splitext(sound_filename)[1]
     soundinfo.setSoundFileName(sound_filename.replace(sound_filename_ext, "_" + sound_name + sound_filename_ext))
+#     soundinfo.setSoundFileName(sound_filename.replace(sound_filename_ext, "_" + sound_name))
     return soundinfo
 
 
@@ -464,7 +504,7 @@ class ConversionError(common.ScratchtobatError):
         pass
 
 
-def convert_sb2_project_to_catroid_zip(project, catroid_zip_file_path):
+def convert_sb2_project_to_catrobat_zip(project, catrobat_zip_file_path):
     temp_dir = tempfile.mkdtemp()
     convert_sb2_project_to_catroid_project_structure(project, temp_dir)
 
@@ -476,11 +516,13 @@ def convert_sb2_project_to_catroid_zip(project, catroid_zip_file_path):
     assert temp_dir
     assert project.name
 
-    with zipfile.ZipFile(catroid_zip_file_path, 'w') as zip_fp:
+    with zipfile.ZipFile(catrobat_zip_file_path, 'w') as zip_fp:
         for file_path in iter_dir(temp_dir):
             print file_path.replace(temp_dir, project.name), type(file_path.replace(temp_dir, project.name))
             zip_fp.write(file_path, file_path.replace(temp_dir, project.name))
 
+    with zipfile.ZipFile(catrobat_zip_file_path, 'r') as zip_fp:
+        zip_fp.extractall(os.path.dirname(catrobat_zip_file_path))
     shutil.rmtree(temp_dir)
 
 
@@ -506,29 +548,33 @@ def convert_sb2_project_to_catroid_project_structure(sb2_project, temp_path):
         return sounds_path, images_path
 
     def save_mediafiles_into_catroid_directory_structure():
-        def update_md5_hash(resource_maps, file_path):
-            md5_name = common.md5_hash(file_path) + os.path.splitext(file_path)[1]
+        def update_md5_hash(current_md5_name, file_path_for_update):
+            resource_maps = list(sb2_project.project_code.resource_dicts_of_md5_name(current_md5_name))
+            md5_name = common.md5_hash(file_path_for_update) + os.path.splitext(file_path_for_update)[1]
             for resource_map in resource_maps:
-                assert sb2keys.BASELAYERMD5_KEY in resource_map, resource_map
-                resource_map[sb2keys.BASELAYERMD5_KEY] = md5_name
+                if sb2keys.COSTUME_MD5 in resource_map:
+                    resource_map[sb2keys.COSTUME_MD5] = md5_name
+                elif sb2keys.SOUND_MD5 in resource_map:
+                    resource_map[sb2keys.SOUND_MD5] = md5_name
+                else:
+                    assert False, "Unknown dict: {}".resource_map
             return md5_name
 
         for md5_name, src_path in sb2_project.md5_to_resource_path_map.iteritems():
-            file_ext = os.path.splitext(md5_name)[1]
+            file_ext = os.path.splitext(md5_name)[1].lower()
             converted_file = False
 
-            if file_ext in {".png", ".svg"}:
+            # TODO; extract method
+            if file_ext in {".png", ".svg", ".jpg"}:
                 target_dir = images_path
-                resource_maps = list(sb2_project.project_code.resource_dicts_of_md5_name(md5_name))
-                # WORKAROUNF: penLayerMD5 file
-                if not resource_maps:
-                    continue
+#                 # WORKAROUNF: penLayerMD5 file
+#                 if not resource_maps:
+#                     continue
                 if file_ext == ".svg":
                     # converting svg to png -> new md5 and filename
-
                     src_path = svgtopng.convert(src_path)
-                    md5_name = update_md5_hash(resource_maps, src_path)
                     converted_file = True
+
                 elif md5_name in sb2_project.background_md5_names:
                     # resize background if not matching the default resolution
                     imageFile = File(src_path)
@@ -536,18 +582,27 @@ def convert_sb2_project_to_catroid_project_structure(sb2_project, temp_path):
                     if pngImage.getWidth() > sb2.STAGE_WIDTH_IN_PIXELS or pngImage.getHeight() > sb2.STAGE_HEIGHT_IN_PIXELS:
                         resizedImage = imageresizer.resize_png(pngImage, sb2.STAGE_WIDTH_IN_PIXELS, sb2.STAGE_HEIGHT_IN_PIXELS)
                         # FIXME
-                        temp_path = src_path.replace(".png", "resized.png")
-                        ImageIO.write(resizedImage, "png", File(temp_path))
-                        md5_name = update_md5_hash(resource_maps, temp_path)
+                        src_path = src_path.replace(".png", "resized.png")
+                        ImageIO.write(resizedImage, "png", File(src_path))
+                        converted_file = True
+
+            elif file_ext in {".wav", ".mp3"}:
+                target_dir = sounds_path
+                if file_ext == ".wav":
+                    if not wavconverter.is_android_compatible_wav(src_path):
+                        temp_path = src_path.replace(".wav", "converted.wav")
+                        wavconverter.convert_to_android_compatible_wav(src_path, temp_path)
                         src_path = temp_path
                         converted_file = True
-            elif file_ext in {".wav"}:
-                target_dir = sounds_path
+
             else:
                 assert file_ext in {".json"}, md5_name
                 continue
 
             assert os.path.exists(src_path), "Not existing: {}".format(src_path)
+            if converted_file:
+                md5_name = update_md5_hash(md5_name, src_path)
+            # if file is used multiple times: single md5, multiple filenames
             for catroid_file_name in _convert_resource_name(sb2_project, md5_name):
                 shutil.copyfile(src_path, os.path.join(target_dir, catroid_file_name))
             if converted_file:
@@ -599,5 +654,30 @@ def _convert_resource_name(project, md5_name):
     return catroid_resource_names
 
 
-def _convert_formula(raw_source):
-    pass
+def _convert_formula(raw_source, sprite, project):
+    tokens = []
+    user_variables = project.getUserVariables()
+    if not isinstance(raw_source, list):
+        raw_source = [raw_source]
+    for elem in raw_source:
+        if isinstance(elem, (str, unicode)):
+
+            operator = _ScratchToCatrobat.operator(elem)
+            if operator:
+                pass
+
+            elif elem.endswith(":"):
+                user_var = user_variables.getUserVariable(elem, sprite)
+                if not user_var:
+                    log.warning("Unknown variable '{}'. Aborting formula.".format(elem))
+                    return catformula.Formula(catformula.FormulaElement(catformula.FormulaElement.ElementType.FUNCTION, catformula.Functions.TRUE, None))
+                tokens += [catformula.InternToken(catformula.InternTokenType.USER_VARIABLE, elem)]
+            else:
+                assert False, "Unsupported type: {} of '{}'".format(type(elem), elem)
+        elif isinstance(elem, (int, long, float, complex)):
+                tokens += [catformula.InternToken(catformula.InternTokenType.NUMBER, str(elem))]
+        else:
+            log.warning("Unknown variable '{}'. Aborting formula.".format(elem))
+            return catformula.Formula(catformula.FormulaElement(catformula.FormulaElement.ElementType.FUNCTION, catformula.Functions.TRUE, None))
+            assert False, "Unsupported type: {} of '{}'".format(type(elem), elem)
+    return catformula.Formula(catformula.InternFormulaParser(tokens, project, sprite).parseFormula())

@@ -10,6 +10,7 @@ log = logging.getLogger("scratchtobat.sb2")
 SCRIPT_GREEN_FLAG, SCRIPT_RECEIVE, SCRIPT_KEY_PRESSED, SCRIPT_SENSOR_GREATER_THAN, SCRIPT_SCENE_STARTS, SCRIPT_CLICKED = \
      SCRATCH_SCRIPTS = ["whenGreenFlag", "whenIReceive", "whenKeyPressed", "whenSensorGreaterThan", "whenSceneStarts", "whenClicked", ]
 
+STAGE_OBJECT_NAME = "Stage"
 STAGE_HEIGHT_IN_PIXELS = 360
 STAGE_WIDTH_IN_PIXELS = 480
 
@@ -27,8 +28,10 @@ class JsonKeys(object):
     SOUNDID_KEY = "soundID"
     SOUND_MD5 = "md5"
     COSTUME_MD5 = "baseLayerMD5"
+    COSTUME_RESOLUTION = "bitmapResolution"
     BASELAYERID_KEY = "baseLayerID"
     COSTUMENAME_KEY = "costumeName"
+
 
 
 class DictAccessWrapper(object):
@@ -104,6 +107,7 @@ class ProjectCode(DictAccessWrapper):
         self.objects_data = [_ for _ in self.get_children() if "objName" in _]
         self.objects = [Object(_) for _ in [self.project_code] + self.objects_data]
         self.stage_object = self.objects[0]
+        self.nonstate_objects = self.objects[1:]
 
     def load_json_file(self, json_file):
         if not os.path.exists(json_file):
@@ -150,7 +154,8 @@ class Object(DictAccessWrapper):
         for key in (JsonKeys.SOUNDS_KEY, JsonKeys.COSTUMES_KEY, JsonKeys.SCRIPTS_KEY):
             if not key in self.object_data:
                 self.object_data[key] = []
-
+        # TODO: check for all stage-object-only keys
+        self.is_stage_object = JsonKeys.INFO_KEY in self.object_data
         self.scripts = [Script(_) for _ in self.get_scripts() if Script.is_valid_script_input(_)]
 
     @classmethod

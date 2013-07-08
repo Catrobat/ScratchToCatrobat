@@ -1,0 +1,446 @@
+{
+	"objName": "Stage",
+	"scripts": [[11, 91, [["whenGreenFlag"], ["doPlaySoundAndWait", "Jai Ho"], ["stopScripts", "all"]]],
+		[109, 204, [["whenGreenFlag"], ["doForever", [["changeGraphicEffect:by:", "color", 1]]]]]],
+	"sounds": [{
+			"soundName": "Jai Ho",
+			"soundID": 1,
+			"md5": "3021a8fb93f2729077ef5b6996d07182.wav",
+			"sampleCount": 4887360,
+			"rate": 22050,
+			"format": "adpcm"
+		}],
+	"costumes": [{
+			"costumeName": "Background1",
+			"baseLayerID": 29,
+			"baseLayerMD5": "6982f008e91f89a144e65f1a43a17f0d.png",
+			"bitmapResolution": 2,
+			"rotationCenterX": 480,
+			"rotationCenterY": 360
+		}],
+	"currentCostumeIndex": 0,
+	"penLayerMD5": "279467d0d49e152706ed66539b577c00.png",
+	"tempoBPM": 60,
+	"videoAlpha": 0.5,
+	"children": [{
+			"objName": "Painty2",
+			"scripts": [[16, 141, [["whenGreenFlag"], ["doForever", [["nextCostume"], ["wait:elapsed:from:", 0.1]]]]],
+				[126, 318, [["whenGreenFlag"], ["doForever", [["changeGraphicEffect:by:", "color", 1]]]]]],
+			"costumes": [{
+					"costumeName": "Kostüm1",
+					"baseLayerID": 1,
+					"baseLayerMD5": "d46e43515b06333d7cfc124a7af4097b.png",
+					"bitmapResolution": 1,
+					"rotationCenterX": 165,
+					"rotationCenterY": 177
+				},
+				{
+					"costumeName": "Kostüm2",
+					"baseLayerID": 2,
+					"baseLayerMD5": "415ee004c26c46ec645462559d5d836b.png",
+					"bitmapResolution": 1,
+					"rotationCenterX": 165,
+					"rotationCenterY": 177
+				},
+				{
+					"costumeName": "Kostüm3",
+					"baseLayerID": 3,
+					"baseLayerMD5": "f5b1aef31b46b185109da269c2f73d96.png",
+					"bitmapResolution": 1,
+					"rotationCenterX": 165,
+					"rotationCenterY": 177
+				},
+				{
+					"costumeName": "Kostüm4",
+					"baseLayerID": 4,
+					"baseLayerMD5": "78433b240bb1a34a207726080908684c.png",
+					"bitmapResolution": 1,
+					"rotationCenterX": 165,
+					"rotationCenterY": 177
+				},
+				{
+					"costumeName": "Kostüm5",
+					"baseLayerID": 5,
+					"baseLayerMD5": "8fdce0b52b1263fa5bbaf6390564e93d.png",
+					"bitmapResolution": 1,
+					"rotationCenterX": 165,
+					"rotationCenterY": 177
+				}],
+			"currentCostumeIndex": 3,
+			"scratchX": 157,
+			"scratchY": -103,
+			"scale": 0.44,
+			"direction": 90,
+			"rotationStyle": "normal",
+			"isDraggable": false,
+			"indexInLibrary": 3,
+			"visible": true,
+			"spriteInfo": {
+			}
+		},
+		{
+			"objName": "MYSTICBLAZE2",
+			"scripts": [[20,
+					20,
+					[["whenGreenFlag"], ["lookLike:", "mysticblazejaiho"], ["doForever", [["nextCostume"], ["wait:elapsed:from:", 0.07]]]]],
+				[141, 330, [["whenGreenFlag"], ["doForever", [["changeGraphicEffect:by:", "color", 1]]]]]],
+			"costumes": [{
+					"costumeName": "mysticblazejaiho",
+					"baseLayerID": 6,
+					"baseLayerMD5": "74e4b1ab6b12375a559c176f06a1fcd5.png",
+					"bitmapResolution": 1,
+					"rotationCenterX": 240,
+					"rotationCenterY": 180
+				},
+				{
+					"costumeName": "mysticblazejaiho1",
+					"baseLayerID": 7,
+					"baseLayerMD5": "51b91092ab1e6b86c283c695f7199acb.png",
+					"bitmapResolution": 1,
+					"rotationCenterX": 240,
+					"rotationCenterY": 180
+				},
+				{
+					"costumeName": "mysticblazejaiho2",
+					"baseLayerID": 8,
+					"baseLayerMD5": "7e1e2271905f2346ff839c877ba49b15.png",
+					"bitmapResolution": 1,
+					"rotationCenterX": 240,
+					"rotationCenterY": 180
+				},
+				{
+					"costumeName": "mysticblazejaiho3",
+					"baseLayerID": 9,
+					"baseLayerMD5": "d14501a08de2d2c4ef1c1c942e8c962b.png",
+					"bitmapResolution": 1,
+					"rotationCenterX": 240,
+					"rotationCenterY": 180
+				},
+				{
+					"costumeName": "mysticblazejaiho4",
+					"baseLayerID": 10,
+					"baseLayerMD5": "ababdc4cd61e8e513b045fcbe59259d8.png",
+					"bitmapResolution": 1,
+					"rotationCenterX": 240,
+					"rotationCenterY": 180
+				},
+				{
+					"costumeName": "mysticblazejaiho5",
+					"baseLayerID": 9,
+					"baseLayerMD5": "d14501a08de2d2c4ef1c1c942e8c962b.png",
+					"bitmapResolution": 1,
+					"rotationCenterX": 240,
+					"rotationCenterY": 180
+				},
+				{
+					"costumeName": "mysticblazejaiho6",
+					"baseLayerID": 8,
+					"baseLayerMD5": "7e1e2271905f2346ff839c877ba49b15.png",
+					"bitmapResolution": 1,
+					"rotationCenterX": 240,
+					"rotationCenterY": 180
+				},
+				{
+					"costumeName": "mysticblazejaiho7",
+					"baseLayerID": 7,
+					"baseLayerMD5": "51b91092ab1e6b86c283c695f7199acb.png",
+					"bitmapResolution": 1,
+					"rotationCenterX": 240,
+					"rotationCenterY": 180
+				}],
+			"currentCostumeIndex": 5,
+			"scratchX": -74,
+			"scratchY": -121,
+			"scale": 0.33,
+			"direction": 90,
+			"rotationStyle": "normal",
+			"isDraggable": false,
+			"indexInLibrary": 1,
+			"visible": true,
+			"spriteInfo": {
+			}
+		},
+		{
+			"objName": "Sprite3",
+			"scripts": [[162, 1028, [["whenIReceive", "Jai ho (two)"], ["hide"]]],
+				[112, 142, [["whenGreenFlag"], ["doForever", [["nextCostume"], ["wait:elapsed:from:", 0.1]]]]],
+				[81, 365, [["whenGreenFlag"], ["doForever", [["changeGraphicEffect:by:", "color", 1]]]]]],
+			"costumes": [{
+					"costumeName": "costume9",
+					"baseLayerID": 11,
+					"baseLayerMD5": "ec4f70a31cf492f56e70107d41f16a46.png",
+					"bitmapResolution": 1,
+					"rotationCenterX": 87,
+					"rotationCenterY": 155
+				},
+				{
+					"costumeName": "costume10",
+					"baseLayerID": 12,
+					"baseLayerMD5": "f50ef734d0f9da9a2aa747ff5acbacb8.png",
+					"bitmapResolution": 1,
+					"rotationCenterX": 74,
+					"rotationCenterY": 155
+				},
+				{
+					"costumeName": "costume2",
+					"baseLayerID": 11,
+					"baseLayerMD5": "ec4f70a31cf492f56e70107d41f16a46.png",
+					"bitmapResolution": 1,
+					"rotationCenterX": 87,
+					"rotationCenterY": 155
+				},
+				{
+					"costumeName": "costume11",
+					"baseLayerID": 13,
+					"baseLayerMD5": "9dcbe991f45dc531572fa730a5a673c0.png",
+					"bitmapResolution": 1,
+					"rotationCenterX": 101,
+					"rotationCenterY": 155
+				}],
+			"currentCostumeIndex": 0,
+			"scratchX": -185,
+			"scratchY": -105,
+			"scale": 0.44,
+			"direction": 90,
+			"rotationStyle": "normal",
+			"isDraggable": false,
+			"indexInLibrary": 2,
+			"visible": true,
+			"spriteInfo": {
+			}
+		},
+		{
+			"objName": "S.A.M",
+			"scripts": [[16, 141, [["whenGreenFlag"], ["doForever", [["nextCostume"], ["wait:elapsed:from:", 0.1]]]]],
+				[184, 349, [["whenGreenFlag"], ["doForever", [["changeGraphicEffect:by:", "color", 1]]]]]],
+			"sounds": [{
+					"soundName": "meow",
+					"soundID": 0,
+					"md5": "83c36d806dc92327b9e7049a565c6bff.wav",
+					"sampleCount": 18688,
+					"rate": 22050,
+					"format": ""
+				}],
+			"costumes": [{
+					"costumeName": "SAM",
+					"baseLayerID": 14,
+					"baseLayerMD5": "e3dce0f365feb13f77f54d081ebeef1b.png",
+					"bitmapResolution": 2,
+					"rotationCenterX": 75,
+					"rotationCenterY": 125
+				},
+				{
+					"costumeName": "SAM2",
+					"baseLayerID": 15,
+					"baseLayerMD5": "0ae535a9929bdca3d43b5a58cade713a.png",
+					"bitmapResolution": 2,
+					"rotationCenterX": 81,
+					"rotationCenterY": 124
+				},
+				{
+					"costumeName": "SAM4",
+					"baseLayerID": 14,
+					"baseLayerMD5": "e3dce0f365feb13f77f54d081ebeef1b.png",
+					"bitmapResolution": 2,
+					"rotationCenterX": 75,
+					"rotationCenterY": 125
+				},
+				{
+					"costumeName": "SAM3",
+					"baseLayerID": 16,
+					"baseLayerMD5": "7ed15f4a29509ecab911de27ad0fbdf4.png",
+					"bitmapResolution": 2,
+					"rotationCenterX": 38,
+					"rotationCenterY": 124
+				}],
+			"currentCostumeIndex": 1,
+			"scratchX": 56.94999999999999,
+			"scratchY": -157,
+			"scale": 2.0500000000000007,
+			"direction": 90,
+			"rotationStyle": "normal",
+			"isDraggable": false,
+			"indexInLibrary": 5,
+			"visible": true,
+			"spriteInfo": {
+			}
+		},
+		{
+			"objName": "Block Bot",
+			"scripts": [[16, 141, [["whenGreenFlag"], ["doForever", [["nextCostume"], ["wait:elapsed:from:", 0.1]]]]],
+				[213, 303, [["whenGreenFlag"], ["doForever", [["changeGraphicEffect:by:", "color", 1]]]]]],
+			"sounds": [{
+					"soundName": "meow",
+					"soundID": 0,
+					"md5": "83c36d806dc92327b9e7049a565c6bff.wav",
+					"sampleCount": 18688,
+					"rate": 22050,
+					"format": ""
+				}],
+			"costumes": [{
+					"costumeName": "Block Robot2",
+					"baseLayerID": 17,
+					"baseLayerMD5": "1969ebcd8664674a31e0c2a76872672f.png",
+					"bitmapResolution": 2,
+					"rotationCenterX": 34,
+					"rotationCenterY": 38
+				},
+				{
+					"costumeName": "Block Robot3",
+					"baseLayerID": 17,
+					"baseLayerMD5": "1969ebcd8664674a31e0c2a76872672f.png",
+					"bitmapResolution": 2,
+					"rotationCenterX": 34,
+					"rotationCenterY": 30
+				},
+				{
+					"costumeName": "Block Robot4",
+					"baseLayerID": 17,
+					"baseLayerMD5": "1969ebcd8664674a31e0c2a76872672f.png",
+					"bitmapResolution": 2,
+					"rotationCenterX": 34,
+					"rotationCenterY": 16
+				},
+				{
+					"costumeName": "Block Robot5",
+					"baseLayerID": 17,
+					"baseLayerMD5": "1969ebcd8664674a31e0c2a76872672f.png",
+					"bitmapResolution": 2,
+					"rotationCenterX": 34,
+					"rotationCenterY": 30
+				}],
+			"currentCostumeIndex": 2,
+			"scratchX": 85.05000000000001,
+			"scratchY": -145,
+			"scale": 2.1500000000000004,
+			"direction": 90,
+			"rotationStyle": "normal",
+			"isDraggable": false,
+			"indexInLibrary": 4,
+			"visible": true,
+			"spriteInfo": {
+			}
+		},
+		{
+			"objName": "Dancer",
+			"scripts": [[28,
+					13,
+					[["whenGreenFlag"], ["lookLike:", "Screen Shot 2013-05-25 at 9.29.51 AM"], ["doForever", [["wait:elapsed:from:", 0.3], ["nextCostume"]]]]],
+				[5, 186, [["whenGreenFlag"], ["doForever", [["changeGraphicEffect:by:", "color", 1]]]]]],
+			"sounds": [{
+					"soundName": "meow",
+					"soundID": 0,
+					"md5": "83c36d806dc92327b9e7049a565c6bff.wav",
+					"sampleCount": 18688,
+					"rate": 22050,
+					"format": ""
+				}],
+			"costumes": [{
+					"costumeName": "Screen Shot 2013-05-25 at 9.29.51 AM",
+					"baseLayerID": 18,
+					"baseLayerMD5": "0ec3003c6def1124ac3dc97284837f62.png",
+					"bitmapResolution": 2,
+					"rotationCenterX": 142,
+					"rotationCenterY": 216
+				},
+				{
+					"costumeName": "Screen Shot 2013-05-25 at 9.30.01 AM",
+					"baseLayerID": 19,
+					"baseLayerMD5": "bfc43203ecabc90e9440059783c6b529.png",
+					"bitmapResolution": 2,
+					"rotationCenterX": 184,
+					"rotationCenterY": 220
+				},
+				{
+					"costumeName": "Screen Shot 2013-05-25 at 9.31.48 AM",
+					"baseLayerID": 20,
+					"baseLayerMD5": "490935f070bc795f03a32f7a669d0ab3.png",
+					"bitmapResolution": 2,
+					"rotationCenterX": 114,
+					"rotationCenterY": 230
+				},
+				{
+					"costumeName": "Screen Shot 2013-05-25 at 9.32.04 AM",
+					"baseLayerID": 21,
+					"baseLayerMD5": "6be38f168dc88638496417849c625bab.png",
+					"bitmapResolution": 2,
+					"rotationCenterX": 126,
+					"rotationCenterY": 230
+				},
+				{
+					"costumeName": "Screen Shot 2013-05-25 at 9.32.24 AM",
+					"baseLayerID": 22,
+					"baseLayerMD5": "85f653b9aec6603a0ae3e3fdae8f1dcc.png",
+					"bitmapResolution": 2,
+					"rotationCenterX": 142,
+					"rotationCenterY": 230
+				},
+				{
+					"costumeName": "Screen Shot 2013-05-25 at 9.32.38 AM",
+					"baseLayerID": 23,
+					"baseLayerMD5": "62789c7924434f87c841723637bcc107.png",
+					"bitmapResolution": 2,
+					"rotationCenterX": 122,
+					"rotationCenterY": 236
+				},
+				{
+					"costumeName": "Screen Shot 2013-05-25 at 9.32.53 AM",
+					"baseLayerID": 24,
+					"baseLayerMD5": "29ac0d5c8537678840e56b659be5945d.png",
+					"bitmapResolution": 2,
+					"rotationCenterX": 66,
+					"rotationCenterY": 270
+				},
+				{
+					"costumeName": "Screen Shot 2013-05-25 at 9.33.01 AM",
+					"baseLayerID": 25,
+					"baseLayerMD5": "40f95bc268ce4091050af57837bd45a3.png",
+					"bitmapResolution": 2,
+					"rotationCenterX": 122,
+					"rotationCenterY": 242
+				},
+				{
+					"costumeName": "Screen Shot 2013-05-25 at 9.33.09 AM",
+					"baseLayerID": 26,
+					"baseLayerMD5": "a601507cf75b2c004117cbbc73a4d268.png",
+					"bitmapResolution": 2,
+					"rotationCenterX": 180,
+					"rotationCenterY": 226
+				},
+				{
+					"costumeName": "Screen Shot 2013-05-25 at 9.33.15 AM",
+					"baseLayerID": 27,
+					"baseLayerMD5": "3180287a7278ef343539f8d90f0645da.png",
+					"bitmapResolution": 2,
+					"rotationCenterX": 82,
+					"rotationCenterY": 236
+				},
+				{
+					"costumeName": "Screen Shot 2013-05-25 at 9.33.21 AM",
+					"baseLayerID": 28,
+					"baseLayerMD5": "84bfd2e6d957c6be3611884bdb3ac667.png",
+					"bitmapResolution": 2,
+					"rotationCenterX": 136,
+					"rotationCenterY": 232
+				}],
+			"currentCostumeIndex": 10,
+			"scratchX": -127,
+			"scratchY": 18,
+			"scale": 0.75,
+			"direction": 90,
+			"rotationStyle": "normal",
+			"isDraggable": false,
+			"indexInLibrary": 6,
+			"visible": true,
+			"spriteInfo": {
+			}
+		}],
+	"info": {
+		"userAgent": "Mozilla\/5.0 (Windows NT 6.1; WOW64; rv:21.0) Gecko\/20100101 Firefox\/21.0",
+		"scriptCount": 15,
+		"flashVersion": "WIN 11,7,700,202",
+		"spriteCount": 6,
+		"videoOn": false,
+		"projectID": "10453283"
+	}
+}

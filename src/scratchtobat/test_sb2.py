@@ -165,6 +165,13 @@ class TestObjectFunc(unittest.TestCase):
                 self.assertTrue(isinstance(sound, dict))
                 self.assertTrue("soundName" in sound)
 
+    def test_can_check_for_stage_object(self):
+        for idx, sb2_object in enumerate(self.sb2_objects):
+            if idx == 0:
+                self.assert_(sb2_object.is_stage_object)
+            else:
+                self.assert_(not sb2_object.is_stage_object)
+
 
 class TestScriptInit(unittest.TestCase):
 

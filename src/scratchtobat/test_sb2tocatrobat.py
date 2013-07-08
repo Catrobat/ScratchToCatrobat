@@ -1,5 +1,6 @@
 from java.lang import System
-from scratchtobat import sb2tocatrobat, sb2, common, common_testing
+from scratchtobat import sb2tocatrobat, sb2, common, common_testing, \
+    catrobat_util
 import glob
 import org.catrobat.catroid.common as catcommon
 import org.catrobat.catroid.content as catbase
@@ -9,7 +10,15 @@ import os
 import unittest
 
 
-DUMMY_CATR_SPRITE = catbase.Sprite("Dummy")
+def create_catrobat_sprite_stub():
+    sprite = catbase.Sprite("Dummy")
+    looks = sprite.getLookDataList()
+    for lookname in ["look1", "look2", "look3"]:
+        looks.add(catrobat_util.create_lookdata(lookname, None))
+    return sprite
+
+DUMMY_CATR_SPRITE = create_catrobat_sprite_stub()
+
 TEST_PROJECT_PATH = common.get_test_project_path("dancing_castle")
 
 
@@ -87,15 +96,16 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
         self.assertCorrectZipFile(catroid_zip_file_name, project.name)
 
     def test_can_convert_complete_project_to_catrobat_project_class(self):
-        catr_project = sb2tocatrobat._convert_to_catrobat_project(self.project_parent)
-        self.assertTrue(isinstance(catr_project, catbase.Project), "Converted project is not a catroid project class.")
+        _catr_project = sb2tocatrobat._convert_to_catrobat_project(self.project_parent)
+        self.assertTrue(isinstance(_catr_project, catbase.Project), "Converted project is not a catroid project class.")
 
-        self.assertEqual(360, catr_project.getXmlHeader().virtualScreenHeight, "Project height not at Scratch stage size")
-        self.assertEqual(480, catr_project.getXmlHeader().virtualScreenWidth, "Project width not at Scratch stage size")
+        self.assertEqual(360, _catr_project.getXmlHeader().virtualScreenHeight, "Project height not at Scratch stage size")
+        self.assertEqual(480, _catr_project.getXmlHeader().virtualScreenWidth, "Project width not at Scratch stage size")
 
-        catr_sprites = catr_project.getSpriteList()
+        catr_sprites = _catr_project.getSpriteList()
         self.assertTrue(catr_sprites, "No sprites in converted project.")
         self.assertTrue(all(isinstance(_, catbase.Sprite) for _ in catr_sprites), "Sprites of converted project are not catroid sprite classes.")
+        self.assertEqual(catrobat_util.BACKGROUND_SPRITE_NAME, catr_sprites[0].getName())
 
     def test_can_convert_object_to_catrobat_sprite_class(self):
         sprites = [sb2tocatrobat._convert_to_catrobat_sprite(sb2obj) for sb2obj in self.project.objects]
@@ -173,11 +183,15 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
             self.assertEqual(soundinfo.getSoundFileName(), expected_values[1], "Sound file name wrong")
 
     def test_can_write_sb2_project_to_catrobat_xml(self):
-        catr_project = sb2tocatrobat._convert_to_catrobat_project(self.project_parent)
-#         common.log.info(catio.StorageHandler.getInstance().getXMLStringOfAProject(catr_project))
+        _catr_project = sb2tocatrobat._convert_to_catrobat_project(self.project_parent)
+#         common.log.info(catio.StorageHandler.getInstance().getXMLStringOfAProject(_catr_project))
 
 
 class TestConvertBricks(unittest.TestCase):
+
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        self.sprite_stub = create_catrobat_sprite_stub()
 
     def get_sprite_with_soundinfo(self, soundinfo_name):
         dummy_sound = catcommon.SoundInfo()
@@ -229,9 +243,28 @@ class TestConvertBricks(unittest.TestCase):
         brick = ["glideSecs:toX:y:elapsed:from:", 5, -174, -122]
         [catr_brick] = sb2tocatrobat._convert_to_catrobat_bricks(brick, DUMMY_CATR_SPRITE)
         self.assertTrue(isinstance(catr_brick, catbricks.GlideToBrick))
-        self.assertEqual(brick[0], catr_brick.durationInSeconds.formulaTree.getValue())
-        self.assertEqual(brick[1], catr_brick.xPosition.formulaTree.getValue())
-        self.assertEqual(brick[2], catr_brick.yPosition.formulaTree.getValue())
+        self.assertEqual(brick[1], catr_brick.durationInSeconds.formulaTree.getValue())
+        self.assertEqual(brick[2], catr_brick.xPosition.formulaTree.getValue())
+        self.assertEqual(brick[3], catr_brick.yPosition.formulaTree.getValue())
+
+    def test_can_convert_startscene_brick(self):
+        brick = ["startScene", "look1"]
+        script = sb2.Script([30, 355, [['whenGreenFlag'], brick]])
+        sb2tocatrobat._catr_project = catbase.Project(None, "TestDummyProject")
+        catr_script = sb2tocatrobat._convert_to_catrobat_script(script, self.sprite_stub)
+        sb2tocatrobat._catr_project = None
+        stub_scripts = self.sprite_stub.scriptList
+        self.assertEqual(1, stub_scripts.size())
+        self.assert_(isinstance(stub_scripts.get(0), catbase.BroadcastScript))
+        self.assertEqual("startScene look1", stub_scripts.get(0).getBroadcastMessage())
+
+        self.assert_(isinstance(catr_script.scriptList.get(0), catbricks.BroadcastBrick))
+        self.assertEqual("startScene look1", catr_script.scriptList.get(0).getBroadcastMessage())
+
+#         self.assertTrue(isinstance(catr_brick, catbricks.GlideToBrick))
+#         self.assertEqual(brick[0], catr_brick.durationInSeconds.formulaTree.getValue())
+#         self.assertEqual(brick[1], catr_brick.xPosition.formulaTree.getValue())
+#         self.assertEqual(brick[2], catr_brick.yPosition.formulaTree.getValue())
 
 
 class TestConvertScripts(unittest.TestCase):
@@ -278,7 +311,7 @@ class TestConvertProjects(common_testing.ProjectTestCase):
             self.assertCorrectZipFile(catroid_zip_file_name, project.name)
 
     def test_can_convert_project_with_many_media(self):
-        for project_name in ["Hannah_Montana"]:
+        for project_name in ["Hannah_Montana", "simple_utf_test"]:
             project = sb2.Project(common.get_test_project_path(project_name))
             catroid_zip_file_name = common.get_testoutput_path(project_name + ".zip")
 

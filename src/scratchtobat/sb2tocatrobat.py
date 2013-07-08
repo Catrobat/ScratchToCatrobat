@@ -1,5 +1,5 @@
 from codecs import open
-from scratchtobat import common, sb2, sb2webapi
+from scratchtobat import common, sb2, sb2webapi, catrobat_util
 from scratchtobat.sb2 import JsonKeys as sb2keys
 from scratchtobat.tools import svgtopng, imageresizer, wavconverter
 import org.catrobat.catroid.common as catcommon
@@ -25,8 +25,12 @@ log = logging.getLogger("scratchtobat.sb2tocatrobat")
 log.setLevel(logging.INFO)
 
 
-def _key_to_broadcast_message(keyName):
-    return keyName + "Pressed"
+def _key_to_broadcast_message(key_name):
+    return key_name + "Pressed"
+
+
+def _next_background_look_broadcast_message():
+    return "set background to next look"
 
 
 class _ScratchToCatrobat(object):
@@ -102,8 +106,8 @@ class _ScratchToCatrobat(object):
         # looks
         "lookLike:": catbricks.SetLookBrick,
         "nextCostume": catbricks.NextLookBrick,
-        "startScene": None,  # easy: msg broadcast
-        "nextScene": None,  # easy: msg broadcast
+        "startScene": catbricks.BroadcastBrick,  # easy: msg broadcast
+        "nextScene": catbricks.NextLookBrick,  # only allowed in scene object so same as nextLook
 
         "say:duration:elapsed:from:": None,
         "say:": None,
@@ -233,19 +237,22 @@ def _key_filename_for(key):
     # TODO: extract method, already used once
     return common.md5_hash(key_path) + "_" + _key_to_broadcast_message(key) + os.path.splitext(key_path)[1]
 
-catr_project = None
+
+_catr_project = None
 
 
 def _convert_to_catrobat_project(sb2_project):
-    global catr_project
-    catr_project = catbase.Project(None, sb2_project.name)
-    catr_project.getXmlHeader().virtualScreenHeight = sb2.STAGE_HEIGHT_IN_PIXELS
-    catr_project.getXmlHeader().virtualScreenWidth = sb2.STAGE_WIDTH_IN_PIXELS
-    for _ in sb2_project.project_code.objects:
-        catr_sprite = _convert_to_catrobat_sprite(_)
-        catr_project.addSprite(catr_sprite)
+    global _catr_project
+    _catr_project = catbase.Project(None, sb2_project.name)
+    _catr_project.getXmlHeader().virtualScreenHeight = sb2.STAGE_HEIGHT_IN_PIXELS
+    _catr_project.getXmlHeader().virtualScreenWidth = sb2.STAGE_WIDTH_IN_PIXELS
+    for object_ in sb2_project.project_code.objects:
+        catr_sprite = _convert_to_catrobat_sprite(object_)
+        if object_ is sb2_project.project_code.stage_object:
+            catr_sprite.setName(catrobat_util.BACKGROUND_SPRITE_NAME)
+        _catr_project.addSprite(catr_sprite)
 
-    def add_used_key_sprites(listened_keys, catr_project):
+    def add_used_key_sprites(listened_keys, _catr_project):
         height_pos = 1
         for idx, key in enumerate(listened_keys):
             width_pos = idx
@@ -279,11 +286,11 @@ def _convert_to_catrobat_project(sb2_project):
             when_tapped_script.addBrick(catbricks.BroadcastBrick(key_sprite, key_message))
             key_sprite.addScript(when_tapped_script)
 
-            catr_project.addSprite(key_sprite)
+            _catr_project.addSprite(key_sprite)
 
-    add_used_key_sprites(sb2_project.listened_keys, catr_project)
+    add_used_key_sprites(sb2_project.listened_keys, _catr_project)
 
-    return catr_project
+    return _catr_project
 
 
 def _convert_to_catrobat_sprite(sb2_object):
@@ -292,7 +299,14 @@ def _convert_to_catrobat_sprite(sb2_object):
     sprite = catbase.Sprite(sb2_object.get_objName())
 
     sprite_looks = sprite.getLookDataList()
+    costume_resolution = None
     for sb2_costume in sb2_object.get_costumes():
+        current_costume_resolution = sb2_costume.get(sb2keys.COSTUME_RESOLUTION)
+        if not costume_resolution:
+            costume_resolution = current_costume_resolution
+        else:
+            if current_costume_resolution != costume_resolution:
+                log.warning("Costume resolution not same for all costumes")
         sprite_looks.add(_convert_to_catrobat_look(sb2_costume))
 
     sprite_sounds = sprite.getSoundList()
@@ -303,8 +317,18 @@ def _convert_to_catrobat_sprite(sb2_object):
     for sb2_script in sb2_object.scripts:
         sprite.addScript(_convert_to_catrobat_script(sb2_script, sprite))
 
-    def add_implicit_scratch_behaviour_as_bricks():
+    def add_initial_scratch_object_behaviour():
+        # Note: some initial settings are done with JSON keys instead with bricks. Here the appropriate bricks are added for catrobat.
+        def get_or_add_startscript(sprite):
+            for script in sprite.scriptList:
+                if isinstance(script, catbase.StartScript):
+                    return script
+            else:
+                start_script = catbase.StartScript(sprite)
+                sprite.addScript(0, start_script)
+                return start_script
         implicit_bricks_to_add = []
+
         # object's currentCostumeIndex determines active costume at startup
         sprite_startup_look_idx = sb2_object.get_currentCostumeIndex()
         if sprite_startup_look_idx is not None:
@@ -312,15 +336,6 @@ def _convert_to_catrobat_sprite(sb2_object):
             set_look_brick = catbricks.SetLookBrick(sprite)
             set_look_brick.setLook(spriteStartupLook)
             implicit_bricks_to_add += [set_look_brick]
-
-            def get_or_add_startscript(sprite):
-                for script in sprite.scriptList:
-                    if isinstance(script, catbase.StartScript):
-                        return script
-                else:
-                    start_script = catbase.StartScript(sprite)
-                    sprite.addScript(0, start_script)
-                    return start_script
 
         # object's scratchX and scratchY Keys determine position
         if sb2_object.get_scratchX() or sb2_object.get_scratchY():
@@ -336,14 +351,14 @@ def _convert_to_catrobat_sprite(sb2_object):
 
         object_scale = sb2_object.get_scale()
         if object_scale and object_scale != 1:
-            implicit_bricks_to_add += [catbricks.SetSizeToBrick(sprite, object_scale * 100.0)]
+            implicit_bricks_to_add += [catbricks.SetSizeToBrick(sprite, object_scale * 100.0 / costume_resolution)]
 
         object_direction = sb2_object.get_direction()
         if object_direction and object_direction != "90":
             implicit_bricks_to_add += [catbricks.PointInDirectionBrick(sprite, object_direction)]
 
         object_visible = sb2_object.get_visible()
-        if not object_visible:
+        if object_visible is not None and not object_visible:
             implicit_bricks_to_add += [catbricks.HideBrick(sprite)]
 
         rotation_style = sb2_object.get_rotationStyle()
@@ -353,8 +368,7 @@ def _convert_to_catrobat_sprite(sb2_object):
         start_script = get_or_add_startscript(sprite)
         start_script.getBrickList().addAll(0, implicit_bricks_to_add)
 
-    add_implicit_scratch_behaviour_as_bricks()
-
+    add_initial_scratch_object_behaviour()
     return sprite
 
 
@@ -373,7 +387,7 @@ def _convert_to_catrobat_script(sb2_script, sprite):
 
 
 def _convert_to_catrobat_bricks(sb2_brick, catr_sprite):
-    global catr_project
+    global _catr_project
     common.log.debug("Brick to convert={}".format(sb2_brick))
     if not sb2_brick or not (isinstance(sb2_brick, list) and isinstance(sb2_brick[0], (str, unicode))):
         raise common.ScratchtobatError("Wrong arg1, must be list with string as first element: {!r}".format(sb2_brick))
@@ -405,8 +419,8 @@ def _convert_to_catrobat_bricks(sb2_brick, catr_sprite):
             catr_bricks += [catbricks.LoopEndBrick(catr_sprite, catr_loop_start_brick)]
 
         elif brick_name in ['doIf']:
-            assert catr_project
-            if_begin_brick = catbricks.IfLogicBeginBrick(catr_sprite, _convert_formula(brick_arguments[0], catr_sprite, catr_project))
+            assert _catr_project
+            if_begin_brick = catbricks.IfLogicBeginBrick(catr_sprite, _convert_formula(brick_arguments[0], catr_sprite, _catr_project))
             if_else_brick = catbricks.IfLogicElseBrick(catr_sprite, if_begin_brick)
             if_end_brick = catbricks.IfLogicEndBrick(catr_sprite, if_else_brick, if_begin_brick)
 
@@ -428,17 +442,31 @@ def _convert_to_catrobat_bricks(sb2_brick, catr_sprite):
             play_sound_brick.setSoundInfo(lookdata)
             catr_bricks += [play_sound_brick]
 
-#         same structure as 'playSound' above
-#         elif brick_name == "startScene":
-#             [look_name] = brick_arguments
-#             matching_lookdatas = [_ for _ in catr_sprite.getLookDataList() if _.getLookName() == look_name]
-#             if not matching_lookdatas:
-#                 raise ConversionError("Sprite does not contain look with name={}".format(look_name))
-#             assert len(matching_lookdatas) == 1
-#             [lookdata] = matching_lookdatas
-#             set_look_brick = catrobat_class_for_sb2_name(brick_name)(catr_sprite)
-#             set_look_brick.setLook(lookdata)
-#             catr_bricks += [set_look_brick]
+        elif brick_name == "startScene":
+            assert _catr_project
+
+            def background_look_to_broadcast_message(look_name):
+                return "start background scene: " + look_name
+
+            [look_name] = brick_arguments
+            background_sprite = catrobat_util.background_sprite_of_project(_catr_project)
+            if not background_sprite:
+                # if no background sprite found, we are just building it now
+                background_sprite = catr_sprite
+            matching_looks = [_ for _ in background_sprite.getLookDataList() if _.getLookName() == look_name]
+            if not matching_looks:
+                raise ConversionError("Background does not contain look with name: {}".format(look_name))
+            assert len(matching_looks) == 1
+            [matching_look] = matching_looks
+            look_message = background_look_to_broadcast_message(look_name)
+            broadcast_brick = catrobat_brick_class(catr_sprite, look_message)
+            catr_bricks += [broadcast_brick]
+
+            broadcast_script = catbase.BroadcastScript(background_sprite, look_message)
+            set_look_brick = catbricks.SetLookBrick(background_sprite)
+            set_look_brick.setLook(matching_look)
+            broadcast_script.addBrick(set_look_brick)
+            background_sprite.addScript(broadcast_script)
 
         elif catrobat_brick_class in set([catbricks.SetLookBrick]):
             set_look_brick = catrobat_brick_class(catr_sprite)
@@ -452,15 +480,15 @@ def _convert_to_catrobat_bricks(sb2_brick, catr_sprite):
             catrobat_class = catrobat_brick_class
             # conditionalss for argument convertions
             if not catrobat_class:
-                common.log.warning("No mapping for={}, using default class".format(brick_name))
+                common.log.warning("No mapping for: '{}', arguments: {}".format(brick_name, brick_arguments))
                 catr_bricks += [_DEFAULT_BRICK_CLASS(catr_sprite, 500), catbricks.NoteBrick(catr_sprite, "Missing brick for sb2 identifier: " + brick_name)]
             else:
                 assert not isinstance(catrobat_class, list), "Wrong at: {1}, {0}".format(brick_arguments, brick_name)
                 if brick_arguments:
                     if catrobat_class in set([catbricks.ChangeVariableBrick, catbricks.SetVariableBrick]):
-                        assert catr_project
+                        assert _catr_project
                         variable, value = brick_arguments
-                        brick_arguments = [_convert_formula(value, catr_sprite, catr_project), catr_project.getUserVariables().getUserVariable(variable, catr_sprite)]
+                        brick_arguments = [_convert_formula(value, catr_sprite, _catr_project), _catr_project.getUserVariables().getUserVariable(variable, catr_sprite)]
                 catr_bricks += [catrobat_class(catr_sprite, *brick_arguments)]
     except TypeError as e:
         common.log.exception(e)

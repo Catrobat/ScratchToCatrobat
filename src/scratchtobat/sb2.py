@@ -33,7 +33,6 @@ class JsonKeys(object):
     COSTUMENAME_KEY = "costumeName"
 
 
-
 class DictAccessWrapper(object):
     def get_raw_dict(self):
         raise NotImplementedError("Must be overridden by class '{}'.".format(type(self)))

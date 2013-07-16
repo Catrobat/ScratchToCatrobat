@@ -8,18 +8,31 @@ except:
     from StringIO import StringIO
 import contextlib
 
-logging.basicConfig(level=logging.INFO)
-log = logging.getLogger("scratchtobat")
+
+def get_project_base_path():
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
+formatter = logging.Formatter("%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s")
+
+fh = logging.FileHandler(os.path.join(get_project_base_path(), "scratchtobat.log"))
+fh.setLevel(logging.DEBUG)
+fh.setFormatter(formatter)
+log.addHandler(fh)
+
+ch = logging.StreamHandler()
+ch.setLevel(logging.WARNING)
+ch.setFormatter(formatter)
+log.addHandler(ch)
+
+log.debug("Logging initialized")
 
 APPLICATION_NAME = "Scratch to Catrobat Converter"
 
 
 def isList(obj):
     return isinstance(obj, list)
-
-
-def get_project_base_path():
-    return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 
 def get_test_resources_path():

@@ -1,12 +1,17 @@
 import sys
 from scratchtobat import sb2webapi, sb2, sb2tocatrobat, common, sb2extractor
 import tempfile
+import logging
 
 EXIT_SUCCESS = 0
 EXIT_FAILURE = 1
 
 
+log = logging.getLogger(__name__)
+
+
 def scratchtobat_main(argv):
+    log.info("Started with args: '{}'".format(argv))
 
     def usage():
         print "usage: jython main.py <sb2-file or project url to be converted> <outfile>"
@@ -23,7 +28,7 @@ def scratchtobat_main(argv):
 
     check_environment_settings()
 
-    if len(argv) != 2 :
+    if len(argv) != 2:
         usage()
 
     scratch_project_file_or_url = argv[0]
@@ -37,7 +42,7 @@ def scratchtobat_main(argv):
         project = sb2.Project(temp_download_dir)
         sb2tocatrobat.convert_sb2_project_to_catrobat_zip(project, catroid_zip_path)
     except Exception as e:
-        common.log.exception(e)
+        log.exception(e)
         return EXIT_FAILURE
     return EXIT_SUCCESS
 

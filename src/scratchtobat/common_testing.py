@@ -10,12 +10,11 @@ import tempfile
 import shutil
 
 TEST_PROJECT_URL_TO_NAME_MAP = {
-#     'http://scratch.mit.edu/projects/10205819/': '10205819',
-#     'http://scratch.mit.edu/projects/10132588/': '10132588',
-#     'http://scratch.mit.edu/projects/10203872/': '10203872',
-#     'http://scratch.mit.edu/projects/10189712/': '10189712',
-#     'http://scratch.mit.edu/projects/10530876/': '10530876',
-   'http://scratch.mit.edu/projects/10453283/': '10453283',
+#     'http://scratch.mit.edu/projects/10205819/': '10205819', # dancing in the castle
+    'http://scratch.mit.edu/projects/10132588/': '10132588',  # dance back
+#     'http://scratch.mit.edu/projects/10189712/': '10189712', #kick the ball
+#     'http://scratch.mit.edu/projects/10530876/': '10530876', #cat has message
+#    'http://scratch.mit.edu/projects/10453283/': '10453283', #  jai ho! (problem with encoding)
 
     }
 

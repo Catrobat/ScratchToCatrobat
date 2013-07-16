@@ -144,24 +144,9 @@ class _ScratchToCatrobat(object):
         # midi
         "playDrum": None,
 
-        # sensing
         "doAsk": None,
         "timerReset": None,
 
-        ###############################
-        # reporter blocks
-        ################################
-#         "+": None,  # easy start
-#         "-": None,
-#         "*": None,
-#         "\/": None,
-#         "randomFrom:to:": None,
-#         "<": None,
-#         "=": None,
-#         ">": None,
-#         "&": None,
-#         "|": None,
-#         "not": None,  # easy end
         "concatenate:with:": None,
         "letter:of:": None,
         "stringLength:": None,
@@ -550,8 +535,14 @@ def convert_sb2_project_to_catrobat_zip(project, catrobat_zip_file_path):
 
     with zipfile.ZipFile(catrobat_zip_file_path, 'w') as zip_fp:
         for file_path in iter_dir(temp_dir):
-            print file_path.replace(temp_dir, project.name), type(file_path.replace(temp_dir, project.name))
-            zip_fp.write(file_path, file_path.replace(temp_dir, project.name))
+            # UnicodeDecodeError because of latin1 or some encodings' characters
+            # print file_path.replace(temp_dir, project.name), type(file_path.replace(temp_dir, project.name))
+            try:
+                path_inside_zip = file_path.replace(temp_dir, project.name)
+            except UnicodeDecodeError:
+                path_inside_zip = file_path.encode("latin1").replace(temp_dir, project.name)
+
+            zip_fp.write(file_path, path_inside_zip)
 
     with zipfile.ZipFile(catrobat_zip_file_path, 'r') as zip_fp:
         zip_fp.extractall(os.path.dirname(catrobat_zip_file_path))
@@ -660,7 +651,7 @@ def convert_sb2_project_to_catroid_project_structure(sb2_project, temp_path):
         catrobat_project = _convert_to_catrobat_project(sb2_project)
         code_xml_content = xml_content_of_catroid_project(catrobat_project)
         with open(os.path.join(temp_path, CATROID_PROJECT_FILE), "wb") as fp:
-            fp.write(code_xml_content)
+            fp.write(code_xml_content.encode("utf8"))
 
         # copying key images needed for keyPressed substitution
         for listened_key in sb2_project.listened_keys:

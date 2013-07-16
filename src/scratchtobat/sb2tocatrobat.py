@@ -21,7 +21,7 @@ CATROID_NOMEDIA_FILE = ".nomedia"
 _DEFAULT_BRICK_CLASS = catbricks.WaitBrick
 
 
-log = logging.getLogger("scratchtobat.sb2tocatrobat")
+log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
 

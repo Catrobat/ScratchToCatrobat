@@ -49,5 +49,5 @@ def scratchtobat_main(argv):
     return EXIT_SUCCESS
 
 if __name__ == '__main__':
-    log = logging.getLogger("scratchobat.main")
+    log = logging.getLogger("scratchtobat.main")
     sys.exit(scratchtobat_main(sys.argv[1:]))

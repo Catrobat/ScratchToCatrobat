@@ -659,8 +659,11 @@ def convert_sb2_project_to_catroid_project_structure(sb2_project, temp_path):
             shutil.copyfile(key_image_path, os.path.join(images_path, _key_filename_for(listened_key)))
 
     # TODO: rename/rearrange abstracting methods
+    log.info("  Creating Catrobat project structure")
     sounds_path, images_path = create_catroid_directory_structure()
+    log.info("  Saving media files")
     save_mediafiles_into_catroid_directory_structure()
+    log.info("  Saving project XMl file")
     save_xmlfile_into_catroid_directory_structure()
 
 

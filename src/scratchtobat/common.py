@@ -7,7 +7,7 @@ try:
 except:
     from StringIO import StringIO
 import contextlib
-
+import tempfile
 
 def get_project_base_path():
     return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 formatter = logging.Formatter("%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s")
 
-fh = logging.FileHandler(os.path.join(get_project_base_path(), "scratchtobat.log"))
+fh = logging.FileHandler(os.path.join(tempfile.gettempdir(), "scratchtobat-{}.log".format(os.getpid())))
 fh.setLevel(logging.DEBUG)
 fh.setFormatter(formatter)
 log.addHandler(fh)

@@ -9,10 +9,11 @@ except:
 import contextlib
 import tempfile
 
+
 def get_project_base_path():
     return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("scratchtobat")
 log.setLevel(logging.DEBUG)
 formatter = logging.Formatter("%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s")
 

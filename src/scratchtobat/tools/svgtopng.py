@@ -17,7 +17,7 @@ def convert(input_svg_path):
         raise common.ScratchtobatError("Input argument must be str or unicode.")
     output_png_path = input_svg_path.replace(".svg", ".png")
     print os.getcwd()
-    on_error = subprocess.call(['java', '-jar', batik_jar_path, input_svg_path])
+    on_error = subprocess.call(['java', '-jar', batik_jar_path, input_svg_path, '-scriptSecurityOff'])
     if on_error:
         raise common.ScratchtobatError("Extern jar call failed. See piped output.")
     assert os.path.exists(output_png_path)

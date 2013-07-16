@@ -57,11 +57,10 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
         self.assertTrue(os.path.exists(code_xml_path))
         self.assertFalse(glob.glob(os.path.join(images_dir, "*.svg")), "Unsupported svg files are in catroid folder.")
 
+        self.assertCorrectCatroidProjectStructure(self.temp_dir, self.project_parent.name)
         actual_count = len(glob.glob(os.path.join(images_dir, "*.png")))
         # TODO: + 1 because of missing penLayerMD5 file
-        self.assertEqual(count_svg_and_png_files, actual_count + len(self.project.listened_keys) + 1)
-
-        self.assertCorrectCatroidProjectStructure(self.temp_dir, self.project_parent.name)
+        self.assertEqual(count_svg_and_png_files, actual_count - len(self.project_parent.listened_keys) + 1)
 
 #     def test_can_convert_to_catroid_folder_structure_with_utf_input_json(self):
 #         project = sb2.Project(common_testing.get_test_project_path("simple_utf_test"))
@@ -240,15 +239,15 @@ class TestConvertBricks(unittest.TestCase):
         self.assertTrue(isinstance(catr_brick, catbricks.NextLookBrick))
 
     def test_can_convert_glideto_brick(self):
-        brick = ["glideSecs:toX:y:elapsed:from:", 5, -174, -122]
+        brick = ["glideSecs:toX:y:elapsed:from:", 5, 174, -122]
         [catr_brick] = sb2tocatrobat._convert_to_catrobat_bricks(brick, DUMMY_CATR_SPRITE)
         self.assertTrue(isinstance(catr_brick, catbricks.GlideToBrick))
-        self.assertEqual(brick[1], catr_brick.durationInSeconds.formulaTree.getValue())
-        self.assertEqual(brick[2], catr_brick.xPosition.formulaTree.getValue())
-        self.assertEqual(brick[3], catr_brick.yPosition.formulaTree.getValue())
+        self.assertEqual(brick[1], int(float(catr_brick.durationInSeconds.formulaTree.getValue())))
+        self.assertEqual(brick[2], int(float(catr_brick.xDestination.formulaTree.getValue())))
+        self.assertEqual(brick[3], -1 * int(float(catr_brick.yDestination.formulaTree.rightChild.getValue())))
 
     def test_can_convert_startscene_brick(self):
-        brick = ["startScene", "look1"]
+        brick = _, look_name = ["startScene", "look1"]
         script = sb2.Script([30, 355, [['whenGreenFlag'], brick]])
         sb2tocatrobat._catr_project = catbase.Project(None, "TestDummyProject")
         catr_script = sb2tocatrobat._convert_to_catrobat_script(script, self.sprite_stub)
@@ -256,10 +255,11 @@ class TestConvertBricks(unittest.TestCase):
         stub_scripts = self.sprite_stub.scriptList
         self.assertEqual(1, stub_scripts.size())
         self.assert_(isinstance(stub_scripts.get(0), catbase.BroadcastScript))
-        self.assertEqual("startScene look1", stub_scripts.get(0).getBroadcastMessage())
 
-        self.assert_(isinstance(catr_script.scriptList.get(0), catbricks.BroadcastBrick))
-        self.assertEqual("startScene look1", catr_script.scriptList.get(0).getBroadcastMessage())
+        expected_msg = sb2tocatrobat._background_look_to_broadcast_message(look_name)
+        self.assertEqual(expected_msg, stub_scripts.get(0).getBroadcastMessage())
+        self.assert_(isinstance(catr_script.getBrickList().get(0), catbricks.BroadcastBrick))
+        self.assertEqual(expected_msg, catr_script.getBrickList().get(0).getBroadcastMessage())
 
 #         self.assertTrue(isinstance(catr_brick, catbricks.GlideToBrick))
 #         self.assertEqual(brick[0], catr_brick.durationInSeconds.formulaTree.getValue())

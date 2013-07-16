@@ -4,8 +4,21 @@ from scratchtobat.tools import wavconverter
 import os
 import unittest
 
+_ENV_PATH = "PATH"
+
 
 class WavConverterTest(BaseTestCase):
+
+    def test_fail_on_sox_executable_not_on_path(self):
+        saved_path_env = os.environ[_ENV_PATH]
+        os.environ[_ENV_PATH] = ""
+        try:
+            wavconverter.convert_to_android_compatible_wav("dummy1", "dummy2")
+            self.fail("Exception not raised")
+        except common.ScratchtobatError:
+            pass
+        finally:
+            os.environ[_ENV_PATH] = saved_path_env
 
     def test_can_detect_android_incompatible_wav_file(self):
         wav_dir = os.path.join(common.get_test_resources_path(), "wav_adpcm")

@@ -26,7 +26,11 @@ log.setLevel(logging.INFO)
 
 
 def _key_to_broadcast_message(key_name):
-    return key_name + "Pressed"
+    return "key " + key_name + " pressed"
+
+
+def _background_look_to_broadcast_message(look_name):
+    return "start background scene: " + look_name
 
 
 def _next_background_look_broadcast_message():
@@ -445,9 +449,6 @@ def _convert_to_catrobat_bricks(sb2_brick, catr_sprite):
         elif brick_name == "startScene":
             assert _catr_project
 
-            def background_look_to_broadcast_message(look_name):
-                return "start background scene: " + look_name
-
             [look_name] = brick_arguments
             background_sprite = catrobat_util.background_sprite_of_project(_catr_project)
             if not background_sprite:
@@ -458,7 +459,7 @@ def _convert_to_catrobat_bricks(sb2_brick, catr_sprite):
                 raise ConversionError("Background does not contain look with name: {}".format(look_name))
             assert len(matching_looks) == 1
             [matching_look] = matching_looks
-            look_message = background_look_to_broadcast_message(look_name)
+            look_message = _background_look_to_broadcast_message(look_name)
             broadcast_brick = catrobat_brick_class(catr_sprite, look_message)
             catr_bricks += [broadcast_brick]
 
@@ -478,21 +479,24 @@ def _convert_to_catrobat_bricks(sb2_brick, catr_sprite):
         else:
             common.log.debug("Get mapping for {} in {}".format(brick_name, catr_sprite))
             catrobat_class = catrobat_brick_class
-            # conditionalss for argument convertions
             if not catrobat_class:
                 common.log.warning("No mapping for: '{}', arguments: {}".format(brick_name, brick_arguments))
                 catr_bricks += [_DEFAULT_BRICK_CLASS(catr_sprite, 500), catbricks.NoteBrick(catr_sprite, "Missing brick for sb2 identifier: " + brick_name)]
             else:
                 assert not isinstance(catrobat_class, list), "Wrong at: {1}, {0}".format(brick_arguments, brick_name)
+                # conditionals for argument convertions
                 if brick_arguments:
                     if catrobat_class in set([catbricks.ChangeVariableBrick, catbricks.SetVariableBrick]):
                         assert _catr_project
                         variable, value = brick_arguments
                         brick_arguments = [_convert_formula(value, catr_sprite, _catr_project), _catr_project.getUserVariables().getUserVariable(variable, catr_sprite)]
+                    elif catrobat_class == catbricks.GlideToBrick:
+                        secs, x_dest_pos, y_dest_pos = brick_arguments
+                        brick_arguments = [x_dest_pos, y_dest_pos, secs * 1000]
                 catr_bricks += [catrobat_class(catr_sprite, *brick_arguments)]
     except TypeError as e:
         common.log.exception(e)
-        assert False, "Non-matching arguments of SB2 brick '{1}'; {0}".format(brick_arguments, brick_name)
+        assert False, "Non-matching arguments of SB2 brick '{1}': {0}".format(brick_arguments, brick_name)
 
     return catr_bricks
 

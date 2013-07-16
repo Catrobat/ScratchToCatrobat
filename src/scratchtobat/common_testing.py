@@ -20,9 +20,14 @@ TEST_PROJECT_URL_TO_NAME_MAP = {
     }
 
 TEST_PROJECT_FILES_TO_NAME_MAP = {
-    'dancing_castle.sb2': '10205819',
-    'Dance back.sb2': '10132588',
+    'dancing_castle.zip': '10205819',
+    'Dance back.zip': '10132588',
     }
+
+
+def _rmtree_onerror_func(func, path, exc_info):
+    assert os.path.exists(path), "Non existing: " + path
+    func(path)
 
 
 class BaseTestCase(unittest.TestCase):
@@ -32,8 +37,9 @@ class BaseTestCase(unittest.TestCase):
 
     def tearDown(self):
         unittest.TestCase.tearDown(self)
-        # FIXME: jython / windows workaround.. reason?
-        shutil.rmtree(self.temp_dir)
+        # FIXME: fails at jython / windows .. reason?
+        # TODO: try Timer / sched workaround
+        shutil.rmtree(self.temp_dir, onerror=_rmtree_onerror_func)
 
 
 class ProjectTestCase(BaseTestCase):

@@ -4,9 +4,14 @@ from scratchtobat.tools.internal import wave
 import os
 import sndhdr
 import subprocess
+from distutils.spawn import find_executable
+from java.lang import System
 
-_ENV_SOX_HOME = "SOX_HOME"
+
 _SOX_BINARY = "sox"
+# WORKAROUND: jython + find_executable leads to wrong result if "exe" ext is missing
+if System.getProperty("os.name").lower().startswith("win"):
+    _SOX_BINARY += ".exe"
 
 
 def is_android_compatible_wav(file_path):
@@ -24,15 +29,14 @@ def is_android_compatible_wav(file_path):
     return False
 
 
-
 def convert_to_android_compatible_wav(input_path, output_path):
+
+    sox_path = find_executable(_SOX_BINARY)
+    if not sox_path or sox_path == _SOX_BINARY:
+        raise common.ScratchtobatError("Sox binary not found on environment path. Please add.")
+
+    assert os.path.exists(sox_path)
+
     def get_sox_arguments(input_filepath, output_filepath):
         return [input_filepath, "-t", "wavpcm", "-e", "unsigned-integer", output_filepath]
-
-    sox_home_dir = os.environ.get(_ENV_SOX_HOME)
-    if not sox_home_dir:
-        raise common.ScratchtobatError("Environment variable '{}' not found. Please specify.".format(_ENV_SOX_HOME))
-
-    sox_path = os.path.join(sox_home_dir, _SOX_BINARY)
-    if not os.path.exists(sox_path):
-        subprocess.call([sox_path] + get_sox_arguments(input_path, output_path))
+    subprocess.call([sox_path] + get_sox_arguments(input_path, output_path))

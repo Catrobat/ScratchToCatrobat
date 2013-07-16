@@ -69,13 +69,17 @@ class Project(object):
         if not self.name:
             raise ProjectError("No project name specified in project file. Please provide project name with constructor.")
 
-        self.md5_to_resource_path_map = {}
-        for project_dir_file in os.listdir(input_path):
-            project_file_path = os.path.join(input_path, project_dir_file)
-            with open(project_file_path, 'rb') as fp:
-                file_hash = hashlib.md5(fp.read()).hexdigest()
-            self.md5_to_resource_path_map[file_hash + os.path.splitext(project_file_path)[1]] = project_file_path
-        common.log.info(self.md5_to_resource_path_map)
+        def read_md5_to_resource_path_mapping():
+            md5_to_resource_path_map = {}
+            for project_dir_file in os.listdir(input_path):
+                project_file_path = os.path.join(input_path, project_dir_file)
+                with open(project_file_path, 'rb') as fp:
+                    file_hash = hashlib.md5(fp.read()).hexdigest()
+                md5_to_resource_path_map[file_hash + os.path.splitext(project_file_path)[1]] = project_file_path
+            return md5_to_resource_path_map
+
+        self.md5_to_resource_path_map = read_md5_to_resource_path_mapping()
+        common.log.info("md5 names to path mapping: {}".format(self.md5_to_resource_path_map))
 
         def verify_resources(resources):
             for res_dict  in resources:

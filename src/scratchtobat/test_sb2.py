@@ -65,7 +65,7 @@ class TestProjectFunc(unittest.TestCase):
         self.assertEqual(expected_stage_customes_md5_names, set(self.project.background_md5_names))
 
     def test_can_access_listened_pressed_keys(self):
-        project = sb2.Project(common.get_test_project_path("listen_keypressed"))
+        project = sb2.Project(common.get_test_project_path("keys_pressed"))
         self.assertEqual(set(["d", "c", "a", "4", "8"]), project.listened_keys)
 
 

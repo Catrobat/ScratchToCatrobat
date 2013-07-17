@@ -593,7 +593,7 @@ def convert_sb2_project_to_catroid_project_structure(sb2_project, temp_path):
             converted_file = False
 
             # TODO; extract method
-            if file_ext in {".png", ".svg", ".jpg"}:
+            if file_ext in {".png", ".svg", ".jpg", ".gif"}:
                 target_dir = images_path
 #                 # WORKAROUNF: penLayerMD5 file
 #                 if not resource_maps:

@@ -1,6 +1,7 @@
 import org.catrobat.catroid.common  as catcommon
 
 BACKGROUND_SPRITE_NAME = "Hintergrund"
+CATROBAT_PROJECT_FILEEXT = ".catrobat"
 
 
 def create_lookdata(name, file_name):

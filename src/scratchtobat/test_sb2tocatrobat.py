@@ -80,17 +80,15 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
 
     def test_can_convert_sb2_project_to_catroid_zip(self):
 #         self.addCleanup(lambda: shutil.rmtree(temp_dir))
-        catroid_zip_file_name = os.path.join(self.temp_dir, "project.catroid")
 
-        sb2tocatrobat.convert_sb2_project_to_catrobat_zip(self.project_parent, catroid_zip_file_name)
+        catroid_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(self.project_parent, self.temp_dir)
 
         self.assertCorrectZipFile(catroid_zip_file_name, self.project_parent.name)
 
     def test_can_convert_sb2_project_with_wrong_encoding_to_catroid_zip(self):
 #         self.addCleanup(lambda: shutil.rmtree(temp_dir))
-        catroid_zip_file_name = common.get_testoutput_path("wrong_encoding.zip")
         project = sb2.Project(common.get_test_project_path("wrong_encoding"))
-        sb2tocatrobat.convert_sb2_project_to_catrobat_zip(project, catroid_zip_file_name)
+        catroid_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(project, self.temp_dir)
 
         self.assertCorrectZipFile(catroid_zip_file_name, project.name)
 
@@ -295,27 +293,24 @@ class TestConvertProjects(common_testing.ProjectTestCase):
     def test_can_convert_project_with_all_easy_bricks(self):
         for project_name in ["full_test_no_var", "full_test", ]:
             full_test_project = sb2.Project(common.get_test_project_path(project_name), name=project_name)
-            catroid_zip_file_name = common.get_testoutput_path(project_name + ".zip")
 
-            sb2tocatrobat.convert_sb2_project_to_catrobat_zip(full_test_project, catroid_zip_file_name)
+            catroid_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(full_test_project, self.temp_dir)
 
             self.assertCorrectZipFile(catroid_zip_file_name, project_name)
 
     def test_can_convert_project_with_keys(self):
         for project_name in ["keys_pressed", ]:
             project = sb2.Project(common.get_test_project_path(project_name))
-            catroid_zip_file_name = common.get_testoutput_path(project_name + ".zip")
 
-            sb2tocatrobat.convert_sb2_project_to_catrobat_zip(project, catroid_zip_file_name)
+            catroid_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(project, self.temp_dir)
 
             self.assertCorrectZipFile(catroid_zip_file_name, project.name)
 
     def test_can_convert_project_with_many_media(self):
         for project_name in ["Hannah_Montana", ]:
             project = sb2.Project(common.get_test_project_path(project_name))
-            catroid_zip_file_name = common.get_testoutput_path(project_name + ".zip")
 
-            sb2tocatrobat.convert_sb2_project_to_catrobat_zip(project, catroid_zip_file_name)
+            catroid_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(project, self.temp_dir)
 
             self.assertCorrectZipFile(catroid_zip_file_name, project.name)
 

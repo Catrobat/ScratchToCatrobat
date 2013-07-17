@@ -521,7 +521,7 @@ class ConversionError(common.ScratchtobatError):
         pass
 
 
-def convert_sb2_project_to_catrobat_zip(project, catrobat_zip_file_path):
+def convert_sb2_project_to_catrobat_zip(project, output_dir):
     temp_dir = tempfile.mkdtemp()
     convert_sb2_project_to_catroid_project_structure(project, temp_dir)
 
@@ -533,20 +533,25 @@ def convert_sb2_project_to_catrobat_zip(project, catrobat_zip_file_path):
     assert temp_dir
     assert project.name
 
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    catrobat_zip_file_path = os.path.join(output_dir, project.name + catrobat_util.CATROBAT_PROJECT_FILEEXT)
     with zipfile.ZipFile(catrobat_zip_file_path, 'w') as zip_fp:
         for file_path in iter_dir(temp_dir):
             # UnicodeDecodeError because of latin1 or some encodings' characters
             # print file_path.replace(temp_dir, project.name), type(file_path.replace(temp_dir, project.name))
             try:
-                path_inside_zip = file_path.replace(temp_dir, project.name)
+                path_inside_zip = file_path.replace(temp_dir, "")
             except UnicodeDecodeError:
-                path_inside_zip = file_path.encode("latin1").replace(temp_dir, project.name)
+                path_inside_zip = file_path.encode("latin1").replace(temp_dir, "")
 
             zip_fp.write(file_path, path_inside_zip)
 
     with zipfile.ZipFile(catrobat_zip_file_path, 'r') as zip_fp:
         zip_fp.extractall(os.path.dirname(catrobat_zip_file_path))
     shutil.rmtree(temp_dir)
+
+    return catrobat_zip_file_path
 
 
 def images_dir_of_project(temp_dir):

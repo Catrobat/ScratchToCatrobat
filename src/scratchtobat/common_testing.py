@@ -82,14 +82,14 @@ class ProjectTestCase(BaseTestCase):
         with zipfile.ZipFile(catroid_zip_file_name) as zip_fp:
             corrupt_zip_content = zip_fp.testzip()
             self.assertTrue(corrupt_zip_content is None, "Corrupt files in {}: {}".format(catroid_zip_file_name, corrupt_zip_content))
-            self.assertEqual(project_name, os.path.commonprefix(zip_fp.namelist())[:-1], "Wrong project name of zipped catroid project.")
+            self.assertNotEqual(project_name, os.path.commonprefix(zip_fp.namelist())[:-1], "Wrong directory in zipped catrobat project.")
 
-            all_nomedia_files = (project_name + "/" + _ for _ in (".nomedia", "images/.nomedia", "sounds/.nomedia"))
+            all_nomedia_files = (".nomedia", "images/.nomedia", "sounds/.nomedia")
             for nomedia_file in all_nomedia_files:
                 self.assertIn(nomedia_file, set(zip_fp.namelist()))
 
             zip_fp.extractall(temp_dir)
-        self.assertCorrectCatroidProjectStructure(os.path.join(temp_dir, project_name), project_name)
+        self.assertCorrectCatroidProjectStructure(temp_dir, project_name)
 
     def assertEqualFormulas(self, formula1, formula2):
         assert isinstance(formula1, catformula.Formula)

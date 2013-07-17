@@ -13,19 +13,27 @@
 
 <body>
 
-<h1>Convert Scratch to Catrobat</h1>
-
-<p style="text-align:center">
+<h1 style="text-align:center">Convert Scratch projects to Catrobat</h1>
 <br />
-Choose a Scratch project URL or upload one.
-<br /><br />
-</p>
 
-<table cellspacing="50" cellpadding="30" style="text-align: center;margin-left: auto;margin-right: auto;">
-    <tr><td><a href="./from_url.html">URL</a></td><td><a href="./from_upload.html">Upload</a></td></tr>
-</table>
+<table align="center" cellpadding="5" bgcolor="#E7E7F7"><tr>
+<td>
+<form action="convert.php" method="post">
+<b>Enter the Scratch project URL</b><br />
+<input type="text" name="url" size="80"
+    value="http://scratch.mit.edu/projects/10205819/"/>
 
+<input type="submit" name="submit" value="Convert!" />
+</form>
+</td></tr>
+
+<tr><td>
+<form action="convert.php" method="post" enctype="multipart/form-data">
+<b>or choose the Scratch 2.0 project from your computer</b><br />
+<input type="file" name="filename" size="80"/>
+<input type="submit" name="submit" value="Convert!" />
+</form>
+</td></tr></table>
 
 </body>
 </html>
-

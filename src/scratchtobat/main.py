@@ -1,7 +1,9 @@
 import sys
 import tempfile
 import logging
-from scratchtobat import sb2webapi, sb2, sb2tocatrobat, common, sb2extractor
+from scratchtobat import sb2webapi, sb2, sb2tocatrobat, common, sb2extractor, \
+    catrobat_util
+import os
 
 log = logging.getLogger(__name__)
 
@@ -13,9 +15,9 @@ def scratchtobat_main(argv):
     log.info("Called with args: '{}'".format(argv))
 
     def usage():
-        print "usage: jython main.py <sb2-file or project url to be converted> <outfile>"
-        print "Example 1: jython main.py http://scratch.mit.edu/projects/10205819/ out.zip"
-        print "Example 2: jython main.py dancing_castle.sb2 out.zip"
+        print "usage: jython main.py <sb2-file or project url to be converted> <output_dir>"
+        print "Example 1: jython main.py http://scratch.mit.edu/projects/10205819/ output"
+        print "Example 2: jython main.py dancing_castle.sb2 output"
         sys.exit(EXIT_FAILURE)
 
     def check_environment_settings():
@@ -30,8 +32,7 @@ def scratchtobat_main(argv):
     if len(argv) != 2:
         usage()
 
-    scratch_project_file_or_url = argv[0]
-    catroid_zip_path = argv[1]
+    scratch_project_file_or_url, output_dir = argv
     temp_download_dir = tempfile.mkdtemp()
     try:
         if scratch_project_file_or_url.startswith("http://"):
@@ -42,7 +43,7 @@ def scratchtobat_main(argv):
             sb2extractor.extract_project(scratch_project_file_or_url, temp_download_dir)
         project = sb2.Project(temp_download_dir)
         log.info("Converting ...")
-        sb2tocatrobat.convert_sb2_project_to_catrobat_zip(project, catroid_zip_path)
+        sb2tocatrobat.convert_sb2_project_to_catrobat_zip(project, output_dir)
     except Exception as e:
         log.exception(e)
         return EXIT_FAILURE

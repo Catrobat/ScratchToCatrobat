@@ -48,7 +48,7 @@ class _ScratchToCatrobat(object):
         "whenIReceive": catbase.BroadcastScript,
         "whenKeyPressed": lambda sprite, key: catbase.BroadcastScript(sprite, _key_to_broadcast_message(key)),
         "whenSensorGreaterThan": None,
-        "whenSceneStarts": None,  # easy: stage msg broadcast
+        "whenSceneStarts": lambda sprite, look_name: catbase.BroadcastScript(sprite, _background_look_to_broadcast_message(look_name)),  # easy: stage msg broadcast
         "whenClicked": catbase.WhenScript,  # easy
 
         #===============================================================================

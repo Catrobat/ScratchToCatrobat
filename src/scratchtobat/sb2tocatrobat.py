@@ -478,10 +478,17 @@ def _convert_to_catrobat_bricks(sb2_brick, catr_sprite):
                     elif catrobat_class == catbricks.GlideToBrick:
                         secs, x_dest_pos, y_dest_pos = brick_arguments
                         brick_arguments = [x_dest_pos, y_dest_pos, secs * 1000]
-                catr_bricks += [catrobat_class(catr_sprite, *brick_arguments)]
+                try:
+                    catr_bricks += [catrobat_class(catr_sprite, *brick_arguments)]
+                except TypeError as e:
+                    common.log.exception(e)
+                    common.log.info("Replacing with default brick")
+                    catr_bricks += [catbricks.WaitBrick(catr_sprite, 1000)]
     except TypeError as e:
         common.log.exception(e)
-        assert False, "Non-matching arguments of SB2 brick '{1}': {0}".format(brick_arguments, brick_name)
+        common.log.info("Replacing with default brick")
+        catr_bricks += [catbricks.WaitBrick(catr_sprite, 1000)]
+        # assert False, "Non-matching arguments of SB2 brick '{1}': {0}".format(brick_arguments, brick_name)
 
     return catr_bricks
 
@@ -701,7 +708,7 @@ def _convert_formula(raw_source, sprite, project):
                 user_var = user_variables.getUserVariable(elem, sprite)
                 if not user_var:
                     log.warning("Unknown variable '{}'. Aborting formula.".format(elem))
-                    return catformula.Formula(catformula.FormulaElement(catformula.FormulaElement.ElementType.FUNCTION, catformula.Functions.TRUE, None))
+                    return catformula.Formula(catformula.FormulaElement(catformula.FormulaElement.ElementType.FUNCTION, catformula.Functions.TRUE, 1.0))
                 tokens += [catformula.InternToken(catformula.InternTokenType.USER_VARIABLE, elem)]
             else:
                 assert False, "Unsupported type: {} of '{}'".format(type(elem), elem)
@@ -709,6 +716,6 @@ def _convert_formula(raw_source, sprite, project):
                 tokens += [catformula.InternToken(catformula.InternTokenType.NUMBER, str(elem))]
         else:
             log.warning("Unknown variable '{}'. Aborting formula.".format(elem))
-            return catformula.Formula(catformula.FormulaElement(catformula.FormulaElement.ElementType.FUNCTION, catformula.Functions.TRUE, None))
+            return catformula.Formula(catformula.FormulaElement(catformula.FormulaElement.ElementType.FUNCTION, catformula.Functions.TRUE, 1.0))
             assert False, "Unsupported type: {} of '{}'".format(type(elem), elem)
     return catformula.Formula(catformula.InternFormulaParser(tokens, project, sprite).parseFormula())

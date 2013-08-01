@@ -1,14 +1,17 @@
 from scratchtobat import common
 import os
 import subprocess
+import logging
 
 # TODO: replace CLI call with API
 _BATIK_ENVIRONMENT_HOME = "BATIK_HOME"
 _BATIK_CLI_JAR = "batik-rasterizer.jar"
 
+log = logging.getLogger(__name__)
 
 def convert(input_svg_path):
     if _BATIK_ENVIRONMENT_HOME not in os.environ:
+        log.info(os.environ)
         raise common.ScratchtobatError("Please create environment variable '{}' and set to batik library location.".format(_BATIK_ENVIRONMENT_HOME))
     batik_jar_path = os.path.join(os.environ[_BATIK_ENVIRONMENT_HOME], _BATIK_CLI_JAR)
     if not os.path.exists(batik_jar_path):

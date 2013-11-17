@@ -1,0 +1,181 @@
+{
+	"objName": "Stage",
+	"sounds": [{
+			"soundName": "pop",
+			"soundID": 1,
+			"md5": "83a9787d4cb6f3b7632b4ddfebf74367.wav",
+			"sampleCount": 258,
+			"rate": 11025,
+			"format": ""
+		}],
+	"costumes": [{
+			"costumeName": "backdrop1",
+			"baseLayerID": 7,
+			"baseLayerMD5": "510da64cf172d53750dffd23fbf73563.png",
+			"bitmapResolution": 1,
+			"rotationCenterX": 240,
+			"rotationCenterY": 180
+		},
+		{
+			"costumeName": "castle1",
+			"baseLayerID": 8,
+			"baseLayerMD5": "033f926829a446a28970f59302b0572d.png",
+			"bitmapResolution": 1,
+			"rotationCenterX": 240,
+			"rotationCenterY": 180
+		}],
+	"currentCostumeIndex": 1,
+	"penLayerMD5": "279467d0d49e152706ed66539b577c00.png",
+	"tempoBPM": 60,
+	"videoAlpha": 0.5,
+	"children": [{
+			"objName": "Sprite1",
+			"scripts": [[23,
+					125,
+					[["whenGreenFlag"],
+						["say:duration:elapsed:from:", "Watch me dance!", 2],
+						["doRepeat",
+							10,
+							[["forward:", 10],
+								["playDrum", 1, 0.2],
+								["forward:", -10],
+								["playDrum", 1, 0.2]]]]],
+				[30, 355, [["whenKeyPressed", "space"], ["changeGraphicEffect:by:", "color", 25]]]],
+			"sounds": [{
+					"soundName": "meow",
+					"soundID": 0,
+					"md5": "83c36d806dc92327b9e7049a565c6bff.wav",
+					"sampleCount": 18688,
+					"rate": 22050,
+					"format": ""
+				}],
+			"costumes": [{
+					"costumeName": "costume1",
+					"baseLayerID": 1,
+					"baseLayerMD5": "f9a1c175dbe2e5dee472858dd30d16bb.svg",
+					"bitmapResolution": 1,
+					"rotationCenterX": 47,
+					"rotationCenterY": 55
+				},
+				{
+					"costumeName": "costume2",
+					"baseLayerID": 2,
+					"baseLayerMD5": "6e8bd9ae68fdb02b7e1e3df656a75635.svg",
+					"bitmapResolution": 1,
+					"rotationCenterX": 47,
+					"rotationCenterY": 55
+				}],
+			"currentCostumeIndex": 0,
+			"scratchX": 45,
+			"scratchY": -102,
+			"scale": 1,
+			"direction": 90,
+			"rotationStyle": "normal",
+			"isDraggable": false,
+			"indexInLibrary": 1,
+			"visible": true,
+			"spriteInfo": {
+			}
+		},
+		{
+			"objName": "Cassy Dance",
+			"scripts": [[54,
+					65,
+					[["whenGreenFlag"], ["playSound:", "bird"], ["doForever", [["nextCostume"], ["wait:elapsed:from:", 1]]]]]],
+			"sounds": [{
+					"soundName": "pop",
+					"soundID": 1,
+					"md5": "83a9787d4cb6f3b7632b4ddfebf74367.wav",
+					"sampleCount": 258,
+					"rate": 11025,
+					"format": ""
+				},
+				{
+					"soundName": "bird",
+					"soundID": 2,
+					"md5": "18bd4b634a3f992a16b30344c7d810e0.wav",
+					"sampleCount": 3840,
+					"rate": 11025,
+					"format": ""
+				}],
+			"costumes": [{
+					"costumeName": "cassy dance-a",
+					"baseLayerID": 3,
+					"baseLayerMD5": "2937dfb85c49422564f16c218ecebe0b.png",
+					"bitmapResolution": 1,
+					"rotationCenterX": 58,
+					"rotationCenterY": 100
+				},
+				{
+					"costumeName": "cassy dance-b",
+					"baseLayerID": 4,
+					"baseLayerMD5": "ce4f48ff08ac6d36d7f1214812c1aaeb.png",
+					"bitmapResolution": 1,
+					"rotationCenterX": 62,
+					"rotationCenterY": 100
+				},
+				{
+					"costumeName": "cassy dance-c",
+					"baseLayerID": 5,
+					"baseLayerMD5": "d730dc43f872120048957454faf3d85c.png",
+					"bitmapResolution": 1,
+					"rotationCenterX": 33,
+					"rotationCenterY": 100
+				},
+				{
+					"costumeName": "cassy dance-d",
+					"baseLayerID": 6,
+					"baseLayerMD5": "0f40e53275db140ca1a747d12310cb54.png",
+					"bitmapResolution": 1,
+					"rotationCenterX": 33,
+					"rotationCenterY": 100
+				}],
+			"currentCostumeIndex": 1,
+			"scratchX": -125,
+			"scratchY": -32,
+			"scale": 1,
+			"direction": 90,
+			"rotationStyle": "normal",
+			"isDraggable": false,
+			"indexInLibrary": 2,
+			"visible": true,
+			"spriteInfo": {
+			}
+		},
+		{
+			"target": "Cassy Dance",
+			"cmd": "costumeIndex",
+			"param": null,
+			"color": 9065943,
+			"label": "Cassy Dance costume #",
+			"mode": 1,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 5,
+			"y": 5,
+			"visible": false
+		},
+		{
+			"target": "Stage",
+			"cmd": "sceneName",
+			"param": null,
+			"color": 9065943,
+			"label": "backdrop name",
+			"mode": 1,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 5,
+			"y": 32,
+			"visible": false
+		}],
+	"info": {
+		"scriptCount": 3,
+		"flashVersion": "WIN 11,7,700,169",
+		"spriteCount": 2,
+		"videoOn": false,
+		"projectID": "10205819",
+		"userAgent": "Mozilla\/5.0 (Windows NT 6.1; WOW64; rv:20.0) Gecko\/20100101 Firefox\/20.0"
+	}
+}

@@ -1,0 +1,231 @@
+{
+	"objName": "Stage",
+	"sounds": [{
+			"soundName": "pop",
+			"soundID": 1,
+			"md5": "83a9787d4cb6f3b7632b4ddfebf74367.wav",
+			"sampleCount": 258,
+			"rate": 11025,
+			"format": ""
+		}],
+	"costumes": [{
+			"costumeName": "backdrop1",
+			"baseLayerID": 13,
+			"baseLayerMD5": "510da64cf172d53750dffd23fbf73563.png",
+			"bitmapResolution": 1,
+			"rotationCenterX": 240,
+			"rotationCenterY": 180
+		}],
+	"currentCostumeIndex": 0,
+	"penLayerMD5": "279467d0d49e152706ed66539b577c00.png",
+	"tempoBPM": 60,
+	"videoAlpha": 0.5,
+	"children": [{
+			"objName": "Sprite1",
+			"scripts": [[10,
+					10,
+					[["whenKeyPressed", "d"],
+						["doRepeat",
+							10,
+							[["forward:", 10],
+								["playDrum", 1, 0.2],
+								["nextCostume"],
+								["forward:", -10],
+								["playDrum", 2, 0.2]]]]],
+				[10,
+					201,
+					[["whenKeyPressed", "c"],
+						["doRepeat",
+							["randomFrom:to:", 20, 40],
+							[["doRepeat",
+									["randomFrom:to:", 30, 60],
+									[["putPenDown"], ["changePenHueBy:", ["mouseX"]], ["changePenSizeBy:", ["mouseY"]], ["stampCostume"]]]]]]],
+				[10,
+					423,
+					[["whenKeyPressed", "a"],
+						["doRepeat",
+							1000,
+							[["putPenDown"], ["bounceOffEdge"], ["changePenShadeBy:", ["randomFrom:to:", ["mouseX"], ["mouseY"]]]]]]]],
+			"sounds": [{
+					"soundName": "meow",
+					"soundID": 0,
+					"md5": "83c36d806dc92327b9e7049a565c6bff.wav",
+					"sampleCount": 18688,
+					"rate": 22050,
+					"format": ""
+				}],
+			"costumes": [{
+					"costumeName": "costume1",
+					"baseLayerID": 1,
+					"baseLayerMD5": "f9a1c175dbe2e5dee472858dd30d16bb.svg",
+					"bitmapResolution": 1,
+					"rotationCenterX": 47,
+					"rotationCenterY": 55
+				},
+				{
+					"costumeName": "costume2",
+					"baseLayerID": 2,
+					"baseLayerMD5": "6e8bd9ae68fdb02b7e1e3df656a75635.svg",
+					"bitmapResolution": 1,
+					"rotationCenterX": 47,
+					"rotationCenterY": 55
+				}],
+			"currentCostumeIndex": 0,
+			"scratchX": 19,
+			"scratchY": 16,
+			"scale": 1,
+			"direction": 90,
+			"rotationStyle": "normal",
+			"isDraggable": false,
+			"indexInLibrary": 1,
+			"visible": true,
+			"spriteInfo": {
+			}
+		},
+		{
+			"objName": "Dog2",
+			"scripts": [[49,
+					79,
+					[["whenKeyPressed", "4"],
+						["doRepeat",
+							12,
+							[["playDrum", 18, 0.2], ["forward:", 10], ["turnRight:", 90], ["nextCostume"]]]]]],
+			"sounds": [{
+					"soundName": "pop",
+					"soundID": 1,
+					"md5": "83a9787d4cb6f3b7632b4ddfebf74367.wav",
+					"sampleCount": 258,
+					"rate": 11025,
+					"format": ""
+				}],
+			"costumes": [{
+					"costumeName": "dog2-a",
+					"baseLayerID": 3,
+					"baseLayerMD5": "cd236d5eef4431dea82983ac9eec406b.svg",
+					"bitmapResolution": 1,
+					"rotationCenterX": 75,
+					"rotationCenterY": 75
+				},
+				{
+					"costumeName": "dog2-b",
+					"baseLayerID": 4,
+					"baseLayerMD5": "e921f865b19b27cd99e16a341dbf09c2.svg",
+					"bitmapResolution": 1,
+					"rotationCenterX": 75,
+					"rotationCenterY": 75
+				},
+				{
+					"costumeName": "dog2-c",
+					"baseLayerID": 5,
+					"baseLayerMD5": "891f2fb7daf79ba8b224a9173eeb0a63.svg",
+					"bitmapResolution": 1,
+					"rotationCenterX": 75,
+					"rotationCenterY": 75
+				}],
+			"currentCostumeIndex": 1,
+			"scratchX": 42,
+			"scratchY": -90,
+			"scale": 1,
+			"direction": -90,
+			"rotationStyle": "normal",
+			"isDraggable": false,
+			"indexInLibrary": 2,
+			"visible": true,
+			"spriteInfo": {
+			}
+		},
+		{
+			"objName": "Dinoaur1",
+			"scripts": [[10,
+					10,
+					[["whenKeyPressed", "8"],
+						["doRepeat",
+							10,
+							[["doRepeat", 11, [["noteOn:duration:elapsed:from:", 60, 0.5], ["turnRight:", 90], ["forward:", 10]]]]]]]],
+			"sounds": [{
+					"soundName": "pop",
+					"soundID": 1,
+					"md5": "83a9787d4cb6f3b7632b4ddfebf74367.wav",
+					"sampleCount": 258,
+					"rate": 11025,
+					"format": ""
+				}],
+			"costumes": [{
+					"costumeName": "dinosaur1-a",
+					"baseLayerID": 6,
+					"baseLayerMD5": "9efe4753f0df1dfcdcb363ce6ef4cfd5.svg",
+					"bitmapResolution": 1,
+					"rotationCenterX": 49,
+					"rotationCenterY": 5
+				},
+				{
+					"costumeName": "dinosaur1-b",
+					"baseLayerID": 7,
+					"baseLayerMD5": "d9eca17b8569f2cde20ef7d3ed0fe19f.svg",
+					"bitmapResolution": 1,
+					"rotationCenterX": 116,
+					"rotationCenterY": 79
+				},
+				{
+					"costumeName": "dinosaur1-c",
+					"baseLayerID": 8,
+					"baseLayerMD5": "ade3d2ec5029693ecdcca17974bad5fd.svg",
+					"bitmapResolution": 1,
+					"rotationCenterX": 65,
+					"rotationCenterY": 89
+				},
+				{
+					"costumeName": "dinosaur1-d",
+					"baseLayerID": 9,
+					"baseLayerMD5": "2aa7257a3e0a19ee315b23eaf7f56933.svg",
+					"bitmapResolution": 1,
+					"rotationCenterX": 45,
+					"rotationCenterY": 87
+				},
+				{
+					"costumeName": "dinosaur1-e",
+					"baseLayerID": 10,
+					"baseLayerMD5": "ed46ee11478715f7596d01fb0f98aa3f.svg",
+					"bitmapResolution": 1,
+					"rotationCenterX": 82,
+					"rotationCenterY": 84
+				},
+				{
+					"costumeName": "dinosaur1-f",
+					"baseLayerID": 11,
+					"baseLayerMD5": "39caf2473b1eee55edb688cfa3c240c7.svg",
+					"bitmapResolution": 1,
+					"rotationCenterX": 69,
+					"rotationCenterY": 76
+				},
+				{
+					"costumeName": "dinosaur1-g",
+					"baseLayerID": 12,
+					"baseLayerMD5": "f0f2aa4e8e015de497050d8d44bbfbf1.svg",
+					"bitmapResolution": 1,
+					"rotationCenterX": 68,
+					"rotationCenterY": 72
+				}],
+			"currentCostumeIndex": 0,
+			"scratchX": 22,
+			"scratchY": 159,
+			"scale": 1,
+			"direction": -90,
+			"rotationStyle": "normal",
+			"isDraggable": false,
+			"indexInLibrary": 3,
+			"visible": true,
+			"spriteInfo": {
+			}
+		}],
+	"info": {
+		"swfVersion": "v342",
+		"flashVersion": "WIN 11,7,700,202",
+		"userAgent": "Mozilla\/5.0 (Windows NT 6.1; WOW64; rv:21.0) Gecko\/20100101 Firefox\/21.0",
+		"hasCloudData": false,
+		"scriptCount": 5,
+		"spriteCount": 3,
+		"videoOn": false,
+		"projectID": "10132588"
+	}
+}

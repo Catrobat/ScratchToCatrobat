@@ -16,3 +16,6 @@ gen/
 local.properties
 
 *.pyc
+/pyenv
+/test-reports
+/testoutput

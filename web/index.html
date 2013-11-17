@@ -1,0 +1,39 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" >
+
+<head>
+<meta http-equiv="Content-type" content="text/html; charset=iso-8859-1" />
+<link rel="stylesheet" type="text/css" media="screen"
+    title="CSS for s2c"
+    href="./s2c.css" />
+<title>Scratch to Catrobat Converter</title>
+</head>
+
+<body>
+
+<h1 style="text-align:center">Convert Scratch projects to Catrobat</h1>
+<br />
+
+<table align="center" cellpadding="5" bgcolor="#E7E7F7"><tr>
+<td>
+<form action="convert.php" method="post">
+<b>Enter a Scratch project URL</b><br />
+<input type="text" name="url" size="80"
+    value="http://scratch.mit.edu/projects/10205819/"/>
+
+<input type="submit" name="submit" value="Convert!" />
+</form>
+</td></tr>
+
+<tr><td>
+<form action="convert.php" method="post" enctype="multipart/form-data">
+<b>or upload a Scratch project</b><br />
+<input type="file" name="filename" size="80"/>
+<input type="submit" name="submit" value="Convert!" />
+</form>
+</td></tr></table>
+
+</body>
+</html>

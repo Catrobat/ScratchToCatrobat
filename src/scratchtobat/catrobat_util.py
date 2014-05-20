@@ -1,4 +1,4 @@
-import org.catrobat.catroid.common  as catcommon
+import org.catrobat.catroid.common as catcommon
 
 BACKGROUND_SPRITE_NAME = "Hintergrund"
 CATROBAT_PROJECT_FILEEXT = ".catrobat"

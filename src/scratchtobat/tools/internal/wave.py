@@ -1,3 +1,4 @@
+# source: Python 2.7 standard library Lib/wave.py as not availabe in Jython
 """Stuff to parse WAVE files.
 
 Usage.
@@ -125,7 +126,7 @@ class Wave_read:
     def initfp(self, file):
         self._convert = None
         self._soundpos = 0
-        self._file = Chunk(file, bigendian = 0)
+        self._file = Chunk(file, bigendian=0)
         if self._file.getname() != 'RIFF':
             raise Error, 'file does not start with RIFF id'
         if self._file.read(4) != 'WAVE':
@@ -135,7 +136,7 @@ class Wave_read:
         while 1:
             self._data_seek_needed = 1
             try:
-                chunk = Chunk(self._file, bigendian = 0)
+                chunk = Chunk(self._file, bigendian=0)
             except EOFError:
                 break
             chunkname = chunk.getname()
@@ -501,4 +502,4 @@ def open(f, mode=None):
     else:
         raise Error, "mode must be 'r', 'rb', 'w', or 'wb'"
 
-openfp = open # B/W compatibility
+openfp = open  # B/W compatibility

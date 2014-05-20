@@ -1,9 +1,11 @@
-from scratchtobat import sb2, common
 import os
 import unittest
 
+from scratchtobat import common
+from scratchtobat import sb2
 
-EASY_SCRIPTS = [[23, 125,
+EASY_SCRIPTS = [
+    [23, 125,
         [["whenGreenFlag"],
             ["say:duration:elapsed:from:", "Watch me dance!", 2],
             ["doRepeat",
@@ -12,8 +14,8 @@ EASY_SCRIPTS = [[23, 125,
                     ["playDrum", 1, 0.2],
                     ["forward:", -10],
                     ["playDrum", 1, 0.2]]]]],
-    [30, 355, [["whenKeyPressed", "space"], ["changeGraphicEffect:by:", "color", 25]]]]
-
+    [30, 355, [["whenKeyPressed", "space"], ["changeGraphicEffect:by:", "color", 25]]]
+]
 
 TEST_PROJECT_FOLDER = "dancing_castle"
 

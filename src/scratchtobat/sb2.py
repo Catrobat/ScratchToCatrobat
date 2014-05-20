@@ -1,20 +1,21 @@
-from scratchtobat import  common
 import hashlib
 import itertools
 import json
-import os
 import logging
+import os
+
+from scratchtobat import common
 
 log = logging.getLogger("scratchtobat.sb2")
 
-SCRIPT_GREEN_FLAG, SCRIPT_RECEIVE, SCRIPT_KEY_PRESSED, SCRIPT_SENSOR_GREATER_THAN, SCRIPT_SCENE_STARTS, SCRIPT_CLICKED = \
-     SCRATCH_SCRIPTS = ["whenGreenFlag", "whenIReceive", "whenKeyPressed", "whenSensorGreaterThan", "whenSceneStarts", "whenClicked", ]
+LICENSE_URI = "http://creativecommons.org/licenses/by-sa/2.0/deed.en"
+
+SCRIPT_GREEN_FLAG, SCRIPT_RECEIVE, SCRIPT_KEY_PRESSED, SCRIPT_SENSOR_GREATER_THAN, SCRIPT_SCENE_STARTS, SCRIPT_CLICKED = SCRATCH_SCRIPTS = \
+    ["whenGreenFlag", "whenIReceive", "whenKeyPressed", "whenSensorGreaterThan", "whenSceneStarts", "whenClicked", ]
 
 STAGE_OBJECT_NAME = "Stage"
 STAGE_HEIGHT_IN_PIXELS = 360
 STAGE_WIDTH_IN_PIXELS = 480
-
-LICENSE_URI = "http://creativecommons.org/licenses/by-sa/2.0/deed.en"
 
 
 class JsonKeys(object):

@@ -1,9 +1,12 @@
+import logging
 import sys
 import tempfile
-import logging
-from scratchtobat import sb2webapi, sb2, sb2tocatrobat, common, sb2extractor, \
-    catrobat_util
-import os
+
+from scratchtobat import common
+from scratchtobat import sb2
+from scratchtobat import sb2extractor
+from scratchtobat import sb2tocatrobat
+from scratchtobat import sb2webapi
 
 log = logging.getLogger(__name__)
 

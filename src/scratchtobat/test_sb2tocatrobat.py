@@ -1,13 +1,18 @@
-from java.lang import System
-from scratchtobat import sb2tocatrobat, sb2, common, common_testing, \
-    catrobat_util
 import glob
+import os
+import unittest
+from java.lang import System
+
 import org.catrobat.catroid.common as catcommon
 import org.catrobat.catroid.content as catbase
 import org.catrobat.catroid.content.bricks as catbricks
 import org.catrobat.catroid.formulaeditor as catformula
-import os
-import unittest
+
+from scratchtobat import catrobat_util
+from scratchtobat import common
+from scratchtobat import common_testing
+from scratchtobat import sb2
+from scratchtobat import sb2tocatrobat
 
 
 def create_catrobat_sprite_stub():

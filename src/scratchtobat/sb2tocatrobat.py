@@ -1,19 +1,26 @@
-from codecs import open
-from scratchtobat import common, sb2, sb2webapi, catrobat_util
-from scratchtobat.sb2 import JsonKeys as sb2keys
-from scratchtobat.tools import svgtopng, imageresizer, wavconverter
-import org.catrobat.catroid.common as catcommon
-import org.catrobat.catroid.content as catbase
-import org.catrobat.catroid.content.bricks as catbricks
-import org.catrobat.catroid.io as catio
-import org.catrobat.catroid.formulaeditor as catformula
+import logging
 import os
 import shutil
 import tempfile
 import zipfile
-from javax.imageio import ImageIO
+from codecs import open
 from java.io import File
-import logging
+from javax.imageio import ImageIO
+
+import org.catrobat.catroid.common as catcommon
+import org.catrobat.catroid.content as catbase
+import org.catrobat.catroid.content.bricks as catbricks
+import org.catrobat.catroid.formulaeditor as catformula
+import org.catrobat.catroid.io as catio
+
+from scratchtobat import catrobat_util
+from scratchtobat import common
+from scratchtobat import sb2
+from scratchtobat import sb2webapi
+from scratchtobat.sb2 import JsonKeys as sb2keys
+from scratchtobat.tools import imageresizer
+from scratchtobat.tools import svgtopng
+from scratchtobat.tools import wavconverter
 
 CATROID_PROJECT_FILE = "code.xml"
 CATROID_NOMEDIA_FILE = ".nomedia"

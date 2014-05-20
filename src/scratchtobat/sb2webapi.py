@@ -1,9 +1,11 @@
-from urlparse import urlparse
-import os
-import urllib2
-from scratchtobat import sb2, common
-import re
 import hashlib
+import os
+import re
+import urllib2
+from urlparse import urlparse
+
+from scratchtobat import common
+from scratchtobat import sb2
 
 HTTP_PROJECT_API = "http://scratch.mit.edu/internalapi/project/{}/get/"
 HTTP_ASSET_API = "http://scratch.mit.edu/internalapi/asset/{}/get/"

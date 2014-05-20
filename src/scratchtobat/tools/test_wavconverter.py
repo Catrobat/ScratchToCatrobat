@@ -1,8 +1,9 @@
+import os
+import unittest
+
 from scratchtobat import common
 from scratchtobat.common_testing import BaseTestCase
 from scratchtobat.tools import wavconverter
-import os
-import unittest
 
 _ENV_PATH = "PATH"
 

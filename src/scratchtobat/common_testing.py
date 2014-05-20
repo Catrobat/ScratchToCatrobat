@@ -1,13 +1,15 @@
-from codecs import open
-from scratchtobat import sb2tocatrobat
-from xml.etree import ElementTree
-import org.catrobat.catroid.io as catio
-import org.catrobat.catroid.formulaeditor as catformula
 import os
+import shutil
+import tempfile
 import unittest
 import zipfile
-import tempfile
-import shutil
+from codecs import open
+from xml.etree import ElementTree
+
+import org.catrobat.catroid.io as catio
+import org.catrobat.catroid.formulaeditor as catformula
+
+from scratchtobat import sb2tocatrobat
 
 TEST_PROJECT_URL_TO_NAME_MAP = {
 #     'http://scratch.mit.edu/projects/10205819/': '10205819', # dancing in the castle

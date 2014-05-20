@@ -1,8 +1,9 @@
-from scratchtobat import common
-from scratchtobat.tools import svgtopng
 import imghdr
 import os
 import unittest
+
+from scratchtobat import common
+from scratchtobat.tools import svgtopng
 
 
 class SvgToPngTest(unittest.TestCase):

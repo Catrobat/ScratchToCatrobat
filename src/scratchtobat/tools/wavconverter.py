@@ -1,12 +1,12 @@
-from contextlib import closing
-from scratchtobat import common
-from scratchtobat.tools.internal import wave
 import os
 import sndhdr
 import subprocess
+from contextlib import closing
 from distutils.spawn import find_executable
 from java.lang import System
 
+from scratchtobat import common
+from scratchtobat.tools.internal import wave
 
 _SOX_BINARY = "sox"
 # WORKAROUND: jython + find_executable leads to wrong result if "exe" ext is missing

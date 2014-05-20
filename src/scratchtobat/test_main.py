@@ -1,7 +1,10 @@
-from scratchtobat import main, common, common_testing
-import unittest
 import os
 import shutil
+import unittest
+
+from scratchtobat import common
+from scratchtobat import common_testing
+from scratchtobat import main
 
 
 class MainTest(common_testing.ProjectTestCase):

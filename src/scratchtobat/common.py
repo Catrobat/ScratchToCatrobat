@@ -1,13 +1,13 @@
+import contextlib
+import hashlib
 import logging
 import os
 import sys
-import hashlib
+import tempfile
 try:
     from cStringIO import StringIO
 except:
     from StringIO import StringIO
-import contextlib
-import tempfile
 
 
 def get_project_base_path():

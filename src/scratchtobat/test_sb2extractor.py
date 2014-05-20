@@ -1,8 +1,12 @@
-import unittest
-from scratchtobat import common, common_testing, sb2extractor, sb2
-import tempfile
-import shutil
 import os
+import shutil
+import tempfile
+import unittest
+
+from scratchtobat import common
+from scratchtobat import common_testing
+from scratchtobat import sb2
+from scratchtobat import sb2extractor
 
 
 class Sb2ExtractorTest(unittest.TestCase):

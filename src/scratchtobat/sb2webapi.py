@@ -24,9 +24,10 @@ def download_project(project_url, target_dir):
 
     def request_project_data(project_id):
         try:
-            return data_of_request_response(project_json_request_url(project_id))
+            scratch_request_url = project_json_request_url(project_id)
+            return data_of_request_response(scratch_request_url)
         except urllib2.HTTPError as e:
-            raise common.ScratchtobatError(e)
+            raise common.ScratchtobatError("Error with {}: '{}'".format(scratch_request_url, e))
 
     def request_resource_data(md5_file_name):
         request_url = project_resource_request_url(md5_file_name)

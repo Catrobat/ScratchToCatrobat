@@ -45,9 +45,10 @@ def _next_background_look_broadcast_message():
 
 
 class _ScratchToCatrobat(object):
+
     # based on: http://code.google.com/p/sb2-js/source/browse/trunk/editor.htm
+    # note: for bricks without mapping (value set to 'None') placeholder bricks will be added
     SCRATCH_TO_CATROBAT_MAPPING = {
-         # keys with value=None will be converted to WaitBrick with 500 ms
         #===========================================================================
         # Scripts
         #===========================================================================
@@ -129,7 +130,7 @@ class _ScratchToCatrobat(object):
                 (catbricks.ChangeGhostEffectByNBrick(sprite, value) if effectType == 'ghost' else None),  # easy: for ghost, brightness
         "setGraphicEffect:to:": lambda sprite, effectType, value: \
             catbricks.SetBrightnessBrick(sprite, value) if effectType == 'brightness' else \
-                (catbricks.SetGhostEffectBrick(sprite, value) if effectType == 'ghost' else None) ,  # easy: for ghost, brightness
+                (catbricks.SetGhostEffectBrick(sprite, value) if effectType == 'ghost' else None),  # easy: for ghost, brightness
         "filterReset": catbricks.ClearGraphicEffectBrick,  # easy
         "changeSizeBy:": catbricks.ChangeSizeByNBrick,  # easy
         "setSizeTo:": catbricks.SetSizeToBrick,  # easy
@@ -202,18 +203,19 @@ class _ScratchToCatrobat(object):
         }
 
     @classmethod
-    def brick(cls, sb2name):
+    def catrobat_brick_for(cls, sb2name):
         assert isinstance(sb2name, (str, unicode))
         if not sb2name  in cls.SCRATCH_TO_CATROBAT_MAPPING:
             raise common.ScratchtobatError("Unknown brick identifier: {}".format(sb2name))
         return cls.SCRATCH_TO_CATROBAT_MAPPING[sb2name]
 
     @classmethod
-    def script(cls, sb2script_name, sprite, arguments):
+    def create_script(cls, sb2script_name, sprite, arguments):
+        assert sprite is not None
         if not sb2script_name in sb2.SCRATCH_SCRIPTS:
             assert False, "Missing script mapping for: " + sb2script_name
         # TODO: separate script and brick mapping
-        return cls.brick(sb2script_name)(sprite, *arguments)
+        return cls.catrobat_brick_for(sb2script_name)(sprite, *arguments)
 
     @classmethod
     def operator(cls, opname):
@@ -314,7 +316,7 @@ def _convert_to_catrobat_sprite(sb2_object):
         sprite.addScript(_convert_to_catrobat_script(sb2_script, sprite))
 
     def add_initial_scratch_object_behaviour():
-        # Note: some initial settings are done with JSON keys instead with bricks. Here the appropriate bricks are added for catrobat.
+        # some initial Scratch settings are done with a general JSON configuration instead with bricks. Here the equivalent bricks are added for catrobat.
         def get_or_add_startscript(sprite):
             for script in sprite.scriptList:
                 if isinstance(script, catbase.StartScript):
@@ -374,7 +376,7 @@ def _convert_to_catrobat_script(sb2_script, sprite):
     if sprite and not isinstance(sprite, catbase.Sprite):
         raise common.ScratchtobatError("Arg2 must be of type={}, but is={}".format(catbase.Sprite, type(sprite)))
 
-    cat_script = _ScratchToCatrobat.script(sb2_script.type, sprite, sb2_script.arguments)
+    cat_script = _ScratchToCatrobat.create_script(sb2_script.type, sprite, sb2_script.arguments)
     for sb2_brick in sb2_script.bricks:
         cat_bricks = _convert_to_catrobat_bricks(sb2_brick, sprite)
         for brick in cat_bricks:
@@ -384,6 +386,9 @@ def _convert_to_catrobat_script(sb2_script, sprite):
 
 def _convert_to_catrobat_bricks(sb2_brick, catr_sprite):
     global _catr_project
+
+    def add_placeholder_for_unmapped_bricks_to(catr_bricks, catr_sprite, brick_name):
+        catr_bricks += [_DEFAULT_BRICK_CLASS(catr_sprite, 500), catbricks.NoteBrick(catr_sprite, "Missing brick for sb2 identifier: " + brick_name)]
     common.log.debug("Brick to convert={}".format(sb2_brick))
     if not sb2_brick or not (isinstance(sb2_brick, list) and isinstance(sb2_brick[0], (str, unicode))):
         raise common.ScratchtobatError("Wrong arg1, must be list with string as first element: {!r}".format(sb2_brick))
@@ -392,7 +397,7 @@ def _convert_to_catrobat_bricks(sb2_brick, catr_sprite):
     brick_name = sb2_brick[0]
     brick_arguments = sb2_brick[1:]
     catr_bricks = []
-    catrobat_brick_class = _ScratchToCatrobat.brick(brick_name)
+    catrobat_brick_class = _ScratchToCatrobat.catrobat_brick_for(brick_name)
     try:
         # Conditionals for cases which need additional handling after brick object instantiation
         if brick_name in {'doRepeat', 'doForever'}:
@@ -473,7 +478,7 @@ def _convert_to_catrobat_bricks(sb2_brick, catr_sprite):
             catrobat_class = catrobat_brick_class
             if not catrobat_class:
                 common.log.warning("No mapping for: '{}', arguments: {}".format(brick_name, brick_arguments))
-                catr_bricks += [_DEFAULT_BRICK_CLASS(catr_sprite, 500), catbricks.NoteBrick(catr_sprite, "Missing brick for sb2 identifier: " + brick_name)]
+                add_placeholder_for_unmapped_bricks_to(catr_bricks, catr_sprite, brick_name)
             else:
                 assert not isinstance(catrobat_class, list), "Wrong at: {1}, {0}".format(brick_arguments, brick_name)
                 # conditionals for argument convertions

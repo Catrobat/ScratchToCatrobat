@@ -295,29 +295,24 @@ class TestConvertScripts(unittest.TestCase):
 
 class TestConvertProjects(common_testing.ProjectTestCase):
 
-    def test_can_convert_project_with_all_easy_bricks(self):
-        for project_name in ["full_test_no_var", "full_test", ]:
-            full_test_project = sb2.Project(common.get_test_project_path(project_name), name=project_name)
+    def _test_project(self, project_name):
+        full_test_project = sb2.Project(common.get_test_project_path(project_name), name=project_name)
+        catroid_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(full_test_project, self.temp_dir)
+        self.assertCorrectZipFile(catroid_zip_file_name, project_name)
 
-            catroid_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(full_test_project, self.temp_dir)
+    def test_can_convert_project_without_variables(self):
+        self._test_project("full_test_no_var")
 
-            self.assertCorrectZipFile(catroid_zip_file_name, project_name)
+    def test_can_convert_project_with_variables(self):
+        self._test_project("full_test")
 
     def test_can_convert_project_with_keys(self):
         for project_name in ["keys_pressed", ]:
-            project = sb2.Project(common.get_test_project_path(project_name))
+            self._test_project(project_name)
 
-            catroid_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(project, self.temp_dir)
-
-            self.assertCorrectZipFile(catroid_zip_file_name, project.name)
-
-    def test_can_convert_project_with_many_media(self):
+    def test_can_convert_project_with_mediafiles(self):
         for project_name in ["Hannah_Montana", ]:
-            project = sb2.Project(common.get_test_project_path(project_name))
-
-            catroid_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(project, self.temp_dir)
-
-            self.assertCorrectZipFile(catroid_zip_file_name, project.name)
+            self._test_project(project_name)
 
 
 class TestConvertFormulas(common_testing.ProjectTestCase):

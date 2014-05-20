@@ -33,7 +33,7 @@ def convert_to_android_compatible_wav(input_path, output_path):
 
     sox_path = find_executable(_SOX_BINARY)
     if not sox_path or sox_path == _SOX_BINARY:
-        raise common.ScratchtobatError("Sox binary not found on environment path. Please add.")
+        raise common.ScratchtobatError("Sox binary not found on system path. Please add.")
 
     assert os.path.exists(sox_path)
 

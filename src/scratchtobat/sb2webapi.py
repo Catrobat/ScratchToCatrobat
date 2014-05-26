@@ -7,7 +7,9 @@ from urlparse import urlparse
 from scratchtobat import common
 from scratchtobat import sb2
 
-HTTP_PROJECT_API = "http://scratch.mit.edu/internalapi/project/{}/get/"
+# source: http://wiki.scratch.mit.edu/wiki/Scratch_File_Format_%282.0%29#Using_HTTP_requests
+HTTP_PROJECT_API = "http://projects.scratch.mit.edu/internalapi/project/{}/get/"
+# NOTE: without "projects." because at least svg files are not available with this domain
 HTTP_ASSET_API = "http://scratch.mit.edu/internalapi/asset/{}/get/"
 HTTP_PROJECT_URL_PREFIX = "http://scratch.mit.edu/projects/"
 HTTP_PROJECT_URL_PATTERN = HTTP_PROJECT_URL_PREFIX + r'\d+/?'
@@ -24,10 +26,10 @@ def download_project(project_url, target_dir):
 
     def request_project_data(project_id):
         try:
-            scratch_request_url = project_json_request_url(project_id)
-            return data_of_request_response(scratch_request_url)
+            request_url = project_json_request_url(project_id)
+            return data_of_request_response(request_url)
         except urllib2.HTTPError as e:
-            raise common.ScratchtobatError("Error with {}: '{}'".format(scratch_request_url, e))
+            raise common.ScratchtobatError("Error with {}: '{}'".format(request_url, e))
 
     def request_resource_data(md5_file_name):
         request_url = project_resource_request_url(md5_file_name)
@@ -37,7 +39,7 @@ def download_project(project_url, target_dir):
             assert verify_hash == os.path.splitext(md5_file_name)[0], "MD5 hash of response data not matching"
             return response_data
         except urllib2.HTTPError as e:
-            raise common.ScratchtobatError(e)
+            raise common.ScratchtobatError("Error with {}: '{}'".format(request_url, e))
 
     def project_json_request_url(project_id):
         return HTTP_PROJECT_API.format(project_id)

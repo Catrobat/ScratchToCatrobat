@@ -1,7 +1,6 @@
 import glob
 import os
 import unittest
-from java.lang import System
 
 import org.catrobat.catroid.common as catcommon
 import org.catrobat.catroid.content as catbase
@@ -38,7 +37,6 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
 
     def __init__(self, methodName='runTest'):
         common_testing.ProjectTestCase.__init__(self, methodName=methodName)
-        assert System.getProperty("python.security.respectJavaAccessibility") == 'false', "Jython registry property 'python.security.respectJavaAccessibility' must be set to 'false'"
 
     def setUp(self):
         common_testing.ProjectTestCase.setUp(self)
@@ -88,14 +86,14 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
 
         catroid_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(self.project_parent, self.temp_dir)
 
-        self.assertCorrectZipFile(catroid_zip_file_name, self.project_parent.name)
+        self.assertCorrectProjectZipFile(catroid_zip_file_name, self.project_parent.name)
 
     def test_can_convert_sb2_project_with_wrong_encoding_to_catroid_zip(self):
 #         self.addCleanup(lambda: shutil.rmtree(temp_dir))
         project = sb2.Project(common.get_test_project_path("wrong_encoding"))
-        catroid_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(project, self.temp_dir)
+        catroid_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(project, self._testcase_result_folder_path)
 
-        self.assertCorrectZipFile(catroid_zip_file_name, project.name)
+        self.assertCorrectProjectZipFile(catroid_zip_file_name, project.name)
 
     def test_can_convert_complete_project_to_catrobat_project_class(self):
         _catr_project = sb2tocatrobat._convert_to_catrobat_project(self.project_parent)
@@ -288,7 +286,6 @@ class TestConvertScripts(unittest.TestCase):
     def test_can_convert_whenclicked_script(self):
         sb2_script = sb2.Script([30, 355, [["whenClicked"], ["changeGraphicEffect:by:", "color", 25]]])
         catr_script = sb2tocatrobat._convert_to_catrobat_script(sb2_script, DUMMY_CATR_SPRITE)
-        # KeyPressed-scripts are represented with broadcast-scripts with a special key-message
         self.assertTrue(isinstance(catr_script, catbase.WhenScript))
         self.assertEqual('Tapped', catr_script.getAction())
 
@@ -297,8 +294,8 @@ class TestConvertProjects(common_testing.ProjectTestCase):
 
     def _test_project(self, project_name):
         full_test_project = sb2.Project(common.get_test_project_path(project_name), name=project_name)
-        catroid_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(full_test_project, self.temp_dir)
-        self.assertCorrectZipFile(catroid_zip_file_name, project_name)
+        catroid_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(full_test_project, os.path.join(self._testcase_result_folder_path, project_name))
+        self.assertCorrectProjectZipFile(catroid_zip_file_name, project_name)
 
     def test_can_convert_project_without_variables(self):
         self._test_project("full_test_no_var")

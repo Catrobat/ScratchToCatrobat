@@ -77,3 +77,22 @@ class ScratchtobatError(Exception):
 def md5_hash(input_path):
     with open(input_path, "rb") as fp:
         return hashlib.md5(fp.read()).hexdigest()
+
+
+def makedirs(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+
+# WORKAROUND: as shutil.rmtree fails on Windows with Jython for unknown reason with OSError (unlink())
+def rmtree(path):
+    assert os.path.exists(path)
+    retry_count = 0
+    while True:
+        try:
+            shutil.rmtree(path)
+            if retry_count != 0:
+                log.warning("Number of retries until path delete success: %d", retry_count)
+            break
+        except OSError:
+            retry_count += 1

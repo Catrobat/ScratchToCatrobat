@@ -1,10 +1,10 @@
-import logging
 import os
 import shutil
 import tempfile
 import zipfile
 from codecs import open
 from java.io import File
+from java.lang import Float
 from javax.imageio import ImageIO
 
 import org.catrobat.catroid.common as catcommon
@@ -22,14 +22,16 @@ from scratchtobat.tools import imageresizer
 from scratchtobat.tools import svgtopng
 from scratchtobat.tools import wavconverter
 
+
+# WORKAROUND: as catcommon.Constants.CURRENT_CATROBAT_LANGUAGE_VERSION returns 0.0
+CATROBAT_LANGUAGE_VERSION = Float.valueOf("0.92")
 CATROID_PROJECT_FILE = "code.xml"
 CATROID_NOMEDIA_FILE = ".nomedia"
 
 _DEFAULT_BRICK_CLASS = catbricks.WaitBrick
 
 
-log = logging.getLogger(__name__)
-log.setLevel(logging.INFO)
+log = common.log
 
 
 def _key_to_broadcast_message(key_name):
@@ -200,7 +202,7 @@ class _ScratchToCatrobat(object):
         "&": catformula.Operators.LOGICAL_AND,
         "|": catformula.Operators.LOGICAL_OR,
         "not": catformula.Operators.LOGICAL_NOT,  # easy end
-        }
+    }
 
     @classmethod
     def catrobat_brick_for(cls, sb2name):
@@ -541,13 +543,13 @@ class ConversionError(common.ScratchtobatError):
 
 
 def convert_sb2_project_to_catrobat_zip(project, output_dir):
-    temp_dir = tempfile.mkdtemp()
-    convert_sb2_project_to_catroid_project_structure(project, temp_dir)
-
     def iter_dir(path):
         for root, _, files in os.walk(path):
             for file_ in files:
                 yield os.path.join(root, file_)
+
+    temp_dir = tempfile.mkdtemp()
+    convert_sb2_project_to_catroid_project_structure(project, temp_dir)
 
     assert temp_dir
     assert project.name
@@ -556,19 +558,13 @@ def convert_sb2_project_to_catrobat_zip(project, output_dir):
         os.makedirs(output_dir)
     catrobat_zip_file_path = os.path.join(output_dir, project.name + catrobat_util.CATROBAT_PROJECT_FILEEXT)
     with zipfile.ZipFile(catrobat_zip_file_path, 'w') as zip_fp:
+        log.info("%s", temp_dir)
         for file_path in iter_dir(temp_dir):
             # UnicodeDecodeError because of latin1 or some encodings' characters
-            # print file_path.replace(temp_dir, project.name), type(file_path.replace(temp_dir, project.name))
-            try:
-                path_inside_zip = file_path.replace(temp_dir, "")
-            except UnicodeDecodeError:
-                path_inside_zip = file_path.encode("latin1").replace(temp_dir, "")
-
+            path_inside_zip = file_path.replace(temp_dir, u"")
             zip_fp.write(file_path, path_inside_zip)
-
-    with zipfile.ZipFile(catrobat_zip_file_path, 'r') as zip_fp:
-        zip_fp.extractall(os.path.dirname(catrobat_zip_file_path))
-    shutil.rmtree(temp_dir)
+    assert zip_fp.fp is None or zip_fp.fp.closed
+    common.rmtree(temp_dir)
 
     return catrobat_zip_file_path
 
@@ -620,6 +616,8 @@ def convert_sb2_project_to_catroid_project_structure(sb2_project, temp_path):
                 if file_ext == ".svg":
                     # converting svg to png -> new md5 and filename
                     src_path = svgtopng.convert(src_path)
+                    if not os.path.exists(src_path):
+                        assert False, "Not existing: {}. Available files in directory: {}".format(src_path, os.listdir(os.path.dirname(src_path)))
                     converted_file = True
 
                 elif md5_name in sb2_project.background_md5_names:
@@ -646,7 +644,7 @@ def convert_sb2_project_to_catroid_project_structure(sb2_project, temp_path):
                 assert file_ext in {".json"}, md5_name
                 continue
 
-            assert os.path.exists(src_path), "Not existing: {}".format(src_path)
+            assert os.path.exists(src_path), "Not existing: {}. Available files in directory: {}".format(src_path, os.listdir(os.path.dirname(src_path)))
             if converted_file:
                 md5_name = update_md5_hash(md5_name, src_path)
             # if file is used multiple times: single md5, multiple filenames
@@ -656,7 +654,7 @@ def convert_sb2_project_to_catroid_project_structure(sb2_project, temp_path):
                 os.remove(src_path)
 
     def xml_content_of_catroid_project(catroid_project):
-        storage_handler = catio.StorageHandler().getInstance()
+        storage_handler = catio.StorageHandler()
         code_xml_content = storage_handler.XML_HEADER
         xml_header = catroid_project.getXmlHeader()
         xml_header.setApplicationBuildName(common.APPLICATION_NAME)
@@ -665,6 +663,7 @@ def convert_sb2_project_to_catroid_project_structure(sb2_project, temp_path):
         # TODO: parse platform version
         xml_header.setApplicationName("Pocket Code")
         xml_header.setDeviceName(common.APPLICATION_NAME)
+        xml_header.catrobatLanguageVersion = CATROBAT_LANGUAGE_VERSION
         xml_header.programLicense = sb2.LICENSE_URI
         xml_header.mediaLicense = sb2.LICENSE_URI
         xml_header.remixOf = sb2webapi.HTTP_PROJECT_URL_PREFIX + xml_header.getProgramName()
@@ -673,9 +672,9 @@ def convert_sb2_project_to_catroid_project_structure(sb2_project, temp_path):
 
     def save_xmlfile_into_catroid_directory_structure():
         catrobat_project = _convert_to_catrobat_project(sb2_project)
-        code_xml_content = xml_content_of_catroid_project(catrobat_project)
+        xml_content = xml_content_of_catroid_project(catrobat_project)
         with open(os.path.join(temp_path, CATROID_PROJECT_FILE), "wb") as fp:
-            fp.write(code_xml_content.encode("utf8"))
+            fp.write(xml_content.encode("utf8"))
 
         # copying key images needed for keyPressed substitution
         for listened_key in sb2_project.listened_keys:

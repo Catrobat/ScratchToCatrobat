@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import os
 import tempfile
 import unittest
@@ -12,11 +14,11 @@ from scratchtobat import common
 from scratchtobat import sb2tocatrobat
 
 TEST_PROJECT_URL_TO_ID_MAP = {
-#     'http://scratch.mit.edu/projects/10205819/': '10205819', # dancing in the castle
     'http://scratch.mit.edu/projects/10132588/': '10132588',  # dance back
-#     'http://scratch.mit.edu/projects/10189712/': '10189712', #kick the ball
-#     'http://scratch.mit.edu/projects/10530876/': '10530876', #cat has message
-#    'http://scratch.mit.edu/projects/10453283/': '10453283', #  jai ho! (problem with encoding)
+    # FIXME: fails with error 'http://scratch.mit.edu/projects/10189712/': '10189712',  # kick the ball
+    'http://scratch.mit.edu/projects/10205819/': '10205819',  # dancing in the castle
+    'http://scratch.mit.edu/projects/10530876/': '10530876',  # cat has message
+    'http://scratch.mit.edu/projects/10453283/': '10453283',  # jai ho!
 }
 
 TEST_PROJECT_FILENAME_TO_ID_MAP = {
@@ -58,10 +60,9 @@ class ProjectTestCase(BaseTestCase):
     def assertCorrectCatroidProjectStructure(self, project_path, project_name):
         project_xml_path = os.path.join(project_path, sb2tocatrobat.CATROID_PROJECT_FILE)
         with open(project_xml_path) as fp:
-            xml_content = fp.read()
-        assert fp.closed
-        self.assertTrue(xml_content.startswith(self._storagehandler.XML_HEADER), "Xml header missing in catroid project code")
-        root = ElementTree.fromstring(xml_content.encode("UTF-8"))
+            self.assertEqual(fp.readline(), self._storagehandler.XML_HEADER)
+
+        root = ElementTree.parse(project_xml_path).getroot()
         self.assertEqual('program', root.tag)
 
         project_name_from_xml = root.find("header/programName")

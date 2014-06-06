@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project basedir="." name="scratchtobat">
+
+    <property environment="env" />
+    <property name="build.dir" location="bin" />
+    <property name="dist.dir" location="dist" />
+    <property name="src.dir" location="src" />
+    <property name="lib.dir" location="lib" />
+    <property name="test.reports.dir" value="test-reports" />
+    <property name="project.name" value="${ant.project.name}" />
+    <property name="project.dir" value="${src.dir}/${project.name}" />
+
+    <macrodef name="save-target-name-to">
+        <attribute name="property" />
+        <sequential>
+            <script language="javascript">
+                t = self.getOwningTarget();
+                self.getProject().setNewProperty("@{property}", t);
+            </script>
+        </sequential>
+    </macrodef>
+
+    <target name="init">
+        <property name="jython.home" value="${env.JYTHON_HOME}" />
+        <available file="${jython.home}/jython.jar" type="file" property="jython.present" />
+        <fail unless="jython.present">Set environment variable JYTHON_HOME to your Jython installation directory</fail>
+
+        <property name="jython.standalone.jar" value="${env.JYTHON_STANDALONE_JAR}" />
+        <available file="${jython.standalone.jar}" type="file" property="jython.standalone.jar.present" />
+        <fail unless="jython.standalone.jar.present">Set environment variable JYTHON_STANDALONE_JAR to a correct path.</fail>
+    </target>
+
+    <target name="dist" description="Builds converter jar" depends="init">
+        <delete>
+            <fileset dir="${dist.dir}">
+                <include name="*" />
+            </fileset>
+        </delete>
+
+        <jar destfile="${dist.dir}/scratch_to_catrobat_converter.jar">
+            <zipgroupfileset dir="${lib.dir}" includes="*.jar" />
+            <zipgroupfileset file="${jython.standalone.jar}" />
+            <!-- add converter source (no performance difference to Jython-compiled bytecode) -->
+            <fileset dir="${src.dir}" includes="${project.name}/**/*.py" />
+            <fileset file="${project.dir}/__run__.py" />
+            <manifest>
+                <attribute name="Main-Class" value="org.python.util.jython" />
+            </manifest>
+        </jar>
+    </target>
+
+    <!-- based on code from: http://www.burgaud.com/jyunit/ -->
+    <macrodef name="call-jython">
+        <attribute name="dir" />
+        <attribute name="module" />
+        <attribute name="option" default="" />
+        <sequential>
+            <java classname="org.python.util.jython" fork="Yes" failonerror="true" dir="@{dir}">
+                <arg line="-m @{module} @{option}" />
+                <classpath>
+                    <pathelement location="${jython.home}/jython.jar" />
+                    <pathelement location="${lib.dir}/*" />
+                </classpath>
+            </java>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="call-pytest">
+        <attribute name="option" default="" />
+        <sequential>
+            <save-target-name-to property="test-target-name" />
+            <call-jython dir="." module="pytest" option="${src.dir} -v --tb short --junit-xml ${test.reports.dir}/${test-target-name}.xml @{option}" />
+        </sequential>
+    </macrodef>
+
+    <target name="test-src" description="Runs source tests" depends="init">
+        <call-pytest option="-k 'not JarTest'" />
+    </target>
+
+    <target name="test-jar" description="Runs jar tests (builds jar before)" depends="init, dist">
+        <call-pytest option="-k 'JarTest'" />
+    </target>
+
+    <target name="-ensure-test-options" unless="pytest.options">
+        <fail message="You must run this target with '-Dpytest.options=options'." />
+    </target>
+
+    <target name="individual-test-run" description="Runs indiviual test" depends="-ensure-test-options, init">
+        <call-pytest option="${pytest.options}" />
+    </target>
+
+    <target name="test" description="Runs all tests" depends="test-src, test-jar">
+    </target>
+
+</project>

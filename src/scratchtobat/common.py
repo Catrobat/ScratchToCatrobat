@@ -9,6 +9,7 @@ try:
     from cStringIO import StringIO
 except:
     from StringIO import StringIO
+from datetime import datetime
 
 
 def get_project_base_path():
@@ -16,15 +17,15 @@ def get_project_base_path():
 
 log = logging.getLogger("scratchtobat")
 log.setLevel(logging.DEBUG)
-formatter = logging.Formatter("%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s")
+formatter = logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s")
 
-fh = logging.FileHandler(os.path.join(tempfile.gettempdir(), "scratchtobat-{}.log".format(os.getpid())))
+fh = logging.FileHandler(os.path.join(tempfile.gettempdir(), "scratchtobat-{}.log".format(datetime.now().isoformat().replace(":", "_"))))
 fh.setLevel(logging.DEBUG)
 fh.setFormatter(formatter)
 log.addHandler(fh)
 
 ch = logging.StreamHandler()
-ch.setLevel(logging.WARNING)
+ch.setLevel(logging.INFO)
 ch.setFormatter(formatter)
 log.addHandler(ch)
 

@@ -89,9 +89,8 @@ class TestProjectCodeFunc(unittest.TestCase):
         self.project_code = sb2.ProjectCode(os.path.join(common.get_test_project_path("dancing_castle"), sb2.Project.SCRATCH_PROJECT_CODE_FILE))
 
     def test_can_access_input_data(self):
-        json_dict = self.project_code.get_raw_dict()
-        self.assertEquals(json_dict["objName"], "Stage")
-        self.assertTrue(json_dict["info"])
+        self.assertEquals(self.project_code["objName"], "Stage")
+        self.assertTrue(self.project_code["info"])
 
     def test_can_access_sb2_objects(self):
         for sb2_object in self.project_code.objects:

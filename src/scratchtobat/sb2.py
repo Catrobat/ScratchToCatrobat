@@ -34,21 +34,6 @@ class JsonKeys(object):
     COSTUMENAME_KEY = "costumeName"
 
 
-class DictAccessWrapper(object):
-    def get_raw_dict(self):
-        raise NotImplementedError("Must be overridden by class '{}'.".format(type(self)))
-
-    def __getattr__(self, name):
-        if name.startswith("get_"):
-            json_key = name.replace("get_", "")
-
-            def access_json_data():
-                return self.get_raw_dict().get(json_key)
-            return access_json_data
-
-        raise AttributeError("'{}' object has no attribute '{}'".format(self.__class__.__name__, name))
-
-
 class Project(object):
     SCRATCH_PROJECT_CODE_FILE = "project.json"
 
@@ -103,13 +88,15 @@ class Project(object):
         self.background_md5_names = set([costume[JsonKeys.COSTUME_MD5] for costume in self.project_code.stage_object.get_costumes()])
 
 
-class ProjectCode(DictAccessWrapper):
+# TODO: do not use DictAccessWrapper
+class ProjectCode(common.DictAccessWrapper):
 
     def __init__(self, json_path):
         self.json_path = json_path
-        self.project_code = self.load_json_file(self.json_path)
+        json_dict = self.load_json_file(self.json_path)
+        super(ProjectCode, self).__init__(json_dict)
         self.objects_data = [_ for _ in self.get_children() if "objName" in _]
-        self.objects = [Object(_) for _ in [self.project_code] + self.objects_data]
+        self.objects = [Object(_) for _ in [json_dict] + self.objects_data]
         self.stage_object = self.objects[0]
         self.nonstate_objects = self.objects[1:]
 
@@ -125,10 +112,7 @@ class ProjectCode(DictAccessWrapper):
         # FIXME: check which tags are really required
         for key in ["objName", "info", "currentCostumeIndex", "penLayerMD5", "tempoBPM", "videoAlpha", "children", "costumes", "sounds"]:
             if not key in json_dict:
-                raise ProjectCodeError("Wrong project file: {}. Key='{}' not set.".format(self.json_path, key))
-
-    def get_raw_dict(self):
-        return self.project_code
+                raise ProjectCodeError("In project file: '{}' key='{}' must be set.".format(self.json_path, key))
 
     def _resources_of_objects(self):
         return itertools.chain.from_iterable(_.get_sounds() + _.get_costumes() for _ in self.objects)
@@ -149,27 +133,27 @@ class ProjectCode(DictAccessWrapper):
                     yield resource
 
 
-class Object(DictAccessWrapper):
+# TODO: rename
+# TODO: do not use DictAccessWrapper
+class Object(common.DictAccessWrapper):
 
     def __init__(self, object_data):
-        self.object_data = object_data
-        if not self.is_valid_class_input(self.object_data):
-            raise ObjectError("Input is no valid Scratch json sb2 object.")
+        super(Object, self).__init__(object_data)
+        if not self.is_valid_class_input(object_data):
+            raise ObjectError("Input is no valid Scratch object.")
         for key in (JsonKeys.SOUNDS_KEY, JsonKeys.COSTUMES_KEY, JsonKeys.SCRIPTS_KEY):
-            if not key in self.object_data:
-                self.object_data[key] = []
+            if not key in object_data:
+                object_data[key] = []
         # TODO: check for all stage-object-only keys
-        self.is_stage_object = JsonKeys.INFO_KEY in self.object_data
+        self.is_stage_object = JsonKeys.INFO_KEY in object_data
         self.scripts = [Script(_) for _ in self.get_scripts() if Script.is_valid_script_input(_)]
 
     @classmethod
     def is_valid_class_input(cls, object_data):
         return 'objName' in object_data
 
-    def get_raw_dict(self):
-        return self.object_data
 
-
+# TODO: rename
 class Script(object):
 
     def __init__(self, json_input):

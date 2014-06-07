@@ -26,8 +26,8 @@ class TestProjectInit(unittest.TestCase):
         self.assertTrue(project, "No project object")
 
     def test_fail_on_non_existing_input_path(self):
-        with self.assertRaises(sb2.ProjectError):
-            # TODO: check error type
+        with self.assertRaises(EnvironmentError):
+            # TODO: check error message
             sb2.Project(common.get_test_project_path("non_existing_path"))
 
     def test_fail_on_corrupt_sb2_json_input(self):
@@ -57,7 +57,7 @@ class TestProjectFunc(unittest.TestCase):
     def test_can_access_project_name(self):
         test_project_folder_to_project_name = {
             "dancing_castle": "10205819",
-            }
+        }
         for project_folder, project_name in test_project_folder_to_project_name.iteritems():
             project_path = common.get_test_project_path(project_folder)
             self.assertEqual(project_name, sb2.Project(project_path).name)
@@ -74,19 +74,19 @@ class TestProjectFunc(unittest.TestCase):
 class TestProjectCodeInit(unittest.TestCase):
 
     def test_can_create_on_correct_file(self):
-        self.assertTrue(sb2.ProjectCode(os.path.join(common.get_test_project_path("dancing_castle"), sb2.Project.SCRATCH_PROJECT_CODE_FILE)))
-        self.assertTrue(sb2.ProjectCode(os.path.join(common.get_test_project_path("simple"), sb2.Project.SCRATCH_PROJECT_CODE_FILE)))
+        self.assertTrue(sb2.ProjectCode(common.get_test_project_path("dancing_castle")))
+        self.assertTrue(sb2.ProjectCode(common.get_test_project_path("simple")))
 
     def test_fail_on_corrupt_file(self):
         with self.assertRaises(sb2.ProjectCodeError):
-            sb2.ProjectCode(os.path.join(common.get_test_project_path("faulty_json_file"), sb2.Project.SCRATCH_PROJECT_CODE_FILE))
+            sb2.ProjectCode(common.get_test_project_path("faulty_json_file"))
 
 
 class TestProjectCodeFunc(unittest.TestCase):
 
     def setUp(self):
         unittest.TestCase.setUp(self)
-        self.project_code = sb2.ProjectCode(os.path.join(common.get_test_project_path("dancing_castle"), sb2.Project.SCRATCH_PROJECT_CODE_FILE))
+        self.project_code = sb2.ProjectCode(common.get_test_project_path("dancing_castle"))
 
     def test_can_access_input_data(self):
         self.assertEquals(self.project_code["objName"], "Stage")
@@ -182,7 +182,8 @@ class TestScriptInit(unittest.TestCase):
             self.assertTrue(script)
 
     def test_fail_on_wrong_input(self):
-        faulty_script_structures = [[],
+        faulty_script_structures = [
+            [],
             "a string is no correct input",
             ["the first 2 params", "must be integers", []],
             [0101, 444, "further the third one must be a list"]

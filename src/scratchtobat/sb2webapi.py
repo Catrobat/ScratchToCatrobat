@@ -19,6 +19,7 @@ def download_project(project_url, target_dir):
     if not re.match(HTTP_PROJECT_URL_PATTERN, project_url):
         raise common.ScratchtobatError("Project URL must be matching '{}'. Given: {}".format(
             HTTP_PROJECT_URL_PREFIX + '<project id>', project_url))
+    assert len(os.listdir(target_dir)) == 0
 
     def data_of_request_response(url):
         common.log.info("Requesting web api url: {}".format(url))
@@ -57,13 +58,13 @@ def download_project(project_url, target_dir):
             fp.write(data)
 
     def project_code_path(target_dir):
-        return os.path.join(target_dir, sb2.Project.SCRATCH_PROJECT_CODE_FILE)
+        return os.path.join(target_dir, sb2.SCRATCH_PROJECT_CODE_FILE)
 
+    # TODO: consolidate with ProjectCode
     project_id = project_id_from_url(project_url)
     project_file_path = project_code_path(target_dir)
     write_to(request_project_data(project_id), project_file_path)
-
-    project_code = sb2.ProjectCode(project_file_path)
-    for md5_file_name in project_code.md5_file_names_of_referenced_resources():
+    project_code = sb2.ProjectCode(target_dir)
+    for md5_file_name in project_code.resource_names:
         resource_file_path = os.path.join(target_dir, md5_file_name)
         write_to(request_resource_data(md5_file_name), resource_file_path)

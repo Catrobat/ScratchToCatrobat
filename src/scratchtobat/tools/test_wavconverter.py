@@ -2,13 +2,13 @@ import os
 import unittest
 
 from scratchtobat import common
-from scratchtobat.common_testing import BaseTestCase
+from scratchtobat import common_testing
 from scratchtobat.tools import wavconverter
 
 _ENV_PATH = "PATH"
 
 
-class WavConverterTest(BaseTestCase):
+class WavConverterTest(common_testing.BaseTestCase):
 
     def test_fail_on_sox_executable_not_on_path(self):
         saved_path_env = os.environ[_ENV_PATH]

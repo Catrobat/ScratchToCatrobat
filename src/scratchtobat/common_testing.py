@@ -5,6 +5,7 @@ import tempfile
 import unittest
 import zipfile
 from codecs import open
+from java.lang import System
 from xml.etree import ElementTree
 
 import org.catrobat.catroid.io as catio
@@ -12,6 +13,8 @@ import org.catrobat.catroid.formulaeditor as catformula
 
 from scratchtobat import common
 from scratchtobat import sb2tocatrobat
+
+assert System.getProperty("python.security.respectJavaAccessibility") == 'false', "Jython registry property 'python.security.respectJavaAccessibility' must be set to 'false'"
 
 TEST_PROJECT_URL_TO_ID_MAP = {
     'http://scratch.mit.edu/projects/10132588/': '10132588',  # dance back
@@ -31,21 +34,38 @@ _log = common.log
 class BaseTestCase(unittest.TestCase):
 
     def setUp(self):
+        super(BaseTestCase, self).setUp()
         self.temp_dir = tempfile.mkdtemp()
-        _package_name, module_qualified_testcase_name = self.id().split(".", 1)
-        assert module_qualified_testcase_name is not None
-        self._testcase_result_folder_path = os.path.join(common.get_project_base_path(), "testoutput", module_qualified_testcase_name)
-        common.makedirs(self._testcase_result_folder_path)
+        _package_name, self._module_qualified_testcase_name = self.id().split(".", 1)
+        assert self._module_qualified_testcase_name is not None
+        self.__testresult_folder_subdir = None
 
     def tearDown(self):
-        unittest.TestCase.tearDown(self)
+        super(BaseTestCase, self).tearDown()
         common.rmtree(self.temp_dir)
+
+    @property
+    def _testresult_folder_path(self):
+        folder_path = os.path.join(common.get_project_base_path(), "testresult", self._module_qualified_testcase_name)
+        if self.__testresult_folder_subdir is not None:
+            folder_path = os.path.join(folder_path, self.__testresult_folder_subdir)
+        if os.path.exists(folder_path):
+            common.rmtree(folder_path)
+        common.makedirs(folder_path)
+        return folder_path
+
+    def _set_testresult_folder_subdir(self, dirname):
+        self.__testresult_folder_subdir = dirname
+
+    def failOnMissingException(self):
+        self.fail("Exception not thrown")
 
 
 class ProjectTestCase(BaseTestCase):
 
     @classmethod
     def setUpClass(cls):
+        super(ProjectTestCase, cls).setUpClass()
         cls._storagehandler = catio.StorageHandler()
 
     def assertScriptClasses(self, expected_script_class, expected_brick_classes, script):
@@ -73,6 +93,7 @@ class ProjectTestCase(BaseTestCase):
         self.assertIsNotNone(project_name_from_xml, "code.xml corrupt: no catrobatLanguageVersion set in header")
         self.assertGreater(float(catrobat_version_from_xml.text), 0.0)
 
+        # TODO: refactor duplication
         sounds_dir = sb2tocatrobat.sounds_dir_of_project(project_path)
         for node in root.findall('.//sound/fileName'):
             sound_path = os.path.join(sounds_dir, node.text)
@@ -81,10 +102,12 @@ class ProjectTestCase(BaseTestCase):
         images_dir = sb2tocatrobat.images_dir_of_project(project_path)
         for node in root.findall('.//look/fileName'):
             image_path = os.path.join(images_dir, node.text)
-            _log.info("  available files: {}".format(os.listdir(os.path.dirname(image_path))))
-            self.assert_(os.path.exists(image_path), "Missing: " + image_path + ", available files: {}".format(os.listdir(os.path.dirname(image_path))))
+            self.assert_(os.path.exists(image_path), "Missing: {}, available files: {}".format(repr(image_path), os.listdir(os.path.dirname(image_path))))
 
-    def assertCorrectProjectZipFile(self, zip_path, project_name):
+    def assertCorrectProjectZipFile(self, zip_path, project_name, unused_scratch_resources=None):
+        if unused_scratch_resources is None:
+            unused_scratch_resources = []
+        _log.info("unused resources: %s", ', '.join(unused_scratch_resources))
         assert os.path.exists(self.temp_dir)
         temp_dir = os.path.join(self.temp_dir, "extracted_zip")
         if not os.path.exists(temp_dir):
@@ -97,6 +120,9 @@ class ProjectTestCase(BaseTestCase):
             all_nomedia_files = (".nomedia", "images/.nomedia", "sounds/.nomedia")
             for nomedia_file in all_nomedia_files:
                 self.assertIn(nomedia_file, set(zip_fp.namelist()))
+            for unused_scratch_resource in unused_scratch_resources:
+                for zip_filepath in zip_fp.namelist():
+                    self.assertNotIn(os.path.splitext(unused_scratch_resource)[0], zip_filepath)
             zip_fp.extractall(temp_dir)
 
         self.assertCorrectCatroidProjectStructure(temp_dir, project_name)

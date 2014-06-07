@@ -1,4 +1,5 @@
 import hashlib
+import glob
 import itertools
 import json
 import logging
@@ -12,7 +13,7 @@ LICENSE_URI = "http://creativecommons.org/licenses/by-sa/2.0/deed.en"
 
 SCRIPT_GREEN_FLAG, SCRIPT_RECEIVE, SCRIPT_KEY_PRESSED, SCRIPT_SENSOR_GREATER_THAN, SCRIPT_SCENE_STARTS, SCRIPT_CLICKED = SCRATCH_SCRIPTS = \
     ["whenGreenFlag", "whenIReceive", "whenKeyPressed", "whenSensorGreaterThan", "whenSceneStarts", "whenClicked", ]
-
+SCRATCH_PROJECT_CODE_FILE = "project.json"
 STAGE_OBJECT_NAME = "Stage"
 STAGE_HEIGHT_IN_PIXELS = 360
 STAGE_WIDTH_IN_PIXELS = 480
@@ -35,36 +36,20 @@ class JsonKeys(object):
 
 
 class Project(object):
-    SCRATCH_PROJECT_CODE_FILE = "project.json"
 
     def __init__(self, input_path, name=None):
-        common.log.info("Project for {}".format(input_path))
-        if not os.path.isdir(input_path):
-            raise ProjectError("Project not found at: {}. Please create project.".format(input_path))
-
-        json_path = os.path.join(input_path, self.SCRATCH_PROJECT_CODE_FILE)
-        try:
-            self.project_code = ProjectCode(json_path)
-        except ProjectCodeError as e:
-            raise ProjectError(e)
-        if name:
-            self.name = name
-        else:
-            self.name = self.project_code.get_info().get("projectID")
-        if not self.name:
-            raise ProjectError("No project name specified in project file. Please provide project name with constructor.")
-
         def read_md5_to_resource_path_mapping():
             md5_to_resource_path_map = {}
-            for project_dir_file in os.listdir(input_path):
-                project_file_path = os.path.join(input_path, project_dir_file)
-                with open(project_file_path, 'rb') as fp:
-                    file_hash = hashlib.md5(fp.read()).hexdigest()
-                md5_to_resource_path_map[file_hash + os.path.splitext(project_file_path)[1]] = project_file_path
+            for project_file_path in glob.glob(os.path.join(input_path, "*")):
+                resource_name = common.md5_hash(project_file_path) + os.path.splitext(project_file_path)[1]
+                md5_to_resource_path_map[resource_name] = project_file_path
+            try:
+                # penLayer is no regular resource file
+                del md5_to_resource_path_map[self.project_code['penLayerMD5']]
+            except KeyError:
+                # TODO: include penLayer download in webapi
+                pass
             return md5_to_resource_path_map
-
-        self.md5_to_resource_path_map = read_md5_to_resource_path_mapping()
-        common.log.info("md5 names to path mapping: {}".format(self.md5_to_resource_path_map))
 
         def verify_resources(resources):
             for res_dict  in resources:
@@ -74,7 +59,25 @@ class Project(object):
                 if not md5_file in self.md5_to_resource_path_map:
                     raise ProjectError("Missing resource file at project: {}. Provide resource with md5: {}".format(input_path, resource_md5))
 
+        log.info("Loading Scratch project from '%s'", input_path)
+
+        try:
+            self.project_code = ProjectCode(input_path)
+        except ProjectCodeError as e:
+            raise ProjectError(e)
+        # TODO: create and use project API wrapper to access
+        if name:
+            self.name = name
+        else:
+            self.name = self.project_code.get_info().get("projectID")
+        if not self.name:
+            raise ProjectError("No project name specified in project file. Please provide project name with constructor.")
+
+        # TODO: move whole block including the two functions to ProjectCode
+        self.md5_to_resource_path_map = read_md5_to_resource_path_mapping()
+        assert self.project_code['penLayerMD5'] not in self.md5_to_resource_path_map
         for sb2_object in self.project_code.objects:
+            # TODO: rename to verify_object?
             verify_resources(sb2_object.get_sounds() + sb2_object.get_costumes())
 
         listened_keys = []
@@ -84,14 +87,21 @@ class Project(object):
                     assert len(script.arguments) == 1
                     listened_keys += script.arguments
         self.listened_keys = set(listened_keys)
-
+        # TODO: rename
         self.background_md5_names = set([costume[JsonKeys.COSTUME_MD5] for costume in self.project_code.stage_object.get_costumes()])
+        self.unused_resource_names, self.unused_resource_paths = common.pad(zip(*self.project_code.find_unused_resources_name_and_filepath()), 2, [])
+        for unused_path in self.unused_resource_paths:
+            log.warning("Project folder contains unused resource file: '%s'. These will be omitted for Catrobat project.", os.path.basename(unused_path))
 
 
 # TODO: do not use DictAccessWrapper
 class ProjectCode(common.DictAccessWrapper):
 
-    def __init__(self, json_path):
+    def __init__(self, input_path):
+        json_path = os.path.join(input_path, SCRATCH_PROJECT_CODE_FILE)
+        if not os.path.exists(json_path):
+            raise EnvironmentError("Project file not found: {}. Please create.".format(json_path))
+        self.input_path = input_path
         self.json_path = json_path
         json_dict = self.load_json_file(self.json_path)
         super(ProjectCode, self).__init__(json_dict)
@@ -99,6 +109,7 @@ class ProjectCode(common.DictAccessWrapper):
         self.objects = [Object(_) for _ in [json_dict] + self.objects_data]
         self.stage_object = self.objects[0]
         self.nonstate_objects = self.objects[1:]
+        self.resource_names = {self._resource_name_from(_) for _ in self._resources_of_objects()}
 
     def load_json_file(self, json_file):
         if not os.path.exists(json_file):
@@ -117,13 +128,17 @@ class ProjectCode(common.DictAccessWrapper):
     def _resources_of_objects(self):
         return itertools.chain.from_iterable(_.get_sounds() + _.get_costumes() for _ in self.objects)
 
-    def md5_file_names_of_referenced_resources(self):
-        def get_md5_name_of_resource(res_dict):
-            assert JsonKeys.SOUND_MD5 in res_dict or JsonKeys.COSTUME_MD5 in res_dict
-            md5_file_name = res_dict[JsonKeys.SOUND_MD5] if JsonKeys.SOUNDNAME_KEY in res_dict else res_dict[JsonKeys.COSTUME_MD5]
-            return md5_file_name
+    def _resource_name_from(self, res_dict):
+        assert JsonKeys.SOUND_MD5 in res_dict or JsonKeys.COSTUME_MD5 in res_dict
+        md5_file_name = res_dict[JsonKeys.SOUND_MD5] if JsonKeys.SOUNDNAME_KEY in res_dict else res_dict[JsonKeys.COSTUME_MD5]
+        return md5_file_name
 
-        return (get_md5_name_of_resource(_) for _ in self._resources_of_objects())
+    def find_unused_resources_name_and_filepath(self):
+        for file_path in glob.glob(os.path.join(self.input_path, "*")):
+            md5_resource_filename = common.md5_hash(file_path) + os.path.splitext(file_path)[1]
+            if md5_resource_filename not in self.resource_names:
+                if file_path != self.json_path:
+                    yield md5_resource_filename, file_path
 
     def resource_dicts_of_md5_name(self, md5_name):
         for resource in self._resources_of_objects():

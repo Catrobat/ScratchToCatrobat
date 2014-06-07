@@ -101,6 +101,11 @@ def rmtree(path):
             break
         except OSError:
             retry_count += 1
+            if retry_count > 1000:
+                log.warning("Could not delete: '%s' (trys: %d)", path, retry_count)
+                break
+            if not os.path.exists(path):
+                break
 
 
 # source for pad methods: http://stackoverflow.com/a/3438986

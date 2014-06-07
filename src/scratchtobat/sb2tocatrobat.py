@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import os
 import shutil
 import tempfile
@@ -558,9 +560,8 @@ def convert_sb2_project_to_catrobat_zip(project, output_dir):
         os.makedirs(output_dir)
     catrobat_zip_file_path = os.path.join(output_dir, project.name + catrobat_util.CATROBAT_PROJECT_FILEEXT)
     with zipfile.ZipFile(catrobat_zip_file_path, 'w') as zip_fp:
-        log.info("%s", temp_dir)
-        for file_path in iter_dir(temp_dir):
-            # UnicodeDecodeError because of latin1 or some encodings' characters
+        for file_path in iter_dir(unicode(temp_dir)):
+            assert isinstance(file_path, unicode)
             path_inside_zip = file_path.replace(temp_dir, u"")
             zip_fp.write(file_path, path_inside_zip)
     assert zip_fp.fp is None or zip_fp.fp.closed

@@ -25,8 +25,6 @@ from scratchtobat.tools import svgtopng
 from scratchtobat.tools import wavconverter
 
 
-# WORKAROUND: as catcommon.Constants.CURRENT_CATROBAT_LANGUAGE_VERSION returns 0.0
-CATROBAT_LANGUAGE_VERSION = Float.valueOf("0.92")
 CATROID_PROJECT_FILE = "code.xml"
 CATROID_NOMEDIA_FILE = ".nomedia"
 
@@ -664,7 +662,7 @@ def convert_sb2_project_to_catroid_project_structure(sb2_project, temp_path):
         # TODO: parse platform version
         xml_header.setApplicationName("Pocket Code")
         xml_header.setDeviceName(common.APPLICATION_NAME)
-        xml_header.catrobatLanguageVersion = CATROBAT_LANGUAGE_VERSION
+        xml_header.catrobatLanguageVersion = catcommon.Constants.CURRENT_CATROBAT_LANGUAGE_VERSION
         xml_header.programLicense = sb2.LICENSE_URI
         xml_header.mediaLicense = sb2.LICENSE_URI
         xml_header.remixOf = sb2webapi.HTTP_PROJECT_URL_PREFIX + xml_header.getProgramName()

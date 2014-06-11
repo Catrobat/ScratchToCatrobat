@@ -233,6 +233,7 @@ def _key_image_path_for(key):
 
 
 def _key_filename_for(key):
+    assert key is not None
     key_path = _key_image_path_for(key)
     # TODO: extract method, already used once
     return common.md5_hash(key_path) + "_" + _key_to_broadcast_message(key) + os.path.splitext(key_path)[1]
@@ -320,6 +321,7 @@ def _convert_to_catrobat_sprite(sb2_object):
     def add_initial_scratch_object_behaviour():
         # some initial Scratch settings are done with a general JSON configuration instead with bricks. Here the equivalent bricks are added for catrobat.
         def get_or_add_startscript(sprite):
+            # HACK: accessing private member, enabled with Jython registry security settings
             for script in sprite.scriptList:
                 if isinstance(script, catbase.StartScript):
                     return script
@@ -338,24 +340,16 @@ def _convert_to_catrobat_sprite(sb2_object):
             implicit_bricks_to_add += [set_look_brick]
 
         # object's scratchX and scratchY Keys determine position
-        if sb2_object.get_scratchX() or sb2_object.get_scratchY():
-            # sets possible None to 0
-            x_pos = sb2_object.get_scratchX() or 0
-            y_pos = sb2_object.get_scratchY() or 0
-            try:
-                place_at_brick = catbricks.PlaceAtBrick(sprite, int(x_pos), int(y_pos))
-            except TypeError:
-                common.log.warning("Problem with args: {}, {}. Set to default (0, 0)".format(x_pos, y_pos))
-                place_at_brick = catbricks.PlaceAtBrick(sprite, 0, 0)
-            implicit_bricks_to_add += [place_at_brick]
+        x_pos = sb2_object.get_scratchX() or 0
+        y_pos = sb2_object.get_scratchY() or 0
+        place_at_brick = catbricks.PlaceAtBrick(sprite, int(x_pos), int(y_pos))
+        implicit_bricks_to_add += [place_at_brick]
 
-        object_scale = sb2_object.get_scale()
-        if object_scale and object_scale != 1:
-            implicit_bricks_to_add += [catbricks.SetSizeToBrick(sprite, object_scale * 100.0 / costume_resolution)]
+        object_scale = sb2_object.get_scale() or 1
+        implicit_bricks_to_add += [catbricks.SetSizeToBrick(sprite, object_scale * 100.0 / costume_resolution)]
 
-        object_direction = sb2_object.get_direction()
-        if object_direction and object_direction != "90":
-            implicit_bricks_to_add += [catbricks.PointInDirectionBrick(sprite, object_direction)]
+        object_direction = sb2_object.get_direction() or 90
+        implicit_bricks_to_add += [catbricks.PointInDirectionBrick(sprite, object_direction)]
 
         object_visible = sb2_object.get_visible()
         if object_visible is not None and not object_visible:
@@ -547,15 +541,10 @@ def convert_sb2_project_to_catrobat_zip(project, output_dir):
         for root, _, files in os.walk(path):
             for file_ in files:
                 yield os.path.join(root, file_)
-
+    log.info("convert Scratch project to '%s'", output_dir)
     temp_dir = tempfile.mkdtemp()
     convert_sb2_project_to_catroid_project_structure(project, temp_dir)
-
-    assert temp_dir
-    assert project.name
-
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    common.makedirs(output_dir)
     catrobat_zip_file_path = os.path.join(output_dir, project.name + catrobat_util.CATROBAT_PROJECT_FILEEXT)
     with zipfile.ZipFile(catrobat_zip_file_path, 'w') as zip_fp:
         for file_path in iter_dir(unicode(temp_dir)):
@@ -590,28 +579,32 @@ def convert_sb2_project_to_catroid_project_structure(sb2_project, temp_path):
         return sounds_path, images_path
 
     def save_mediafiles_into_catroid_directory_structure():
-        def update_md5_hash(current_md5_name, file_path_for_update):
-            resource_maps = list(sb2_project.project_code.resource_dicts_of_md5_name(current_md5_name))
-            md5_name = common.md5_hash(file_path_for_update) + os.path.splitext(file_path_for_update)[1]
+        def resource_name_for(file_path):
+            return common.md5_hash(file_path) + os.path.splitext(file_path)[1]
+
+        def update_resource_name(old_resource_name, new_resource_name):
+            resource_maps = list(sb2_project.project_code.find_all_resource_dicts_for(old_resource_name))
+            assert len(resource_maps) > 0
             for resource_map in resource_maps:
                 if sb2keys.COSTUME_MD5 in resource_map:
-                    resource_map[sb2keys.COSTUME_MD5] = md5_name
+                    resource_map[sb2keys.COSTUME_MD5] = new_resource_name
                 elif sb2keys.SOUND_MD5 in resource_map:
-                    resource_map[sb2keys.SOUND_MD5] = md5_name
+                    resource_map[sb2keys.SOUND_MD5] = new_resource_name
                 else:
                     assert False, "Unknown dict: {}".resource_map
-            return md5_name
 
         for md5_name, src_path in sb2_project.md5_to_resource_path_map.iteritems():
+            if md5_name in sb2_project.unused_resource_names:
+                log.info("Ignoring unused resource file: %s", src_path)
+                continue
+
             file_ext = os.path.splitext(md5_name)[1].lower()
             converted_file = False
 
             # TODO; extract method
             if file_ext in {".png", ".svg", ".jpg", ".gif"}:
                 target_dir = images_path
-#                 # WORKAROUNF: penLayerMD5 file
-#                 if not resource_maps:
-#                     continue
+
                 if file_ext == ".svg":
                     # converting svg to png -> new md5 and filename
                     src_path = svgtopng.convert(src_path)
@@ -640,14 +633,16 @@ def convert_sb2_project_to_catroid_project_structure(sb2_project, temp_path):
                         converted_file = True
 
             else:
-                assert file_ext in {".json"}, md5_name
+                assert file_ext in {".json"}, "Unknown media file extension: %s" % src_path
                 continue
 
             assert os.path.exists(src_path), "Not existing: {}. Available files in directory: {}".format(src_path, os.listdir(os.path.dirname(src_path)))
             if converted_file:
-                md5_name = update_md5_hash(md5_name, src_path)
+                new_resource_name = resource_name_for(src_path)
+                update_resource_name(md5_name, new_resource_name)
+                md5_name = new_resource_name
             # if file is used multiple times: single md5, multiple filenames
-            for catroid_file_name in _convert_resource_name(sb2_project, md5_name):
+            for catroid_file_name in converted_resource_names(md5_name, sb2_project):
                 shutil.copyfile(src_path, os.path.join(target_dir, catroid_file_name))
             if converted_file:
                 os.remove(src_path)
@@ -689,9 +684,11 @@ def convert_sb2_project_to_catroid_project_structure(sb2_project, temp_path):
     save_xmlfile_into_catroid_directory_structure()
 
 
-def _convert_resource_name(project, md5_name):
+def converted_resource_names(scratch_resource_name, project):
+    assert os.path.basename(scratch_resource_name) == scratch_resource_name and len(os.path.splitext(scratch_resource_name)[0]) == 32, "Must be MD5 hash with file ext: " + scratch_resource_name
     catroid_resource_names = []
-    for resource in project.project_code.resource_dicts_of_md5_name(md5_name):
+    md5_name = scratch_resource_name
+    for resource in project.project_code.find_all_resource_dicts_for(md5_name):
         if resource:
             try:
                 resource_name = resource[sb2keys.SOUNDNAME_KEY] if sb2keys.SOUNDNAME_KEY in resource else resource[sb2keys.COSTUMENAME_KEY]
@@ -699,6 +696,7 @@ def _convert_resource_name(project, md5_name):
                 raise ConversionError("Error with: {}, {}".format(md5_name, resource))
             resource_ext = os.path.splitext(md5_name)[1]
             catroid_resource_names += [md5_name.replace(resource_ext, "_" + resource_name + resource_ext)]
+    assert len(catroid_resource_names) != 0, "{} not found (path: {}). available: {}".format(scratch_resource_name, project.md5_to_resource_path_map.get(scratch_resource_name), project.project_code.resource_names)
     return catroid_resource_names
 
 

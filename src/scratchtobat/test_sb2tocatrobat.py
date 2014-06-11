@@ -28,18 +28,16 @@ TEST_PROJECT_PATH = common.get_test_project_path("dancing_castle")
 
 class TestConvertExampleProject(common_testing.ProjectTestCase):
 
-    dummy_sb2_object = sb2.Object({"objName": "Dummy"})
-
     expected_sprite_names = ["Sprite1, Cassy Dance"]
     expected_script_classes = [[catbase.StartScript, ], []]
     expected_brick_classes = [[catbricks.WaitBrick, catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.MoveNStepsBrick,
             catbricks.WaitBrick, catbricks.LoopEndBrick], []]
 
-    def __init__(self, methodName='runTest'):
-        common_testing.ProjectTestCase.__init__(self, methodName=methodName)
+    def __init__(self, *args, **kwargs):
+        super(TestConvertExampleProject, self).__init__(*args, **kwargs)
 
     def setUp(self):
-        common_testing.ProjectTestCase.setUp(self)
+        super(TestConvertExampleProject, self).setUp()
         self.project_parent = sb2.Project(TEST_PROJECT_PATH)
         self.project = self.project_parent.project_code
 
@@ -62,8 +60,7 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
 
         self.assertCorrectCatroidProjectStructure(self.temp_dir, self.project_parent.name)
         actual_count = len(glob.glob(os.path.join(images_dir, "*.png")))
-        # TODO: + 1 because of missing penLayerMD5 file
-        self.assertEqual(count_svg_and_png_files, actual_count - len(self.project_parent.listened_keys) + 1)
+        self.assertEqual(count_svg_and_png_files, actual_count - len(self.project_parent.listened_keys))
 
 #     def test_can_convert_to_catroid_folder_structure_with_utf_input_json(self):
 #         project = sb2.Project(common_testing.get_test_project_path("simple_utf_test"))
@@ -79,19 +76,16 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
             "83c36d806dc92327b9e7049a565c6bff.wav": ["83c36d806dc92327b9e7049a565c6bff_meow.wav"]}
         for resource_name in resource_names_sb2_to_catroid_map:
             expected = resource_names_sb2_to_catroid_map[resource_name]
-            self.assertEqual(expected, sb2tocatrobat._convert_resource_name(self.project_parent, resource_name))
+            self.assertEqual(expected, sb2tocatrobat.converted_resource_names(resource_name, self.project_parent))
 
     def test_can_convert_sb2_project_to_catroid_zip(self):
-#         self.addCleanup(lambda: shutil.rmtree(temp_dir))
-
         catroid_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(self.project_parent, self.temp_dir)
 
         self.assertCorrectProjectZipFile(catroid_zip_file_name, self.project_parent.name)
 
     def test_can_convert_sb2_project_with_wrong_encoding_to_catroid_zip(self):
-#         self.addCleanup(lambda: shutil.rmtree(temp_dir))
         project = sb2.Project(common.get_test_project_path("wrong_encoding"))
-        catroid_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(project, self._testcase_result_folder_path)
+        catroid_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(project, self._testresult_folder_path)
 
         self.assertCorrectProjectZipFile(catroid_zip_file_name, project.name)
 
@@ -187,10 +181,10 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
 #         common.log.info(catio.StorageHandler.getInstance().getXMLStringOfAProject(_catr_project))
 
 
-class TestConvertBricks(unittest.TestCase):
+class TestConvertBricks(common_testing.BaseTestCase):
 
     def setUp(self):
-        unittest.TestCase.setUp(self)
+        super(TestConvertBricks, self).setUp()
         self.sprite_stub = create_catrobat_sprite_stub()
 
     def get_sprite_with_soundinfo(self, soundinfo_name):
@@ -293,9 +287,9 @@ class TestConvertScripts(unittest.TestCase):
 class TestConvertProjects(common_testing.ProjectTestCase):
 
     def _test_project(self, project_name):
-        full_test_project = sb2.Project(common.get_test_project_path(project_name), name=project_name)
-        catroid_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(full_test_project, os.path.join(self._testcase_result_folder_path, project_name))
-        self.assertCorrectProjectZipFile(catroid_zip_file_name, project_name)
+        scratch_project = sb2.Project(common.get_test_project_path(project_name), name=project_name)
+        catroid_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(scratch_project, os.path.join(self._testresult_folder_path, project_name))
+        self.assertCorrectProjectZipFile(catroid_zip_file_name, project_name, unused_scratch_resources=scratch_project.unused_resource_names)
 
     def test_can_convert_project_without_variables(self):
         self._test_project("full_test_no_var")
@@ -310,6 +304,9 @@ class TestConvertProjects(common_testing.ProjectTestCase):
     def test_can_convert_project_with_mediafiles(self):
         for project_name in ["Hannah_Montana", ]:
             self._test_project(project_name)
+
+    def test_can_convert_project_with_unusued_files(self):
+        self._test_project("simple")
 
 
 class TestConvertFormulas(common_testing.ProjectTestCase):

@@ -1,16 +1,13 @@
-import hashlib
 import glob
 import itertools
 import json
-import logging
 import os
 
 from scratchtobat import common
 
-log = logging.getLogger("scratchtobat.sb2")
+log = common.log
 
 LICENSE_URI = "http://creativecommons.org/licenses/by-sa/2.0/deed.en"
-
 SCRIPT_GREEN_FLAG, SCRIPT_RECEIVE, SCRIPT_KEY_PRESSED, SCRIPT_SENSOR_GREATER_THAN, SCRIPT_SCENE_STARTS, SCRIPT_CLICKED = SCRATCH_SCRIPTS = \
     ["whenGreenFlag", "whenIReceive", "whenKeyPressed", "whenSensorGreaterThan", "whenSceneStarts", "whenClicked", ]
 SCRATCH_PROJECT_CODE_FILE = "project.json"
@@ -20,19 +17,20 @@ STAGE_WIDTH_IN_PIXELS = 480
 
 
 class JsonKeys(object):
-    OBJNAME_KEY = "objName"
-    SOUNDS_KEY = "sounds"
-    COSTUMES_KEY = "costumes"
+    # TODO: remove '_KEY' suffix
+    BASELAYERID_KEY = "baseLayerID"
     CHILDREN_KEY = "children"
-    SCRIPTS_KEY = "scripts"
-    INFO_KEY = "info"
-    SOUNDNAME_KEY = "soundName"
-    SOUNDID_KEY = "soundID"
-    SOUND_MD5 = "md5"
     COSTUME_MD5 = "baseLayerMD5"
     COSTUME_RESOLUTION = "bitmapResolution"
-    BASELAYERID_KEY = "baseLayerID"
     COSTUMENAME_KEY = "costumeName"
+    COSTUMES_KEY = "costumes"
+    INFO_KEY = "info"
+    OBJNAME_KEY = "objName"
+    SCRIPTS_KEY = "scripts"
+    SOUND_MD5 = "md5"
+    SOUNDID_KEY = "soundID"
+    SOUNDNAME_KEY = "soundName"
+    SOUNDS_KEY = "sounds"
 
 
 class Project(object):
@@ -140,12 +138,10 @@ class ProjectCode(common.DictAccessWrapper):
                 if file_path != self.json_path:
                     yield md5_resource_filename, file_path
 
-    def resource_dicts_of_md5_name(self, md5_name):
+    def find_all_resource_dicts_for(self, resource_name):
         for resource in self._resources_of_objects():
-            if resource.get(JsonKeys.SOUND_MD5) == md5_name:
-                    yield resource
-            elif resource.get(JsonKeys.COSTUME_MD5) == md5_name:
-                    yield resource
+            if resource_name in set([resource.get(JsonKeys.SOUND_MD5), resource.get(JsonKeys.COSTUME_MD5)]):
+                yield resource
 
 
 # TODO: rename
@@ -200,15 +196,15 @@ class Script(object):
     def get_raw_bricks(self):
         def get_bricks_recursively(nested_bricks):
             result = []
-            common.log.debug("{}".format(nested_bricks))
+            log.debug("{}".format(nested_bricks))
             for idx, brick in enumerate(nested_bricks):
                 isBrickId = idx == 0 and isinstance(brick, str)
                 isNestedBrick = isinstance(brick, list)
                 if isBrickId:
-                    common.log.debug("adding {}".format(brick))
+                    log.debug("adding {}".format(brick))
                     result += [brick]
                 elif isNestedBrick:
-                    common.log.debug("calling on {}".format(brick))
+                    log.debug("calling on {}".format(brick))
                     result += get_bricks_recursively(brick)
                 else:
                     assert isinstance(brick, (int, str, float)), "Unhandled brick element type {} for {}".format(type(brick), brick)

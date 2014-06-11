@@ -70,6 +70,11 @@ class TestProjectFunc(unittest.TestCase):
         project = sb2.Project(common.get_test_project_path("keys_pressed"))
         self.assertEqual(set(["d", "c", "a", "4", "8"]), project.listened_keys)
 
+    def test_can_access_unused_resources_of_project(self):
+        project = sb2.Project(common.get_test_project_path("simple"), name="simple")
+        self.assertGreater(len(project.unused_resource_paths), 0)
+        self.assertSetEqual(set(['0.png', '2.wav', '3.png', '4.png', '5.png', '6.png', '8.png']), set(map(os.path.basename, project.unused_resource_paths)))
+
 
 class TestProjectCodeInit(unittest.TestCase):
 
@@ -88,10 +93,6 @@ class TestProjectCodeFunc(unittest.TestCase):
         unittest.TestCase.setUp(self)
         self.project_code = sb2.ProjectCode(common.get_test_project_path("dancing_castle"))
 
-    def test_can_access_input_data(self):
-        self.assertEquals(self.project_code["objName"], "Stage")
-        self.assertTrue(self.project_code["info"])
-
     def test_can_access_sb2_objects(self):
         for sb2_object in self.project_code.objects:
             self.assertTrue(sb2_object)
@@ -99,14 +100,14 @@ class TestProjectCodeFunc(unittest.TestCase):
         self.assertEqual("Stage", self.project_code.objects[0].get_objName(), "Stage object missing")
         self.assertEqual(['Stage', 'Sprite1', 'Cassy Dance'], [_.get_objName() for _ in self.project_code.objects])
 
-    def test_can_access_sound_and_costume_by_md5_name(self):
+    def test_can_access_sound_and_costume_by_resource_name(self):
         resource_names_sb2_to_catroid_map = {
             "83a9787d4cb6f3b7632b4ddfebf74367.wav": "83a9787d4cb6f3b7632b4ddfebf74367_pop.wav",
             "510da64cf172d53750dffd23fbf73563.png": "510da64cf172d53750dffd23fbf73563_backdrop1.png",
             "033f926829a446a28970f59302b0572d.png": "033f926829a446a28970f59302b0572d_castle1.png",
             "83c36d806dc92327b9e7049a565c6bff.wav": "83c36d806dc92327b9e7049a565c6bff_meow.wav"}
         for resource_name in resource_names_sb2_to_catroid_map:
-            for data_dict in self.project_code.resource_dicts_of_md5_name(resource_name):
+            for data_dict in self.project_code.find_all_resource_dicts_for(resource_name):
                 self.assertTrue("soundName" in data_dict or "costumeName" in data_dict, "No sound or costume data dict")
 
     def test_can_access_stage_object(self):
@@ -138,9 +139,6 @@ class TestObjectFunc(unittest.TestCase):
     def setUp(self):
         self.project = sb2.Project(common.get_test_project_path(TEST_PROJECT_FOLDER))
         self.sb2_objects = self.project.project_code.objects
-
-    def test_can_call_for_wrong_key_like_regular_dict_get(self):
-        self.assertEqual(None, self.sb2_objects[0].get_wrongkey())
 
     def test_can_access_sb2_scripts(self):
         for sb2_object in self.sb2_objects:

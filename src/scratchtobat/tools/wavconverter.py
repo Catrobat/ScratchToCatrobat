@@ -9,7 +9,7 @@ from scratchtobat import common
 from scratchtobat.tools.internal import wave
 
 _SOX_BINARY = "sox"
-# WORKAROUND: jython + find_executable leads to wrong result if "exe" ext is missing
+# WORKAROUND: jython + find_executable() leads to wrong result if ".exe" extension is missing
 if System.getProperty("os.name").lower().startswith("win"):
     _SOX_BINARY += ".exe"
 
@@ -23,7 +23,7 @@ def is_android_compatible_wav(file_path):
             with closing(wave.open(file_path)) as fp:
                 return fp.getcomptype() == 'NONE'
         except wave.Error:
-            # as only uncompressed are supported, compressed wav files raise exceptions
+            # HACK: as wave module only supports uncompressed files, compressed wav files raise exceptions
             return False
 
     return False

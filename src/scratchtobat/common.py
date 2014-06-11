@@ -6,9 +6,9 @@ import shutil
 import sys
 import tempfile
 try:
-    from cStringIO import StringIO
+    from cStringIO import StringIO  # @UnusedImport (pydev problem 1/2)
 except:
-    from StringIO import StringIO
+    from StringIO import StringIO  # @Reimport (pydev problem 2/2)
 from datetime import datetime
 from itertools import chain
 from itertools import repeat

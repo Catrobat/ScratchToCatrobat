@@ -6,7 +6,6 @@ import tempfile
 import zipfile
 from codecs import open
 from java.io import File
-from java.lang import Float
 from javax.imageio import ImageIO
 
 import org.catrobat.catroid.common as catcommon

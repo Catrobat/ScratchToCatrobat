@@ -8,15 +8,18 @@ from scratchtobat import main
 
 class MainTest(common_testing.ProjectTestCase):
 
+    def __init__(self, *args):
+        super(MainTest, self).__init__(*args)
+        self._main_method = main.scratchtobat_main
+
     def setUp(self):
-        common_testing.ProjectTestCase.setUp(self)
+        super(MainTest, self).setUp()
 
     def assertMainSuccess(self, args, project_id):
-        output_path = os.path.join(self._testcase_result_folder_path, project_id)
-        common.makedirs(output_path)
+        self._set_testresult_folder_subdir(project_id)
         if len(args) == 1:
-            args += [output_path]
-        return_val = main.scratchtobat_main(args)
+            args += [self._testresult_folder_path]
+        return_val = self._main_method(args)
         self.assertEqual(main.EXIT_SUCCESS, return_val)
         test_folder_path = args[1]
         for file_ in os.listdir(test_folder_path):

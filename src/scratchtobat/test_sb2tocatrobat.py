@@ -288,7 +288,7 @@ class TestConvertProjects(common_testing.ProjectTestCase):
 
     def _test_project(self, project_name):
         scratch_project = sb2.Project(common.get_test_project_path(project_name), name=project_name)
-        catroid_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(scratch_project, os.path.join(self._testresult_folder_path, project_name))
+        catroid_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(scratch_project, self._testresult_folder_path)
         self.assertCorrectProjectZipFile(catroid_zip_file_name, project_name, unused_scratch_resources=scratch_project.unused_resource_names)
 
     def test_can_convert_project_without_variables(self):

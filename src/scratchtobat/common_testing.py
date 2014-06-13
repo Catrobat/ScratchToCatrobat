@@ -36,8 +36,11 @@ class BaseTestCase(unittest.TestCase):
     def setUp(self):
         super(BaseTestCase, self).setUp()
         self.temp_dir = tempfile.mkdtemp()
-        _package_name, self._module_qualified_testcase_name = self.id().split(".", 1)
-        assert self._module_qualified_testcase_name is not None
+        _package_name, _module_name, class_name, testcase_name = self.id().split(".", 3)
+        assert class_name is not None and testcase_name is not None
+        self.__testresult_base_path = os.path.join(common.get_project_base_path(), "testresult", class_name, testcase_name)
+        if os.path.exists(self.__testresult_base_path):
+            common.rmtree(self.__testresult_base_path)
         self.__testresult_folder_subdir = None
 
     def tearDown(self):
@@ -46,11 +49,9 @@ class BaseTestCase(unittest.TestCase):
 
     @property
     def _testresult_folder_path(self):
-        folder_path = os.path.join(common.get_project_base_path(), "testresult", self._module_qualified_testcase_name)
+        folder_path = self.__testresult_base_path
         if self.__testresult_folder_subdir is not None:
             folder_path = os.path.join(folder_path, self.__testresult_folder_subdir)
-        if os.path.exists(folder_path):
-            common.rmtree(folder_path)
         common.makedirs(folder_path)
         return folder_path
 

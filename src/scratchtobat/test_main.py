@@ -16,7 +16,6 @@ class MainTest(common_testing.ProjectTestCase):
         super(MainTest, self).setUp()
 
     def assertMainSuccess(self, args, project_id):
-        self._set_testresult_folder_subdir(project_id)
         if len(args) == 1:
             args += [self._testresult_folder_path]
         return_val = self._main_method(args)

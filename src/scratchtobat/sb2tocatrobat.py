@@ -25,8 +25,6 @@ import shutil
 import tempfile
 import zipfile
 from codecs import open
-from java.io import File
-from javax.imageio import ImageIO
 
 import org.catrobat.catroid.common as catcommon
 import org.catrobat.catroid.content as catbase
@@ -39,7 +37,6 @@ from scratchtobat import common
 from scratchtobat import sb2
 from scratchtobat import sb2webapi
 from scratchtobat.sb2 import JsonKeys as sb2keys
-from scratchtobat.tools import imageresizer
 from scratchtobat.tools import svgtopng
 from scratchtobat.tools import wavconverter
 
@@ -630,17 +627,6 @@ def convert_sb2_project_to_catroid_project_structure(sb2_project, temp_path):
                     if not os.path.exists(src_path):
                         assert False, "Not existing: {}. Available files in directory: {}".format(src_path, os.listdir(os.path.dirname(src_path)))
                     converted_file = True
-
-                elif md5_name in sb2_project.background_md5_names:
-                    # resize background if not matching the default resolution
-                    imageFile = File(src_path)
-                    pngImage = ImageIO.read(imageFile)
-                    if pngImage.getWidth() > sb2.STAGE_WIDTH_IN_PIXELS or pngImage.getHeight() > sb2.STAGE_HEIGHT_IN_PIXELS:
-                        resizedImage = imageresizer.resize_png(pngImage, sb2.STAGE_WIDTH_IN_PIXELS, sb2.STAGE_HEIGHT_IN_PIXELS)
-                        # FIXME
-                        src_path = src_path.replace(".png", "resized.png")
-                        ImageIO.write(resizedImage, "png", File(src_path))
-                        converted_file = True
 
             elif file_ext in {".wav", ".mp3"}:
                 target_dir = sounds_path

@@ -103,7 +103,7 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
 
         self.assertCorrectProjectZipFile(catroid_zip_file_name, self.project_parent.name)
 
-    def test_can_convert_sb2_project_with_wrong_encoding_to_catroid_zip(self):
+    def test_can_convert_sb2_project_with_utf8_characters_catroid_zip(self):
         project = sb2.Project(common.get_test_project_path("wrong_encoding"))
         catroid_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(project, self._testresult_folder_path)
 

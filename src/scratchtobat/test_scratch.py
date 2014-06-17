@@ -22,7 +22,8 @@ import os
 import unittest
 
 from scratchtobat import common
-from scratchtobat import sb2
+from scratchtobat import common_testing
+from scratchtobat import scratch
 
 EASY_SCRIPTS = [
     [23, 125,
@@ -40,30 +41,37 @@ EASY_SCRIPTS = [
 TEST_PROJECT_FOLDER = "dancing_castle"
 
 
+class ProjectExtractionTest(common_testing.BaseTestCase):
+    def test_can_extract_project(self):
+        for project_file in common_testing.TEST_PROJECT_FILENAME_TO_ID_MAP:
+            scratch.extract_project(common.get_test_project_unpacked_file(project_file), self.temp_dir)
+            self.assertTrue(scratch.Project(self.temp_dir))
+
+
 class TestProjectInit(unittest.TestCase):
     def test_can_construct_on_correct_input(self):
-        project = sb2.Project(common.get_test_project_path("simple"), name="dummy")
+        project = scratch.Project(common.get_test_project_path("simple"), name="dummy")
         self.assertTrue(project, "No project object")
 
     def test_fail_on_non_existing_input_path(self):
         with self.assertRaises(EnvironmentError):
             # TODO: check error message
-            sb2.Project(common.get_test_project_path("non_existing_path"))
+            scratch.Project(common.get_test_project_path("non_existing_path"))
 
     def test_fail_on_corrupt_sb2_json_input(self):
-        with self.assertRaises(sb2.ProjectError):
+        with self.assertRaises(scratch.ProjectError):
             # TODO: check error type
-            sb2.Project(common.get_test_project_path("faulty_json_file"))
+            scratch.Project(common.get_test_project_path("faulty_json_file"))
 
     def test_fail_on_project_with_missing_image_and_sound_files(self):
-        with self.assertRaises(sb2.ProjectError):
+        with self.assertRaises(scratch.ProjectError):
             # TODO: check error type
-            sb2.Project(common.get_test_project_path("missing_resources"))
+            scratch.Project(common.get_test_project_path("missing_resources"))
 
     def test_fail_on_project_with_missing_sound_files(self):
-        with self.assertRaises(sb2.ProjectError):
+        with self.assertRaises(scratch.ProjectError):
             # TODO: check error type
-            sb2.Project(common.get_test_project_path("missing_image_resources"))
+            scratch.Project(common.get_test_project_path("missing_image_resources"))
 
 
 class TestProjectFunc(unittest.TestCase):
@@ -72,7 +80,7 @@ class TestProjectFunc(unittest.TestCase):
         self.project_folder = TEST_PROJECT_FOLDER
 
     def setUp(self):
-        self.project = sb2.Project(common.get_test_project_path(self.project_folder))
+        self.project = scratch.Project(common.get_test_project_path(self.project_folder))
 
     def test_can_access_project_name(self):
         test_project_folder_to_project_name = {
@@ -80,18 +88,18 @@ class TestProjectFunc(unittest.TestCase):
         }
         for project_folder, project_name in test_project_folder_to_project_name.iteritems():
             project_path = common.get_test_project_path(project_folder)
-            self.assertEqual(project_name, sb2.Project(project_path).name)
+            self.assertEqual(project_name, scratch.Project(project_path).name)
 
     def test_can_access_md5_name_of_stage_costumes(self):
         expected_stage_customes_md5_names = set(["510da64cf172d53750dffd23fbf73563.png", "033f926829a446a28970f59302b0572d.png"])
         self.assertEqual(expected_stage_customes_md5_names, set(self.project.background_md5_names))
 
     def test_can_access_listened_pressed_keys(self):
-        project = sb2.Project(common.get_test_project_path("keys_pressed"))
+        project = scratch.Project(common.get_test_project_path("keys_pressed"))
         self.assertEqual(set(["d", "c", "a", "4", "8"]), project.listened_keys)
 
     def test_can_access_unused_resources_of_project(self):
-        project = sb2.Project(common.get_test_project_path("simple"), name="simple")
+        project = scratch.Project(common.get_test_project_path("simple"), name="simple")
         self.assertGreater(len(project.unused_resource_paths), 0)
         self.assertSetEqual(set(['0.png', '2.wav', '3.png', '4.png', '5.png', '6.png', '8.png']), set(map(os.path.basename, project.unused_resource_paths)))
 
@@ -99,24 +107,24 @@ class TestProjectFunc(unittest.TestCase):
 class TestProjectCodeInit(unittest.TestCase):
 
     def test_can_create_on_correct_file(self):
-        self.assertTrue(sb2.ProjectCode(common.get_test_project_path("dancing_castle")))
-        self.assertTrue(sb2.ProjectCode(common.get_test_project_path("simple")))
+        self.assertTrue(scratch.ProjectCode(common.get_test_project_path("dancing_castle")))
+        self.assertTrue(scratch.ProjectCode(common.get_test_project_path("simple")))
 
     def test_fail_on_corrupt_file(self):
-        with self.assertRaises(sb2.ProjectCodeError):
-            sb2.ProjectCode(common.get_test_project_path("faulty_json_file"))
+        with self.assertRaises(scratch.ProjectCodeError):
+            scratch.ProjectCode(common.get_test_project_path("faulty_json_file"))
 
 
 class TestProjectCodeFunc(unittest.TestCase):
 
     def setUp(self):
         unittest.TestCase.setUp(self)
-        self.project_code = sb2.ProjectCode(common.get_test_project_path("dancing_castle"))
+        self.project_code = scratch.ProjectCode(common.get_test_project_path("dancing_castle"))
 
     def test_can_access_sb2_objects(self):
         for sb2_object in self.project_code.objects:
             self.assertTrue(sb2_object)
-            self.assertTrue(isinstance(sb2_object, sb2.Object))
+            self.assertTrue(isinstance(sb2_object, scratch.Object))
         self.assertEqual("Stage", self.project_code.objects[0].get_objName(), "Stage object missing")
         self.assertEqual(['Stage', 'Sprite1', 'Cassy Dance'], [_.get_objName() for _ in self.project_code.objects])
 
@@ -138,26 +146,26 @@ class TestProjectCodeFunc(unittest.TestCase):
 class TestObjectInit(unittest.TestCase):
 
     def setUp(self):
-        self.project = sb2.Project(common.get_test_project_path(TEST_PROJECT_FOLDER))
+        self.project = scratch.Project(common.get_test_project_path(TEST_PROJECT_FOLDER))
 
     def test_can_construct_on_correct_input(self):
         for obj_data in self.project.project_code.objects_data:
-            self.assertTrue(sb2.Object.is_valid_class_input(obj_data))
-            self.assertTrue(sb2.Object(obj_data))
+            self.assertTrue(scratch.Object.is_valid_class_input(obj_data))
+            self.assertTrue(scratch.Object(obj_data))
 
     def test_fail_on_wrong_input(self):
         faulty_object_structures = [{},
             ]
         for faulty_input in faulty_object_structures:
-            self.assertFalse(sb2.Object.is_valid_class_input(faulty_input), "Wrong input not detected: {}".format(faulty_input))
-            with self.assertRaises(sb2.ObjectError):
-                sb2.Object(faulty_input)
+            self.assertFalse(scratch.Object.is_valid_class_input(faulty_input), "Wrong input not detected: {}".format(faulty_input))
+            with self.assertRaises(scratch.ObjectError):
+                scratch.Object(faulty_input)
 
 
 class TestObjectFunc(unittest.TestCase):
 
     def setUp(self):
-        self.project = sb2.Project(common.get_test_project_path(TEST_PROJECT_FOLDER))
+        self.project = scratch.Project(common.get_test_project_path(TEST_PROJECT_FOLDER))
         self.sb2_objects = self.project.project_code.objects
 
     def test_can_access_sb2_scripts(self):
@@ -166,7 +174,7 @@ class TestObjectFunc(unittest.TestCase):
                 self.assertTrue(len(sb2_object.scripts) > 0)
             for sb2_script in sb2_object.scripts:
                 self.assertTrue(sb2_script)
-                self.assertTrue(isinstance(sb2_script, sb2.Script))
+                self.assertTrue(isinstance(sb2_script, scratch.Script))
 
     def test_can_access_sb2_costumes(self):
         for sb2_object in self.sb2_objects:
@@ -196,7 +204,7 @@ class TestScriptInit(unittest.TestCase):
 
     def test_can_construct_on_correct_input(self):
         for script_input in EASY_SCRIPTS:
-            script = sb2.Script(script_input)
+            script = scratch.Script(script_input)
             self.assertTrue(script)
 
     def test_fail_on_wrong_input(self):
@@ -207,16 +215,16 @@ class TestScriptInit(unittest.TestCase):
             [0101, 444, "further the third one must be a list"]
         ]
         for faulty_input in faulty_script_structures:
-            self.assertFalse(sb2.Script.is_valid_script_input(faulty_input), "Wrong input not detected: {}".format(faulty_input))
-            with self.assertRaises(sb2.ScriptError):
-                sb2.Script(faulty_input)
+            self.assertFalse(scratch.Script.is_valid_script_input(faulty_input), "Wrong input not detected: {}".format(faulty_input))
+            with self.assertRaises(scratch.ScriptError):
+                scratch.Script(faulty_input)
 
 
 class TestScriptFunc(unittest.TestCase):
 
     def setUp(self):
         unittest.TestCase.setUp(self)
-        self.script = sb2.Script(EASY_SCRIPTS[0])
+        self.script = scratch.Script(EASY_SCRIPTS[0])
 
     def test_can_access_sb2_script_data(self):
         self.assertEqual('whenGreenFlag', self.script.get_type())

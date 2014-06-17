@@ -25,7 +25,7 @@ import urllib2
 from urlparse import urlparse
 
 from scratchtobat import common
-from scratchtobat import sb2
+from scratchtobat import scratch
 
 # source: http://wiki.scratch.mit.edu/wiki/Scratch_File_Format_%282.0%29#Using_HTTP_requests
 HTTP_PROJECT_API = "http://projects.scratch.mit.edu/internalapi/project/{}/get/"
@@ -78,13 +78,13 @@ def download_project(project_url, target_dir):
             fp.write(data)
 
     def project_code_path(target_dir):
-        return os.path.join(target_dir, sb2.SCRATCH_PROJECT_CODE_FILE)
+        return os.path.join(target_dir, scratch.SCRATCH_PROJECT_CODE_FILE)
 
     # TODO: consolidate with ProjectCode
     project_id = project_id_from_url(project_url)
     project_file_path = project_code_path(target_dir)
     write_to(request_project_data(project_id), project_file_path)
-    project_code = sb2.ProjectCode(target_dir)
+    project_code = scratch.ProjectCode(target_dir)
     for md5_file_name in project_code.resource_names:
         resource_file_path = os.path.join(target_dir, md5_file_name)
         write_to(request_resource_data(md5_file_name), resource_file_path)

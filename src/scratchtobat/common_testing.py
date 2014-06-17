@@ -33,7 +33,7 @@ import org.catrobat.catroid.formulaeditor as catformula
 
 from scratchtobat import catrobat
 from scratchtobat import common
-from scratchtobat import sb2tocatrobat
+from scratchtobat import converter
 
 assert System.getProperty("python.security.respectJavaAccessibility") == 'false', "Jython registry property 'python.security.respectJavaAccessibility' must be set to 'false'"
 
@@ -116,12 +116,12 @@ class ProjectTestCase(BaseTestCase):
         self.assertGreater(float(catrobat_version_from_xml.text), 0.0)
 
         # TODO: refactor duplication
-        sounds_dir = sb2tocatrobat.sounds_dir_of_project(project_path)
+        sounds_dir = converter.sounds_dir_of_project(project_path)
         for node in root.findall('.//sound/fileName'):
             sound_path = os.path.join(sounds_dir, node.text)
             self.assert_(os.path.exists(sound_path), "Missing: " + sound_path)
 
-        images_dir = sb2tocatrobat.images_dir_of_project(project_path)
+        images_dir = converter.images_dir_of_project(project_path)
         for node in root.findall('.//look/fileName'):
             image_path = os.path.join(images_dir, node.text)
             self.assert_(os.path.exists(image_path), "Missing: {}, available files: {}".format(repr(image_path), os.listdir(os.path.dirname(image_path))))

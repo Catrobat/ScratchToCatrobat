@@ -22,6 +22,7 @@ import glob
 import itertools
 import json
 import os
+import zipfile
 
 from scratchtobat import common
 
@@ -51,6 +52,11 @@ class JsonKeys(object):
     SOUNDID_KEY = "soundID"
     SOUNDNAME_KEY = "soundName"
     SOUNDS_KEY = "sounds"
+
+
+def extract_project(input_sb2, output_path):
+    with zipfile.ZipFile(input_sb2, 'r') as myzip:
+        myzip.extractall(output_path)
 
 
 class Project(object):

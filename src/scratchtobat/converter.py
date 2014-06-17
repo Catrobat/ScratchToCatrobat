@@ -34,9 +34,9 @@ import org.catrobat.catroid.io as catio
 
 from scratchtobat import catrobat
 from scratchtobat import common
-from scratchtobat import sb2
-from scratchtobat import sb2webapi
-from scratchtobat.sb2 import JsonKeys as sb2keys
+from scratchtobat import scratch
+from scratchtobat import scratchwebapi
+from scratchtobat.scratch import JsonKeys as sb2keys
 from scratchtobat.tools import svgtopng
 from scratchtobat.tools import wavconverter
 
@@ -59,7 +59,7 @@ def _next_background_look_broadcast_message():
 
 class _ScratchToCatrobat(object):
 
-    # based on: http://code.google.com/p/sb2-js/source/browse/trunk/editor.htm
+    # based on: http://code.google.com/p/scratch-js/source/browse/trunk/editor.htm
     # note: for bricks without mapping (value set to 'None') placeholder bricks will be added
     SCRATCH_TO_CATROBAT_MAPPING = {
         #===========================================================================
@@ -225,7 +225,7 @@ class _ScratchToCatrobat(object):
     @classmethod
     def create_script(cls, sb2script_name, sprite, arguments):
         assert sprite is not None
-        if not sb2script_name in sb2.SCRATCH_SCRIPTS:
+        if not sb2script_name in scratch.SCRATCH_SCRIPTS:
             assert False, "Missing script mapping for: " + sb2script_name
         # TODO: separate script and brick mapping
         return cls.catrobat_brick_for(sb2script_name)(sprite, *arguments)
@@ -256,8 +256,8 @@ _catr_project = None
 def _convert_to_catrobat_program(sb2_project):
     global _catr_project
     _catr_project = catbase.Project(None, sb2_project.name)
-    _catr_project.getXmlHeader().virtualScreenHeight = sb2.STAGE_HEIGHT_IN_PIXELS
-    _catr_project.getXmlHeader().virtualScreenWidth = sb2.STAGE_WIDTH_IN_PIXELS
+    _catr_project.getXmlHeader().virtualScreenHeight = scratch.STAGE_HEIGHT_IN_PIXELS
+    _catr_project.getXmlHeader().virtualScreenWidth = scratch.STAGE_WIDTH_IN_PIXELS
     for object_ in sb2_project.project_code.objects:
         catr_sprite = _convert_to_catrobat_sprite(object_)
         if object_ is sb2_project.project_code.stage_object:
@@ -286,8 +286,8 @@ def _convert_to_catrobat_program(sb2_project):
             if key == "space":
                 width_pos = 0
                 height_pos = 2
-            y_pos = (sb2.STAGE_HEIGHT_IN_PIXELS / 2) - 40 * height_pos
-            x_pos = -(sb2.STAGE_WIDTH_IN_PIXELS / 2) + 40 * (width_pos + 1)
+            y_pos = (scratch.STAGE_HEIGHT_IN_PIXELS / 2) - 40 * height_pos
+            x_pos = -(scratch.STAGE_WIDTH_IN_PIXELS / 2) + 40 * (width_pos + 1)
             place_at_brick = catbricks.PlaceAtBrick(key_sprite, x_pos, y_pos)
 
             bricks = [place_at_brick, set_look_brick, catbricks.SetSizeToBrick(key_sprite, 33)]
@@ -306,8 +306,8 @@ def _convert_to_catrobat_program(sb2_project):
 
 
 def _convert_to_catrobat_sprite(sb2_object):
-    if not isinstance(sb2_object, sb2.Object):
-        raise common.ScratchtobatError("Input must be of type={}, but is={}".format(sb2.Object, type(sb2_object)))
+    if not isinstance(sb2_object, scratch.Object):
+        raise common.ScratchtobatError("Input must be of type={}, but is={}".format(scratch.Object, type(sb2_object)))
     sprite = catbase.Sprite(sb2_object.get_objName())
 
     sprite_looks = sprite.getLookDataList()
@@ -378,8 +378,8 @@ def _convert_to_catrobat_sprite(sb2_object):
 
 
 def _convert_to_catrobat_script(sb2_script, sprite):
-    if not isinstance(sb2_script, sb2.Script):
-        raise common.ScratchtobatError("Arg1 must be of type={}, but is={}".format(sb2.Script, type(sb2_script)))
+    if not isinstance(sb2_script, scratch.Script):
+        raise common.ScratchtobatError("Arg1 must be of type={}, but is={}".format(scratch.Script, type(sb2_script)))
     if sprite and not isinstance(sprite, catbase.Sprite):
         raise common.ScratchtobatError("Arg2 must be of type={}, but is={}".format(catbase.Sprite, type(sprite)))
 
@@ -395,7 +395,7 @@ def _convert_to_catrobat_bricks(sb2_brick, catr_sprite):
     global _catr_project
 
     def add_placeholder_for_unmapped_bricks_to(catr_bricks, catr_sprite, brick_name):
-        catr_bricks += [_DEFAULT_BRICK_CLASS(catr_sprite, 500), catbricks.NoteBrick(catr_sprite, "Missing brick for sb2 identifier: " + brick_name)]
+        catr_bricks += [_DEFAULT_BRICK_CLASS(catr_sprite, 500), catbricks.NoteBrick(catr_sprite, "Missing brick for scratch identifier: " + brick_name)]
     common.log.debug("Brick to convert={}".format(sb2_brick))
     if not sb2_brick or not (isinstance(sb2_brick, list) and isinstance(sb2_brick[0], (str, unicode))):
         raise common.ScratchtobatError("Wrong arg1, must be list with string as first element: {!r}".format(sb2_brick))
@@ -659,9 +659,9 @@ def convert_scratch_project_to_catrobat_file_structure(sb2_project, temp_path):
         xml_header.setApplicationName("Pocket Code")
         xml_header.setDeviceName(common.APPLICATION_NAME)
         xml_header.catrobatLanguageVersion = catcommon.Constants.CURRENT_CATROBAT_LANGUAGE_VERSION
-        xml_header.programLicense = sb2.LICENSE_URI
-        xml_header.mediaLicense = sb2.LICENSE_URI
-        xml_header.remixOf = sb2webapi.HTTP_PROJECT_URL_PREFIX + xml_header.getProgramName()
+        xml_header.programLicense = scratch.LICENSE_URI
+        xml_header.mediaLicense = scratch.LICENSE_URI
+        xml_header.remixOf = scratchwebapi.HTTP_PROJECT_URL_PREFIX + xml_header.getProgramName()
         code_xml_content += storage_handler.getXMLStringOfAProject(catrobat_project)
         return code_xml_content
 

@@ -58,7 +58,7 @@ class TestProjectInit(unittest.TestCase):
             # TODO: check error message
             scratch.Project(common.get_test_project_path("non_existing_path"))
 
-    def test_fail_on_corrupt_sb2_json_input(self):
+    def test_fail_on_corrupt_scratch_json_input(self):
         with self.assertRaises(scratch.ProjectError):
             # TODO: check error type
             scratch.Project(common.get_test_project_path("faulty_json_file"))
@@ -121,20 +121,20 @@ class TestProjectCodeFunc(unittest.TestCase):
         unittest.TestCase.setUp(self)
         self.project_code = scratch.ProjectCode(common.get_test_project_path("dancing_castle"))
 
-    def test_can_access_sb2_objects(self):
-        for sb2_object in self.project_code.objects:
-            self.assertTrue(sb2_object)
-            self.assertTrue(isinstance(sb2_object, scratch.Object))
+    def test_can_access_scratch_objects(self):
+        for scratch_object in self.project_code.objects:
+            self.assertTrue(scratch_object)
+            self.assertTrue(isinstance(scratch_object, scratch.Object))
         self.assertEqual("Stage", self.project_code.objects[0].get_objName(), "Stage object missing")
         self.assertEqual(['Stage', 'Sprite1', 'Cassy Dance'], [_.get_objName() for _ in self.project_code.objects])
 
     def test_can_access_sound_and_costume_by_resource_name(self):
-        sb2_to_catrobat_resource_names_map = {
+        scratch_to_catrobat_resource_names_map = {
             "83a9787d4cb6f3b7632b4ddfebf74367.wav": "83a9787d4cb6f3b7632b4ddfebf74367_pop.wav",
             "510da64cf172d53750dffd23fbf73563.png": "510da64cf172d53750dffd23fbf73563_backdrop1.png",
             "033f926829a446a28970f59302b0572d.png": "033f926829a446a28970f59302b0572d_castle1.png",
             "83c36d806dc92327b9e7049a565c6bff.wav": "83c36d806dc92327b9e7049a565c6bff_meow.wav"}
-        for resource_name in sb2_to_catrobat_resource_names_map:
+        for resource_name in scratch_to_catrobat_resource_names_map:
             for data_dict in self.project_code.find_all_resource_dicts_for(resource_name):
                 self.assertTrue("soundName" in data_dict or "costumeName" in data_dict, "No sound or costume data dict")
 
@@ -166,38 +166,38 @@ class TestObjectFunc(unittest.TestCase):
 
     def setUp(self):
         self.project = scratch.Project(common.get_test_project_path(TEST_PROJECT_FOLDER))
-        self.sb2_objects = self.project.project_code.objects
+        self.scratch_objects = self.project.project_code.objects
 
-    def test_can_access_sb2_scripts(self):
-        for sb2_object in self.sb2_objects:
-            if sb2_object.get_objName() != "Stage":
-                self.assertTrue(len(sb2_object.scripts) > 0)
-            for sb2_script in sb2_object.scripts:
-                self.assertTrue(sb2_script)
-                self.assertTrue(isinstance(sb2_script, scratch.Script))
+    def test_can_access_scratch_scripts(self):
+        for scratch_object in self.scratch_objects:
+            if scratch_object.get_objName() != "Stage":
+                self.assertTrue(len(scratch_object.scripts) > 0)
+            for scratch_script in scratch_object.scripts:
+                self.assertTrue(scratch_script)
+                self.assertTrue(isinstance(scratch_script, scratch.Script))
 
-    def test_can_access_sb2_costumes(self):
-        for sb2_object in self.sb2_objects:
-            self.assertTrue(len(sb2_object.get_costumes()) > 0)
-            for costume in sb2_object.get_costumes():
+    def test_can_access_scratch_costumes(self):
+        for scratch_object in self.scratch_objects:
+            self.assertTrue(len(scratch_object.get_costumes()) > 0)
+            for costume in scratch_object.get_costumes():
                 self.assertTrue(costume)
                 self.assertTrue(isinstance(costume, dict))
                 self.assertTrue("costumeName" in costume)
 
-    def test_can_access_sb2_sounds(self):
-        for sb2_object in self.sb2_objects:
-            self.assertTrue(len(sb2_object.get_sounds()) > 0)
-            for sound in sb2_object.get_sounds():
+    def test_can_access_scratch_sounds(self):
+        for scratch_object in self.scratch_objects:
+            self.assertTrue(len(scratch_object.get_sounds()) > 0)
+            for sound in scratch_object.get_sounds():
                 self.assertTrue(sound)
                 self.assertTrue(isinstance(sound, dict))
                 self.assertTrue("soundName" in sound)
 
     def test_can_check_for_stage_object(self):
-        for idx, sb2_object in enumerate(self.sb2_objects):
+        for idx, scratch_object in enumerate(self.scratch_objects):
             if idx == 0:
-                self.assert_(sb2_object.is_stage_object)
+                self.assert_(scratch_object.is_stage_object)
             else:
-                self.assert_(not sb2_object.is_stage_object)
+                self.assert_(not scratch_object.is_stage_object)
 
 
 class TestScriptInit(unittest.TestCase):
@@ -226,7 +226,7 @@ class TestScriptFunc(unittest.TestCase):
         unittest.TestCase.setUp(self)
         self.script = scratch.Script(EASY_SCRIPTS[0])
 
-    def test_can_access_sb2_script_data(self):
+    def test_can_access_scratch_script_data(self):
         self.assertEqual('whenGreenFlag', self.script.get_type())
         expected_brick_names = ['say:duration:elapsed:from:', 'doRepeat', 'forward:', 'playDrum', 'forward:', 'playDrum']
         self.assertEqual(expected_brick_names, self.script.get_raw_bricks())

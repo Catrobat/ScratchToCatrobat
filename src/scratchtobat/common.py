@@ -66,11 +66,11 @@ def get_test_resources_path():
 
 
 def get_test_project_path(project_folder):
-    return os.path.join(get_test_resources_path(), "sb2", project_folder)
+    return os.path.join(get_test_resources_path(), "scratch", project_folder)
 
 
-def get_test_project_unpacked_file(sb2_file):
-    return os.path.join(get_test_resources_path(), "sb2_unpacked", sb2_file)
+def get_test_project_unpacked_file(scratch_file):
+    return os.path.join(get_test_resources_path(), "scratch_packed", scratch_file)
 
 
 class Data(object):

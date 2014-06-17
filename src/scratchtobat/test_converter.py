@@ -82,24 +82,24 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
         actual_count = len(glob.glob(os.path.join(images_dir, "*.png")))
         self.assertEqual(count_svg_and_png_files, actual_count - len(self.project_parent.listened_keys))
 
-    def test_can_get_catrobat_resource_file_name_of_sb2_resources(self):
-        resource_names_sb2_to_catrobat_map = {
+    def test_can_get_catrobat_resource_file_name_of_scratch_resources(self):
+        resource_names_scratch_to_catrobat_map = {
             "83a9787d4cb6f3b7632b4ddfebf74367.wav": ["83a9787d4cb6f3b7632b4ddfebf74367_pop.wav"] * 2,
             "510da64cf172d53750dffd23fbf73563.png": ["510da64cf172d53750dffd23fbf73563_backdrop1.png"],
             "033f926829a446a28970f59302b0572d.png": ["033f926829a446a28970f59302b0572d_castle1.png"],
             "83c36d806dc92327b9e7049a565c6bff.wav": ["83c36d806dc92327b9e7049a565c6bff_meow.wav"]}
-        for resource_name in resource_names_sb2_to_catrobat_map:
-            expected = resource_names_sb2_to_catrobat_map[resource_name]
+        for resource_name in resource_names_scratch_to_catrobat_map:
+            expected = resource_names_scratch_to_catrobat_map[resource_name]
             self.assertEqual(expected, converter.converted_resource_names(resource_name, self.project_parent))
 
-    def test_can_convert_sb2_project_to_catrobat_zip(self):
-        catrobat_zip_file_name = converter.convert_sb2_project_to_catrobat_zip(self.project_parent, self.temp_dir)
+    def test_can_convert_scratch_project_to_catrobat_zip(self):
+        catrobat_zip_file_name = converter.convert_scratch_project_to_catrobat_zip(self.project_parent, self.temp_dir)
 
         self.assertCorrectProjectZipFile(catrobat_zip_file_name, self.project_parent.name)
 
-    def test_can_convert_sb2_project_with_utf8_characters_catrobat_zip(self):
+    def test_can_convert_scratch_project_with_utf8_characters_catrobat_zip(self):
         project = scratch.Project(common.get_test_project_path("wrong_encoding"))
-        catrobat_zip_file_name = converter.convert_sb2_project_to_catrobat_zip(project, self._testresult_folder_path)
+        catrobat_zip_file_name = converter.convert_scratch_project_to_catrobat_zip(project, self._testresult_folder_path)
 
         self.assertCorrectProjectZipFile(catrobat_zip_file_name, project.name)
 
@@ -116,7 +116,7 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
         self.assertEqual(catrobat.BACKGROUND_SPRITE_NAME, catr_sprites[0].getName())
 
     def test_can_convert_object_to_catrobat_sprite_class(self):
-        sprites = [converter._convert_to_catrobat_sprite(sb2obj) for sb2obj in self.project.objects]
+        sprites = [converter._convert_to_catrobat_sprite(scratchobj) for scratchobj in self.project.objects]
         self.assertTrue(all(isinstance(_, catbase.Sprite) for _ in sprites))
 
         sprite_0 = sprites[0]
@@ -165,8 +165,8 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
         self.assertTrue(all(isinstance(_, catcommon.LookData) for _ in sprite2_looks), "Wrong classes in look list2")
 
     def test_can_convert_script_to_catrobat_script_class(self):
-        sb2_script = self.project.objects[1].scripts[0]
-        catr_script = converter._convert_to_catrobat_script(sb2_script, DUMMY_CATR_SPRITE)
+        scratch_script = self.project.objects[1].scripts[0]
+        catr_script = converter._convert_to_catrobat_script(scratch_script, DUMMY_CATR_SPRITE)
         self.assertTrue(catr_script, "No script from conversion")
         expected_script_class = [catbase.StartScript]
         expected_brick_classes = [catbricks.WaitBrick, catbricks.NoteBrick, catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.MoveNStepsBrick,
@@ -190,7 +190,7 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
             self.assertEqual(soundinfo.getTitle(), expected_values[0], "Sound name wrong")
             self.assertEqual(soundinfo.getSoundFileName(), expected_values[1], "Sound file name wrong")
 
-    def test_can_write_sb2_project_to_catrobat_xml(self):
+    def test_can_write_scratch_project_to_catrobat_xml(self):
         _catr_project = converter._convert_to_catrobat_program(self.project_parent)
 #         common.log.info(catio.StorageHandler.getInstance().getXMLStringOfAProject(_catr_project))
 
@@ -213,8 +213,8 @@ class TestConvertBricks(common_testing.BaseTestCase):
             converter._convert_to_catrobat_bricks(['wrong_brick_name_zzz', 10, 10], DUMMY_CATR_SPRITE)
 
     def test_can_convert_loop_bricks(self):
-        sb2_do_loop = ["doRepeat", 10, [[u'forward:', 10], [u'playDrum', 1, 0.2], [u'forward:', -10], [u'playDrum', 1, 0.2]]]
-        catr_do_loop = converter._convert_to_catrobat_bricks(sb2_do_loop, DUMMY_CATR_SPRITE)
+        scratch_do_loop = ["doRepeat", 10, [[u'forward:', 10], [u'playDrum', 1, 0.2], [u'forward:', -10], [u'playDrum', 1, 0.2]]]
+        catr_do_loop = converter._convert_to_catrobat_bricks(scratch_do_loop, DUMMY_CATR_SPRITE)
         self.assertTrue(isinstance(catr_do_loop, list))
         # 1 loop start + 4 inner loop bricks +2 inner note bicks (playDrum not suppored) + 1 loop end = 8
         self.assertEqual(8, len(catr_do_loop))
@@ -223,28 +223,28 @@ class TestConvertBricks(common_testing.BaseTestCase):
         self.assertEqual(expected_brick_classes, [_.__class__ for _ in catr_do_loop])
 
     def test_can_convert_waitelapsedfrom_brick(self):
-        sb2_brick = ["wait:elapsed:from:", 1]
-        [catr_brick] = converter._convert_to_catrobat_bricks(sb2_brick, DUMMY_CATR_SPRITE)
+        scratch_brick = ["wait:elapsed:from:", 1]
+        [catr_brick] = converter._convert_to_catrobat_bricks(scratch_brick, DUMMY_CATR_SPRITE)
         self.assertTrue(isinstance(catr_brick, catbricks.WaitBrick))
         formula_seconds = catr_brick.timeToWaitInSeconds.formulaTree
         self.assertEqual(formula_seconds.type, catformula.FormulaElement.ElementType.NUMBER)
         self.assertEqual(formula_seconds.value, "1.0")
 
     def test_fail_convert_playsound_brick_if_sound_missing(self):
-        sb2_brick = ["playSound:", "bird"]
+        scratch_brick = ["playSound:", "bird"]
         with self.assertRaises(converter.ConversionError):
-            converter._convert_to_catrobat_bricks(sb2_brick, DUMMY_CATR_SPRITE)
+            converter._convert_to_catrobat_bricks(scratch_brick, DUMMY_CATR_SPRITE)
 
     def test_can_convert_playsound_brick(self):
-        sb2_brick = ["playSound:", "bird"]
-        dummy_sprite = self.get_sprite_with_soundinfo(sb2_brick[1])
-        [catr_brick] = converter._convert_to_catrobat_bricks(sb2_brick, dummy_sprite)
+        scratch_brick = ["playSound:", "bird"]
+        dummy_sprite = self.get_sprite_with_soundinfo(scratch_brick[1])
+        [catr_brick] = converter._convert_to_catrobat_bricks(scratch_brick, dummy_sprite)
         self.assertTrue(isinstance(catr_brick, catbricks.PlaySoundBrick))
-        self.assertEqual(sb2_brick[1], catr_brick.sound.getTitle())
+        self.assertEqual(scratch_brick[1], catr_brick.sound.getTitle())
 
     def test_can_convert_nextcostume_brick(self):
-        sb2_brick = ["nextCostume"]
-        [catr_brick] = converter._convert_to_catrobat_bricks(sb2_brick, DUMMY_CATR_SPRITE)
+        scratch_brick = ["nextCostume"]
+        [catr_brick] = converter._convert_to_catrobat_bricks(scratch_brick, DUMMY_CATR_SPRITE)
         self.assertTrue(isinstance(catr_brick, catbricks.NextLookBrick))
 
     def test_can_convert_glideto_brick(self):
@@ -279,21 +279,21 @@ class TestConvertBricks(common_testing.BaseTestCase):
 class TestConvertScripts(unittest.TestCase):
 
     def test_can_convert_broadcast_script(self):
-        sb2_script = scratch.Script([30, 355, [["whenIReceive", "space"], ["changeGraphicEffect:by:", "color", 25]]])
-        catr_script = converter._convert_to_catrobat_script(sb2_script, DUMMY_CATR_SPRITE)
+        scratch_script = scratch.Script([30, 355, [["whenIReceive", "space"], ["changeGraphicEffect:by:", "color", 25]]])
+        catr_script = converter._convert_to_catrobat_script(scratch_script, DUMMY_CATR_SPRITE)
         self.assertTrue(isinstance(catr_script, catbase.BroadcastScript))
         self.assertEqual("space", catr_script.getBroadcastMessage())
 
     def test_can_convert_keypressed_script(self):
-        sb2_script = scratch.Script([30, 355, [["whenKeyPressed", "space"], ["changeGraphicEffect:by:", "color", 25]]])
-        catr_script = converter._convert_to_catrobat_script(sb2_script, DUMMY_CATR_SPRITE)
+        scratch_script = scratch.Script([30, 355, [["whenKeyPressed", "space"], ["changeGraphicEffect:by:", "color", 25]]])
+        catr_script = converter._convert_to_catrobat_script(scratch_script, DUMMY_CATR_SPRITE)
         # KeyPressed-scripts are represented with broadcast-scripts with a special key-message
         self.assertTrue(isinstance(catr_script, catbase.BroadcastScript))
         self.assertEqual(converter._key_to_broadcast_message("space"), catr_script.getBroadcastMessage())
 
     def test_can_convert_whenclicked_script(self):
-        sb2_script = scratch.Script([30, 355, [["whenClicked"], ["changeGraphicEffect:by:", "color", 25]]])
-        catr_script = converter._convert_to_catrobat_script(sb2_script, DUMMY_CATR_SPRITE)
+        scratch_script = scratch.Script([30, 355, [["whenClicked"], ["changeGraphicEffect:by:", "color", 25]]])
+        catr_script = converter._convert_to_catrobat_script(scratch_script, DUMMY_CATR_SPRITE)
         self.assertTrue(isinstance(catr_script, catbase.WhenScript))
         self.assertEqual('Tapped', catr_script.getAction())
 
@@ -302,7 +302,7 @@ class TestConvertProjects(common_testing.ProjectTestCase):
 
     def _test_project(self, project_name):
         scratch_project = scratch.Project(common.get_test_project_path(project_name), name=project_name)
-        catrobat_zip_file_name = converter.convert_sb2_project_to_catrobat_zip(scratch_project, self._testresult_folder_path)
+        catrobat_zip_file_name = converter.convert_scratch_project_to_catrobat_zip(scratch_project, self._testresult_folder_path)
         self.assertCorrectProjectZipFile(catrobat_zip_file_name, project_name, unused_scratch_resources=scratch_project.unused_resource_names)
 
     def test_can_convert_project_without_variables(self):
@@ -338,7 +338,7 @@ class TestConvertFormulas(common_testing.ProjectTestCase):
 
 class TestConverterInternals(unittest.TestCase):
 
-    def test_can_coerce_sb2_json_input_to_catrobat_classes(self):
+    def test_can_coerce_scratch_json_input_to_catrobat_classes(self):
 #         converter._instantiate_catrobat_class()
         pass
 

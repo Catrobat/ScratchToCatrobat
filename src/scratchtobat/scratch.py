@@ -54,8 +54,8 @@ class JsonKeys(object):
     SOUNDS_KEY = "sounds"
 
 
-def extract_project(input_sb2, output_path):
-    with zipfile.ZipFile(input_sb2, 'r') as myzip:
+def extract_project(input_scratch, output_path):
+    with zipfile.ZipFile(input_scratch, 'r') as myzip:
         myzip.extractall(output_path)
 
 
@@ -100,9 +100,9 @@ class Project(object):
         # TODO: move whole block including the two functions to ProjectCode
         self.md5_to_resource_path_map = read_md5_to_resource_path_mapping()
         assert self.project_code['penLayerMD5'] not in self.md5_to_resource_path_map
-        for sb2_object in self.project_code.objects:
+        for scratch_object in self.project_code.objects:
             # TODO: rename to verify_object?
-            verify_resources(sb2_object.get_sounds() + sb2_object.get_costumes())
+            verify_resources(scratch_object.get_sounds() + scratch_object.get_costumes())
 
         listened_keys = []
         for object_ in self.project_code.objects:
@@ -195,13 +195,13 @@ class Script(object):
 
     def __init__(self, json_input):
         if not self.is_valid_script_input(json_input):
-            raise ScriptError("Input is no valid Scratch sb2 json script.")
+            raise ScriptError("Input is no valid Scratch json script.")
         script_content = json_input[2]
         script_settings = script_content[0]
         self.type = script_settings[0]
         self.arguments = script_settings[1:]
         if not self.type in SCRATCH_SCRIPTS:
-            raise ScriptError("Unknown sb2 script type: {}".format(self.type))
+            raise ScriptError("Unknown Scratch script type: {}".format(self.type))
         self.bricks = script_content[1:]
 
     @classmethod

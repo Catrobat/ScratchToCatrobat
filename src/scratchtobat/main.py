@@ -69,7 +69,7 @@ def scratchtobat_main(argv):
             scratch.extract_project(scratch_project_file_or_url, working_dir)
         project = scratch.Project(working_dir)
         log.info("Converting scratch project %s into output folder: %s", project, output_dir)
-        converter.convert_sb2_project_to_catrobat_zip(project, output_dir)
+        converter.convert_scratch_project_to_catrobat_zip(project, output_dir)
     except (common.ScratchtobatError, EnvironmentError, IOError) as e:
         log.error(e)
         return EXIT_FAILURE

@@ -46,11 +46,11 @@ class MainTest(common_testing.ProjectTestCase):
                 zip_path = os.path.join(file_)
                 self.assertCorrectProjectZipFile(zip_path, project_id)
 
-    def test_can_provide_catroid_project_for_scratch_link(self):
+    def test_can_provide_catrobat_program_for_scratch_project_link(self):
         for project_url, project_id in common_testing.TEST_PROJECT_URL_TO_ID_MAP.iteritems():
             self.assertMainSuccess([project_url], project_id)
 
-    def test_can_provide_catroid_project_for_scratch_file(self):
+    def test_can_provide_catrobat_program_for_scratch_project_file(self):
         for project_filename, project_id in common_testing.TEST_PROJECT_FILENAME_TO_ID_MAP.iteritems():
             self.assertMainSuccess([common.get_test_project_unpacked_file(project_filename)], project_id)
 

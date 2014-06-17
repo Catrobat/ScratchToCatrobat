@@ -20,8 +20,10 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import org.catrobat.catroid.common as catcommon
 
+ANDROID_IGNORE_MEDIA_MARKER_FILE_NAME = ".nomedia"
 BACKGROUND_SPRITE_NAME = "Hintergrund"
-CATROBAT_PROJECT_FILEEXT = ".catrobat"
+PACKAGED_PROGRAM_FILE_EXTENSION = ".catrobat"
+PROGRAM_SOURCE_FILE_NAME = "code.xml"
 
 
 def create_lookdata(name, file_name):

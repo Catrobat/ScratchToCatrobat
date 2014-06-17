@@ -27,7 +27,7 @@ import org.catrobat.catroid.content as catbase
 import org.catrobat.catroid.content.bricks as catbricks
 import org.catrobat.catroid.formulaeditor as catformula
 
-from scratchtobat import catrobat_util
+from scratchtobat import catrobat
 from scratchtobat import common
 from scratchtobat import common_testing
 from scratchtobat import sb2
@@ -38,7 +38,7 @@ def create_catrobat_sprite_stub():
     sprite = catbase.Sprite("Dummy")
     looks = sprite.getLookDataList()
     for lookname in ["look1", "look2", "look3"]:
-        looks.add(catrobat_util.create_lookdata(lookname, None))
+        looks.add(catrobat.create_lookdata(lookname, None))
     return sprite
 
 DUMMY_CATR_SPRITE = create_catrobat_sprite_stub()
@@ -61,65 +61,59 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
         self.project_parent = sb2.Project(TEST_PROJECT_PATH)
         self.project = self.project_parent.project_code
 
-    def test_can_convert_to_catroid_folder_structure_including_svg_to_png(self):
+    def test_can_convert_to_catrobat_structure_including_svg_to_png(self):
         count_svg_and_png_files = 0
         for md5_name in self.project_parent.md5_to_resource_path_map:
             common.log.info(md5_name)
             if os.path.splitext(md5_name)[1] in {".png", ".svg"}:
                 count_svg_and_png_files += 1
 
-        sb2tocatrobat.convert_sb2_project_to_catroid_project_structure(self.project_parent, self.temp_dir)
+        sb2tocatrobat.convert_scratch_project_to_catrobat_file_structure(self.project_parent, self.temp_dir)
 
         images_dir = sb2tocatrobat.images_dir_of_project(self.temp_dir)
         self.assertTrue(os.path.exists(images_dir))
         sounds_dir = sb2tocatrobat.sounds_dir_of_project(self.temp_dir)
         self.assertTrue(os.path.exists(sounds_dir))
-        code_xml_path = os.path.join(self.temp_dir, sb2tocatrobat.CATROID_PROJECT_FILE)
+        code_xml_path = os.path.join(self.temp_dir, catrobat.PROGRAM_SOURCE_FILE_NAME)
         self.assertTrue(os.path.exists(code_xml_path))
-        self.assertFalse(glob.glob(os.path.join(images_dir, "*.svg")), "Unsupported svg files are in catroid folder.")
+        self.assertFalse(glob.glob(os.path.join(images_dir, "*.svg")), "Unsupported svg files are in Catrobat folder.")
 
-        self.assertCorrectCatroidProjectStructure(self.temp_dir, self.project_parent.name)
+        self.assertCorrecProgramStructure(self.temp_dir, self.project_parent.name)
         actual_count = len(glob.glob(os.path.join(images_dir, "*.png")))
         self.assertEqual(count_svg_and_png_files, actual_count - len(self.project_parent.listened_keys))
 
-#     def test_can_convert_to_catroid_folder_structure_with_utf_input_json(self):
-#         project = sb2.Project(common_testing.get_test_project_path("simple_utf_test"))
-#         sb2tocatrobat.convert_sb2_project_to_catroid_project_structure(project, self.temp_dir)
-#
-#         self.assertCorrectCatroidProjectStructure(self.temp_dir, project.name)
-
-    def test_can_get_catroid_resource_file_name_of_sb2_resources(self):
-        resource_names_sb2_to_catroid_map = {
+    def test_can_get_catrobat_resource_file_name_of_sb2_resources(self):
+        resource_names_sb2_to_catrobat_map = {
             "83a9787d4cb6f3b7632b4ddfebf74367.wav": ["83a9787d4cb6f3b7632b4ddfebf74367_pop.wav"] * 2,
             "510da64cf172d53750dffd23fbf73563.png": ["510da64cf172d53750dffd23fbf73563_backdrop1.png"],
             "033f926829a446a28970f59302b0572d.png": ["033f926829a446a28970f59302b0572d_castle1.png"],
             "83c36d806dc92327b9e7049a565c6bff.wav": ["83c36d806dc92327b9e7049a565c6bff_meow.wav"]}
-        for resource_name in resource_names_sb2_to_catroid_map:
-            expected = resource_names_sb2_to_catroid_map[resource_name]
+        for resource_name in resource_names_sb2_to_catrobat_map:
+            expected = resource_names_sb2_to_catrobat_map[resource_name]
             self.assertEqual(expected, sb2tocatrobat.converted_resource_names(resource_name, self.project_parent))
 
-    def test_can_convert_sb2_project_to_catroid_zip(self):
-        catroid_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(self.project_parent, self.temp_dir)
+    def test_can_convert_sb2_project_to_catrobat_zip(self):
+        catrobat_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(self.project_parent, self.temp_dir)
 
-        self.assertCorrectProjectZipFile(catroid_zip_file_name, self.project_parent.name)
+        self.assertCorrectProjectZipFile(catrobat_zip_file_name, self.project_parent.name)
 
-    def test_can_convert_sb2_project_with_utf8_characters_catroid_zip(self):
+    def test_can_convert_sb2_project_with_utf8_characters_catrobat_zip(self):
         project = sb2.Project(common.get_test_project_path("wrong_encoding"))
-        catroid_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(project, self._testresult_folder_path)
+        catrobat_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(project, self._testresult_folder_path)
 
-        self.assertCorrectProjectZipFile(catroid_zip_file_name, project.name)
+        self.assertCorrectProjectZipFile(catrobat_zip_file_name, project.name)
 
     def test_can_convert_complete_project_to_catrobat_project_class(self):
-        _catr_project = sb2tocatrobat._convert_to_catrobat_project(self.project_parent)
-        self.assertTrue(isinstance(_catr_project, catbase.Project), "Converted project is not a catroid project class.")
+        _catr_project = sb2tocatrobat._convert_to_catrobat_program(self.project_parent)
+        self.assertTrue(isinstance(_catr_project, catbase.Project), "Converted project is not a catrobat project class.")
 
         self.assertEqual(360, _catr_project.getXmlHeader().virtualScreenHeight, "Project height not at Scratch stage size")
         self.assertEqual(480, _catr_project.getXmlHeader().virtualScreenWidth, "Project width not at Scratch stage size")
 
         catr_sprites = _catr_project.getSpriteList()
         self.assertTrue(catr_sprites, "No sprites in converted project.")
-        self.assertTrue(all(isinstance(_, catbase.Sprite) for _ in catr_sprites), "Sprites of converted project are not catroid sprite classes.")
-        self.assertEqual(catrobat_util.BACKGROUND_SPRITE_NAME, catr_sprites[0].getName())
+        self.assertTrue(all(isinstance(_, catbase.Sprite) for _ in catr_sprites), "Sprites of converted project are not catrobat sprite classes.")
+        self.assertEqual(catrobat.BACKGROUND_SPRITE_NAME, catr_sprites[0].getName())
 
     def test_can_convert_object_to_catrobat_sprite_class(self):
         sprites = [sb2tocatrobat._convert_to_catrobat_sprite(sb2obj) for sb2obj in self.project.objects]
@@ -197,7 +191,7 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
             self.assertEqual(soundinfo.getSoundFileName(), expected_values[1], "Sound file name wrong")
 
     def test_can_write_sb2_project_to_catrobat_xml(self):
-        _catr_project = sb2tocatrobat._convert_to_catrobat_project(self.project_parent)
+        _catr_project = sb2tocatrobat._convert_to_catrobat_program(self.project_parent)
 #         common.log.info(catio.StorageHandler.getInstance().getXMLStringOfAProject(_catr_project))
 
 
@@ -308,8 +302,8 @@ class TestConvertProjects(common_testing.ProjectTestCase):
 
     def _test_project(self, project_name):
         scratch_project = sb2.Project(common.get_test_project_path(project_name), name=project_name)
-        catroid_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(scratch_project, self._testresult_folder_path)
-        self.assertCorrectProjectZipFile(catroid_zip_file_name, project_name, unused_scratch_resources=scratch_project.unused_resource_names)
+        catrobat_zip_file_name = sb2tocatrobat.convert_sb2_project_to_catrobat_zip(scratch_project, self._testresult_folder_path)
+        self.assertCorrectProjectZipFile(catrobat_zip_file_name, project_name, unused_scratch_resources=scratch_project.unused_resource_names)
 
     def test_can_convert_project_without_variables(self):
         self._test_project("full_test_no_var")

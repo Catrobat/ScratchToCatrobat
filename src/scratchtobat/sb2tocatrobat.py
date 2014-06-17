@@ -32,7 +32,7 @@ import org.catrobat.catroid.content.bricks as catbricks
 import org.catrobat.catroid.formulaeditor as catformula
 import org.catrobat.catroid.io as catio
 
-from scratchtobat import catrobat_util
+from scratchtobat import catrobat
 from scratchtobat import common
 from scratchtobat import sb2
 from scratchtobat import sb2webapi
@@ -40,12 +40,7 @@ from scratchtobat.sb2 import JsonKeys as sb2keys
 from scratchtobat.tools import svgtopng
 from scratchtobat.tools import wavconverter
 
-
-CATROID_PROJECT_FILE = "code.xml"
-CATROID_NOMEDIA_FILE = ".nomedia"
-
 _DEFAULT_BRICK_CLASS = catbricks.WaitBrick
-
 
 log = common.log
 
@@ -258,7 +253,7 @@ def _key_filename_for(key):
 _catr_project = None
 
 
-def _convert_to_catrobat_project(sb2_project):
+def _convert_to_catrobat_program(sb2_project):
     global _catr_project
     _catr_project = catbase.Project(None, sb2_project.name)
     _catr_project.getXmlHeader().virtualScreenHeight = sb2.STAGE_HEIGHT_IN_PIXELS
@@ -266,7 +261,7 @@ def _convert_to_catrobat_project(sb2_project):
     for object_ in sb2_project.project_code.objects:
         catr_sprite = _convert_to_catrobat_sprite(object_)
         if object_ is sb2_project.project_code.stage_object:
-            catr_sprite.setName(catrobat_util.BACKGROUND_SPRITE_NAME)
+            catr_sprite.setName(catrobat.BACKGROUND_SPRITE_NAME)
         _catr_project.addSprite(catr_sprite)
 
     def add_used_key_sprites(listened_keys, _catr_project):
@@ -459,7 +454,7 @@ def _convert_to_catrobat_bricks(sb2_brick, catr_sprite):
             assert _catr_project
 
             [look_name] = brick_arguments
-            background_sprite = catrobat_util.background_sprite_of_project(_catr_project)
+            background_sprite = catrobat.background_sprite_of_project(_catr_project)
             if not background_sprite:
                 # if no background sprite found, we are just building it now
                 background_sprite = catr_sprite
@@ -559,9 +554,9 @@ def convert_sb2_project_to_catrobat_zip(project, output_dir):
                 yield os.path.join(root, file_)
     log.info("convert Scratch project to '%s'", output_dir)
     temp_dir = tempfile.mkdtemp()
-    convert_sb2_project_to_catroid_project_structure(project, temp_dir)
+    convert_scratch_project_to_catrobat_file_structure(project, temp_dir)
     common.makedirs(output_dir)
-    catrobat_zip_file_path = os.path.join(output_dir, project.name + catrobat_util.CATROBAT_PROJECT_FILEEXT)
+    catrobat_zip_file_path = os.path.join(output_dir, project.name + catrobat.PACKAGED_PROGRAM_FILE_EXTENSION)
     with zipfile.ZipFile(catrobat_zip_file_path, 'w') as zip_fp:
         for file_path in iter_dir(unicode(temp_dir)):
             assert isinstance(file_path, unicode)
@@ -581,9 +576,9 @@ def sounds_dir_of_project(temp_dir):
     return os.path.join(temp_dir, "sounds")
 
 
-def convert_sb2_project_to_catroid_project_structure(sb2_project, temp_path):
+def convert_scratch_project_to_catrobat_file_structure(sb2_project, temp_path):
 
-    def create_catroid_directory_structure():
+    def create_directory_structure():
         sounds_path = sounds_dir_of_project(temp_path)
         os.mkdir(sounds_path)
 
@@ -591,10 +586,11 @@ def convert_sb2_project_to_catroid_project_structure(sb2_project, temp_path):
         os.mkdir(images_path)
 
         for _ in (temp_path, sounds_path, images_path):
-            open(os.path.join(_, CATROID_NOMEDIA_FILE), 'a').close()
+            # TODO: into common module
+            open(os.path.join(_, catrobat.ANDROID_IGNORE_MEDIA_MARKER_FILE_NAME), 'a').close()
         return sounds_path, images_path
 
-    def save_mediafiles_into_catroid_directory_structure():
+    def write_mediafiles():
         def resource_name_for(file_path):
             return common.md5_hash(file_path) + os.path.splitext(file_path)[1]
 
@@ -647,15 +643,15 @@ def convert_sb2_project_to_catroid_project_structure(sb2_project, temp_path):
                 update_resource_name(md5_name, new_resource_name)
                 md5_name = new_resource_name
             # if file is used multiple times: single md5, multiple filenames
-            for catroid_file_name in converted_resource_names(md5_name, sb2_project):
-                shutil.copyfile(src_path, os.path.join(target_dir, catroid_file_name))
+            for catrobat_file_name in converted_resource_names(md5_name, sb2_project):
+                shutil.copyfile(src_path, os.path.join(target_dir, catrobat_file_name))
             if converted_file:
                 os.remove(src_path)
 
-    def xml_content_of_catroid_project(catroid_project):
+    def program_source_for(catrobat_project):
         storage_handler = catio.StorageHandler()
         code_xml_content = storage_handler.XML_HEADER
-        xml_header = catroid_project.getXmlHeader()
+        xml_header = catrobat_project.getXmlHeader()
         xml_header.setApplicationBuildName(common.APPLICATION_NAME)
         # TODO: find resource with application name
         # TODO: parse application version from android manifest?
@@ -666,14 +662,14 @@ def convert_sb2_project_to_catroid_project_structure(sb2_project, temp_path):
         xml_header.programLicense = sb2.LICENSE_URI
         xml_header.mediaLicense = sb2.LICENSE_URI
         xml_header.remixOf = sb2webapi.HTTP_PROJECT_URL_PREFIX + xml_header.getProgramName()
-        code_xml_content += storage_handler.getXMLStringOfAProject(catroid_project)
+        code_xml_content += storage_handler.getXMLStringOfAProject(catrobat_project)
         return code_xml_content
 
-    def save_xmlfile_into_catroid_directory_structure():
-        catrobat_project = _convert_to_catrobat_project(sb2_project)
-        xml_content = xml_content_of_catroid_project(catrobat_project)
-        with open(os.path.join(temp_path, CATROID_PROJECT_FILE), "wb") as fp:
-            fp.write(xml_content.encode("utf8"))
+    def write_program_source():
+        catrobat_program = _convert_to_catrobat_program(sb2_project)
+        program_source = program_source_for(catrobat_program)
+        with open(os.path.join(temp_path, catrobat.PROGRAM_SOURCE_FILE_NAME), "wb") as fp:
+            fp.write(program_source.encode("utf8"))
 
         # copying key images needed for keyPressed substitution
         for listened_key in sb2_project.listened_keys:
@@ -682,16 +678,16 @@ def convert_sb2_project_to_catroid_project_structure(sb2_project, temp_path):
 
     # TODO: rename/rearrange abstracting methods
     log.info("  Creating Catrobat project structure")
-    sounds_path, images_path = create_catroid_directory_structure()
+    sounds_path, images_path = create_directory_structure()
     log.info("  Saving media files")
-    save_mediafiles_into_catroid_directory_structure()
-    log.info("  Saving project XMl file")
-    save_xmlfile_into_catroid_directory_structure()
+    write_mediafiles()
+    log.info("  Saving project XML file")
+    write_program_source()
 
 
 def converted_resource_names(scratch_resource_name, project):
     assert os.path.basename(scratch_resource_name) == scratch_resource_name and len(os.path.splitext(scratch_resource_name)[0]) == 32, "Must be MD5 hash with file ext: " + scratch_resource_name
-    catroid_resource_names = []
+    catrobat_resource_names = []
     md5_name = scratch_resource_name
     for resource in project.project_code.find_all_resource_dicts_for(md5_name):
         if resource:
@@ -700,9 +696,9 @@ def converted_resource_names(scratch_resource_name, project):
             except KeyError:
                 raise ConversionError("Error with: {}, {}".format(md5_name, resource))
             resource_ext = os.path.splitext(md5_name)[1]
-            catroid_resource_names += [md5_name.replace(resource_ext, "_" + resource_name + resource_ext)]
-    assert len(catroid_resource_names) != 0, "{} not found (path: {}). available: {}".format(scratch_resource_name, project.md5_to_resource_path_map.get(scratch_resource_name), project.project_code.resource_names)
-    return catroid_resource_names
+            catrobat_resource_names += [md5_name.replace(resource_ext, "_" + resource_name + resource_ext)]
+    assert len(catrobat_resource_names) != 0, "{} not found (path: {}). available: {}".format(scratch_resource_name, project.md5_to_resource_path_map.get(scratch_resource_name), project.project_code.resource_names)
+    return catrobat_resource_names
 
 
 def _convert_formula(raw_source, sprite, project):

@@ -20,6 +20,7 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import imghdr
 import os
+import shutil
 import unittest
 
 from scratchtocatrobat import common
@@ -46,12 +47,15 @@ class SvgToPngTest(common_testing.BaseTestCase):
             assert svgtopng._BATIK_ENVIRONMENT_HOME in os.environ
 
     def test_can_convert_file_from_svg_to_png(self):
-        input_svg_path = os.path.join(common.get_test_project_path("dancing_castle"), "1.svg")
-        assert os.path.exists(input_svg_path)
-        svgtopng.convert(input_svg_path)
-        output_png_path = input_svg_path.replace(".svg", ".png")
-        self.assertTrue(os.path.exists(output_png_path))
-        self.assertEqual('png', imghdr.what(output_png_path))
+        regular_svg_path = os.path.join(common.get_test_project_path("dancing_castle"), "1.svg")
+        svg_path_with_fileext = os.path.join(self.temp_dir, "test_path_which_includes_extension_.svg.svg", "1.svg")
+        os.makedirs(os.path.dirname(svg_path_with_fileext))
+        shutil.copy(regular_svg_path, svg_path_with_fileext)
+        for input_svg_path in [regular_svg_path, svg_path_with_fileext]:
+            assert os.path.exists(input_svg_path)
+            output_png_path = svgtopng.convert(input_svg_path)
+            assert os.path.exists(output_png_path)
+            self.assertEqual('png', imghdr.what(output_png_path))
 
     def test_fail_on_non_svg_input_file(self):
         try:

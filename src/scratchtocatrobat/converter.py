@@ -22,7 +22,6 @@ from __future__ import unicode_literals
 
 import os
 import shutil
-import tempfile
 import zipfile
 from codecs import open
 
@@ -553,17 +552,16 @@ def convert_scratch_project_to_catrobat_zip(project, output_dir):
             for file_ in files:
                 yield os.path.join(root, file_)
     log.info("convert Scratch project to '%s'", output_dir)
-    temp_dir = tempfile.mkdtemp()
-    convert_scratch_project_to_catrobat_file_structure(project, temp_dir)
-    common.makedirs(output_dir)
-    catrobat_zip_file_path = os.path.join(output_dir, project.name + catrobat.PACKAGED_PROGRAM_FILE_EXTENSION)
-    with zipfile.ZipFile(catrobat_zip_file_path, 'w') as zip_fp:
-        for file_path in iter_dir(unicode(temp_dir)):
-            assert isinstance(file_path, unicode)
-            path_inside_zip = file_path.replace(temp_dir, u"")
-            zip_fp.write(file_path, path_inside_zip)
-    assert zip_fp.fp is None or zip_fp.fp.closed
-    common.rmtree(temp_dir)
+    with common.TemporaryDirectory() as catrobat_program_dir:
+        convert_scratch_project_to_catrobat_file_structure(project, catrobat_program_dir)
+        common.makedirs(output_dir)
+        catrobat_zip_file_path = os.path.join(output_dir, project.name + catrobat.PACKAGED_PROGRAM_FILE_EXTENSION)
+        with zipfile.ZipFile(catrobat_zip_file_path, 'w') as zip_fp:
+            for file_path in iter_dir(unicode(catrobat_program_dir)):
+                assert isinstance(file_path, unicode)
+                path_inside_zip = file_path.replace(catrobat_program_dir, u"")
+                zip_fp.write(file_path, path_inside_zip)
+        assert zip_fp.fp is None or zip_fp.fp.closed
 
     return catrobat_zip_file_path
 

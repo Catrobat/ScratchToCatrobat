@@ -21,7 +21,6 @@
 import logging
 import os
 import sys
-import tempfile
 from java.io import IOError
 from java.lang import System
 
@@ -60,16 +59,16 @@ def scratchtobat_main(argv):
     try:
         if not os.path.isdir(output_dir):
             raise EnvironmentError("Output folder must be a directory, but is %s" % output_dir)
-        working_dir = tempfile.mkdtemp()
-        if scratch_project_file_or_url.startswith("http://"):
-            log.info("Downloading project from URL: '{}' ...".format(scratch_project_file_or_url))
-            scratchwebapi.download_project(scratch_project_file_or_url, working_dir)
-        else:
-            log.info("Extracting project from path: '{}' ...".format(scratch_project_file_or_url))
-            scratch.extract_project(scratch_project_file_or_url, working_dir)
-        project = scratch.Project(working_dir)
-        log.info("Converting scratch project %s into output folder: %s", project, output_dir)
-        converter.convert_scratch_project_to_catrobat_zip(project, output_dir)
+        with common.TemporaryDirectory() as scratch_project_dir:
+            if scratch_project_file_or_url.startswith("http://"):
+                log.info("Downloading project from URL: '{}' ...".format(scratch_project_file_or_url))
+                scratchwebapi.download_project(scratch_project_file_or_url, scratch_project_dir)
+            else:
+                log.info("Extracting project from path: '{}' ...".format(scratch_project_file_or_url))
+                scratch.extract_project(scratch_project_file_or_url, scratch_project_dir)
+            project = scratch.Project(scratch_project_dir)
+            log.info("Converting scratch project %s into output folder: %s", project, output_dir)
+            converter.convert_scratch_project_to_catrobat_zip(project, output_dir)
     except (common.ScratchtobatError, EnvironmentError, IOError) as e:
         log.error(e)
         return EXIT_FAILURE

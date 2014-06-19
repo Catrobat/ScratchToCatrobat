@@ -32,6 +32,7 @@ log = logging.getLogger(__name__)
 
 
 def convert(input_svg_path):
+    assert isinstance(input_svg_path, (str, unicode))
     if _BATIK_ENVIRONMENT_HOME not in os.environ:
         raise common.ScratchtobatError("Please create environment variable '{}' and set to batik library location.".format(_BATIK_ENVIRONMENT_HOME))
     batik_jar_path = os.path.join(os.environ[_BATIK_ENVIRONMENT_HOME], _BATIK_CLI_JAR)
@@ -40,10 +41,10 @@ def convert(input_svg_path):
     if not isinstance(input_svg_path, (str, unicode)):
         raise common.ScratchtobatError("Input argument must be str or unicode.")
 
-    output_png_path = input_svg_path.replace(".svg", ".png")
+    output_png_path = os.path.splitext(input_svg_path)[0] + ".png"
     try:
         subprocess.check_output(['java', '-jar', batik_jar_path, input_svg_path, '-scriptSecurityOff'], stderr=subprocess.STDOUT)
-        # assert os.path.exists(output_png_path)
+        assert os.path.exists(output_png_path)
     except subprocess.CalledProcessError, e:
         assert e.output
         raise EnvironmentError("PNG to SVG conversion call failed:\n%s" % e.output)

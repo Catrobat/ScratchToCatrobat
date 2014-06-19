@@ -38,8 +38,7 @@ def convert(input_svg_path):
     batik_jar_path = os.path.join(os.environ[_BATIK_ENVIRONMENT_HOME], _BATIK_CLI_JAR)
     if not os.path.exists(batik_jar_path):
         raise common.ScratchtobatError("Jar not found: '{}'. Place batik library at {}.".format(batik_jar_path, os.path.dirname(batik_jar_path)))
-    if not isinstance(input_svg_path, (str, unicode)):
-        raise common.ScratchtobatError("Input argument must be str or unicode.")
+    assert os.path.splitext(input_svg_path)[1] == ".svg"
 
     output_png_path = os.path.splitext(input_svg_path)[0] + ".png"
     try:

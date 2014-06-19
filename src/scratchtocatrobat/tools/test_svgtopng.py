@@ -57,13 +57,6 @@ class SvgToPngTest(common_testing.BaseTestCase):
             assert os.path.exists(output_png_path)
             self.assertEqual('png', imghdr.what(output_png_path))
 
-    def test_fail_on_non_svg_input_file(self):
-        try:
-            svgtopng.convert(os.path.join(common.get_test_resources_path(), "83a9787d4cb6f3b7632b4ddfebf74367_pop.wav"))
-            self.fail("Expected exception not thrown")
-        except EnvironmentError:
-            pass
-
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']

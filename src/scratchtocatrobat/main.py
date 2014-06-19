@@ -25,10 +25,10 @@ import tempfile
 from java.io import IOError
 from java.lang import System
 
-from scratchtobat import common
-from scratchtobat import scratch
-from scratchtobat import converter
-from scratchtobat import scratchwebapi
+from scratchtocatrobat import common
+from scratchtocatrobat import scratch
+from scratchtocatrobat import converter
+from scratchtocatrobat import scratchwebapi
 
 log = logging.getLogger(__name__)
 
@@ -76,5 +76,5 @@ def scratchtobat_main(argv):
     return EXIT_SUCCESS
 
 if __name__ == '__main__':
-    log = logging.getLogger("scratchtobat.main")
+    log = logging.getLogger("scratchtocatrobat.main")
     sys.exit(scratchtobat_main(sys.argv[1:]))

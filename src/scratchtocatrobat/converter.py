@@ -32,13 +32,13 @@ import org.catrobat.catroid.content.bricks as catbricks
 import org.catrobat.catroid.formulaeditor as catformula
 import org.catrobat.catroid.io as catio
 
-from scratchtobat import catrobat
-from scratchtobat import common
-from scratchtobat import scratch
-from scratchtobat import scratchwebapi
-from scratchtobat.scratch import JsonKeys as scratchkeys
-from scratchtobat.tools import svgtopng
-from scratchtobat.tools import wavconverter
+from scratchtocatrobat import catrobat
+from scratchtocatrobat import common
+from scratchtocatrobat import scratch
+from scratchtocatrobat import scratchwebapi
+from scratchtocatrobat.scratch import JsonKeys as scratchkeys
+from scratchtocatrobat.tools import svgtopng
+from scratchtocatrobat.tools import wavconverter
 
 _DEFAULT_BRICK_CLASS = catbricks.WaitBrick
 

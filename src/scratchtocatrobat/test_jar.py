@@ -19,29 +19,27 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
-import re
 import subprocess
-from distutils.spawn import find_executable
-from java.lang import System
+import unittest
 
-from scratchtobat import common
-
-_SOX_BINARY = "sox"
-_SOX_OUTPUT_PCM_PATTERN = re.compile("Sample Encoding:.* PCM")
-# WORKAROUND: jython + find_executable() leads to wrong result if ".exe" extension is missing
-if System.getProperty("os.name").lower().startswith("win"):
-    _SOX_BINARY += ".exe"
-_sox_path = find_executable(_SOX_BINARY)
-if not _sox_path or _sox_path == _SOX_BINARY:
-    raise common.ScratchtobatError("Sox binary not found on system path. Please add.")
-assert os.path.exists(_sox_path)
+from scratchtocatrobat import common
+from scratchtocatrobat import test_main
 
 
-def is_android_compatible_wav(file_path):
-    assert file_path and os.path.exists(file_path), file_path
-    info_output = subprocess.check_output([_sox_path, "--info", file_path])
-    return _SOX_OUTPUT_PCM_PATTERN.search(info_output) is not None
+class JarTest(test_main.MainTest):
+
+    def __init__(self, *args):
+        super(JarTest, self).__init__(*args)
+
+        def call_jar(args):
+            assert len(args) > 0
+            return subprocess.call(["java", "-cp", converter_jar_path, "-Dpython.security.respectJavaAccessibility=false", "org.python.util.jython", "-jar", converter_jar_path] + args)
+
+        converter_jar_path = os.path.join(common.get_project_base_path(), "dist", "scratch_to_catrobat_converter.jar")
+        assert os.path.isfile(converter_jar_path)
+        self._main_method = call_jar
 
 
-def convert_to_android_compatible_wav(input_path, output_path):
-    subprocess.check_call([_sox_path, input_path, "-t", "wavpcm", "-e", "unsigned-integer", output_path])
+if __name__ == "__main__":
+    # import sys;sys.argv = ['', 'Test.testName']
+    unittest.main()

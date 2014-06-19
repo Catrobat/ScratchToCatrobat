@@ -24,8 +24,8 @@ import re
 import urllib2
 from urlparse import urlparse
 
-from scratchtobat import common
-from scratchtobat import scratch
+from scratchtocatrobat import common
+from scratchtocatrobat import scratch
 
 # source: http://wiki.scratch.mit.edu/wiki/Scratch_File_Format_%282.0%29#Using_HTTP_requests
 HTTP_PROJECT_API = "http://projects.scratch.mit.edu/internalapi/project/{}/get/"

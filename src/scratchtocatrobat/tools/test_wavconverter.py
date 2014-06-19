@@ -21,9 +21,9 @@
 import os
 import unittest
 
-from scratchtobat import common
-from scratchtobat import common_testing
-from scratchtobat.tools import wavconverter
+from scratchtocatrobat import common
+from scratchtocatrobat import common_testing
+from scratchtocatrobat.tools import wavconverter
 
 _ENV_PATH = "PATH"
 
@@ -34,7 +34,7 @@ class WavConverterTest(common_testing.BaseTestCase):
         saved_path_env = os.environ[_ENV_PATH]
         os.environ[_ENV_PATH] = ""
         try:
-            import scratchtobat.tools.wavconverter  # @UnusedImport
+            import scratchtocatrobat.tools.wavconverter  # @UnusedImport
         except common.ScratchtobatError:
             pass
         finally:

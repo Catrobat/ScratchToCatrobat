@@ -27,11 +27,11 @@ import org.catrobat.catroid.content as catbase
 import org.catrobat.catroid.content.bricks as catbricks
 import org.catrobat.catroid.formulaeditor as catformula
 
-from scratchtobat import catrobat
-from scratchtobat import common
-from scratchtobat import common_testing
-from scratchtobat import scratch
-from scratchtobat import converter
+from scratchtocatrobat import catrobat
+from scratchtocatrobat import common
+from scratchtocatrobat import common_testing
+from scratchtocatrobat import scratch
+from scratchtocatrobat import converter
 
 
 def create_catrobat_sprite_stub():

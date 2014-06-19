@@ -22,9 +22,9 @@ import imghdr
 import os
 import unittest
 
-from scratchtobat import common
-from scratchtobat import common_testing
-from scratchtobat.tools import svgtopng
+from scratchtocatrobat import common
+from scratchtocatrobat import common_testing
+from scratchtocatrobat.tools import svgtopng
 
 
 class SvgToPngTest(common_testing.BaseTestCase):

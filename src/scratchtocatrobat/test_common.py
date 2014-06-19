@@ -20,8 +20,8 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import unicode_literals
 
-from scratchtobat import common
-from scratchtobat import common_testing
+from scratchtocatrobat import common
+from scratchtocatrobat import common_testing
 
 
 class TestDictAccessWrapper(common.DictAccessWrapper):

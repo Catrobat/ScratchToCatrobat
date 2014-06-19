@@ -21,9 +21,9 @@
 import os
 import unittest
 
-from scratchtobat import common
-from scratchtobat import common_testing
-from scratchtobat import main
+from scratchtocatrobat import common
+from scratchtocatrobat import common_testing
+from scratchtocatrobat import main
 
 
 class MainTest(common_testing.ProjectTestCase):

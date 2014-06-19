@@ -38,11 +38,11 @@ from itertools import islice
 def get_project_base_path():
     return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
-log = logging.getLogger("scratchtobat")
+log = logging.getLogger("scratchtocatrobat")
 log.setLevel(logging.DEBUG)
 formatter = logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s")
 
-fh = logging.FileHandler(os.path.join(tempfile.gettempdir(), "scratchtobat-{}.log".format(datetime.now().isoformat().replace(":", "_"))))
+fh = logging.FileHandler(os.path.join(tempfile.gettempdir(), "scratchtocatrobat-{}.log".format(datetime.now().isoformat().replace(":", "_"))))
 fh.setLevel(logging.DEBUG)
 fh.setFormatter(formatter)
 log.addHandler(fh)

@@ -22,7 +22,7 @@ import logging
 import os
 import subprocess
 
-from scratchtobat import common
+from scratchtocatrobat import common
 
 # TODO: replace CLI call with API
 _BATIK_ENVIRONMENT_HOME = "BATIK_HOME"

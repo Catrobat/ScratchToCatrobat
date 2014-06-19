@@ -20,10 +20,10 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import unittest
 
-from scratchtobat import common
-from scratchtobat import common_testing
-from scratchtobat import scratch
-from scratchtobat import scratchwebapi
+from scratchtocatrobat import common
+from scratchtocatrobat import common_testing
+from scratchtocatrobat import scratch
+from scratchtocatrobat import scratchwebapi
 
 
 class WebApiTest(common_testing.BaseTestCase):

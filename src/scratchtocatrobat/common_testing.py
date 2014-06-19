@@ -31,9 +31,9 @@ from xml.etree import ElementTree
 import org.catrobat.catroid.io as catio
 import org.catrobat.catroid.formulaeditor as catformula
 
-from scratchtobat import catrobat
-from scratchtobat import common
-from scratchtobat import converter
+from scratchtocatrobat import catrobat
+from scratchtocatrobat import common
+from scratchtocatrobat import converter
 
 assert System.getProperty("python.security.respectJavaAccessibility") == 'false', "Jython registry property 'python.security.respectJavaAccessibility' must be set to 'false'"
 

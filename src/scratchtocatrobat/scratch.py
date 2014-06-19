@@ -24,7 +24,7 @@ import json
 import os
 import zipfile
 
-from scratchtobat import common
+from scratchtocatrobat import common
 
 log = common.log
 

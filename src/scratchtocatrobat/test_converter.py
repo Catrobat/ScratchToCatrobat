@@ -78,7 +78,7 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
         self.assertTrue(os.path.exists(code_xml_path))
         self.assertFalse(glob.glob(os.path.join(images_dir, "*.svg")), "Unsupported svg files are in Catrobat folder.")
 
-        self.assertCorrecProgramStructure(self.temp_dir, self.project_parent.name)
+        self.assertCorrectProgramStructure(self.temp_dir, self.project_parent.name)
         actual_count = len(glob.glob(os.path.join(images_dir, "*.png")))
         self.assertEqual(count_svg_and_png_files, actual_count - len(self.project_parent.listened_keys))
 

@@ -99,7 +99,7 @@ class ProjectTestCase(BaseTestCase):
         self.assertEqual(expected_len, actual_len, "Wrong number of bricks. {0} != {1}".format(expected_len, actual_len))
         self.assertEqual(expected_brick_classes, [_.__class__ for _ in bricks])
 
-    def assertCorrecProgramStructure(self, project_path, project_name):
+    def assertCorrectProgramStructure(self, project_path, project_name):
         project_xml_path = os.path.join(project_path, catrobat.PROGRAM_SOURCE_FILE_NAME)
         with open(project_xml_path) as fp:
             self.assertEqual(fp.readline(), self._storagehandler.XML_HEADER)
@@ -147,7 +147,7 @@ class ProjectTestCase(BaseTestCase):
                     self.assertNotIn(os.path.splitext(unused_scratch_resource)[0], zip_filepath)
             zip_fp.extractall(temp_dir)
 
-        self.assertCorrecProgramStructure(temp_dir, project_name)
+        self.assertCorrectProgramStructure(temp_dir, project_name)
 
     def assertEqualFormulas(self, formula1, formula2):
         assert isinstance(formula1, catformula.Formula)

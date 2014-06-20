@@ -115,7 +115,7 @@ def rmtree(path):
         except OSError:
             retry_count += 1
             if retry_count > 1000:
-                log.warning("Could not delete: '%s' (please check if open in other process)", path)
+                log.warning("Could not delete: '%s' (please check if open in another process)", path)
                 break
             if not os.path.exists(path):
                 break

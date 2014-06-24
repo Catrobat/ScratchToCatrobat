@@ -69,7 +69,7 @@ def get_test_project_path(project_folder):
     return os.path.join(get_test_resources_path(), "scratch", project_folder)
 
 
-def get_test_project_unpacked_file(scratch_file):
+def get_test_project_packed_file(scratch_file):
     return os.path.join(get_test_resources_path(), "scratch_packed", scratch_file)
 
 

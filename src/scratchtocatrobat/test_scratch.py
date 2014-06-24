@@ -44,7 +44,7 @@ TEST_PROJECT_FOLDER = "dancing_castle"
 class ProjectExtractionTest(common_testing.BaseTestCase):
     def test_can_extract_project(self):
         for project_file in common_testing.TEST_PROJECT_FILENAME_TO_ID_MAP:
-            scratch.extract_project(common.get_test_project_unpacked_file(project_file), self.temp_dir)
+            scratch.extract_project(common.get_test_project_packed_file(project_file), self.temp_dir)
             self.assertTrue(scratch.Project(self.temp_dir))
 
 

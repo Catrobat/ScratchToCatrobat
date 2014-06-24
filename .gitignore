@@ -19,3 +19,6 @@ local.properties
 /pyenv
 /test-reports
 /testresult
+
+/.project
+/.pydevproject

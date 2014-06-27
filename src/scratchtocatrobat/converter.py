@@ -556,6 +556,8 @@ def convert_scratch_project_to_catrobat_zip(project, output_dir):
         convert_scratch_project_to_catrobat_file_structure(project, catrobat_program_dir)
         common.makedirs(output_dir)
         catrobat_zip_file_path = os.path.join(output_dir, project.name + catrobat.PACKAGED_PROGRAM_FILE_EXTENSION)
+        if os.path.exists(catrobat_zip_file_path):
+            shutil.rmtree(catrobat_zip_file_path)
         with zipfile.ZipFile(catrobat_zip_file_path, 'w') as zip_fp:
             for file_path in iter_dir(unicode(catrobat_program_dir)):
                 assert isinstance(file_path, unicode)

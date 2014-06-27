@@ -18,17 +18,11 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import contextlib
 import hashlib
 import logging
 import os
-import shutil
 import sys
 import tempfile
-try:
-    from cStringIO import StringIO  # @UnusedImport (pydev problem 1/2)
-except:
-    from StringIO import StringIO  # @Reimport (pydev problem 2/2)
 from datetime import datetime
 from itertools import chain
 from itertools import repeat
@@ -73,21 +67,6 @@ def get_test_project_packed_file(scratch_file):
     return os.path.join(get_test_resources_path(), "scratch_packed", scratch_file)
 
 
-class Data(object):
-    pass
-
-
-@contextlib.contextmanager
-def capture_stdout():
-    old = sys.stdout
-    capturer = StringIO()
-    sys.stdout = capturer
-    data = Data()
-    yield data
-    sys.stdout = old
-    data.result = capturer.getvalue()
-
-
 class ScratchtobatError(Exception):
     pass
 
@@ -100,25 +79,6 @@ def md5_hash(input_path):
 def makedirs(path):
     if not os.path.exists(path):
         os.makedirs(path)
-
-
-# WORKAROUND: as shutil.rmtree fails on Windows with Jython for unknown reason with OSError (unlink())
-def rmtree(path):
-    assert os.path.exists(path)
-    retry_count = 0
-    while True:
-        try:
-            shutil.rmtree(path)
-            if retry_count != 0:
-                log.warning("Number of retries until path delete success: %d", retry_count)
-            break
-        except OSError:
-            retry_count += 1
-            if retry_count > 1000:
-                log.warning("Could not delete: '%s' (please check if open in another process)", path)
-                break
-            if not os.path.exists(path):
-                break
 
 
 # source for pad methods: http://stackoverflow.com/a/3438986

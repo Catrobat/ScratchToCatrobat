@@ -21,6 +21,7 @@
 from __future__ import unicode_literals
 
 import os
+import shutil
 import tempfile
 import unittest
 import zipfile
@@ -61,12 +62,12 @@ class BaseTestCase(unittest.TestCase):
         assert class_name is not None and testcase_name is not None
         self.__testresult_base_path = os.path.join(common.get_project_base_path(), "testresult", class_name, testcase_name)
         if os.path.exists(self.__testresult_base_path):
-            common.rmtree(self.__testresult_base_path)
+            shutil.rmtree(self.__testresult_base_path)
         self.__testresult_folder_subdir = None
 
     def tearDown(self):
         super(BaseTestCase, self).tearDown()
-        common.rmtree(self.temp_dir)
+        shutil.rmtree(self.temp_dir)
 
     @property
     def _testresult_folder_path(self):

@@ -21,6 +21,7 @@
 import os
 import unittest
 
+from scratchtocatrobat import catrobat
 from scratchtocatrobat import common
 from scratchtocatrobat import common_testing
 from scratchtocatrobat import main
@@ -36,15 +37,12 @@ class MainTest(common_testing.ProjectTestCase):
         super(MainTest, self).setUp()
 
     def assertMainSuccess(self, args, project_id):
+        output_path = self._testresult_folder_path
         if len(args) == 1:
-            args += [self._testresult_folder_path]
+            args += [output_path]
         return_val = self._main_method(args)
         self.assertEqual(main.EXIT_SUCCESS, return_val)
-        test_folder_path = args[1]
-        for file_ in os.listdir(test_folder_path):
-            if file_.endswith(".zip"):
-                zip_path = os.path.join(file_)
-                self.assertCorrectProjectZipFile(zip_path, project_id)
+        self.assertValidCatrobatProgramPackageAndUnpackIf(os.path.join(output_path, project_id + catrobat.PACKAGED_PROGRAM_FILE_EXTENSION), project_id)
 
     def test_can_provide_catrobat_program_for_scratch_project_link(self):
         for project_url, project_id in common_testing.TEST_PROJECT_URL_TO_ID_MAP.iteritems():

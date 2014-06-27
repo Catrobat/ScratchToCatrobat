@@ -57,7 +57,7 @@ class BaseTestCase(unittest.TestCase):
 
     def setUp(self):
         super(BaseTestCase, self).setUp()
-        self.temp_dir = tempfile.mkdtemp()
+        self.temp_dir = tempfile.mkdtemp(prefix="stc_")
         class_name, testcase_name = self.id().split(".")[-2:]
         assert class_name is not None and testcase_name is not None
         self.__testresult_base_path = os.path.join(common.get_project_base_path(), "testresult", class_name, testcase_name)
@@ -100,7 +100,7 @@ class ProjectTestCase(BaseTestCase):
         self.assertEqual(expected_len, actual_len, "Wrong number of bricks. {0} != {1}".format(expected_len, actual_len))
         self.assertEqual(expected_brick_classes, [_.__class__ for _ in bricks])
 
-    def assertCorrectProgramStructure(self, project_path, project_name):
+    def assertValidCatrobatProgramStructure(self, project_path, project_name):
         project_xml_path = os.path.join(project_path, catrobat.PROGRAM_SOURCE_FILE_NAME)
         with open(project_xml_path) as fp:
             self.assertEqual(fp.readline(), self._storagehandler.XML_HEADER)
@@ -127,15 +127,11 @@ class ProjectTestCase(BaseTestCase):
             image_path = os.path.join(images_dir, node.text)
             self.assert_(os.path.exists(image_path), "Missing: {}, available files: {}".format(repr(image_path), os.listdir(os.path.dirname(image_path))))
 
-    def assertCorrectProjectZipFile(self, zip_path, project_name, unused_scratch_resources=None):
+    def assertValidCatrobatProgramPackageAndUnpackIf(self, zip_path, project_name, unused_scratch_resources=None):
         if unused_scratch_resources is None:
             unused_scratch_resources = []
         _log.info("unused resources: %s", ', '.join(unused_scratch_resources))
-        assert os.path.exists(self.temp_dir)
-        temp_dir = os.path.join(self.temp_dir, "extracted_zip")
-        if not os.path.exists(temp_dir):
-            os.mkdir(temp_dir)
-
+        package_extraction_dir = os.path.splitext(zip_path)[0]
         with zipfile.ZipFile(zip_path) as zip_fp:
             corrupt_zip_content = zip_fp.testzip()
             self.assertTrue(corrupt_zip_content is None, "Corrupt files in {}: {}".format(zip_path, corrupt_zip_content))
@@ -146,9 +142,8 @@ class ProjectTestCase(BaseTestCase):
             for unused_scratch_resource in unused_scratch_resources:
                 for zip_filepath in zip_fp.namelist():
                     self.assertNotIn(os.path.splitext(unused_scratch_resource)[0], zip_filepath)
-            zip_fp.extractall(temp_dir)
-
-        self.assertCorrectProgramStructure(temp_dir, project_name)
+            zip_fp.extractall(package_extraction_dir)
+        self.assertValidCatrobatProgramStructure(package_extraction_dir, project_name)
 
     def assertEqualFormulas(self, formula1, formula2):
         assert isinstance(formula1, catformula.Formula)

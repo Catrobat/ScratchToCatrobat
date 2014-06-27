@@ -78,7 +78,7 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
         self.assertTrue(os.path.exists(code_xml_path))
         self.assertFalse(glob.glob(os.path.join(images_dir, "*.svg")), "Unsupported svg files are in Catrobat folder.")
 
-        self.assertCorrectProgramStructure(self.temp_dir, self.project_parent.name)
+        self.assertValidCatrobatProgramStructure(self.temp_dir, self.project_parent.name)
         actual_count = len(glob.glob(os.path.join(images_dir, "*.png")))
         self.assertEqual(count_svg_and_png_files, actual_count - len(self.project_parent.listened_keys))
 
@@ -95,13 +95,13 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
     def test_can_convert_scratch_project_to_catrobat_zip(self):
         catrobat_zip_file_name = converter.convert_scratch_project_to_catrobat_zip(self.project_parent, self.temp_dir)
 
-        self.assertCorrectProjectZipFile(catrobat_zip_file_name, self.project_parent.name)
+        self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, self.project_parent.name)
 
     def test_can_convert_scratch_project_with_utf8_characters_catrobat_zip(self):
         project = scratch.Project(common.get_test_project_path("wrong_encoding"))
         catrobat_zip_file_name = converter.convert_scratch_project_to_catrobat_zip(project, self._testresult_folder_path)
 
-        self.assertCorrectProjectZipFile(catrobat_zip_file_name, project.name)
+        self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, project.name)
 
     def test_can_convert_complete_project_to_catrobat_project_class(self):
         _catr_project = converter._convert_to_catrobat_program(self.project_parent)
@@ -303,7 +303,7 @@ class TestConvertProjects(common_testing.ProjectTestCase):
     def _test_project(self, project_name):
         scratch_project = scratch.Project(common.get_test_project_path(project_name), name=project_name)
         catrobat_zip_file_name = converter.convert_scratch_project_to_catrobat_zip(scratch_project, self._testresult_folder_path)
-        self.assertCorrectProjectZipFile(catrobat_zip_file_name, project_name, unused_scratch_resources=scratch_project.unused_resource_names)
+        self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, project_name, unused_scratch_resources=scratch_project.unused_resource_names)
 
     def test_can_convert_project_without_variables(self):
         self._test_project("full_test_no_var")

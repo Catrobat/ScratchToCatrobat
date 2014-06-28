@@ -21,6 +21,7 @@
 import hashlib
 import os
 import re
+import socket
 import urllib2
 from urlparse import urlparse
 
@@ -34,6 +35,8 @@ HTTP_ASSET_API = "http://scratch.mit.edu/internalapi/asset/{}/get/"
 HTTP_PROJECT_URL_PREFIX = "http://scratch.mit.edu/projects/"
 HTTP_PROJECT_URL_PATTERN = HTTP_PROJECT_URL_PREFIX + r'\d+/?'
 
+_log = common.log
+
 
 def download_project(project_url, target_dir):
     if not re.match(HTTP_PROJECT_URL_PATTERN, project_url):
@@ -43,7 +46,18 @@ def download_project(project_url, target_dir):
 
     def data_of_request_response(url):
         common.log.info("Requesting web api url: {}".format(url))
-        return urllib2.urlopen(url).read()
+        def retry_hook(exc, tries, delay):
+            _log.warning("  retrying after '%s' in %f secs (remaining trys: %d)", exc , delay, tries)
+
+        @common.retry(socket.timeout, tries=3, hook=retry_hook)
+        def request():
+            return urllib2.urlopen(url, timeout=3).read()
+
+        try:
+            return request()
+        except socket.timeout:
+            # WORKAROUND: little more descriptive
+            raise IOError("socket.timeout")
 
     def request_project_data(project_id):
         try:

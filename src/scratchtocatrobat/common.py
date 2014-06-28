@@ -23,11 +23,12 @@ import logging
 import os
 import sys
 import tempfile
+import time
 from datetime import datetime
+from functools import wraps
 from itertools import chain
 from itertools import repeat
 from itertools import islice
-
 
 def get_project_base_path():
     return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -205,3 +206,33 @@ class TemporaryDirectory(object):
         except OSError:
             pass
         assert not self._path_exists(path)
+
+
+# based on: http://www.saltycrane.com/blog/2009/11/trying-out-retry-decorator-python/
+def retry(ExceptionToCheck, tries=3, delay=0, backoff=0, hook=None):
+    """Retry calling the decorated function using an exponential backoff.
+
+    http://www.saltycrane.com/blog/2009/11/trying-out-retry-decorator-python/
+    original from: http://wiki.python.org/moin/PythonDecoratorLibrary#Retry
+    """
+    def deco_retry(f):
+
+        @wraps(f)
+        def f_retry(*args, **kwargs):
+            mtries, mdelay = tries, delay
+            while True:
+                try:
+                    return f(*args, **kwargs)
+                except ExceptionToCheck, e:
+                    if mtries > 1:
+                        if hook:
+                            hook(e, mtries, mdelay)
+                        time.sleep(mdelay)
+                        mtries -= 1
+                        mdelay *= backoff
+                    else:
+                        raise e
+
+        return f_retry  # true decorator
+
+    return deco_retry

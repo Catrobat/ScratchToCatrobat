@@ -58,17 +58,16 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
 
     def setUp(self):
         super(TestConvertExampleProject, self).setUp()
-        self.project_parent = scratch.Project(TEST_PROJECT_PATH)
-        self.project = self.project_parent.project_code
+        self.project = scratch.Project(TEST_PROJECT_PATH)
 
     def test_can_convert_to_catrobat_structure_including_svg_to_png(self):
         count_svg_and_png_files = 0
-        for md5_name in self.project_parent.md5_to_resource_path_map:
+        for md5_name in self.project.md5_to_resource_path_map:
             common.log.info(md5_name)
             if os.path.splitext(md5_name)[1] in {".png", ".svg"}:
                 count_svg_and_png_files += 1
 
-        converter.convert_scratch_project_to_catrobat_file_structure(self.project_parent, self.temp_dir)
+        converter.convert_scratch_project_to_catrobat_file_structure(self.project, self.temp_dir)
 
         images_dir = converter.images_dir_of_project(self.temp_dir)
         self.assertTrue(os.path.exists(images_dir))
@@ -78,9 +77,9 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
         self.assertTrue(os.path.exists(code_xml_path))
         self.assertFalse(glob.glob(os.path.join(images_dir, "*.svg")), "Unsupported svg files are in Catrobat folder.")
 
-        self.assertValidCatrobatProgramStructure(self.temp_dir, self.project_parent.name)
+        self.assertValidCatrobatProgramStructure(self.temp_dir, self.project.name)
         actual_count = len(glob.glob(os.path.join(images_dir, "*.png")))
-        self.assertEqual(count_svg_and_png_files, actual_count - len(self.project_parent.listened_keys))
+        self.assertEqual(count_svg_and_png_files, actual_count - len(self.project.listened_keys))
 
     def test_can_get_catrobat_resource_file_name_of_scratch_resources(self):
         resource_names_scratch_to_catrobat_map = {
@@ -90,12 +89,12 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
             "83c36d806dc92327b9e7049a565c6bff.wav": ["83c36d806dc92327b9e7049a565c6bff_meow.wav"]}
         for resource_name in resource_names_scratch_to_catrobat_map:
             expected = resource_names_scratch_to_catrobat_map[resource_name]
-            self.assertEqual(expected, converter.converted_resource_names(resource_name, self.project_parent))
+            self.assertEqual(expected, converter.converted_resource_names(resource_name, self.project))
 
     def test_can_convert_scratch_project_to_catrobat_zip(self):
-        catrobat_zip_file_name = converter.convert_scratch_project_to_catrobat_zip(self.project_parent, self.temp_dir)
+        catrobat_zip_file_name = converter.convert_scratch_project_to_catrobat_zip(self.project, self.temp_dir)
 
-        self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, self.project_parent.name)
+        self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, self.project.name)
 
     def test_can_convert_scratch_project_with_utf8_characters_catrobat_zip(self):
         project = scratch.Project(common.get_test_project_path("wrong_encoding"))
@@ -104,7 +103,7 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
         self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, project.name)
 
     def test_can_convert_complete_project_to_catrobat_project_class(self):
-        _catr_project = converter._convert_to_catrobat_program(self.project_parent)
+        _catr_project = converter._convert_to_catrobat_program(self.project)
         self.assertTrue(isinstance(_catr_project, catbase.Project), "Converted project is not a catrobat project class.")
 
         self.assertEqual(360, _catr_project.getXmlHeader().virtualScreenHeight, "Project height not at Scratch stage size")
@@ -191,7 +190,7 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
             self.assertEqual(soundinfo.getSoundFileName(), expected_values[1], "Sound file name wrong")
 
     def test_can_write_scratch_project_to_catrobat_xml(self):
-        _catr_project = converter._convert_to_catrobat_program(self.project_parent)
+        _catr_project = converter._convert_to_catrobat_program(self.project)
 #         common.log.info(catio.StorageHandler.getInstance().getXMLStringOfAProject(_catr_project))
 
 

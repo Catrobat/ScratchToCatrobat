@@ -257,9 +257,9 @@ def _convert_to_catrobat_program(scratch_project):
     _catr_project = catbase.Project(None, scratch_project.name)
     _catr_project.getXmlHeader().virtualScreenHeight = scratch.STAGE_HEIGHT_IN_PIXELS
     _catr_project.getXmlHeader().virtualScreenWidth = scratch.STAGE_WIDTH_IN_PIXELS
-    for object_ in scratch_project.project_code.objects:
+    for object_ in scratch_project.objects:
         catr_sprite = _convert_to_catrobat_sprite(object_)
-        if object_ is scratch_project.project_code.stage_object:
+        if object_ is scratch_project.stage_object:
             catr_sprite.setName(catrobat.BACKGROUND_SPRITE_NAME)
         _catr_project.addSprite(catr_sprite)
 
@@ -595,7 +595,7 @@ def convert_scratch_project_to_catrobat_file_structure(scratch_project, temp_pat
             return common.md5_hash(file_path) + os.path.splitext(file_path)[1]
 
         def update_resource_name(old_resource_name, new_resource_name):
-            resource_maps = list(scratch_project.project_code.find_all_resource_dicts_for(old_resource_name))
+            resource_maps = list(scratch_project.find_all_resource_dicts_for(old_resource_name))
             assert len(resource_maps) > 0
             for resource_map in resource_maps:
                 if scratchkeys.COSTUME_MD5 in resource_map:
@@ -689,7 +689,7 @@ def converted_resource_names(scratch_resource_name, project):
     assert os.path.basename(scratch_resource_name) == scratch_resource_name and len(os.path.splitext(scratch_resource_name)[0]) == 32, "Must be MD5 hash with file ext: " + scratch_resource_name
     catrobat_resource_names = []
     md5_name = scratch_resource_name
-    for resource in project.project_code.find_all_resource_dicts_for(md5_name):
+    for resource in project.find_all_resource_dicts_for(md5_name):
         if resource:
             try:
                 resource_name = resource[scratchkeys.SOUNDNAME_KEY] if scratchkeys.SOUNDNAME_KEY in resource else resource[scratchkeys.COSTUMENAME_KEY]
@@ -697,7 +697,7 @@ def converted_resource_names(scratch_resource_name, project):
                 raise ConversionError("Error with: {}, {}".format(md5_name, resource))
             resource_ext = os.path.splitext(md5_name)[1]
             catrobat_resource_names += [md5_name.replace(resource_ext, "_" + resource_name + resource_ext)]
-    assert len(catrobat_resource_names) != 0, "{} not found (path: {}). available: {}".format(scratch_resource_name, project.md5_to_resource_path_map.get(scratch_resource_name), project.project_code.resource_names)
+    assert len(catrobat_resource_names) != 0, "{} not found (path: {}). available: {}".format(scratch_resource_name, project.md5_to_resource_path_map.get(scratch_resource_name), project.resource_names)
     return catrobat_resource_names
 
 

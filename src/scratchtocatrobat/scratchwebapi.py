@@ -94,11 +94,11 @@ def download_project(project_url, target_dir):
     def project_code_path(target_dir):
         return os.path.join(target_dir, scratch.SCRATCH_PROJECT_CODE_FILE)
 
-    # TODO: consolidate with ProjectCode
+    # TODO: consolidate with classes from scratch module
     project_id = project_id_from_url(project_url)
     project_file_path = project_code_path(target_dir)
     write_to(request_project_data(project_id), project_file_path)
-    project_code = scratch.ProjectCode(target_dir)
-    for md5_file_name in project_code.resource_names:
+    project = scratch.RawProject(target_dir)
+    for md5_file_name in project.resource_names:
         resource_file_path = os.path.join(target_dir, md5_file_name)
         write_to(request_resource_data(md5_file_name), resource_file_path)

@@ -59,7 +59,52 @@ def extract_project(input_scratch, output_path):
         myzip.extractall(output_path)
 
 
-class Project(object):
+class RawProject(common.DictAccessWrapper):
+    """
+    Represents the raw Scratch project structure.
+    """
+
+    def __init__(self, input_path):
+        json_path = os.path.join(input_path, SCRATCH_PROJECT_CODE_FILE)
+        if not os.path.exists(json_path):
+            raise EnvironmentError("Project file not found: {}. Please create.".format(json_path))
+        self.input_path = input_path
+        self.json_path = json_path
+        json_dict = self._load_json_file(self.json_path)
+        super(RawProject, self).__init__(json_dict)
+        self.raw_objects = [child for child in self.get_children() if "objName" in child]
+        self.objects = [Object(raw_object) for raw_object in [json_dict] + self.raw_objects]
+        self.stage_object = self.objects[0]
+        self.nonstage_objects = self.objects[1:]
+        self.resource_names = {self._resource_name_from(raw_resource) for raw_resource in self._raw_resources()}
+
+    def _load_json_file(self, json_file):
+        if not os.path.exists(json_file):
+            raise ProjectError("Provide project data file: {}".format(json_file))
+        with open(json_file, "r") as fp:
+            json_dict = json.load(fp)
+            self._verify_scratch_json(json_dict)
+            return json_dict
+
+    def _verify_scratch_json(self, json_dict):
+        # FIXME: check which tags are really required
+        for key in ["objName", "info", "currentCostumeIndex", "penLayerMD5", "tempoBPM", "videoAlpha", "children", "costumes", "sounds"]:
+            if not key in json_dict:
+                raise UnsupportedProjectFileError("In project file: '{}' key='{}' must be set.".format(self.json_path, key))
+
+    def _raw_resources(self):
+        return itertools.chain.from_iterable(object_.get_sounds() + object_.get_costumes() for object_ in self.objects)
+
+    def _resource_name_from(self, raw_resource):
+        assert JsonKeys.SOUND_MD5 in raw_resource or JsonKeys.COSTUME_MD5 in raw_resource
+        md5_file_name = raw_resource[JsonKeys.SOUND_MD5] if JsonKeys.SOUNDNAME_KEY in raw_resource else raw_resource[JsonKeys.COSTUME_MD5]
+        return md5_file_name
+
+
+class Project(RawProject):
+    """
+    Represents a complete Scratch project including all resource files.
+    """
 
     def __init__(self, input_path, name=None):
         def read_md5_to_resource_path_mapping():
@@ -69,7 +114,7 @@ class Project(object):
                 md5_to_resource_path_map[resource_name] = project_file_path
             try:
                 # penLayer is no regular resource file
-                del md5_to_resource_path_map[self.project_code['penLayerMD5']]
+                del md5_to_resource_path_map[self['penLayerMD5']]
             except KeyError:
                 # TODO: include penLayer download in webapi
                 pass
@@ -83,79 +128,33 @@ class Project(object):
                 if not md5_file in self.md5_to_resource_path_map:
                     raise ProjectError("Missing resource file at project: {}. Provide resource with md5: {}".format(input_path, resource_md5))
 
-        log.info("Loading Scratch project from '%s'", input_path)
-
-        try:
-            self.project_code = ProjectCode(input_path)
-        except ProjectCodeError as e:
-            raise ProjectError(e)
-        # TODO: create and use project API wrapper to access
+        super(Project, self).__init__(input_path, name)
         if name:
             self.name = name
         else:
-            self.name = self.project_code.get_info().get("projectID")
+            self.name = self.get_info().get("projectID")
         if not self.name:
             raise ProjectError("No project name specified in project file. Please provide project name with constructor.")
 
         # TODO: move whole block including the two functions to ProjectCode
         self.md5_to_resource_path_map = read_md5_to_resource_path_mapping()
-        assert self.project_code['penLayerMD5'] not in self.md5_to_resource_path_map
-        for scratch_object in self.project_code.objects:
+        assert self['penLayerMD5'] not in self.md5_to_resource_path_map
+        for scratch_object in self.objects:
             # TODO: rename to verify_object?
             verify_resources(scratch_object.get_sounds() + scratch_object.get_costumes())
 
         listened_keys = []
-        for object_ in self.project_code.objects:
+        for object_ in self.objects:
             for script in object_.scripts:
                 if script.type == SCRIPT_KEY_PRESSED:
                     assert len(script.arguments) == 1
                     listened_keys += script.arguments
         self.listened_keys = set(listened_keys)
         # TODO: rename
-        self.background_md5_names = set([costume[JsonKeys.COSTUME_MD5] for costume in self.project_code.stage_object.get_costumes()])
-        self.unused_resource_names, self.unused_resource_paths = common.pad(zip(*self.project_code.find_unused_resources_name_and_filepath()), 2, [])
+        self.background_md5_names = set([costume[JsonKeys.COSTUME_MD5] for costume in self.stage_object.get_costumes()])
+        self.unused_resource_names, self.unused_resource_paths = common.pad(zip(*self.find_unused_resources_name_and_filepath()), 2, [])
         for unused_path in self.unused_resource_paths:
             log.warning("Project folder contains unused resource file: '%s'. These will be omitted for Catrobat project.", os.path.basename(unused_path))
-
-
-# TODO: do not use DictAccessWrapper
-class ProjectCode(common.DictAccessWrapper):
-
-    def __init__(self, input_path):
-        json_path = os.path.join(input_path, SCRATCH_PROJECT_CODE_FILE)
-        if not os.path.exists(json_path):
-            raise EnvironmentError("Project file not found: {}. Please create.".format(json_path))
-        self.input_path = input_path
-        self.json_path = json_path
-        json_dict = self.load_json_file(self.json_path)
-        super(ProjectCode, self).__init__(json_dict)
-        self.objects_data = [_ for _ in self.get_children() if "objName" in _]
-        self.objects = [Object(_) for _ in [json_dict] + self.objects_data]
-        self.stage_object = self.objects[0]
-        self.nonstate_objects = self.objects[1:]
-        self.resource_names = {self._resource_name_from(_) for _ in self._resources_of_objects()}
-
-    def load_json_file(self, json_file):
-        if not os.path.exists(json_file):
-            raise ProjectError("Provide project data file: {}".format(json_file))
-        with open(json_file, "r") as fp:
-            json_dict = json.load(fp)
-            self.verify_scratch_json(json_dict)
-            return json_dict
-
-    def verify_scratch_json(self, json_dict):
-        # FIXME: check which tags are really required
-        for key in ["objName", "info", "currentCostumeIndex", "penLayerMD5", "tempoBPM", "videoAlpha", "children", "costumes", "sounds"]:
-            if not key in json_dict:
-                raise ProjectCodeError("In project file: '{}' key='{}' must be set.".format(self.json_path, key))
-
-    def _resources_of_objects(self):
-        return itertools.chain.from_iterable(_.get_sounds() + _.get_costumes() for _ in self.objects)
-
-    def _resource_name_from(self, res_dict):
-        assert JsonKeys.SOUND_MD5 in res_dict or JsonKeys.COSTUME_MD5 in res_dict
-        md5_file_name = res_dict[JsonKeys.SOUND_MD5] if JsonKeys.SOUNDNAME_KEY in res_dict else res_dict[JsonKeys.COSTUME_MD5]
-        return md5_file_name
 
     def find_unused_resources_name_and_filepath(self):
         for file_path in glob.glob(os.path.join(self.input_path, "*")):
@@ -165,7 +164,7 @@ class ProjectCode(common.DictAccessWrapper):
                     yield md5_resource_filename, file_path
 
     def find_all_resource_dicts_for(self, resource_name):
-        for resource in self._resources_of_objects():
+        for resource in self._raw_resources():
             if resource_name in set([resource.get(JsonKeys.SOUND_MD5), resource.get(JsonKeys.COSTUME_MD5)]):
                 yield resource
 
@@ -238,6 +237,10 @@ class Script(object):
             return result
 
         return get_bricks_recursively(self.bricks)
+
+
+class UnsupportedProjectFileError(common.ScratchtobatError):
+    pass
 
 
 class ProjectCodeError(common.ScratchtobatError):

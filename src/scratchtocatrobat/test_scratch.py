@@ -58,11 +58,6 @@ class TestProjectInit(unittest.TestCase):
             # TODO: check error message
             scratch.Project(common.get_test_project_path("non_existing_path"))
 
-    def test_fail_on_corrupt_scratch_json_input(self):
-        with self.assertRaises(scratch.ProjectError):
-            # TODO: check error type
-            scratch.Project(common.get_test_project_path("faulty_json_file"))
-
     def test_fail_on_project_with_missing_image_and_sound_files(self):
         with self.assertRaises(scratch.ProjectError):
             # TODO: check error type
@@ -103,31 +98,6 @@ class TestProjectFunc(unittest.TestCase):
         self.assertGreater(len(project.unused_resource_paths), 0)
         self.assertSetEqual(set(['0.png', '2.wav', '3.png', '4.png', '5.png', '6.png', '8.png']), set(map(os.path.basename, project.unused_resource_paths)))
 
-
-class TestProjectCodeInit(unittest.TestCase):
-
-    def test_can_create_on_correct_file(self):
-        self.assertTrue(scratch.ProjectCode(common.get_test_project_path("dancing_castle")))
-        self.assertTrue(scratch.ProjectCode(common.get_test_project_path("simple")))
-
-    def test_fail_on_corrupt_file(self):
-        with self.assertRaises(scratch.ProjectCodeError):
-            scratch.ProjectCode(common.get_test_project_path("faulty_json_file"))
-
-
-class TestProjectCodeFunc(unittest.TestCase):
-
-    def setUp(self):
-        unittest.TestCase.setUp(self)
-        self.project_code = scratch.ProjectCode(common.get_test_project_path("dancing_castle"))
-
-    def test_can_access_scratch_objects(self):
-        for scratch_object in self.project_code.objects:
-            self.assertTrue(scratch_object)
-            self.assertTrue(isinstance(scratch_object, scratch.Object))
-        self.assertEqual("Stage", self.project_code.objects[0].get_objName(), "Stage object missing")
-        self.assertEqual(['Stage', 'Sprite1', 'Cassy Dance'], [_.get_objName() for _ in self.project_code.objects])
-
     def test_can_access_sound_and_costume_by_resource_name(self):
         scratch_to_catrobat_resource_names_map = {
             "83a9787d4cb6f3b7632b4ddfebf74367.wav": "83a9787d4cb6f3b7632b4ddfebf74367_pop.wav",
@@ -135,11 +105,36 @@ class TestProjectCodeFunc(unittest.TestCase):
             "033f926829a446a28970f59302b0572d.png": "033f926829a446a28970f59302b0572d_castle1.png",
             "83c36d806dc92327b9e7049a565c6bff.wav": "83c36d806dc92327b9e7049a565c6bff_meow.wav"}
         for resource_name in scratch_to_catrobat_resource_names_map:
-            for data_dict in self.project_code.find_all_resource_dicts_for(resource_name):
+            for data_dict in self.project.find_all_resource_dicts_for(resource_name):
                 self.assertTrue("soundName" in data_dict or "costumeName" in data_dict, "No sound or costume data dict")
 
+
+class TestRawProjectInit(unittest.TestCase):
+
+    def test_can_create_on_correct_file(self):
+        self.assertTrue(scratch.RawProject(common.get_test_project_path("dancing_castle")))
+        self.assertTrue(scratch.RawProject(common.get_test_project_path("simple")))
+
+    def test_fail_on_corrupt_file(self):
+        with self.assertRaises(scratch.UnsupportedProjectFileError):
+            scratch.RawProject(common.get_test_project_path("faulty_json_file"))
+
+
+class TestRawProjectFunc(unittest.TestCase):
+
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        self.project = scratch.RawProject(common.get_test_project_path("dancing_castle"))
+
+    def test_can_access_scratch_objects(self):
+        for scratch_object in self.project.objects:
+            self.assertTrue(scratch_object)
+            self.assertTrue(isinstance(scratch_object, scratch.Object))
+        self.assertEqual("Stage", self.project.objects[0].get_objName(), "Stage object missing")
+        self.assertEqual(['Stage', 'Sprite1', 'Cassy Dance'], [_.get_objName() for _ in self.project.objects])
+
     def test_can_access_stage_object(self):
-        stage_object = self.project_code.stage_object
+        stage_object = self.project.stage_object
         self.assertEqual("Stage", stage_object.get_objName())
 
 
@@ -149,9 +144,9 @@ class TestObjectInit(unittest.TestCase):
         self.project = scratch.Project(common.get_test_project_path(TEST_PROJECT_FOLDER))
 
     def test_can_construct_on_correct_input(self):
-        for obj_data in self.project.project_code.objects_data:
-            self.assertTrue(scratch.Object.is_valid_class_input(obj_data))
-            self.assertTrue(scratch.Object(obj_data))
+        for raw_object in self.project.raw_objects:
+            self.assertTrue(scratch.Object.is_valid_class_input(raw_object))
+            self.assertTrue(scratch.Object(raw_object))
 
     def test_fail_on_wrong_input(self):
         faulty_object_structures = [{},
@@ -166,7 +161,7 @@ class TestObjectFunc(unittest.TestCase):
 
     def setUp(self):
         self.project = scratch.Project(common.get_test_project_path(TEST_PROJECT_FOLDER))
-        self.scratch_objects = self.project.project_code.objects
+        self.scratch_objects = self.project.objects
 
     def test_can_access_scratch_scripts(self):
         for scratch_object in self.scratch_objects:

@@ -35,6 +35,8 @@
         <property name="jython.standalone.jar" value="${env.JYTHON_STANDALONE_JAR}" />
         <available file="${jython.standalone.jar}" type="file" property="jython.standalone.jar.present" />
         <fail unless="jython.standalone.jar.present">Set environment variable JYTHON_STANDALONE_JAR to a correct path.</fail>
+
+        <mkdir dir="${test.reports.dir}" />
     </target>
 
     <target name="dist" description="Builds converter jar" depends="init">

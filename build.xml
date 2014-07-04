@@ -20,7 +20,14 @@
         </sequential>
     </macrodef>
 
-    <target name="init">
+    <target name="echo-env">
+        <echo>Environment configuration:</echo>
+        <echo>JYTHON_HOME=${env.JYTHON_HOME}</echo>
+        <echo>JYTHON_STANDALONE_JAR=${env.JYTHON_STANDALONE_JAR}</echo>
+        <echo>BATIK_HOME=${env.BATIK_HOME}</echo>
+    </target>
+
+    <target name="init" depends="echo-env">
         <property name="jython.home" value="${env.JYTHON_HOME}" />
         <available file="${jython.home}/jython.jar" type="file" property="jython.present" />
         <fail unless="jython.present">Set environment variable JYTHON_HOME to your Jython installation directory</fail>

@@ -68,13 +68,13 @@ class _ScratchToCatrobat(object):
         "whenIReceive": catbase.BroadcastScript,
         "whenKeyPressed": lambda sprite, key: catbase.BroadcastScript(sprite, _key_to_broadcast_message(key)),
         "whenSensorGreaterThan": None,
-        "whenSceneStarts": lambda sprite, look_name: catbase.BroadcastScript(sprite, _background_look_to_broadcast_message(look_name)),  # easy: stage msg broadcast
-        "whenClicked": catbase.WhenScript,  # easy
+        "whenSceneStarts": lambda sprite, look_name: catbase.BroadcastScript(sprite, _background_look_to_broadcast_message(look_name)),
+        "whenClicked": catbase.WhenScript,
 
         #
         # Bricks
         #
-        "broadcast:": catbricks.BroadcastBrick,  # easy
+        "broadcast:": catbricks.BroadcastBrick,
         "doBroadcastAndWait": catbricks.BroadcastBrick,  # FIXME: not correct
         "doReturn": None,
         "doWaitUntil": None,
@@ -84,27 +84,27 @@ class _ScratchToCatrobat(object):
 
         # conditionals
         "doForever": catbricks.ForeverBrick,
-        "doIf": [catbricks.IfLogicBeginBrick, catbricks.IfLogicEndBrick],  # easy
-        "doIfElse": [catbricks.IfLogicBeginBrick, catbricks.IfLogicElseBrick, catbricks.IfLogicEndBrick],  # easy
+        "doIf": [catbricks.IfLogicBeginBrick, catbricks.IfLogicEndBrick],
+        "doIfElse": [catbricks.IfLogicBeginBrick, catbricks.IfLogicElseBrick, catbricks.IfLogicEndBrick],
         "doRepeat": catbricks.RepeatBrick,
         "doUntil": None,
 
-        "turnRight:": catbricks.TurnRightBrick,  # easy
-        "turnLeft:": catbricks.TurnLeftBrick,  # easy
-        "heading:": catbricks.PointInDirectionBrick,  # easy
+        "turnRight:": catbricks.TurnRightBrick,
+        "turnLeft:": catbricks.TurnLeftBrick,
+        "heading:": catbricks.PointInDirectionBrick,
         "forward:": catbricks.MoveNStepsBrick,
-        "pointTowards:": catbricks.PointToBrick,  # easy
-        "gotoX:y:": catbricks.PlaceAtBrick,  # easy
-        "glideSecs:toX:y:elapsed:from:": catbricks.GlideToBrick,  # easy
-        "xpos:": catbricks.SetXBrick,  # easy
-        "ypos:": catbricks.SetYBrick,  # easy
-        "bounceOffEdge": catbricks.IfOnEdgeBounceBrick,  # easy (screen as now)
-        "changeXposBy:": catbricks.ChangeXByNBrick,  # easy
-        "changeYposBy:": catbricks.ChangeYByNBrick,  # easy
+        "pointTowards:": catbricks.PointToBrick,
+        "gotoX:y:": catbricks.PlaceAtBrick,
+        "glideSecs:toX:y:elapsed:from:": catbricks.GlideToBrick,
+        "xpos:": catbricks.SetXBrick,
+        "ypos:": catbricks.SetYBrick,
+        "bounceOffEdge": catbricks.IfOnEdgeBounceBrick,
+        "changeXposBy:": catbricks.ChangeXByNBrick,
+        "changeYposBy:": catbricks.ChangeYByNBrick,
 
         # variables
-        "setVar:to:": catbricks.SetVariableBrick,  # easy
-        "changeVar:by:": catbricks.ChangeVariableBrick,  # easy
+        "setVar:to:": catbricks.SetVariableBrick,
+        "changeVar:by:": catbricks.ChangeVariableBrick,
         "showVariable:": None,
         "hideVariable:": None,
 
@@ -130,7 +130,7 @@ class _ScratchToCatrobat(object):
         # looks
         "lookLike:": catbricks.SetLookBrick,
         "nextCostume": catbricks.NextLookBrick,
-        "startScene": catbricks.BroadcastBrick,  # easy: msg broadcast
+        "startScene": catbricks.BroadcastBrick,
         "nextScene": catbricks.NextLookBrick,  # only allowed in scene object so same as nextLook
 
         "say:duration:elapsed:from:": None,
@@ -139,16 +139,16 @@ class _ScratchToCatrobat(object):
         "think:": None,
         # TODO: remove lambdas to increase readability
         "changeGraphicEffect:by:": lambda sprite, effectType, value:
-            catbricks.ChangeBrightnessByNBrick(sprite, value) if effectType == 'brightness' else (catbricks.ChangeGhostEffectByNBrick(sprite, value) if effectType == 'ghost' else None),  # easy: for ghost, brightness
+            catbricks.ChangeBrightnessByNBrick(sprite, value) if effectType == 'brightness' else (catbricks.ChangeGhostEffectByNBrick(sprite, value) if effectType == 'ghost' else None),
         "setGraphicEffect:to:": lambda sprite, effectType, value:
-            catbricks.SetBrightnessBrick(sprite, value) if effectType == 'brightness' else (catbricks.SetGhostEffectBrick(sprite, value) if effectType == 'ghost' else None),  # easy: for ghost, brightness
-        "filterReset": catbricks.ClearGraphicEffectBrick,  # easy
-        "changeSizeBy:": catbricks.ChangeSizeByNBrick,  # easy
-        "setSizeTo:": catbricks.SetSizeToBrick,  # easy
-        "show": catbricks.ShowBrick,  # easy
-        "hide": catbricks.HideBrick,  # easy
-        "comeToFront": catbricks.ComeToFrontBrick,  # easy
-        "goBackByLayers:": catbricks.GoNStepsBackBrick,  # easy
+            catbricks.SetBrightnessBrick(sprite, value) if effectType == 'brightness' else (catbricks.SetGhostEffectBrick(sprite, value) if effectType == 'ghost' else None),
+        "filterReset": catbricks.ClearGraphicEffectBrick,
+        "changeSizeBy:": catbricks.ChangeSizeByNBrick,
+        "setSizeTo:": catbricks.SetSizeToBrick,
+        "show": catbricks.ShowBrick,
+        "hide": catbricks.HideBrick,
+        "comeToFront": catbricks.ComeToFrontBrick,
+        "goBackByLayers:": catbricks.GoNStepsBackBrick,
 
         # sound
         "playSound:": catbricks.PlaySoundBrick,
@@ -170,12 +170,12 @@ class _ScratchToCatrobat(object):
         "letter:of:": None,
         "stringLength:": None,
         "\\\\": None,
-        "rounded": None,  # easy
-        "computeFunction:of:": None,  # easy
-        "randomFrom:to:": None,  # easy
+        "rounded": None,  # TODO
+        "computeFunction:of:": None,  # TODO
+        "randomFrom:to:": None,  # TODO
 
         # variables
-        "readVariable": None,  # easy
+        "readVariable": None,  # TODO
 
         # lists
         "getLine:ofList:": None,
@@ -197,11 +197,11 @@ class _ScratchToCatrobat(object):
 
         # looks
         "costumeIndex": None,
-        "scale": None,  # easy
+        "scale": None,  # TODO
     }
 
     OPERATORS_MAPPING = {
-        "+": catformula.Operators.PLUS,  # easy start
+        "+": catformula.Operators.PLUS,
         "-": catformula.Operators.MINUS,
         "*": catformula.Operators.MULT,
         "/": catformula.Operators.DIVIDE,
@@ -210,7 +210,7 @@ class _ScratchToCatrobat(object):
         ">": catformula.Operators.GREATER_THAN,
         "&": catformula.Operators.LOGICAL_AND,
         "|": catformula.Operators.LOGICAL_OR,
-        "not": catformula.Operators.LOGICAL_NOT,  # easy end
+        "not": catformula.Operators.LOGICAL_NOT,
     }
 
     @classmethod

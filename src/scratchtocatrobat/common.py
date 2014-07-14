@@ -36,6 +36,7 @@ import java.lang.Class
 
 from org.python.core import PyReflectedField
 
+
 def get_project_base_path():
     return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
@@ -110,11 +111,17 @@ class DictAccessWrapper(object):
         return dict_
 
     def __getattr__(self, name):
+        def get():
+            return self.__dict_object.get(key)
+
+        def contains():
+            return key in self.__dict_object
+
         key = list(pad(name.split("_", 2), 2))[1]
         if name.startswith("get_"):
-            return lambda: self.__dict_object.get(key)
+            return get
         elif name.startswith("contains_"):
-            return lambda: key in self.__dict_object
+            return contains
         else:
             raise AttributeError("'{}' object has no attribute '{}'".format(self.__class__.__name__, name))
 
@@ -251,7 +258,7 @@ def fields_of(java_class):
 
 def url_response_data(url, retries=3, hook=None, timeout=3, log=log):
     def retry_hook(exc, tries, delay):
-        log.warning("  retrying after %s:'%s' in %f secs (remaining trys: %d)", type(exc).__name__, exc , delay, tries)
+        log.warning("  retrying after %s:'%s' in %f secs (remaining trys: %d)", type(exc).__name__, exc, delay, tries)
     if hook is None:
         hook = retry_hook
     log.info("Requesting web api url: {}".format(url))

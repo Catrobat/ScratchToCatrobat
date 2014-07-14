@@ -109,7 +109,6 @@ class ProjectTestCase(BaseTestCase):
         self.assertEqual(expected_brick_classes, [_.__class__ for _ in bricks])
 
     def __assertTagsAreNonempty(self, xml_root):
-#         header_tags = ("applicationName", "applicationVersion", "catrobatLanguageVersion", "description", "deviceName", "platform", "platformVersion", "programLicense", "programName", "remixOf", "screenHeight", "screenWidth")
         header_tags = [FIELD_NAMES_TO_XML_NAMES[field] if field in FIELD_NAMES_TO_XML_NAMES else field for field in common.fields_of(catbase.XmlHeader) if field not in IGNORED_XML_HEADER_CLASS_FIELDS]
         mandatory_header_tags = set(header_tags) - set(OPTIONAL_HEADER_TAGS)
         for header_tag in header_tags:
@@ -178,7 +177,6 @@ class ProjectTestCase(BaseTestCase):
             if not elem1 and not elem2:
                 return True
             else:
-                return (elem1.type == elem2.type and elem1.value == elem2.value and _compare_formula_elements(elem1.leftChild, elem2.leftChild) and
-                    _compare_formula_elements(elem1.rightChild, elem2.rightChild))
+                return (elem1.type == elem2.type and elem1.value == elem2.value and _compare_formula_elements(elem1.leftChild, elem2.leftChild) and _compare_formula_elements(elem1.rightChild, elem2.rightChild))
 
         return _compare_formula_elements(formula1.formulaTree, formula2.formulaTree)

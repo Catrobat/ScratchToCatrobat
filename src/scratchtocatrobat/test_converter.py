@@ -49,8 +49,7 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
 
     expected_sprite_names = ["Sprite1, Cassy Dance"]
     expected_script_classes = [[catbase.StartScript, ], []]
-    expected_brick_classes = [[catbricks.WaitBrick, catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.MoveNStepsBrick,
-            catbricks.WaitBrick, catbricks.LoopEndBrick], []]
+    expected_brick_classes = [[catbricks.WaitBrick, catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.LoopEndBrick], []]
 
     def __init__(self, *args, **kwargs):
         super(TestConvertExampleProject, self).__init__(*args, **kwargs)
@@ -167,14 +166,12 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
         catr_script = converter._convert_to_catrobat_script(scratch_script, DUMMY_CATR_SPRITE)
         self.assertTrue(catr_script, "No script from conversion")
         expected_script_class = [catbase.StartScript]
-        expected_brick_classes = [catbricks.WaitBrick, catbricks.NoteBrick, catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.MoveNStepsBrick,
-            catbricks.WaitBrick, catbricks.NoteBrick, catbricks.LoopEndBrick]
+        expected_brick_classes = [catbricks.WaitBrick, catbricks.NoteBrick, catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.LoopEndBrick]
         self.assertScriptClasses(expected_script_class, expected_brick_classes, catr_script)
 
     def test_can_convert_costume_to_catrobat_lookdata_class(self):
         costumes = self.project.objects[1].get_costumes()
-        for expected_values, costume in zip([("costume1", "f9a1c175dbe2e5dee472858dd30d16bb_costume1.svg"),
-                ("costume2", "6e8bd9ae68fdb02b7e1e3df656a75635_costume2.svg")], costumes):
+        for expected_values, costume in zip([("costume1", "f9a1c175dbe2e5dee472858dd30d16bb_costume1.svg"), ("costume2", "6e8bd9ae68fdb02b7e1e3df656a75635_costume2.svg")], costumes):
             look = converter._convert_to_catrobat_look(costume)
             self.assertTrue(isinstance(look, catcommon.LookData), "Costume conversion return wrong class")
             self.assertEqual(look.getLookName(), expected_values[0], "Look name wrong")
@@ -216,8 +213,7 @@ class TestConvertBricks(common_testing.BaseTestCase):
         self.assertTrue(isinstance(catr_do_loop, list))
         # 1 loop start + 4 inner loop bricks +2 inner note bicks (playDrum not suppored) + 1 loop end = 8
         self.assertEqual(8, len(catr_do_loop))
-        expected_brick_classes = [catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.MoveNStepsBrick,
-            catbricks.WaitBrick, catbricks.NoteBrick, catbricks.LoopEndBrick]
+        expected_brick_classes = [catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.LoopEndBrick]
         self.assertEqual(expected_brick_classes, [_.__class__ for _ in catr_do_loop])
 
     def test_can_convert_waitelapsedfrom_brick(self):
@@ -321,8 +317,8 @@ class TestConvertProjects(common_testing.ProjectTestCase):
         self._test_project("simple")
 
 
-class TestConvertFormulas(common_testing.ProjectTestCase):
-
+# class TestConvertFormulas(common_testing.ProjectTestCase):
+#
 #     def test_can_convert_formulas(self):
 #         raw_source_to_formula_mapping = {
 #             ['changeVar:by:', [u'action', 1]: "",
@@ -331,14 +327,12 @@ class TestConvertFormulas(common_testing.ProjectTestCase):
 #         for raw_source, expected_formula in raw_source_to_formula_mapping.iteritems():
 #             formula = converter._convert_formula(raw_source)
 #             self.assertEqualFormulas(expected_formula, formula)
-    pass
-
-
-class TestConverterInternals(unittest.TestCase):
-
-    def test_can_coerce_scratch_json_input_to_catrobat_classes(self):
+#
+#
+# class TestConverterInternals(unittest.TestCase):
+#
+#     def test_can_coerce_scratch_json_input_to_catrobat_classes(self):
 #         converter._instantiate_catrobat_class()
-        pass
 
 
 if __name__ == "__main__":

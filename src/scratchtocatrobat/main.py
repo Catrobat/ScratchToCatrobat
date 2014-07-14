@@ -45,7 +45,7 @@ def scratchtobat_main(argv):
         sys.exit(EXIT_FAILURE)
 
     def check_environment_settings():
-        if not "java" in sys.platform:
+        if "java" not in sys.platform:
             common.ScratchtobatError("Must be called with Jython interpreter. Aborting.")
         if System.getProperty("python.security.respectJavaAccessibility") != 'false':
             common.ScratchtobatError("Jython registry property 'python.security.respectJavaAccessibility' must be set to 'false'. Aborting.")

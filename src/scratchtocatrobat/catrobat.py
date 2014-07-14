@@ -28,6 +28,7 @@ PACKAGED_PROGRAM_FILE_EXTENSION = catcommon.Constants.CATROBAT_EXTENSION
 PROGRAM_LICENSE_URI = "http://developer.catrobat.org/agpl_v3"
 PROGRAM_SOURCE_FILE_NAME = catcommon.Constants.PROJECTCODE_NAME
 
+
 def create_lookdata(name, file_name):
     look_data = catcommon.LookData()
     look_data.setLookName(name)

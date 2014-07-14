@@ -149,8 +149,9 @@ class TestObjectInit(unittest.TestCase):
             self.assertTrue(scratch.Object(raw_object))
 
     def test_fail_on_wrong_input(self):
-        faulty_object_structures = [{},
-            ]
+        faulty_object_structures = [
+            {},
+        ]
         for faulty_input in faulty_object_structures:
             self.assertFalse(scratch.Object.is_valid_class_input(faulty_input), "Wrong input not detected: {}".format(faulty_input))
             with self.assertRaises(scratch.ObjectError):

@@ -26,6 +26,7 @@ from scratchtocatrobat import converter
 from scratchtocatrobat import main
 from scratchtocatrobat import scratchwebapi
 
+
 class MainTest(common_testing.ProjectTestCase):
 
     def __init__(self, *args):

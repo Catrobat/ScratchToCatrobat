@@ -92,7 +92,7 @@ class RawProject(common.DictAccessWrapper):
     def _verify_scratch_json(self, json_dict):
         # FIXME: check which tags are really required
         for key in ["objName", "info", "currentCostumeIndex", "penLayerMD5", "tempoBPM", "videoAlpha", "children", "costumes", "sounds"]:
-            if not key in json_dict:
+            if key not in json_dict:
                 raise UnsupportedProjectFileError("In project file: '{}' key='{}' must be set.".format(self.json_path, key))
 
     def _raw_resources(self):
@@ -124,11 +124,11 @@ class Project(RawProject):
             return md5_to_resource_path_map
 
         def verify_resources(resources):
-            for res_dict  in resources:
+            for res_dict in resources:
                 assert JsonKeys.SOUND_MD5 in res_dict or JsonKeys.COSTUME_MD5 in res_dict
                 md5_file = res_dict[JsonKeys.SOUND_MD5] if JsonKeys.SOUNDNAME_KEY in res_dict else res_dict[JsonKeys.COSTUME_MD5]
                 resource_md5 = os.path.splitext(md5_file)[0]
-                if not md5_file in self.md5_to_resource_path_map:
+                if md5_file not in self.md5_to_resource_path_map:
                     raise ProjectError("Missing resource file at project: {}. Provide resource with md5: {}".format(input_path, resource_md5))
 
         super(Project, self).__init__(input_path)
@@ -186,7 +186,7 @@ class Object(common.DictAccessWrapper):
         if not self.is_valid_class_input(object_data):
             raise ObjectError("Input is no valid Scratch object.")
         for key in (JsonKeys.SOUNDS_KEY, JsonKeys.COSTUMES_KEY, JsonKeys.SCRIPTS_KEY):
-            if not key in object_data:
+            if key not in object_data:
                 object_data[key] = []
         # TODO: check for all stage-object-only keys
         self.is_stage_object = JsonKeys.INFO_KEY in object_data
@@ -207,14 +207,13 @@ class Script(object):
         script_settings = script_content[0]
         self.type = script_settings[0]
         self.arguments = script_settings[1:]
-        if not self.type in SCRATCH_SCRIPTS:
+        if self.type not in SCRATCH_SCRIPTS:
             raise ScriptError("Unknown Scratch script type: {}".format(self.type))
         self.bricks = script_content[1:]
 
     @classmethod
     def is_valid_script_input(cls, json_input):
-        if (isinstance(json_input, list) and len(json_input) == 3 and isinstance(json_input[0], int) and isinstance(json_input[1], int) and
-            isinstance(json_input[2], list)):
+        if (isinstance(json_input, list) and len(json_input) == 3 and isinstance(json_input[0], int) and isinstance(json_input[1], int) and isinstance(json_input[2], list)):
             # NOTE: could use a json validator instead
             script_content = json_input[2]
             if script_content[0][0] in SCRATCH_SCRIPTS:

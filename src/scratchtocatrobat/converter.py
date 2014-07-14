@@ -61,9 +61,9 @@ class _ScratchToCatrobat(object):
     # based on: http://code.google.com/p/scratch-js/source/browse/trunk/editor.htm
     # note: for bricks without mapping (value set to 'None') placeholder bricks will be added
     SCRATCH_TO_CATROBAT_MAPPING = {
-        #===========================================================================
+        #
         # Scripts
-        #===========================================================================
+        #
         "whenGreenFlag": catbase.StartScript,
         "whenIReceive": catbase.BroadcastScript,
         "whenKeyPressed": lambda sprite, key: catbase.BroadcastScript(sprite, _key_to_broadcast_message(key)),
@@ -71,9 +71,9 @@ class _ScratchToCatrobat(object):
         "whenSceneStarts": lambda sprite, look_name: catbase.BroadcastScript(sprite, _background_look_to_broadcast_message(look_name)),  # easy: stage msg broadcast
         "whenClicked": catbase.WhenScript,  # easy
 
-        #===============================================================================
-        #  Bricks
-        #===============================================================================
+        #
+        # Bricks
+        #
         "broadcast:": catbricks.BroadcastBrick,  # easy
         "doBroadcastAndWait": catbricks.BroadcastBrick,  # FIXME: not correct
         "doReturn": None,
@@ -137,12 +137,11 @@ class _ScratchToCatrobat(object):
         "say:": None,
         "think:duration:elapsed:from:": None,
         "think:": None,
-        "changeGraphicEffect:by:": lambda sprite, effectType, value: \
-            catbricks.ChangeBrightnessByNBrick(sprite, value) if effectType == 'brightness' else \
-                (catbricks.ChangeGhostEffectByNBrick(sprite, value) if effectType == 'ghost' else None),  # easy: for ghost, brightness
-        "setGraphicEffect:to:": lambda sprite, effectType, value: \
-            catbricks.SetBrightnessBrick(sprite, value) if effectType == 'brightness' else \
-                (catbricks.SetGhostEffectBrick(sprite, value) if effectType == 'ghost' else None),  # easy: for ghost, brightness
+        # TODO: remove lambdas to increase readability
+        "changeGraphicEffect:by:": lambda sprite, effectType, value:
+            catbricks.ChangeBrightnessByNBrick(sprite, value) if effectType == 'brightness' else (catbricks.ChangeGhostEffectByNBrick(sprite, value) if effectType == 'ghost' else None),  # easy: for ghost, brightness
+        "setGraphicEffect:to:": lambda sprite, effectType, value:
+            catbricks.SetBrightnessBrick(sprite, value) if effectType == 'brightness' else (catbricks.SetGhostEffectBrick(sprite, value) if effectType == 'ghost' else None),  # easy: for ghost, brightness
         "filterReset": catbricks.ClearGraphicEffectBrick,  # easy
         "changeSizeBy:": catbricks.ChangeSizeByNBrick,  # easy
         "setSizeTo:": catbricks.SetSizeToBrick,  # easy
@@ -217,14 +216,14 @@ class _ScratchToCatrobat(object):
     @classmethod
     def catrobat_brick_for(cls, scratchname):
         assert isinstance(scratchname, (str, unicode))
-        if not scratchname  in cls.SCRATCH_TO_CATROBAT_MAPPING:
+        if scratchname not in cls.SCRATCH_TO_CATROBAT_MAPPING:
             raise common.ScratchtobatError("Unknown brick identifier: {}".format(scratchname))
         return cls.SCRATCH_TO_CATROBAT_MAPPING[scratchname]
 
     @classmethod
     def create_script(cls, scratchscript_name, sprite, arguments):
         assert sprite is not None
-        if not scratchscript_name in scratch.SCRATCH_SCRIPTS:
+        if scratchscript_name not in scratch.SCRATCH_SCRIPTS:
             assert False, "Missing script mapping for: " + scratchscript_name
         # TODO: separate script and brick mapping
         return cls.catrobat_brick_for(scratchscript_name)(sprite, *arguments)
@@ -532,7 +531,7 @@ def _convert_to_catrobat_look(costume):
         raise common.ScratchtobatError("Wrong input, must be costume dict: {}".format(costume))
     look = catcommon.LookData()
 
-    assert scratchkeys.COSTUMENAME_KEY  in costume
+    assert scratchkeys.COSTUMENAME_KEY in costume
     costume_name = costume[scratchkeys.COSTUMENAME_KEY]
     look.setLookName(costume_name)
 

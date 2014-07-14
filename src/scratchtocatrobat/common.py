@@ -209,7 +209,7 @@ class TemporaryDirectory(object):
 
 
 # based on: http://www.saltycrane.com/blog/2009/11/trying-out-retry-decorator-python/
-def retry(ExceptionToCheck, tries=3, delay=0, backoff=0, hook=None):
+def retry(ExceptionToCheck, tries=3, delay=1, backoff=1, hook=None):
     """Retry calling the decorated function using an exponential backoff.
 
     http://www.saltycrane.com/blog/2009/11/trying-out-retry-decorator-python/
@@ -224,7 +224,7 @@ def retry(ExceptionToCheck, tries=3, delay=0, backoff=0, hook=None):
                 try:
                     return f(*args, **kwargs)
                 except ExceptionToCheck, e:
-                    if mtries > 1:
+                    if mtries > 0:
                         if hook:
                             hook(e, mtries, mdelay)
                         time.sleep(mdelay)

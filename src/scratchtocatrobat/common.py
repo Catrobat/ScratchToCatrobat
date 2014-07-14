@@ -32,6 +32,10 @@ from itertools import chain
 from itertools import repeat
 from itertools import islice
 
+import java.lang.Class
+
+from org.python.core import PyReflectedField
+
 def get_project_base_path():
     return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
@@ -51,7 +55,7 @@ log.addHandler(ch)
 
 log.debug("Logging initialized")
 
-APPLICATION_NAME = "Scratch to Catrobat Converter"
+APPLICATION_NAME = "ScratchToCatrobat Converter"
 
 
 def isList(obj):
@@ -238,6 +242,11 @@ def retry(ExceptionToCheck, tries=3, delay=1, backoff=1, hook=None):
         return f_retry  # true decorator
 
     return deco_retry
+
+
+def fields_of(java_class):
+    assert isinstance(java_class, java.lang.Class)
+    return [name for name, type_ in vars(java_class).iteritems() if isinstance(type_, PyReflectedField)]
 
 
 def url_response_data(url, retries=3, hook=None, timeout=3, log=log):

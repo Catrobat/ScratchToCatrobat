@@ -24,11 +24,14 @@ import os
 import shutil
 import tempfile
 import unittest
+import urllib2
 import zipfile
 from codecs import open
 from java.lang import System
 from xml.etree import ElementTree
 
+import org.catrobat.catroid.common as catcommon
+import org.catrobat.catroid.content as catbase
 import org.catrobat.catroid.io as catio
 import org.catrobat.catroid.formulaeditor as catformula
 
@@ -45,11 +48,16 @@ TEST_PROJECT_URL_TO_ID_MAP = {
     'http://scratch.mit.edu/projects/10530876/': '10530876',  # cat has message
     'http://scratch.mit.edu/projects/10453283/': '10453283',  # jai ho!
 }
-
 TEST_PROJECT_FILENAME_TO_ID_MAP = {
     'dancing_castle.zip': '10205819',
     'Dance back.zip': '10132588',
 }
+PROJECT_DUMMY_ID = "1013258"  # dance back
+# TODO: parse from Java annotations
+FIELD_NAMES_TO_XML_NAMES = {"virtualScreenWidth": "screenWidth", "virtualScreenHeight": "screenHeight"}
+IGNORED_XML_HEADER_CLASS_FIELDS = ["serialVersionUID"]
+OPTIONAL_HEADER_TAGS = ["dateTimeUpload", "description", "tags", "url", "userHandle"]
+
 _log = common.log
 
 
@@ -100,6 +108,24 @@ class ProjectTestCase(BaseTestCase):
         self.assertEqual(expected_len, actual_len, "Wrong number of bricks. {0} != {1}".format(expected_len, actual_len))
         self.assertEqual(expected_brick_classes, [_.__class__ for _ in bricks])
 
+    def __assertTagsAreNonempty(self, xml_root):
+#         header_tags = ("applicationName", "applicationVersion", "catrobatLanguageVersion", "description", "deviceName", "platform", "platformVersion", "programLicense", "programName", "remixOf", "screenHeight", "screenWidth")
+        header_tags = [FIELD_NAMES_TO_XML_NAMES[field] if field in FIELD_NAMES_TO_XML_NAMES else field for field in common.fields_of(catbase.XmlHeader) if field not in IGNORED_XML_HEADER_CLASS_FIELDS]
+        mandatory_header_tags = set(header_tags) - set(OPTIONAL_HEADER_TAGS)
+        for header_tag in header_tags:
+            tag = "header/" + header_tag
+            xml_node = xml_root.find(tag)
+            self.assertIsNotNone(xml_node, "XML file error: tag '{}' must be available".format(tag))
+            if header_tag in mandatory_header_tags:
+                self.assertIsNotNone(xml_node.text, "XML file error: Value for tag '{}' must be set".format(tag))
+                if header_tag == "screenMode":
+                    assert xml_node.text == catcommon.ScreenModes.MAXIMIZE.toString()  # @UndefinedVariable
+                elif header_tag == "remixOf":
+                    try:
+                        assert common.url_response_data(xml_node.text) is not None
+                    except urllib2.HTTPError, e:
+                        self.fail("Expection '{}' with url '{}'".format(e, xml_node.text))
+
     def assertValidCatrobatProgramStructure(self, project_path, project_name):
         project_xml_path = os.path.join(project_path, catrobat.PROGRAM_SOURCE_FILE_NAME)
         with open(project_xml_path) as fp:
@@ -107,13 +133,12 @@ class ProjectTestCase(BaseTestCase):
 
         root = ElementTree.parse(project_xml_path).getroot()
         self.assertEqual('program', root.tag)
+        self.__assertTagsAreNonempty(root)
 
         project_name_from_xml = root.find("header/programName")
-        self.assertIsNotNone(project_name_from_xml, "code.xml corrupt: no programName set in header")
         self.assertEqual(project_name, project_name_from_xml.text)
 
         catrobat_version_from_xml = root.find("header/catrobatLanguageVersion")
-        self.assertIsNotNone(project_name_from_xml, "code.xml corrupt: no catrobatLanguageVersion set in header")
         self.assertGreater(float(catrobat_version_from_xml.text), 0.0)
 
         # TODO: refactor duplication

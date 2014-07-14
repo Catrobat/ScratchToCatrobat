@@ -37,8 +37,20 @@ _log = common.log
 
 
 class ProjectInfoKeys(object):
-    PROJECT_NAME = 'title'
     PROJECT_DESCRIPTION = 'description'
+    PROJECT_NAME = 'title'
+
+
+def request_project_code(project_id):
+    def project_json_request_url(project_id):
+        return _HTTP_API_PROJECT.format(project_id)
+
+    try:
+        request_url = project_json_request_url(project_id)
+        return common.url_response_data(request_url)
+#     except urllib2.HTTPError as e:
+    except None as e:
+        raise common.ScratchtobatError("Error with {}: '{}'".format(request_url, e))
 
 
 def download_project(project_url, target_dir):
@@ -49,13 +61,6 @@ def download_project(project_url, target_dir):
         raise common.ScratchtobatError("Project URL must be matching '{}'. Given: {}".format(scratch.HTTP_PROJECT_URL_PREFIX + '<project id>', project_url))
     assert len(os.listdir(target_dir)) == 0
 
-    def request_project_data(project_id):
-        try:
-            request_url = project_json_request_url(project_id)
-            return common.url_response_data(request_url)
-        except urllib2.HTTPError as e:
-            raise common.ScratchtobatError("Error with {}: '{}'".format(request_url, e))
-
     def request_resource_data(md5_file_name):
         request_url = project_resource_request_url(md5_file_name)
         try:
@@ -65,9 +70,6 @@ def download_project(project_url, target_dir):
             return response_data
         except urllib2.HTTPError as e:
             raise common.ScratchtobatError("Error with {}: '{}'".format(request_url, e))
-
-    def project_json_request_url(project_id):
-        return _HTTP_API_PROJECT.format(project_id)
 
     def project_resource_request_url(md5_file_name):
         return _HTTP_API_ASSET.format(md5_file_name)
@@ -87,9 +89,9 @@ def download_project(project_url, target_dir):
     # TODO: consolidate with classes from scratch module
     project_id = project_id_from_url(project_url)
     project_file_path = project_code_path(target_dir)
-    write_to(request_project_data(project_id), project_file_path)
+    write_to(request_project_code(project_id), project_file_path)
 
-    project = scratch.RawProject(target_dir)
+    project = scratch.RawProject.from_project_folder_path(target_dir)
     for md5_file_name in project.resource_names:
         resource_file_path = os.path.join(target_dir, md5_file_name)
         write_to(request_resource_data(md5_file_name), resource_file_path)

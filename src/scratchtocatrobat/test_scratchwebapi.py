@@ -41,6 +41,12 @@ class WebApiTest(common_testing.BaseTestCase):
             with self.assertRaises(common.ScratchtobatError):
                 scratchwebapi.download_project(wrong_url, None)
 
+    def test_can_request_project_code_content(self):
+        for _project_url, project_id in common_testing.TEST_PROJECT_URL_TO_ID_MAP.iteritems():
+            project_code = scratchwebapi.request_project_code(project_id)
+            raw_project = scratch.RawProject.from_project_code_content(project_code)
+            assert raw_project
+
     def test_can_request_project_name_for_id(self):
         for project_id in common_testing.TEST_PROJECT_FILENAME_TO_ID_MAP.itervalues():
             # FIXME: compare with names

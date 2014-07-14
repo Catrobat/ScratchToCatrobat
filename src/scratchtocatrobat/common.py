@@ -278,8 +278,14 @@ def url_response_data(url, retries=3, hook=None, timeout=3, log=log):
         raise IOError("socket.timeout")
 
 
+def content_of(path):
+    with open(path) as f:
+        return f.read()
+
+
 def length_of_audio_file_in_msec(file_path):
     audioInputStream = AudioSystem.getAudioInputStream(java.io.File(file_path))
     format_ = audioInputStream.getFormat()
     frames = audioInputStream.getFrameLength()
     return int((float(frames) / format_.getFrameRate()) * 1000)
+

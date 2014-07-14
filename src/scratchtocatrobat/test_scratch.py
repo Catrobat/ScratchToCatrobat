@@ -18,6 +18,7 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import json
 import os
 import unittest
 
@@ -113,21 +114,27 @@ class TestProjectFunc(unittest.TestCase):
 
 
 class TestRawProjectInit(unittest.TestCase):
+    TEST_PROJECTS = ["dancing_castle", 'simple']
 
-    def test_can_create_on_correct_file(self):
-        self.assertTrue(scratch.RawProject(common.get_test_project_path("dancing_castle")))
-        self.assertTrue(scratch.RawProject(common.get_test_project_path("simple")))
+    def test_can_create_from_raw_content(self):
+        for project_name in self.TEST_PROJECTS:
+            project_data_path = os.path.join(common.get_test_project_path(project_name), scratch.SCRATCH_PROJECT_CODE_FILE)
+            self.assertTrue(scratch.RawProject.from_project_code_content(common.content_of(project_data_path)))
+
+    def test_can_create_from_project_directory(self):
+        for project_name in self.TEST_PROJECTS:
+            self.assertTrue(scratch.RawProject.from_project_folder_path(common.get_test_project_path(project_name)))
 
     def test_fail_on_corrupt_file(self):
         with self.assertRaises(scratch.UnsupportedProjectFileError):
-            scratch.RawProject(common.get_test_project_path("faulty_json_file"))
+            scratch.RawProject.from_project_folder_path(common.get_test_project_path("faulty_json_file"))
 
 
 class TestRawProjectFunc(unittest.TestCase):
 
     def setUp(self):
         unittest.TestCase.setUp(self)
-        self.project = scratch.RawProject(common.get_test_project_path("dancing_castle"))
+        self.project = scratch.RawProject.from_project_folder_path(common.get_test_project_path("dancing_castle"))
 
     def test_can_access_scratch_objects(self):
         for scratch_object in self.project.objects:

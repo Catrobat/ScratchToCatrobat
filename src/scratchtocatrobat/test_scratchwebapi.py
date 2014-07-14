@@ -33,6 +33,7 @@ class WebApiTest(common_testing.BaseTestCase):
             self._set_testresult_folder_subdir(project_id)
             result_folder_path = self._testresult_folder_path
             scratchwebapi.download_project(project_url, result_folder_path)
+            # TODO: replace with verifying function
             self.assertTrue(scratch.Project(result_folder_path))
 
     def test_fail_on_wrong_url(self):
@@ -40,6 +41,15 @@ class WebApiTest(common_testing.BaseTestCase):
             with self.assertRaises(common.ScratchtobatError):
                 scratchwebapi.download_project(wrong_url, None)
 
+    def test_can_request_project_name_for_id(self):
+        for project_id in common_testing.TEST_PROJECT_FILENAME_TO_ID_MAP.itervalues():
+            # FIXME: compare with names
+            assert scratchwebapi.request_project_name_for(project_id) is not None
+
+    def test_can_request_project_description_for_id(self):
+        for project_id in common_testing.TEST_PROJECT_FILENAME_TO_ID_MAP.itervalues():
+            # FIXME: compare with descriptions
+            assert scratchwebapi.request_project_description_for(project_id) is not None
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']

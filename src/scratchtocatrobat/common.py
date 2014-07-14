@@ -21,9 +21,11 @@
 import hashlib
 import logging
 import os
+import socket
 import sys
 import tempfile
 import time
+import urllib2
 from datetime import datetime
 from functools import wraps
 from itertools import chain
@@ -236,3 +238,22 @@ def retry(ExceptionToCheck, tries=3, delay=1, backoff=1, hook=None):
         return f_retry  # true decorator
 
     return deco_retry
+
+
+def url_response_data(url, retries=3, hook=None, timeout=3, log=log):
+    def retry_hook(exc, tries, delay):
+        log.warning("  retrying after %s:'%s' in %f secs (remaining trys: %d)", type(exc).__name__, exc , delay, tries)
+    if hook is None:
+        hook = retry_hook
+    log.info("Requesting web api url: {}".format(url))
+
+#     @retry((urllib2.URLError, socket.timeout), tries=retries, hook=hook)
+    @retry((socket.timeout), tries=retries, hook=hook)
+    def request():
+        return urllib2.urlopen(url, timeout=timeout).read()
+
+    try:
+        return request()
+    except socket.timeout:
+        # WORKAROUND: little more descriptive
+        raise IOError("socket.timeout")

@@ -50,7 +50,7 @@ class ProjectExtractionTest(common_testing.BaseTestCase):
 
 class TestProjectInit(unittest.TestCase):
     def test_can_construct_on_correct_input(self):
-        project = scratch.Project(common.get_test_project_path("simple"), name="dummy")
+        project = scratch.Project(common.get_test_project_path("simple"), name="dummy", id_=common_testing.PROJECT_DUMMY_ID)
         self.assertTrue(project, "No project object")
 
     def test_fail_on_non_existing_input_path(self):
@@ -77,13 +77,13 @@ class TestProjectFunc(unittest.TestCase):
     def setUp(self):
         self.project = scratch.Project(common.get_test_project_path(self.project_folder))
 
-    def test_can_access_project_name(self):
-        test_project_folder_to_project_name = {
+    def test_can_access_project_id(self):
+        test_project_folder_to_project_id = {
             "dancing_castle": "10205819",
         }
-        for project_folder, project_name in test_project_folder_to_project_name.iteritems():
+        for project_folder, project_id in test_project_folder_to_project_id.iteritems():
             project_path = common.get_test_project_path(project_folder)
-            self.assertEqual(project_name, scratch.Project(project_path).name)
+            self.assertEqual(project_id, scratch.Project(project_path).project_id)
 
     def test_can_access_md5_name_of_stage_costumes(self):
         expected_stage_customes_md5_names = set(["510da64cf172d53750dffd23fbf73563.png", "033f926829a446a28970f59302b0572d.png"])
@@ -94,7 +94,7 @@ class TestProjectFunc(unittest.TestCase):
         self.assertEqual(set(["d", "c", "a", "4", "8"]), project.listened_keys)
 
     def test_can_access_unused_resources_of_project(self):
-        project = scratch.Project(common.get_test_project_path("simple"), name="simple")
+        project = scratch.Project(common.get_test_project_path("simple"), name="simple", id_=common_testing.PROJECT_DUMMY_ID)
         self.assertGreater(len(project.unused_resource_paths), 0)
         self.assertSetEqual(set(['0.png', '2.wav', '3.png', '4.png', '5.png', '6.png', '8.png']), set(map(os.path.basename, project.unused_resource_paths)))
 

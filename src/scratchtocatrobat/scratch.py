@@ -25,10 +25,12 @@ import os
 import zipfile
 
 from scratchtocatrobat import common
+from scratchtocatrobat import scratchwebapi
 
 log = common.log
 
-LICENSE_URI = "http://creativecommons.org/licenses/by-sa/2.0/deed.en"
+HTTP_PROJECT_URL_PREFIX = "http://scratch.mit.edu/projects/"
+
 SCRIPT_GREEN_FLAG, SCRIPT_RECEIVE, SCRIPT_KEY_PRESSED, SCRIPT_SENSOR_GREATER_THAN, SCRIPT_SCENE_STARTS, SCRIPT_CLICKED = SCRATCH_SCRIPTS = \
     ["whenGreenFlag", "whenIReceive", "whenKeyPressed", "whenSensorGreaterThan", "whenSceneStarts", "whenClicked", ]
 SCRATCH_PROJECT_CODE_FILE = "project.json"
@@ -46,6 +48,7 @@ class JsonKeys(object):
     COSTUMENAME_KEY = "costumeName"
     COSTUMES_KEY = "costumes"
     INFO_KEY = "info"
+    PROJECT_ID = 'projectID'
     OBJNAME_KEY = "objName"
     SCRIPTS_KEY = "scripts"
     SOUND_MD5 = "md5"
@@ -106,7 +109,7 @@ class Project(RawProject):
     Represents a complete Scratch project including all resource files.
     """
 
-    def __init__(self, input_path, name=None):
+    def __init__(self, input_path, name=None, id_=None):
         def read_md5_to_resource_path_mapping():
             md5_to_resource_path_map = {}
             for project_file_path in glob.glob(os.path.join(input_path, "*")):
@@ -128,14 +131,19 @@ class Project(RawProject):
                 if not md5_file in self.md5_to_resource_path_map:
                     raise ProjectError("Missing resource file at project: {}. Provide resource with md5: {}".format(input_path, resource_md5))
 
-        super(Project, self).__init__(input_path, name)
-        if name:
-            self.name = name
+        super(Project, self).__init__(input_path)
+        if id_ is not None:
+            self.project_id = id_
         else:
-            self.name = self.get_info().get("projectID")
-        if not self.name:
-            raise ProjectError("No project name specified in project file. Please provide project name with constructor.")
-
+            self.project_id = self.get_info().get("projectID")
+        if not self.project_id:
+            raise ProjectError("No project id specified in project file. Please provide project id with constructor.")
+        if name is not None:
+            self.name = name
+            self.description = ""
+        else:
+            self.name = scratchwebapi.request_project_name_for(self.project_id)
+            self.description = scratchwebapi.request_project_description_for(self.project_id)
         # TODO: move whole block including the two functions to ProjectCode
         self.md5_to_resource_path_map = read_md5_to_resource_path_mapping()
         assert self['penLayerMD5'] not in self.md5_to_resource_path_map

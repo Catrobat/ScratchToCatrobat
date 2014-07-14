@@ -42,7 +42,6 @@ def create_catrobat_sprite_stub():
     return sprite
 
 DUMMY_CATR_SPRITE = create_catrobat_sprite_stub()
-
 TEST_PROJECT_PATH = common.get_test_project_path("dancing_castle")
 
 
@@ -58,7 +57,7 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
 
     def setUp(self):
         super(TestConvertExampleProject, self).setUp()
-        self.project = scratch.Project(TEST_PROJECT_PATH)
+        self.project = scratch.Project(TEST_PROJECT_PATH, name="dummy")
 
     def test_can_convert_to_catrobat_structure_including_svg_to_png(self):
         count_svg_and_png_files = 0
@@ -300,7 +299,7 @@ class TestConvertScripts(unittest.TestCase):
 class TestConvertProjects(common_testing.ProjectTestCase):
 
     def _test_project(self, project_name):
-        scratch_project = scratch.Project(common.get_test_project_path(project_name), name=project_name)
+        scratch_project = scratch.Project(common.get_test_project_path(project_name), name=project_name, id_=common_testing.PROJECT_DUMMY_ID)
         catrobat_zip_file_name = converter.convert_scratch_project_to_catrobat_zip(scratch_project, self._testresult_folder_path)
         self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, project_name, unused_scratch_resources=scratch_project.unused_resource_names)
 

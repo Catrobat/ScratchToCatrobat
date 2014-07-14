@@ -34,7 +34,7 @@ import org.catrobat.catroid.io as catio
 from scratchtocatrobat import catrobat
 from scratchtocatrobat import common
 from scratchtocatrobat import scratch
-from scratchtocatrobat import scratchwebapi
+from scratchtocatrobat import version
 from scratchtocatrobat.scratch import JsonKeys as scratchkeys
 from scratchtocatrobat.tools import svgtopng
 from scratchtocatrobat.tools import wavconverter
@@ -249,6 +249,22 @@ def _key_filename_for(key):
     return common.md5_hash(key_path) + "_" + _key_to_broadcast_message(key) + os.path.splitext(key_path)[1]
 
 
+def _update_xml_header(xml_header, scratch_project):
+    xml_header.setApplicationBuildName("*** TODO ***")
+    xml_header.setApplicationName(common.APPLICATION_NAME)
+    xml_header.setApplicationVersion(version.__version__)
+    xml_header.setCatrobatLanguageVersion(catcommon.Constants.CURRENT_CATROBAT_LANGUAGE_VERSION)
+    xml_header.setDescription(scratch_project.description)
+    xml_header.setDeviceName("Scratch")
+    xml_header.setPlatform("Scratch")
+    # TODO: platform version should allow float
+    xml_header.setPlatformVersion(2)
+    xml_header.setScreenMode(catcommon.ScreenModes.MAXIMIZE)
+    xml_header.mediaLicense = catrobat.MEDIA_LICENSE_URI
+    xml_header.programLicense = catrobat.PROGRAM_LICENSE_URI
+    if scratch_project.project_id is not None:
+        xml_header.remixOf = scratch.HTTP_PROJECT_URL_PREFIX + scratch_project.project_id
+
 _catr_project = None
 
 
@@ -300,7 +316,7 @@ def _convert_to_catrobat_program(scratch_project):
             _catr_project.addSprite(key_sprite)
 
     add_used_key_sprites(scratch_project.listened_keys, _catr_project)
-
+    _update_xml_header(_catr_project.getXmlHeader(), scratch_project)
     return _catr_project
 
 
@@ -546,6 +562,10 @@ class ConversionError(common.ScratchtobatError):
         pass
 
 
+def converted_output_path(output_dir, project_name):
+    return os.path.join(output_dir, project_name + catrobat.PACKAGED_PROGRAM_FILE_EXTENSION)
+
+
 def convert_scratch_project_to_catrobat_zip(project, output_dir):
     def iter_dir(path):
         for root, _, files in os.walk(path):
@@ -555,7 +575,7 @@ def convert_scratch_project_to_catrobat_zip(project, output_dir):
     with common.TemporaryDirectory() as catrobat_program_dir:
         convert_scratch_project_to_catrobat_file_structure(project, catrobat_program_dir)
         common.makedirs(output_dir)
-        catrobat_zip_file_path = os.path.join(output_dir, project.name + catrobat.PACKAGED_PROGRAM_FILE_EXTENSION)
+        catrobat_zip_file_path = converted_output_path(output_dir, project.name)
         if os.path.exists(catrobat_zip_file_path):
             shutil.rmtree(catrobat_zip_file_path)
         with zipfile.ZipFile(catrobat_zip_file_path, 'w') as zip_fp:
@@ -651,17 +671,6 @@ def convert_scratch_project_to_catrobat_file_structure(scratch_project, temp_pat
     def program_source_for(catrobat_project):
         storage_handler = catio.StorageHandler()
         code_xml_content = storage_handler.XML_HEADER
-        xml_header = catrobat_project.getXmlHeader()
-        xml_header.setApplicationBuildName(common.APPLICATION_NAME)
-        # TODO: find resource with application name
-        # TODO: parse application version from android manifest?
-        # TODO: parse platform version
-        xml_header.setApplicationName("Pocket Code")
-        xml_header.setDeviceName(common.APPLICATION_NAME)
-        xml_header.catrobatLanguageVersion = catcommon.Constants.CURRENT_CATROBAT_LANGUAGE_VERSION
-        xml_header.programLicense = scratch.LICENSE_URI
-        xml_header.mediaLicense = scratch.LICENSE_URI
-        xml_header.remixOf = scratchwebapi.HTTP_PROJECT_URL_PREFIX + xml_header.getProgramName()
         code_xml_content += storage_handler.getXMLStringOfAProject(catrobat_project)
         return code_xml_content
 

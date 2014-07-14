@@ -32,8 +32,6 @@ _HTTP_API_ASSET = "http://scratch.mit.edu/internalapi/asset/{}/get/"
 # source: http://wiki.scratch.mit.edu/wiki/Scratch_File_Format_%282.0%29#Using_HTTP_requests
 _HTTP_API_PROJECT = "http://projects.scratch.mit.edu/internalapi/project/{}/get/"
 _HTTP_API_PROJECT_INFO = "http://scratch.mit.edu/api/v1/project/{}/?format=json"
-_HTTP_PROJECT_URL_PREFIX = "http://scratch.mit.edu/projects/"
-_HTTP_PROJECT_URL_PATTERN = _HTTP_PROJECT_URL_PREFIX + r'\d+/?'
 
 _log = common.log
 
@@ -46,9 +44,9 @@ class ProjectInfoKeys(object):
 def download_project(project_url, target_dir):
     # TODO: fix circular reference
     from scratchtocatrobat import scratch
+    _HTTP_PROJECT_URL_PATTERN = scratch.HTTP_PROJECT_URL_PREFIX + r'\d+/?'
     if not re.match(_HTTP_PROJECT_URL_PATTERN, project_url):
-        raise common.ScratchtobatError("Project URL must be matching '{}'. Given: {}".format(
-            _HTTP_PROJECT_URL_PREFIX + '<project id>', project_url))
+        raise common.ScratchtobatError("Project URL must be matching '{}'. Given: {}".format(scratch.HTTP_PROJECT_URL_PREFIX + '<project id>', project_url))
     assert len(os.listdir(target_dir)) == 0
 
     def request_project_data(project_id):
@@ -90,6 +88,7 @@ def download_project(project_url, target_dir):
     project_id = project_id_from_url(project_url)
     project_file_path = project_code_path(target_dir)
     write_to(request_project_data(project_id), project_file_path)
+
     project = scratch.RawProject(target_dir)
     for md5_file_name in project.resource_names:
         resource_file_path = os.path.join(target_dir, md5_file_name)

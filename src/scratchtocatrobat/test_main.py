@@ -18,14 +18,13 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import os
 import unittest
 
-from scratchtocatrobat import catrobat
 from scratchtocatrobat import common
 from scratchtocatrobat import common_testing
+from scratchtocatrobat import converter
 from scratchtocatrobat import main
-
+from scratchtocatrobat import scratchwebapi
 
 class MainTest(common_testing.ProjectTestCase):
 
@@ -42,7 +41,9 @@ class MainTest(common_testing.ProjectTestCase):
             args += [output_path]
         return_val = self._main_method(args)
         self.assertEqual(main.EXIT_SUCCESS, return_val)
-        self.assertValidCatrobatProgramPackageAndUnpackIf(os.path.join(output_path, project_id + catrobat.PACKAGED_PROGRAM_FILE_EXTENSION), project_id)
+
+        project_name = scratchwebapi.request_project_name_for(project_id)
+        self.assertValidCatrobatProgramPackageAndUnpackIf(converter.converted_output_path(output_path, project_name), project_name)
 
     def test_can_provide_catrobat_program_for_scratch_project_link(self):
         for project_url, project_id in common_testing.TEST_PROJECT_URL_TO_ID_MAP.iteritems():

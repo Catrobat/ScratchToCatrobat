@@ -220,12 +220,14 @@ class TestScriptFunc(unittest.TestCase):
 
     def setUp(self):
         unittest.TestCase.setUp(self)
-        self.script = scratch.Script(EASY_SCRIPTS[0])
+        self.input_data = EASY_SCRIPTS[0]
+        self.script = scratch.Script(self.input_data)
 
     def test_can_access_scratch_script_data(self):
         self.assertEqual('whenGreenFlag', self.script.get_type())
         expected_brick_names = ['say:duration:elapsed:from:', 'doRepeat', 'forward:', 'playDrum', 'forward:', 'playDrum']
         self.assertEqual(expected_brick_names, self.script.get_raw_bricks())
+        self.assertEqual(self.script.raw_script, self.input_data[2])
 
 
 if __name__ == "__main__":

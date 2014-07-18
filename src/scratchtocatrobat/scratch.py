@@ -203,13 +203,11 @@ class Script(object):
     def __init__(self, json_input):
         if not self.is_valid_script_input(json_input):
             raise ScriptError("Input is no valid Scratch json script.")
-        script_content = json_input[2]
-        script_settings = script_content[0]
-        self.type = script_settings[0]
-        self.arguments = script_settings[1:]
+        self.raw_script = json_input[2]
+        script_brick, self.bricks = self.raw_script[0], self.raw_script[1:]
+        self.type, self.arguments = script_brick[0], script_brick[1:]
         if self.type not in SCRATCH_SCRIPTS:
             raise ScriptError("Unknown Scratch script type: {}".format(self.type))
-        self.bricks = script_content[1:]
 
     @classmethod
     def is_valid_script_input(cls, json_input):

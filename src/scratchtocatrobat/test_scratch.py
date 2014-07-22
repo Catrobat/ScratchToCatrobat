@@ -34,7 +34,9 @@ EASY_SCRIPTS = [
                 [["forward:", 10],
                     ["playDrum", 1, 0.2],
                     ["forward:", -10],
-                    ["playDrum", 1, 0.2]]]]],
+                    ["playDrum", 1, 0.2]]],
+            ["changeGraphicEffect:by:", "color", 25],
+            ["say:", "test"], ], ],
     [30, 355, [["whenKeyPressed", "space"], ["changeGraphicEffect:by:", "color", 25]]]
 ]
 
@@ -223,10 +225,10 @@ class TestScriptFunc(unittest.TestCase):
         self.input_data = EASY_SCRIPTS[0]
         self.script = scratch.Script(self.input_data)
 
-    def test_can_access_scratch_script_data(self):
+    def test_can_access_blocks_from_scratch_script(self):
         self.assertEqual('whenGreenFlag', self.script.get_type())
-        expected_brick_names = ['say:duration:elapsed:from:', 'doRepeat', 'forward:', 'playDrum', 'forward:', 'playDrum']
-        self.assertEqual(expected_brick_names, self.script.get_raw_bricks())
+        expected_block_names = ["say:duration:elapsed:from:", "doRepeat", "changeGraphicEffect:by:", "say:"]
+        self.assertEqual(expected_block_names, [block[0] for block in self.script.blocks])
         self.assertEqual(self.script.raw_script, self.input_data[2])
 
 

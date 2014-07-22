@@ -24,9 +24,9 @@ import sys
 from java.io import IOError
 from java.lang import System
 
+from scratchtocatrobat import converter
 from scratchtocatrobat import common
 from scratchtocatrobat import scratch
-from scratchtocatrobat import converter
 from scratchtocatrobat import scratchwebapi
 
 log = logging.getLogger(__name__)
@@ -66,9 +66,9 @@ def scratchtobat_main(argv):
             else:
                 log.info("Extracting project from path: '{}' ...".format(scratch_project_file_or_url))
                 scratch.extract_project(scratch_project_file_or_url, scratch_project_dir)
-            project = scratch.Project(scratch_project_dir)
-            log.info("Converting scratch project %s into output folder: %s", project, output_dir)
-            converter.convert_scratch_project_to_catrobat_zip(project, output_dir)
+            scratch_project = scratch.Project(scratch_project_dir)
+            log.info("Converting scratch project %s into output folder: %s", scratch_project, output_dir)
+            converter.save_as_catrobat_program_package_to(scratch_project, output_dir)
     except (common.ScratchtobatError, EnvironmentError, IOError) as e:
         log.error(e)
         return EXIT_FAILURE

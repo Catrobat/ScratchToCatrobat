@@ -21,7 +21,7 @@
 import org.catrobat.catroid.common as catcommon
 
 ANDROID_IGNORE_MEDIA_MARKER_FILE_NAME = ".nomedia"
-# FIXME: to language independent value
+# FIXME: consider localization
 BACKGROUND_SPRITE_NAME = "Hintergrund"
 MEDIA_LICENSE_URI = "http://developer.catrobat.org/ccbysa_v3"
 PACKAGED_PROGRAM_FILE_EXTENSION = catcommon.Constants.CATROBAT_EXTENSION
@@ -36,7 +36,7 @@ def create_lookdata(name, file_name):
     return look_data
 
 
-def background_sprite_of_project(project):
+def background_sprite_of(project):
     if project.getSpriteList().size() > 0:
         sprite = project.getSpriteList().get(0)
         assert sprite.getName() == BACKGROUND_SPRITE_NAME

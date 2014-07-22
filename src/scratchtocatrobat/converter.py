@@ -59,7 +59,7 @@ def _next_background_look_broadcast_message():
 class _ScratchToCatrobat(object):
 
     # based on: http://code.google.com/p/scratch-js/source/browse/trunk/editor.htm
-    # note: for bricks without mapping (value set to 'None') placeholder bricks will be added
+    # note: for Scratch blocks without mapping (value set to 'None') placeholder Catrobat bricks will be added
     SCRATCH_TO_CATROBAT_MAPPING = {
         #
         # Scripts
@@ -214,19 +214,19 @@ class _ScratchToCatrobat(object):
     }
 
     @classmethod
-    def catrobat_brick_for(cls, scratchname):
-        assert isinstance(scratchname, (str, unicode))
-        if scratchname not in cls.SCRATCH_TO_CATROBAT_MAPPING:
-            raise common.ScratchtobatError("Unknown brick identifier: {}".format(scratchname))
-        return cls.SCRATCH_TO_CATROBAT_MAPPING[scratchname]
+    def catrobat_brick_for(cls, scratch_block_name):
+        assert isinstance(scratch_block_name, (str, unicode))
+        if scratch_block_name not in cls.SCRATCH_TO_CATROBAT_MAPPING:
+            raise common.ScratchtobatError("Unknown Scratch block name: {}".format(scratch_block_name))
+        return cls.SCRATCH_TO_CATROBAT_MAPPING[scratch_block_name]
 
     @classmethod
-    def create_script(cls, scratchscript_name, sprite, arguments):
+    def create_script(cls, scratch_script_name, sprite, arguments):
         assert sprite is not None
-        if scratchscript_name not in scratch.SCRATCH_SCRIPTS:
-            assert False, "Missing script mapping for: " + scratchscript_name
+        if scratch_script_name not in scratch.SCRATCH_SCRIPTS:
+            assert False, "Missing script mapping for: " + scratch_script_name
         # TODO: separate script and brick mapping
-        return cls.catrobat_brick_for(scratchscript_name)(sprite, *arguments)
+        return cls.catrobat_brick_for(scratch_script_name)(sprite, *arguments)
 
     @classmethod
     def operator(cls, opname):
@@ -267,13 +267,13 @@ def _update_xml_header(xml_header, scratch_project):
 _catr_project = None
 
 
-def _convert_to_catrobat_program(scratch_project):
+def catrobat_program_from(scratch_project):
     global _catr_project
     _catr_project = catbase.Project(None, scratch_project.name)
     _catr_project.getXmlHeader().virtualScreenHeight = scratch.STAGE_HEIGHT_IN_PIXELS
     _catr_project.getXmlHeader().virtualScreenWidth = scratch.STAGE_WIDTH_IN_PIXELS
     for object_ in scratch_project.objects:
-        catr_sprite = _convert_to_catrobat_sprite(object_)
+        catr_sprite = _catrobat_sprite_from(object_)
         if object_ is scratch_project.stage_object:
             catr_sprite.setName(catrobat.BACKGROUND_SPRITE_NAME)
         _catr_project.addSprite(catr_sprite)
@@ -319,7 +319,7 @@ def _convert_to_catrobat_program(scratch_project):
     return _catr_project
 
 
-def _convert_to_catrobat_sprite(scratch_object):
+def _catrobat_sprite_from(scratch_object):
     if not isinstance(scratch_object, scratch.Object):
         raise common.ScratchtobatError("Input must be of type={}, but is={}".format(scratch.Object, type(scratch_object)))
     sprite = catbase.Sprite(scratch_object.get_objName())
@@ -333,18 +333,18 @@ def _convert_to_catrobat_sprite(scratch_object):
         else:
             if current_costume_resolution != costume_resolution:
                 log.warning("Costume resolution not same for all costumes")
-        sprite_looks.add(_convert_to_catrobat_look(scratch_costume))
+        sprite_looks.add(_catrobat_look_from(scratch_costume))
 
     sprite_sounds = sprite.getSoundList()
     for scratch_sound in scratch_object.get_sounds():
-        sprite_sounds.add(_convert_to_catrobat_sound(scratch_sound))
+        sprite_sounds.add(_catrobat_sound_from(scratch_sound))
 
     # looks and sounds has to added first because of cross-validations
     for scratch_script in scratch_object.scripts:
-        sprite.addScript(_convert_to_catrobat_script(scratch_script, sprite))
+        sprite.addScript(_catrobat_script_from(scratch_script, sprite))
 
     def add_initial_scratch_object_behaviour():
-        # some initial Scratch settings are done with a general JSON configuration instead with bricks. Here the equivalent bricks are added for catrobat.
+        # some initial Scratch settings are done with a general JSON configuration instead with blocks. Here the equivalent bricks are added for Catrobat.
         def get_or_add_startscript(sprite):
             # HACK: accessing private member, enabled with Jython registry security settings
             for script in sprite.scriptList:
@@ -391,71 +391,71 @@ def _convert_to_catrobat_sprite(scratch_object):
     return sprite
 
 
-def _convert_to_catrobat_script(scratch_script, sprite):
+def _catrobat_script_from(scratch_script, sprite):
     if not isinstance(scratch_script, scratch.Script):
         raise common.ScratchtobatError("Arg1 must be of type={}, but is={}".format(scratch.Script, type(scratch_script)))
     if sprite and not isinstance(sprite, catbase.Sprite):
         raise common.ScratchtobatError("Arg2 must be of type={}, but is={}".format(catbase.Sprite, type(sprite)))
 
     cat_script = _ScratchToCatrobat.create_script(scratch_script.type, sprite, scratch_script.arguments)
-    for scratch_brick in scratch_script.bricks:
-        cat_bricks = _convert_to_catrobat_bricks(scratch_brick, sprite)
+    for scratch_block in scratch_script.blocks:
+        cat_bricks = _catrobat_bricks_from(scratch_block, sprite)
         for brick in cat_bricks:
             cat_script.addBrick(brick)
     return cat_script
 
 
-def _convert_to_catrobat_bricks(scratch_brick, catr_sprite):
+def _catrobat_bricks_from(scratch_block, catr_sprite):
     global _catr_project
 
-    def add_placeholder_for_unmapped_bricks_to(catr_bricks, catr_sprite, brick_name):
-        catr_bricks += [_DEFAULT_BRICK_CLASS(catr_sprite, 500), catbricks.NoteBrick(catr_sprite, "Missing brick for scratch identifier: " + brick_name)]
-    common.log.debug("Brick to convert={}".format(scratch_brick))
-    if not scratch_brick or not (isinstance(scratch_brick, list) and isinstance(scratch_brick[0], (str, unicode))):
-        raise common.ScratchtobatError("Wrong arg1, must be list with string as first element: {!r}".format(scratch_brick))
+    def add_placeholder_for_unmapped_blocks_to(catr_bricks, catr_sprite, block_name):
+        catr_bricks += [_DEFAULT_BRICK_CLASS(catr_sprite, 500), catbricks.NoteBrick(catr_sprite, "Missing brick for scratch identifier: " + block_name)]
+    common.log.debug("Brick to convert={}".format(scratch_block))
+    if not scratch_block or not (isinstance(scratch_block, list) and isinstance(scratch_block[0], (str, unicode))):
+        raise common.ScratchtobatError("Wrong arg1, must be list with string as first element: {!r}".format(scratch_block))
     if not isinstance(catr_sprite, catbase.Sprite):
         raise common.ScratchtobatError("Wrong arg2, must be of type={}, but is={}".format(catbase.Sprite, type(catr_sprite)))
-    brick_name = scratch_brick[0]
-    brick_arguments = scratch_brick[1:]
+    block_name = scratch_block[0]
+    block_arguments = scratch_block[1:]
     catr_bricks = []
-    catrobat_brick_class = _ScratchToCatrobat.catrobat_brick_for(brick_name)
+    catrobat_brick_class = _ScratchToCatrobat.catrobat_brick_for(block_name)
     try:
         # Conditionals for cases which need additional handling after brick object instantiation
-        if brick_name in {'doRepeat', 'doForever'}:
-            if brick_name == 'doRepeat':
-                times_value, nested_bricks = brick_arguments
+        if block_name in {'doRepeat', 'doForever'}:
+            if block_name == 'doRepeat':
+                times_value, nested_blocks = block_arguments
                 if isinstance(times_value, list):
                     common.log.warning("Unsupported times_value: {}. Set to default (1).".format(times_value))
                     times_value = 1
                 catr_loop_start_brick = catrobat_brick_class(catr_sprite, times_value)
-            elif brick_name == 'doForever':
-                [nested_bricks] = brick_arguments
+            elif block_name == 'doForever':
+                [nested_blocks] = block_arguments
                 catr_loop_start_brick = catrobat_brick_class(catr_sprite)
             else:
-                assert False, "Missing conditional branch for: " + brick_name
+                assert False, "Missing conditional branch for: " + block_name
 
             catr_bricks += [catr_loop_start_brick]
-            for brick_arg in nested_bricks:
+            for block in nested_blocks:
                 # Note: recursive call
-                catr_bricks += _convert_to_catrobat_bricks(brick_arg, catr_sprite)
+                catr_bricks += _catrobat_bricks_from(block, catr_sprite)
             catr_bricks += [catbricks.LoopEndBrick(catr_sprite, catr_loop_start_brick)]
 
-        elif brick_name in ['doIf']:
+        elif block_name in ['doIf']:
             assert _catr_project
-            if_begin_brick = catbricks.IfLogicBeginBrick(catr_sprite, _convert_formula(brick_arguments[0], catr_sprite, _catr_project))
+            if_begin_brick = catbricks.IfLogicBeginBrick(catr_sprite, _catrobat_formula_from(block_arguments[0], catr_sprite, _catr_project))
             if_else_brick = catbricks.IfLogicElseBrick(catr_sprite, if_begin_brick)
             if_end_brick = catbricks.IfLogicEndBrick(catr_sprite, if_else_brick, if_begin_brick)
 
             catr_bricks += [catbricks.RepeatBrick(catr_sprite), if_begin_brick]
-            nested_bricks = brick_arguments[1:]
-            for brick_arg in nested_bricks:
+            nested_blocks = block_arguments[1:]
+            for block in nested_blocks:
                 # Note: recursive call
-                catr_bricks += _convert_to_catrobat_bricks(brick_arg, catr_sprite)
+                catr_bricks += _catrobat_bricks_from(block, catr_sprite)
 
             catr_bricks += [if_else_brick, if_end_brick, catbricks.LoopEndBrick(catr_sprite, catr_bricks[0])]
 
-        elif brick_name == "playSound:":
-            [look_name] = brick_arguments
+        elif block_name == "playSound:":
+            [look_name] = block_arguments
             soundinfo_name_to_soundinfo_map = {lookdata.getTitle(): lookdata for lookdata in catr_sprite.getSoundList()}
             lookdata = soundinfo_name_to_soundinfo_map.get(look_name)
             if not lookdata:
@@ -464,11 +464,11 @@ def _convert_to_catrobat_bricks(scratch_brick, catr_sprite):
             play_sound_brick.setSoundInfo(lookdata)
             catr_bricks += [play_sound_brick]
 
-        elif brick_name == "startScene":
+        elif block_name == "startScene":
             assert _catr_project
 
-            [look_name] = brick_arguments
-            background_sprite = catrobat.background_sprite_of_project(_catr_project)
+            [look_name] = block_arguments
+            background_sprite = catrobat.background_sprite_of(_catr_project)
             if not background_sprite:
                 # if no background sprite found, we are just building it now
                 background_sprite = catr_sprite
@@ -489,30 +489,30 @@ def _convert_to_catrobat_bricks(scratch_brick, catr_sprite):
 
         elif catrobat_brick_class in set([catbricks.SetLookBrick]):
             set_look_brick = catrobat_brick_class(catr_sprite)
-            [look_name] = brick_arguments
+            [look_name] = block_arguments
             [look] = [look for look in catr_sprite.getLookDataList() if look.getLookName() == look_name]
             set_look_brick.setLook(look)
             catr_bricks += [set_look_brick]
 
         else:
-            common.log.debug("Get mapping for {} in {}".format(brick_name, catr_sprite))
+            common.log.debug("Get mapping for {} in {}".format(block_name, catr_sprite))
             catrobat_class = catrobat_brick_class
             if not catrobat_class:
-                common.log.warning("No mapping for: '{}', arguments: {}".format(brick_name, brick_arguments))
-                add_placeholder_for_unmapped_bricks_to(catr_bricks, catr_sprite, brick_name)
+                common.log.warning("No mapping for: '{}', arguments: {}".format(block_name, block_arguments))
+                add_placeholder_for_unmapped_blocks_to(catr_bricks, catr_sprite, block_name)
             else:
-                assert not isinstance(catrobat_class, list), "Wrong at: {1}, {0}".format(brick_arguments, brick_name)
+                assert not isinstance(catrobat_class, list), "Wrong at: {1}, {0}".format(block_arguments, block_name)
                 # conditionals for argument convertions
-                if brick_arguments:
+                if block_arguments:
                     if catrobat_class in set([catbricks.ChangeVariableBrick, catbricks.SetVariableBrick]):
                         assert _catr_project
-                        variable, value = brick_arguments
-                        brick_arguments = [_convert_formula(value, catr_sprite, _catr_project), _catr_project.getUserVariables().getUserVariable(variable, catr_sprite)]
+                        variable, value = block_arguments
+                        block_arguments = [_catrobat_formula_from(value, catr_sprite, _catr_project), _catr_project.getUserVariables().getUserVariable(variable, catr_sprite)]
                     elif catrobat_class == catbricks.GlideToBrick:
-                        secs, x_dest_pos, y_dest_pos = brick_arguments
-                        brick_arguments = [x_dest_pos, y_dest_pos, secs * 1000]
+                        secs, x_dest_pos, y_dest_pos = block_arguments
+                        block_arguments = [x_dest_pos, y_dest_pos, secs * 1000]
                 try:
-                    catr_bricks += [catrobat_class(catr_sprite, *brick_arguments)]
+                    catr_bricks += [catrobat_class(catr_sprite, *block_arguments)]
                 except TypeError as e:
                     common.log.exception(e)
                     common.log.info("Replacing with default brick")
@@ -521,39 +521,38 @@ def _convert_to_catrobat_bricks(scratch_brick, catr_sprite):
         common.log.exception(e)
         common.log.info("Replacing with default brick")
         catr_bricks += [catbricks.WaitBrick(catr_sprite, 1000)]
-        # assert False, "Non-matching arguments of scratch brick '{1}': {0}".format(brick_arguments, brick_name)
+        # assert False, "Non-matching arguments of scratch brick '{1}': {0}".format(block_arguments, block_name)
 
     return catr_bricks
 
 
-def _convert_to_catrobat_look(costume):
-    if not costume or not (isinstance(costume, dict) and all(_ in costume for _ in (scratchkeys.COSTUME_MD5, scratchkeys.COSTUMENAME_KEY))):
-        raise common.ScratchtobatError("Wrong input, must be costume dict: {}".format(costume))
+def _catrobat_look_from(scratch_costume):
+    if not scratch_costume or not (isinstance(scratch_costume, dict) and all(_ in scratch_costume for _ in (scratchkeys.COSTUME_MD5, scratchkeys.COSTUMENAME_KEY))):
+        raise common.ScratchtobatError("Wrong input, must be costume dict: {}".format(scratch_costume))
     look = catcommon.LookData()
 
-    assert scratchkeys.COSTUMENAME_KEY in costume
-    costume_name = costume[scratchkeys.COSTUMENAME_KEY]
+    assert scratchkeys.COSTUMENAME_KEY in scratch_costume
+    costume_name = scratch_costume[scratchkeys.COSTUMENAME_KEY]
     look.setLookName(costume_name)
 
-    assert scratchkeys.COSTUME_MD5 in costume
-    costume_filename = costume[scratchkeys.COSTUME_MD5]
+    assert scratchkeys.COSTUME_MD5 in scratch_costume
+    costume_filename = scratch_costume[scratchkeys.COSTUME_MD5]
     costume_filename_ext = os.path.splitext(costume_filename)[1]
     look.setLookFilename(costume_filename.replace(costume_filename_ext, "_" + costume_name + costume_filename_ext))
     return look
 
 
-def _convert_to_catrobat_sound(sound):
+def _catrobat_sound_from(scratch_sound):
     soundinfo = catcommon.SoundInfo()
 
-    assert scratchkeys.SOUNDNAME_KEY in sound
-    sound_name = sound[scratchkeys.SOUNDNAME_KEY]
+    assert scratchkeys.SOUNDNAME_KEY in scratch_sound
+    sound_name = scratch_sound[scratchkeys.SOUNDNAME_KEY]
     soundinfo.setTitle(sound_name)
 
-    assert scratchkeys.SOUND_MD5 in sound
-    sound_filename = sound[scratchkeys.SOUND_MD5]
+    assert scratchkeys.SOUND_MD5 in scratch_sound
+    sound_filename = scratch_sound[scratchkeys.SOUND_MD5]
     sound_filename_ext = os.path.splitext(sound_filename)[1]
     soundinfo.setSoundFileName(sound_filename.replace(sound_filename_ext, "_" + sound_name + sound_filename_ext))
-#     soundinfo.setSoundFileName(sound_filename.replace(sound_filename_ext, "_" + sound_name))
     return soundinfo
 
 
@@ -565,16 +564,16 @@ def converted_output_path(output_dir, project_name):
     return os.path.join(output_dir, project_name + catrobat.PACKAGED_PROGRAM_FILE_EXTENSION)
 
 
-def convert_scratch_project_to_catrobat_zip(project, output_dir):
+def save_as_catrobat_program_package_to(scratch_project, output_dir):
     def iter_dir(path):
         for root, _, files in os.walk(path):
             for file_ in files:
                 yield os.path.join(root, file_)
     log.info("convert Scratch project to '%s'", output_dir)
     with common.TemporaryDirectory() as catrobat_program_dir:
-        convert_scratch_project_to_catrobat_file_structure(project, catrobat_program_dir)
+        save_as_catrobat_program_to(scratch_project, catrobat_program_dir)
         common.makedirs(output_dir)
-        catrobat_zip_file_path = converted_output_path(output_dir, project.name)
+        catrobat_zip_file_path = converted_output_path(output_dir, scratch_project.name)
         if os.path.exists(catrobat_zip_file_path):
             shutil.rmtree(catrobat_zip_file_path)
         with zipfile.ZipFile(catrobat_zip_file_path, 'w') as zip_fp:
@@ -595,7 +594,8 @@ def sounds_dir_of_project(temp_dir):
     return os.path.join(temp_dir, "sounds")
 
 
-def convert_scratch_project_to_catrobat_file_structure(scratch_project, temp_path):
+# TODO: change to OO
+def save_as_catrobat_program_to(scratch_project, temp_path):
 
     def create_directory_structure():
         sounds_path = sounds_dir_of_project(temp_path)
@@ -667,14 +667,14 @@ def convert_scratch_project_to_catrobat_file_structure(scratch_project, temp_pat
             if converted_file:
                 os.remove(src_path)
 
-    def program_source_for(catrobat_project):
+    def program_source_for(catrobat_program):
         storage_handler = catio.StorageHandler()
         code_xml_content = storage_handler.XML_HEADER
-        code_xml_content += storage_handler.getXMLStringOfAProject(catrobat_project)
+        code_xml_content += storage_handler.getXMLStringOfAProject(catrobat_program)
         return code_xml_content
 
     def write_program_source():
-        catrobat_program = _convert_to_catrobat_program(scratch_project)
+        catrobat_program = catrobat_program_from(scratch_project)
         program_source = program_source_for(catrobat_program)
         with open(os.path.join(temp_path, catrobat.PROGRAM_SOURCE_FILE_NAME), "wb") as fp:
             fp.write(program_source.encode("utf8"))
@@ -709,12 +709,12 @@ def converted_resource_names(scratch_resource_name, project):
     return catrobat_resource_names
 
 
-def _convert_formula(raw_source, sprite, project):
+def _catrobat_formula_from(raw_formula, sprite, project):
     tokens = []
     user_variables = project.getUserVariables()
-    if not isinstance(raw_source, list):
-        raw_source = [raw_source]
-    for elem in raw_source:
+    if not isinstance(raw_formula, list):
+        raw_formula = [raw_formula]
+    for elem in raw_formula:
         if isinstance(elem, (str, unicode)):
 
             operator = _ScratchToCatrobat.operator(elem)

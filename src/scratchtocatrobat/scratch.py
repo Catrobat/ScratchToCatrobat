@@ -204,8 +204,8 @@ class Script(object):
         if not self.is_valid_script_input(json_input):
             raise ScriptError("Input is no valid Scratch json script.")
         self.raw_script = json_input[2]
-        script_brick, self.bricks = self.raw_script[0], self.raw_script[1:]
-        self.type, self.arguments = script_brick[0], script_brick[1:]
+        script_block, self.blocks = self.raw_script[0], self.raw_script[1:]
+        self.type, self.arguments = script_block[0], script_block[1:]
         if self.type not in SCRATCH_SCRIPTS:
             raise ScriptError("Unknown Scratch script type: {}".format(self.type))
 
@@ -222,26 +222,6 @@ class Script(object):
 
     def get_type(self):
         return self.type
-
-    def get_raw_bricks(self):
-        def get_bricks_recursively(nested_bricks):
-            result = []
-            log.debug("{}".format(nested_bricks))
-            for idx, brick in enumerate(nested_bricks):
-                isBrickId = idx == 0 and isinstance(brick, str)
-                isNestedBrick = isinstance(brick, list)
-                if isBrickId:
-                    log.debug("adding {}".format(brick))
-                    result += [brick]
-                elif isNestedBrick:
-                    log.debug("calling on {}".format(brick))
-                    result += get_bricks_recursively(brick)
-                else:
-                    assert isinstance(brick, (int, str, float)), "Unhandled brick element type {} for {}".format(type(brick), brick)
-                    continue
-            return result
-
-        return get_bricks_recursively(self.bricks)
 
 
 class UnsupportedProjectFileError(common.ScratchtobatError):

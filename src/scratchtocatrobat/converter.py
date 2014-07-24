@@ -20,6 +20,7 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import unicode_literals
 
+import collections
 import os
 import shutil
 import zipfile
@@ -39,7 +40,14 @@ from scratchtocatrobat.scratch import JsonKeys as scratchkeys
 from scratchtocatrobat.tools import svgtopng
 from scratchtocatrobat.tools import wavconverter
 
+
+class _SpecialCasePlaceholder(object):
+    pass
+
 _DEFAULT_BRICK_CLASS = catbricks.WaitBrick
+_SPECIAL_CASE_BRICK_CLASS = _SpecialCasePlaceholder()
+
+_SOUND_LENGTH_VARIABLE_NAME_FORMAT = "length_of_{}_in_msecs"
 
 log = common.log
 
@@ -152,7 +160,7 @@ class _ScratchToCatrobat(object):
 
         # sound
         "playSound:": catbricks.PlaySoundBrick,
-        "doPlaySoundAndWait": None,
+        "doPlaySoundAndWait": _SPECIAL_CASE_BRICK_CLASS,
         "stopAllSounds": None,
         "rest:elapsed:from:": None,
         "noteOn:duration:elapsed:from:": None,
@@ -278,7 +286,8 @@ def catrobat_program_from(scratch_project):
             catr_sprite.setName(catrobat.BACKGROUND_SPRITE_NAME)
         _catr_project.addSprite(catr_sprite)
 
-    def add_used_key_sprites(listened_keys, _catr_project):
+    # TODO: make it more explicit that this depends on the conversion code for "whenKeyPressed" Scratch block
+    def add_used_key_sprites(listened_keys, catrobat_project):
         height_pos = 1
         for idx, key in enumerate(listened_keys):
             width_pos = idx
@@ -312,7 +321,7 @@ def catrobat_program_from(scratch_project):
             when_tapped_script.addBrick(catbricks.BroadcastBrick(key_sprite, key_message))
             key_sprite.addScript(when_tapped_script)
 
-            _catr_project.addSprite(key_sprite)
+            catrobat_project.addSprite(key_sprite)
 
     add_used_key_sprites(scratch_project.listened_keys, _catr_project)
     _update_xml_header(_catr_project.getXmlHeader(), scratch_project)
@@ -345,15 +354,6 @@ def _catrobat_sprite_from(scratch_object):
 
     def add_initial_scratch_object_behaviour():
         # some initial Scratch settings are done with a general JSON configuration instead with blocks. Here the equivalent bricks are added for Catrobat.
-        def get_or_add_startscript(sprite):
-            # HACK: accessing private member, enabled with Jython registry security settings
-            for script in sprite.scriptList:
-                if isinstance(script, catbase.StartScript):
-                    return script
-            else:
-                start_script = catbase.StartScript(sprite)
-                sprite.addScript(0, start_script)
-                return start_script
         implicit_bricks_to_add = []
 
         # object's currentCostumeIndex determines active costume at startup
@@ -384,8 +384,7 @@ def _catrobat_sprite_from(scratch_object):
         if rotation_style and rotation_style != "normal":
             log.warning("Unsupported rotation style '{}' at object: {}".format(rotation_style, scratch_object.get_objName()))
 
-        start_script = get_or_add_startscript(sprite)
-        start_script.getBrickList().addAll(0, implicit_bricks_to_add)
+        catrobat.add_to_start_script(implicit_bricks_to_add, sprite)
 
     add_initial_scratch_object_behaviour()
     return sprite
@@ -463,6 +462,16 @@ def _catrobat_bricks_from(scratch_block, catr_sprite):
             play_sound_brick = catrobat_brick_class(catr_sprite)
             play_sound_brick.setSoundInfo(lookdata)
             catr_bricks += [play_sound_brick]
+
+        elif block_name == "doPlaySoundAndWait":
+            [look_name] = block_arguments
+            soundinfo_name_to_soundinfo_map = {lookdata.getTitle(): lookdata for lookdata in catr_sprite.getSoundList()}
+            lookdata = soundinfo_name_to_soundinfo_map.get(look_name)
+            if not lookdata:
+                raise ConversionError("Sprite does not contain sound with name={}".format(look_name))
+            play_sound_brick = catbricks.PlaySoundBrick(catr_sprite)
+            play_sound_brick.setSoundInfo(lookdata)
+            catr_bricks += [play_sound_brick, catbricks.WaitBrick(catr_sprite, 0)]
 
         elif block_name == "startScene":
             assert _catr_project
@@ -613,6 +622,7 @@ def save_as_catrobat_program_to(scratch_project, temp_path):
         def resource_name_for(file_path):
             return common.md5_hash(file_path) + os.path.splitext(file_path)[1]
 
+        # FIXME: modifies Scratch project object
         def update_resource_name(old_resource_name, new_resource_name):
             resource_maps = list(scratch_project.find_all_resource_dicts_for(old_resource_name))
             assert len(resource_maps) > 0
@@ -624,12 +634,12 @@ def save_as_catrobat_program_to(scratch_project, temp_path):
                 else:
                     assert False, "Unknown dict: {}".resource_map
 
-        for md5_name, src_path in scratch_project.md5_to_resource_path_map.iteritems():
-            if md5_name in scratch_project.unused_resource_names:
+        for scratch_md5_name, src_path in scratch_project.md5_to_resource_path_map.iteritems():
+            if scratch_md5_name in scratch_project.unused_resource_names:
                 log.info("Ignoring unused resource file: %s", src_path)
                 continue
 
-            file_ext = os.path.splitext(md5_name)[1].lower()
+            file_ext = os.path.splitext(scratch_md5_name)[1].lower()
             converted_file = False
 
             # TODO; extract method
@@ -659,10 +669,10 @@ def save_as_catrobat_program_to(scratch_project, temp_path):
             assert os.path.exists(src_path), "Not existing: {}. Available files in directory: {}".format(src_path, os.listdir(os.path.dirname(src_path)))
             if converted_file:
                 new_resource_name = resource_name_for(src_path)
-                update_resource_name(md5_name, new_resource_name)
-                md5_name = new_resource_name
-            # if file is used multiple times: single md5, multiple filenames
-            for catrobat_file_name in converted_resource_names(md5_name, scratch_project):
+                update_resource_name(scratch_md5_name, new_resource_name)
+                scratch_md5_name = new_resource_name
+            # separate file name for each sprite in which a resource is used
+            for catrobat_file_name in _catrobat_resource_file_name_for(scratch_md5_name, scratch_project):
                 shutil.copyfile(src_path, os.path.join(target_dir, catrobat_file_name))
             if converted_file:
                 os.remove(src_path)
@@ -675,6 +685,22 @@ def save_as_catrobat_program_to(scratch_project, temp_path):
 
     def write_program_source():
         catrobat_program = catrobat_program_from(scratch_project)
+
+        # TODO: extract method
+        # note: at this position because of use of sounds_path variable
+        # adding sound length variables needed for "doPlayAndWait" brick workaround
+        sprite_to_variable_initializations_map = collections.defaultdict(list)
+        for catrobat_sprite in catrobat_program.getSpriteList():
+            for sound_info in catrobat_sprite.getSoundList():
+                sound_length = common.length_of_audio_file_in_msec(os.path.join(sounds_path, sound_info.getSoundFileName()))
+                variable = catrobat_program.getUserVariables().addSpriteUserVariableToSprite(catrobat_sprite, _sound_length_variable_name_for(sound_info.getTitle()))
+                print catrobat_sprite.getName(), variable.getName()
+                sprite_to_variable_initializations_map[catrobat_sprite] += [(variable, sound_length)]
+        print sprite_to_variable_initializations_map
+        for sprite, variable_initializations in sprite_to_variable_initializations_map.iteritems():
+            variable_initialization_bricks = [catbricks.SetVariableBrick(sprite, catformula.Formula(value), variable) for variable, value in variable_initializations]
+            catrobat.add_to_start_script(variable_initialization_bricks, sprite)
+
         program_source = program_source_for(catrobat_program)
         with open(os.path.join(temp_path, catrobat.PROGRAM_SOURCE_FILE_NAME), "wb") as fp:
             fp.write(program_source.encode("utf8"))
@@ -693,19 +719,18 @@ def save_as_catrobat_program_to(scratch_project, temp_path):
     write_program_source()
 
 
-def converted_resource_names(scratch_resource_name, project):
-    assert os.path.basename(scratch_resource_name) == scratch_resource_name and len(os.path.splitext(scratch_resource_name)[0]) == 32, "Must be MD5 hash with file ext: " + scratch_resource_name
+def _catrobat_resource_file_name_for(scratch_md5_name, scratch_project):
+    assert os.path.basename(scratch_md5_name) == scratch_md5_name and len(os.path.splitext(scratch_md5_name)[0]) == 32, "Must be MD5 hash with file ext: " + scratch_md5_name
     catrobat_resource_names = []
-    md5_name = scratch_resource_name
-    for resource in project.find_all_resource_dicts_for(md5_name):
+    for resource in scratch_project.find_all_resource_dicts_for(scratch_md5_name):
         if resource:
             try:
                 resource_name = resource[scratchkeys.SOUNDNAME_KEY] if scratchkeys.SOUNDNAME_KEY in resource else resource[scratchkeys.COSTUMENAME_KEY]
             except KeyError:
-                raise ConversionError("Error with: {}, {}".format(md5_name, resource))
-            resource_ext = os.path.splitext(md5_name)[1]
-            catrobat_resource_names += [md5_name.replace(resource_ext, "_" + resource_name + resource_ext)]
-    assert len(catrobat_resource_names) != 0, "{} not found (path: {}). available: {}".format(scratch_resource_name, project.md5_to_resource_path_map.get(scratch_resource_name), project.resource_names)
+                raise ConversionError("Error with: {}, {}".format(scratch_md5_name, resource))
+            resource_ext = os.path.splitext(scratch_md5_name)[1]
+            catrobat_resource_names += [scratch_md5_name.replace(resource_ext, "_" + resource_name + resource_ext)]
+    assert len(catrobat_resource_names) != 0, "{} not found (path: {}). available: {}".format(scratch_md5_name, scratch_project.md5_to_resource_path_map.get(scratch_md5_name), scratch_project.resource_names)
     return catrobat_resource_names
 
 
@@ -736,3 +761,7 @@ def _catrobat_formula_from(raw_formula, sprite, project):
             return catformula.Formula(catformula.FormulaElement(catformula.FormulaElement.ElementType.FUNCTION, catformula.Functions.TRUE, 1.0))
             assert False, "Unsupported type: {} of '{}'".format(type(elem), elem)
     return catformula.Formula(catformula.InternFormulaParser(tokens, project, sprite).parseFormula())
+
+
+def _sound_length_variable_name_for(resource_name):
+    return _SOUND_LENGTH_VARIABLE_NAME_FORMAT.format(resource_name)

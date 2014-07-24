@@ -20,6 +20,8 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import unicode_literals
 
+import os
+
 from scratchtocatrobat import common
 from scratchtocatrobat import common_testing
 
@@ -56,3 +58,16 @@ class DictAccessWrapperTest(common_testing.BaseTestCase):
         self.assertEqual(True, TestDictAccessWrapper({'None': True}).get_None())
         self.assertEqual(True, TestDictAccessWrapper({'keyWithUppercaseAndNumbers123': True}).get_keyWithUppercaseAndNumbers123())
         self.assertEqual(True, TestDictAccessWrapper({u'unicodeKey': True}).get_unicodeKey())
+
+
+class CommonTest(common_testing.BaseTestCase):
+
+    def test_can_get_audio_file_duration(self):
+        test_path_structure_to_file_duration_in_msec_map = {
+            ("83a9787d4cb6f3b7632b4ddfebf74367_pop.wav"): 23,
+            ("83c36d806dc92327b9e7049a565c6bff_meow.wav"): 847,
+        }
+        for test_path_structure, expected_duration_in_msec in test_path_structure_to_file_duration_in_msec_map.iteritems():
+            audio_file_path = common.get_test_resources_path(*("wav_pcm", test_path_structure))
+            assert os.path.exists(audio_file_path)
+            assert common.length_of_audio_file_in_msec(audio_file_path) == expected_duration_in_msec

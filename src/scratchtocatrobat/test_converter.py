@@ -87,7 +87,7 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
             "83c36d806dc92327b9e7049a565c6bff.wav": ["83c36d806dc92327b9e7049a565c6bff_meow.wav"]}
         for resource_name in resource_names_scratch_to_catrobat_map:
             expected = resource_names_scratch_to_catrobat_map[resource_name]
-            self.assertEqual(expected, converter.converted_resource_names(resource_name, self.project))
+            self.assertEqual(expected, converter._catrobat_resource_file_name_for(resource_name, self.project))
 
     def test_can_convert_scratch_project_to_catrobat_zip(self):
         catrobat_zip_file_name = converter.save_as_catrobat_program_package_to(self.project, self.temp_dir)
@@ -232,6 +232,14 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         self.assertTrue(isinstance(catr_brick, catbricks.PlaySoundBrick))
         self.assertEqual(scratch_block[1], catr_brick.sound.getTitle())
 
+    def test_can_convert_doplaysoundandwait_block(self):
+        scratch_block = ["doPlaySoundAndWait", "bird"]
+        dummy_sprite = self.get_sprite_with_soundinfo(scratch_block[1])
+        [play_sound_brick, wait_brick] = converter._catrobat_bricks_from(scratch_block, dummy_sprite)
+        self.assertTrue(isinstance(play_sound_brick, catbricks.PlaySoundBrick))
+        self.assertEqual(scratch_block[1], play_sound_brick.sound.getTitle())
+        self.assertTrue(isinstance(wait_brick, catbricks.WaitBrick))
+
     def test_can_convert_nextcostume_block(self):
         scratch_block = ["nextCostume"]
         [catr_brick] = converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
@@ -289,6 +297,8 @@ class TestConvertProjects(common_testing.ProjectTestCase):
         scratch_project = scratch.Project(common.get_test_project_path(project_name), name=project_name, id_=common_testing.PROJECT_DUMMY_ID)
         catrobat_zip_file_name = converter.save_as_catrobat_program_package_to(scratch_project, self._testresult_folder_path)
         self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, project_name, unused_scratch_resources=scratch_project.unused_resource_names)
+        # FIXME: no other way yet to access project object after conversion
+        return converter._catr_project
 
     def test_can_convert_project_without_variables(self):
         self._test_project("full_test_no_var")
@@ -301,29 +311,24 @@ class TestConvertProjects(common_testing.ProjectTestCase):
             self._test_project(project_name)
 
     def test_can_convert_project_with_mediafiles(self):
-        for project_name in ["Hannah_Montana", ]:
-            self._test_project(project_name)
+        scratch_project_to_sound_to_sound_length_map = {
+            "Hannah_Montana": {
+                ("HandClap", catrobat.BACKGROUND_SPRITE_NAME): 0.0,
+                ("rada rada", catrobat.BACKGROUND_SPRITE_NAME): 1.0,
+                ("See You Again", "Sprite3"): 4 * 60.0 + 15,
+            }
+        }
+        for project_name, sound_to_sound_length_map in scratch_project_to_sound_to_sound_length_map.iteritems():
+            catrobat_project = self._test_project(project_name)
+            for [sound_name, containing_sprite_name], expected_sound_length in sound_to_sound_length_map.iteritems():
+                sound_length_variable_name = converter._sound_length_variable_name_for(sound_name)
+                sound_length_variable = catrobat.user_variable_of(catrobat_project, sound_length_variable_name, containing_sprite_name)
+                assert isinstance(sound_length_variable, catformula.UserVariable)
+                # TODO: check first set brick for variable
+                # assert sound_length_variable.getValue() == expected_sound_length
 
     def test_can_convert_project_with_unusued_files(self):
         self._test_project("simple")
-
-
-# class TestConvertFormulas(common_testing.ProjectTestCase):
-#
-#     def test_can_convert_formulas(self):
-#         raw_source_to_formula_mapping = {
-#             ['changeVar:by:', [u'action', 1]: "",
-#             [u'touching:', u'Sprite1']: catformula.Formula(catformula.FormulaElement(catformula.FormulaElement.ElementType.FUNCTION), "1.0")
-#         }
-#         for raw_source, expected_formula in raw_source_to_formula_mapping.iteritems():
-#             formula = converter._convert_formula(raw_source)
-#             self.assertEqualFormulas(expected_formula, formula)
-#
-#
-# class TestConverterInternals(unittest.TestCase):
-#
-#     def test_can_coerce_scratch_json_input_to_catrobat_classes(self):
-#         converter._instantiate_catrobat_class()
 
 
 if __name__ == "__main__":

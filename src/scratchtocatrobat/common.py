@@ -33,6 +33,9 @@ from itertools import repeat
 from itertools import islice
 
 import java.lang.Class
+from javax.sound.sampled import AudioFormat
+from javax.sound.sampled import AudioInputStream
+from javax.sound.sampled import AudioSystem
 
 from org.python.core import PyReflectedField
 
@@ -63,12 +66,12 @@ def isList(obj):
     return isinstance(obj, list)
 
 
-def get_test_resources_path():
-    return os.path.join(get_project_base_path(), "test", "res")
+def get_test_resources_path(*path_parts):
+    return os.path.join(get_project_base_path(), "test", "res", *path_parts)
 
 
-def get_test_project_path(project_folder):
-    return os.path.join(get_test_resources_path(), "scratch", project_folder)
+def get_test_project_path(*path_parts):
+    return os.path.join(get_test_resources_path(), "scratch", *path_parts)
 
 
 def get_test_project_packed_file(scratch_file):
@@ -273,3 +276,10 @@ def url_response_data(url, retries=3, hook=None, timeout=3, log=log):
     except socket.timeout:
         # WORKAROUND: little more descriptive
         raise IOError("socket.timeout")
+
+
+def length_of_audio_file_in_msec(file_path):
+    audioInputStream = AudioSystem.getAudioInputStream(java.io.File(file_path))
+    format_ = audioInputStream.getFormat()
+    frames = audioInputStream.getFrameLength()
+    return int((float(frames) / format_.getFrameRate()) * 1000)

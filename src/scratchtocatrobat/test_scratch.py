@@ -101,12 +101,13 @@ class TestProjectFunc(unittest.TestCase):
         self.assertSetEqual(set(['0.png', '2.wav', '3.png', '4.png', '5.png', '6.png', '8.png']), set(map(os.path.basename, project.unused_resource_paths)))
 
     def test_can_access_sound_and_costume_by_resource_name(self):
-        scratch_to_catrobat_resource_names_map = {
-            "83a9787d4cb6f3b7632b4ddfebf74367.wav": "83a9787d4cb6f3b7632b4ddfebf74367_pop.wav",
-            "510da64cf172d53750dffd23fbf73563.png": "510da64cf172d53750dffd23fbf73563_backdrop1.png",
-            "033f926829a446a28970f59302b0572d.png": "033f926829a446a28970f59302b0572d_castle1.png",
-            "83c36d806dc92327b9e7049a565c6bff.wav": "83c36d806dc92327b9e7049a565c6bff_meow.wav"}
-        for resource_name in scratch_to_catrobat_resource_names_map:
+        scratch_resource_names = {
+            "83a9787d4cb6f3b7632b4ddfebf74367.wav",
+            "510da64cf172d53750dffd23fbf73563.png",
+            "033f926829a446a28970f59302b0572d.png",
+            "83c36d806dc92327b9e7049a565c6bff.wav"
+        }
+        for resource_name in scratch_resource_names:
             for data_dict in self.project.find_all_resource_dicts_for(resource_name):
                 self.assertTrue("soundName" in data_dict or "costumeName" in data_dict, "No sound or costume data dict")
 

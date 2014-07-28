@@ -18,6 +18,7 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import copy
 import glob
 import itertools
 import json
@@ -71,7 +72,7 @@ class RawProject(common.DictAccessWrapper):
         super(RawProject, self).__init__(dict_)
         self._verify_scratch_dictionary(dict_, data_origin)
         self.raw_objects = [child for child in self.get_children() if "objName" in child]
-        self.objects = [Object(raw_object) for raw_object in [dict_] + self.raw_objects]
+        self.objects = [Object(raw_object) for raw_object in [self._raw_stage_object_without_project_variables(dict_)] + self.raw_objects]
         self.stage_object = self.objects[0]
         assert self.stage_object.get_info() is not None
         self.nonstage_objects = self.objects[1:]
@@ -82,6 +83,12 @@ class RawProject(common.DictAccessWrapper):
         for key in ["objName", "info", "currentCostumeIndex", "penLayerMD5", "tempoBPM", "videoAlpha", "children", "costumes", "sounds"]:
             if key not in dict_:
                 raise UnsupportedProjectFileError("In project file from: '{}' key='{}' must be set.".format(data_origin, key))
+
+    def _raw_stage_object_without_project_variables(self, dict_):
+        raw_stage_object = copy.deepcopy(dict_)
+        # Variables defined on the stage object are in fact project variables, so removing them here.
+        raw_stage_object["variables"] = []
+        return raw_stage_object
 
     def _raw_resources(self):
         return itertools.chain.from_iterable(object_.get_sounds() + object_.get_costumes() for object_ in self.objects)

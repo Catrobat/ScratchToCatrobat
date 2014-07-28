@@ -198,6 +198,13 @@ class TestRawProjectFunc(unittest.TestCase):
         stage_object = self.project.stage_object
         self.assertEqual("Stage", stage_object.get_objName())
 
+    def test_can_access_project_variables(self):
+        variables_test_code_content = common.content_of(common.get_test_resources_path("scratch_code_only", "variables_test.json"))
+        raw_project = scratch.RawProject.from_project_code_content(variables_test_code_content)
+        self.assertEqual(["$", "MarketOpen", "Multiplier", "bc1bought", "bc2bought"], [variable["name"] for variable in raw_project.get_variables()])
+        # Scratch does not allow local variables for the stage object
+        self.assertListEqual([], raw_project.stage_object.get_variables())
+
 
 class TestObjectInit(unittest.TestCase):
 

@@ -73,6 +73,7 @@ class RawProject(common.DictAccessWrapper):
         self.raw_objects = [child for child in self.get_children() if "objName" in child]
         self.objects = [Object(raw_object) for raw_object in [dict_] + self.raw_objects]
         self.stage_object = self.objects[0]
+        assert self.stage_object.get_info() is not None
         self.nonstage_objects = self.objects[1:]
         self.resource_names = {self._resource_name_from(raw_resource) for raw_resource in self._raw_resources()}
 
@@ -192,8 +193,6 @@ class Object(common.DictAccessWrapper):
         for key in (JsonKeys.SOUNDS_KEY, JsonKeys.COSTUMES_KEY, JsonKeys.SCRIPTS_KEY):
             if key not in object_data:
                 object_data[key] = []
-        # TODO: check for all stage-object-only keys
-        self.is_stage_object = JsonKeys.INFO_KEY in object_data
         self.scripts = [Script(_) for _ in self.get_scripts() if Script.is_valid_script_input(_)]
 
     @classmethod

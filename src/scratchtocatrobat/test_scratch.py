@@ -20,6 +20,7 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import json
 import os
+import string
 import unittest
 
 from scratchtocatrobat import common
@@ -113,6 +114,56 @@ class TestProjectFunc(unittest.TestCase):
                 self.assertTrue("soundName" in data_dict or "costumeName" in data_dict, "No sound or costume data dict")
 
 
+_OBJECT_TEMPLATE_VARIABLES = ("variables", "scripts", "sounds", "costumes")
+_OBJECT_JSON_STR = '''{
+    "objName": "Sprite1",
+    "variables": [$%s],
+    "scripts": [$%s],
+    "sounds": [$%s],
+    "costumes": [$%s],
+    "currentCostumeIndex": 0,
+    "scratchX": 45,
+    "scratchY": -102,
+    "scale": 1,
+    "direction": 90,
+    "rotationStyle": "normal"
+}''' % _OBJECT_TEMPLATE_VARIABLES
+_SCRIPT_JSON_STR = '[30, 355, [["whenKeyPressed", "space"], ["dummy_block"]]]'
+_SOUND_JSON_STR = '''{
+    "soundName": "meow",
+    "soundID": 0,
+    "md5": "83c36d806dc92327b9e7049a565c6bff.wav",
+    "sampleCount": 18688,
+    "rate": 22050,
+    "format": ""
+}'''
+_COSTUME_JSON_STR = '''{
+    "costumeName": "backdrop1",
+    "baseLayerID": 7,
+    "baseLayerMD5": "510da64cf172d53750dffd23fbf73563.png",
+    "bitmapResolution": 1,
+    "rotationCenterX": 240,
+    "rotationCenterY": 180
+}'''
+_VARIABLE_JSON_STR = '''{
+    "name": "variable",
+    "value": 0,
+    "isPersistent": false
+}'''
+
+
+def _object_json_str(**kwargs):
+    for template_variable in _OBJECT_TEMPLATE_VARIABLES:
+        if template_variable not in kwargs:
+            kwargs[template_variable] = []
+    kwargs_with_str_values = dict((template_variable, ",".join(value_list)) for template_variable, value_list in kwargs.iteritems())
+    return string.Template(_OBJECT_JSON_STR).safe_substitute(**kwargs_with_str_values)
+
+
+def _default_object_json_str(number_of_scripts=2, number_of_sounds=2, number_of_costumes=2, number_of_variables=2):
+    return _object_json_str(scripts=[_SCRIPT_JSON_STR] * number_of_scripts, sounds=[_SOUND_JSON_STR] * number_of_sounds, costumes=[_COSTUME_JSON_STR] * number_of_costumes, variables=[_VARIABLE_JSON_STR] * number_of_variables)
+
+
 class TestRawProjectInit(unittest.TestCase):
     TEST_PROJECTS = ["dancing_castle", 'simple']
 
@@ -151,16 +202,20 @@ class TestRawProjectFunc(unittest.TestCase):
 class TestObjectInit(unittest.TestCase):
 
     def setUp(self):
-        self.project = scratch.Project(common.get_test_project_path(TEST_PROJECT_FOLDER))
+        print _default_object_json_str()
+        self.raw_object = json.loads(_default_object_json_str())
 
     def test_can_construct_on_correct_input(self):
-        for raw_object in self.project.raw_objects:
-            self.assertTrue(scratch.Object.is_valid_class_input(raw_object))
-            self.assertTrue(scratch.Object(raw_object))
+        self.assertTrue(scratch.Object.is_valid_class_input(self.raw_object))
+        scratch_object = scratch.Object(self.raw_object)
+        self.assertIsNotNone(scratch_object)
 
     def test_fail_on_wrong_input(self):
+        del self.raw_object["objName"]
+        wrong_raw_object = self.raw_object
         faulty_object_structures = [
             {},
+            wrong_raw_object
         ]
         for faulty_input in faulty_object_structures:
             self.assertFalse(scratch.Object.is_valid_class_input(faulty_input), "Wrong input not detected: {}".format(faulty_input))
@@ -171,39 +226,36 @@ class TestObjectInit(unittest.TestCase):
 class TestObjectFunc(unittest.TestCase):
 
     def setUp(self):
-        self.project = scratch.Project(common.get_test_project_path(TEST_PROJECT_FOLDER))
-        self.scratch_objects = self.project.objects
+        self.scratch_object = scratch.Object(json.loads(_default_object_json_str()))
 
     def test_can_access_scratch_scripts(self):
-        for scratch_object in self.scratch_objects:
-            if scratch_object.get_objName() != "Stage":
-                self.assertTrue(len(scratch_object.scripts) > 0)
-            for scratch_script in scratch_object.scripts:
-                self.assertTrue(scratch_script)
-                self.assertTrue(isinstance(scratch_script, scratch.Script))
+        scripts = self.scratch_object.scripts
+        self.assertGreater(len(scripts), 1)
+        for scratch_script in scripts:
+            self.assertIsNotNone(scratch_script)
+            self.assertTrue(isinstance(scratch_script, scratch.Script))
 
     def test_can_access_scratch_costumes(self):
-        for scratch_object in self.scratch_objects:
-            self.assertTrue(len(scratch_object.get_costumes()) > 0)
-            for costume in scratch_object.get_costumes():
-                self.assertTrue(costume)
-                self.assertTrue(isinstance(costume, dict))
-                self.assertTrue("costumeName" in costume)
+        self.assertGreater(len(self.scratch_object.get_costumes()), 1)
+        for costume in self.scratch_object.get_costumes():
+            self.assertIsNotNone(costume)
+            self.assertTrue(isinstance(costume, dict))
+            self.assertIn("costumeName", costume)
 
     def test_can_access_scratch_sounds(self):
-        for scratch_object in self.scratch_objects:
-            self.assertTrue(len(scratch_object.get_sounds()) > 0)
-            for sound in scratch_object.get_sounds():
-                self.assertTrue(sound)
-                self.assertTrue(isinstance(sound, dict))
-                self.assertTrue("soundName" in sound)
+        self.assertGreater(len(self.scratch_object.get_sounds()), 1)
+        for sound in self.scratch_object.get_sounds():
+            self.assertIsNotNone(sound)
+            self.assertTrue(isinstance(sound, dict))
+            self.assertIn("soundName", sound)
 
-    def test_can_check_for_stage_object(self):
-        for idx, scratch_object in enumerate(self.scratch_objects):
-            if idx == 0:
-                self.assert_(scratch_object.is_stage_object)
-            else:
-                self.assert_(not scratch_object.is_stage_object)
+    def test_can_access_scratch_variables(self):
+        self.assertGreater(len(self.scratch_object.get_variables()), 1)
+        for variable in self.scratch_object.get_variables():
+            self.assertIsNotNone(variable)
+            self.assertTrue(isinstance(variable, dict))
+            self.assertIn("name", variable)
+            self.assertIn("value", variable)
 
 
 class TestScriptInit(unittest.TestCase):

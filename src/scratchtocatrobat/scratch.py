@@ -42,20 +42,21 @@ STAGE_WIDTH_IN_PIXELS = 480
 
 class JsonKeys(object):
     # TODO: remove '_KEY' suffix
-    BASELAYERID_KEY = "baseLayerID"
-    CHILDREN_KEY = "children"
+    BASELAYER_ID = "baseLayerID"
+    CHILDREN = "children"
     COSTUME_MD5 = "baseLayerMD5"
     COSTUME_RESOLUTION = "bitmapResolution"
-    COSTUMENAME_KEY = "costumeName"
-    COSTUMES_KEY = "costumes"
-    INFO_KEY = "info"
+    COSTUME_NAME = "costumeName"
+    COSTUMES = "costumes"
+    INFO = "info"
     PROJECT_ID = 'projectID'
-    OBJNAME_KEY = "objName"
-    SCRIPTS_KEY = "scripts"
+    OBJECT_NAME = "objName"
+    SCRIPTS = "scripts"
     SOUND_MD5 = "md5"
-    SOUNDID_KEY = "soundID"
-    SOUNDNAME_KEY = "soundName"
-    SOUNDS_KEY = "sounds"
+    SOUND_ID = "soundID"
+    SOUND_NAME = "soundName"
+    SOUNDS = "sounds"
+    VARIABLES = 'variables'
 
 
 def extract_project(input_scratch, output_path):
@@ -95,7 +96,7 @@ class RawProject(common.DictAccessWrapper):
 
     def _resource_name_from(self, raw_resource):
         assert JsonKeys.SOUND_MD5 in raw_resource or JsonKeys.COSTUME_MD5 in raw_resource
-        md5_file_name = raw_resource[JsonKeys.SOUND_MD5] if JsonKeys.SOUNDNAME_KEY in raw_resource else raw_resource[JsonKeys.COSTUME_MD5]
+        md5_file_name = raw_resource[JsonKeys.SOUND_MD5] if JsonKeys.SOUND_NAME in raw_resource else raw_resource[JsonKeys.COSTUME_MD5]
         return md5_file_name
 
     @staticmethod
@@ -137,7 +138,7 @@ class Project(RawProject):
         def verify_resources(resources):
             for res_dict in resources:
                 assert JsonKeys.SOUND_MD5 in res_dict or JsonKeys.COSTUME_MD5 in res_dict
-                md5_file = res_dict[JsonKeys.SOUND_MD5] if JsonKeys.SOUNDNAME_KEY in res_dict else res_dict[JsonKeys.COSTUME_MD5]
+                md5_file = res_dict[JsonKeys.SOUND_MD5] if JsonKeys.SOUND_NAME in res_dict else res_dict[JsonKeys.COSTUME_MD5]
                 resource_md5 = os.path.splitext(md5_file)[0]
                 if md5_file not in self.md5_to_resource_path_map:
                     raise ProjectError("Missing resource file at project: {}. Provide resource with md5: {}".format(project_base_path, resource_md5))
@@ -197,7 +198,7 @@ class Object(common.DictAccessWrapper):
         super(Object, self).__init__(object_data)
         if not self.is_valid_class_input(object_data):
             raise ObjectError("Input is no valid Scratch object.")
-        for key in (JsonKeys.SOUNDS_KEY, JsonKeys.COSTUMES_KEY, JsonKeys.SCRIPTS_KEY):
+        for key in (JsonKeys.SOUNDS, JsonKeys.COSTUMES, JsonKeys.SCRIPTS, JsonKeys.VARIABLES):
             if key not in object_data:
                 object_data[key] = []
         self.scripts = [Script(_) for _ in self.get_scripts() if Script.is_valid_script_input(_)]

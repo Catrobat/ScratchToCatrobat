@@ -536,12 +536,12 @@ def _catrobat_bricks_from(scratch_block, catr_sprite):
 
 
 def _catrobat_look_from(scratch_costume):
-    if not scratch_costume or not (isinstance(scratch_costume, dict) and all(_ in scratch_costume for _ in (scratchkeys.COSTUME_MD5, scratchkeys.COSTUMENAME_KEY))):
+    if not scratch_costume or not (isinstance(scratch_costume, dict) and all(_ in scratch_costume for _ in (scratchkeys.COSTUME_MD5, scratchkeys.COSTUME_NAME))):
         raise common.ScratchtobatError("Wrong input, must be costume dict: {}".format(scratch_costume))
     look = catcommon.LookData()
 
-    assert scratchkeys.COSTUMENAME_KEY in scratch_costume
-    costume_name = scratch_costume[scratchkeys.COSTUMENAME_KEY]
+    assert scratchkeys.COSTUME_NAME in scratch_costume
+    costume_name = scratch_costume[scratchkeys.COSTUME_NAME]
     look.setLookName(costume_name)
 
     assert scratchkeys.COSTUME_MD5 in scratch_costume
@@ -554,8 +554,8 @@ def _catrobat_look_from(scratch_costume):
 def _catrobat_sound_from(scratch_sound):
     soundinfo = catcommon.SoundInfo()
 
-    assert scratchkeys.SOUNDNAME_KEY in scratch_sound
-    sound_name = scratch_sound[scratchkeys.SOUNDNAME_KEY]
+    assert scratchkeys.SOUND_NAME in scratch_sound
+    sound_name = scratch_sound[scratchkeys.SOUND_NAME]
     soundinfo.setTitle(sound_name)
 
     assert scratchkeys.SOUND_MD5 in scratch_sound
@@ -725,7 +725,7 @@ def _catrobat_resource_file_name_for(scratch_md5_name, scratch_project):
     for resource in scratch_project.find_all_resource_dicts_for(scratch_md5_name):
         if resource:
             try:
-                resource_name = resource[scratchkeys.SOUNDNAME_KEY] if scratchkeys.SOUNDNAME_KEY in resource else resource[scratchkeys.COSTUMENAME_KEY]
+                resource_name = resource[scratchkeys.SOUND_NAME] if scratchkeys.SOUND_NAME in resource else resource[scratchkeys.COSTUME_NAME]
             except KeyError:
                 raise ConversionError("Error with: {}, {}".format(scratch_md5_name, resource))
             resource_ext = os.path.splitext(scratch_md5_name)[1]

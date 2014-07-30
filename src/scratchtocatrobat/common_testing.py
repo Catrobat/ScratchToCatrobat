@@ -100,13 +100,11 @@ class ProjectTestCase(BaseTestCase):
         cls._storagehandler = catio.StorageHandler()
 
     def assertScriptClasses(self, expected_script_class, expected_brick_classes, script):
-        self.assertEqual(expected_script_class, [script.__class__], "Script class is not matching")
+        assert [script.__class__] == expected_script_class
         bricks = script.getBrickList()
-        self.assertTrue(bricks, "No bricks.")
-        expected_len = len(expected_brick_classes)
-        actual_len = len(bricks)
-        self.assertEqual(expected_len, actual_len, "Wrong number of bricks. {0} != {1}".format(expected_len, actual_len))
-        self.assertEqual(expected_brick_classes, [_.__class__ for _ in bricks])
+        assert bricks
+        assert len(bricks) == len(expected_brick_classes)
+        assert [brick.__class__ for brick in bricks] == expected_brick_classes
 
     def __assertTagsAreNonempty(self, xml_root):
         header_tags = [FIELD_NAMES_TO_XML_NAMES[field] if field in FIELD_NAMES_TO_XML_NAMES else field for field in common.fields_of(catbase.XmlHeader) if field not in IGNORED_XML_HEADER_CLASS_FIELDS]
@@ -114,9 +112,9 @@ class ProjectTestCase(BaseTestCase):
         for header_tag in header_tags:
             tag = "header/" + header_tag
             xml_node = xml_root.find(tag)
-            self.assertIsNotNone(xml_node, "XML file error: tag '{}' must be available".format(tag))
+            assert xml_node is not None, "XML file error: tag '{}' must be available".format(tag)
             if header_tag in mandatory_header_tags:
-                self.assertIsNotNone(xml_node.text, "XML file error: Value for tag '{}' must be set".format(tag))
+                assert xml_node.text is not None, "XML file error: Value for tag '{}' must be set".format(tag)
                 if header_tag == "screenMode":
                     assert xml_node.text == catcommon.ScreenModes.MAXIMIZE.toString()  # @UndefinedVariable
                 elif header_tag == "remixOf":
@@ -128,28 +126,28 @@ class ProjectTestCase(BaseTestCase):
     def assertValidCatrobatProgramStructure(self, project_path, project_name):
         project_xml_path = os.path.join(project_path, catrobat.PROGRAM_SOURCE_FILE_NAME)
         with open(project_xml_path) as fp:
-            self.assertEqual(fp.readline(), self._storagehandler.XML_HEADER)
+            assert fp.readline() == self._storagehandler.XML_HEADER
 
         root = ElementTree.parse(project_xml_path).getroot()
-        self.assertEqual('program', root.tag)
+        assert root.tag == 'program'
         self.__assertTagsAreNonempty(root)
 
         project_name_from_xml = root.find("header/programName")
-        self.assertEqual(project_name, project_name_from_xml.text)
+        assert project_name_from_xml.text == project_name
 
         catrobat_version_from_xml = root.find("header/catrobatLanguageVersion")
-        self.assertGreater(float(catrobat_version_from_xml.text), 0.0)
+        assert float(catrobat_version_from_xml.text) > 0.0
 
         # TODO: refactor duplication
         sounds_dir = converter.sounds_dir_of_project(project_path)
         for node in root.findall('.//sound/fileName'):
             sound_path = os.path.join(sounds_dir, node.text)
-            self.assert_(os.path.exists(sound_path), "Missing: " + sound_path)
+            assert os.path.exists(sound_path)
 
         images_dir = converter.images_dir_of_project(project_path)
         for node in root.findall('.//look/fileName'):
             image_path = os.path.join(images_dir, node.text)
-            self.assert_(os.path.exists(image_path), "Missing: {}, available files: {}".format(repr(image_path), os.listdir(os.path.dirname(image_path))))
+            assert os.path.exists(image_path), "Missing: {}, available files: {}".format(repr(image_path), os.listdir(os.path.dirname(image_path)))
 
     def assertValidCatrobatProgramPackageAndUnpackIf(self, zip_path, project_name, unused_scratch_resources=None):
         if unused_scratch_resources is None:
@@ -157,15 +155,14 @@ class ProjectTestCase(BaseTestCase):
         _log.info("unused resources: %s", ', '.join(unused_scratch_resources))
         package_extraction_dir = os.path.splitext(zip_path)[0]
         with zipfile.ZipFile(zip_path) as zip_fp:
-            corrupt_zip_content = zip_fp.testzip()
-            self.assertTrue(corrupt_zip_content is None, "Corrupt files in {}: {}".format(zip_path, corrupt_zip_content))
-            self.assertNotEqual(project_name, os.path.commonprefix(zip_fp.namelist())[:-1], "Wrong directory in zipped catrobat project.")
+            assert zip_fp.testzip() is None
+            assert project_name != os.path.commonprefix(zip_fp.namelist())[:-1], "Wrong directory in zipped catrobat project."
             all_nomedia_files = (".nomedia", "images/.nomedia", "sounds/.nomedia")
             for nomedia_file in all_nomedia_files:
-                self.assertIn(nomedia_file, set(zip_fp.namelist()))
+                assert nomedia_file in set(zip_fp.namelist())
             for unused_scratch_resource in unused_scratch_resources:
                 for zip_filepath in zip_fp.namelist():
-                    self.assertNotIn(os.path.splitext(unused_scratch_resource)[0], zip_filepath)
+                    assert os.path.splitext(unused_scratch_resource)[0] not in zip_filepath
             zip_fp.extractall(package_extraction_dir)
         self.assertValidCatrobatProgramStructure(package_extraction_dir, project_name)
 

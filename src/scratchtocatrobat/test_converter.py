@@ -68,16 +68,16 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
         converter.save_as_catrobat_program_to(self.project, self.temp_dir)
 
         images_dir = converter.images_dir_of_project(self.temp_dir)
-        self.assertTrue(os.path.exists(images_dir))
+        assert os.path.exists(images_dir)
         sounds_dir = converter.sounds_dir_of_project(self.temp_dir)
-        self.assertTrue(os.path.exists(sounds_dir))
+        assert os.path.exists(sounds_dir)
         code_xml_path = os.path.join(self.temp_dir, catrobat.PROGRAM_SOURCE_FILE_NAME)
-        self.assertTrue(os.path.exists(code_xml_path))
-        self.assertFalse(glob.glob(os.path.join(images_dir, "*.svg")), "Unsupported svg files are in Catrobat folder.")
+        assert os.path.exists(code_xml_path)
+        assert not glob.glob(os.path.join(images_dir, "*.svg")), "Unsupported svg files are in Catrobat folder."
 
         self.assertValidCatrobatProgramStructure(self.temp_dir, self.project.name)
         actual_count = len(glob.glob(os.path.join(images_dir, "*.png")))
-        self.assertEqual(count_svg_and_png_files, actual_count - len(self.project.listened_keys))
+        assert actual_count - len(self.project.listened_keys) == count_svg_and_png_files
 
     def test_can_get_catrobat_resource_file_name_of_scratch_resources(self):
         resource_names_scratch_to_catrobat_map = {
@@ -87,7 +87,7 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
             "83c36d806dc92327b9e7049a565c6bff.wav": ["83c36d806dc92327b9e7049a565c6bff_meow.wav"]}
         for resource_name in resource_names_scratch_to_catrobat_map:
             expected = resource_names_scratch_to_catrobat_map[resource_name]
-            self.assertEqual(expected, converter._catrobat_resource_file_name_for(resource_name, self.project))
+            assert converter._catrobat_resource_file_name_for(resource_name, self.project) == expected
 
     def test_can_convert_scratch_project_to_catrobat_zip(self):
         catrobat_zip_file_name = converter.save_as_catrobat_program_package_to(self.project, self.temp_dir)
@@ -102,88 +102,88 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
 
     def test_can_convert_complete_project_to_catrobat_project_class(self):
         _catr_project = converter.catrobat_program_from(self.project)
-        self.assertTrue(isinstance(_catr_project, catbase.Project), "Converted project is not a catrobat project class.")
+        assert isinstance(_catr_project, catbase.Project)
 
-        self.assertEqual(360, _catr_project.getXmlHeader().virtualScreenHeight, "Project height not at Scratch stage size")
-        self.assertEqual(480, _catr_project.getXmlHeader().virtualScreenWidth, "Project width not at Scratch stage size")
+        assert _catr_project.getXmlHeader().virtualScreenHeight == scratch.STAGE_HEIGHT_IN_PIXELS
+        assert _catr_project.getXmlHeader().virtualScreenWidth == scratch.STAGE_WIDTH_IN_PIXELS
 
         catr_sprites = _catr_project.getSpriteList()
-        self.assertTrue(catr_sprites, "No sprites in converted project.")
-        self.assertTrue(all(isinstance(_, catbase.Sprite) for _ in catr_sprites), "Sprites of converted project are not catrobat sprite classes.")
-        self.assertEqual(catrobat.BACKGROUND_SPRITE_NAME, catr_sprites[0].getName())
+        assert catr_sprites
+        assert all(isinstance(_, catbase.Sprite) for _ in catr_sprites)
+        assert catr_sprites[0].getName() == catrobat.BACKGROUND_SPRITE_NAME
 
     def test_can_convert_object_to_catrobat_sprite_class(self):
         sprites = [converter._catrobat_sprite_from(scratchobj) for scratchobj in self.project.objects]
-        self.assertTrue(all(isinstance(_, catbase.Sprite) for _ in sprites))
+        assert all(isinstance(_, catbase.Sprite) for _ in sprites)
 
         sprite_0 = sprites[0]
-        self.assertEqual("Stage", sprite_0.getName())
-        self.assertEqual([catbase.StartScript], [_.__class__ for _ in sprite_0.scriptList])
+        assert sprite_0.getName() == "Stage"
+        assert [_.__class__ for _ in sprite_0.scriptList] == [catbase.StartScript]
         start_script = sprite_0.scriptList[0]
         # TODO into own test case
         set_look_brick = start_script.getBrick(0)
-        self.assertTrue(isinstance(set_look_brick, catbricks.SetLookBrick), "Mismatch to Scratch behavior: Implicit SetLookBrick is missing")
+        assert isinstance(set_look_brick, catbricks.SetLookBrick), "Mismatch to Scratch behavior: Implicit SetLookBrick is missing"
 
         sprite0_looks = sprite_0.getLookDataList()
-        self.assertTrue(sprite0_looks, "No looks in sprite1")
-        self.assertTrue(all(isinstance(_, catcommon.LookData) for _ in sprite0_looks), "Wrong classes in look list1")
+        assert sprite0_looks
+        assert all(isinstance(look, catcommon.LookData) for look in sprite0_looks)
         sprite0_sounds = sprite_0.getSoundList()
-        self.assertTrue(sprite0_sounds, "No sounds in sprite1")
-        self.assertTrue(all(isinstance(_, catcommon.SoundInfo) for _ in sprite0_sounds), "Wrong classes in sound list1")
+        assert sprite0_sounds
+        assert all(isinstance(sound, catcommon.SoundInfo) for sound in sprite0_sounds)
 
         sprite_1 = sprites[1]
-        self.assertEqual("Sprite1", sprite_1.getName())
-        self.assertEqual([catbase.StartScript, catbase.BroadcastScript], [_.__class__ for _ in sprite_1.scriptList])
+        assert sprite_1.getName() == "Sprite1"
+        assert [_.__class__ for _ in sprite_1.scriptList] == [catbase.StartScript, catbase.BroadcastScript]
 
         start_script = sprite_1.scriptList[0]
         # TODO into own test case
         place_at_brick = start_script.getBrick(1)
-        self.assertTrue(isinstance(place_at_brick, catbricks.PlaceAtBrick), "Mismatch to Scratch behavior: Implicit PlaceAtBrick is missing")
-        self.assertEqual(place_at_brick.xPosition.formulaTree.type, catformula.FormulaElement.ElementType.NUMBER)
-        self.assertEqual(place_at_brick.xPosition.formulaTree.value, str(self.project.objects[1].get_scratchX()))
-        self.assertEqual(place_at_brick.yPosition.formulaTree.type, catformula.FormulaElement.ElementType.OPERATOR)
-        self.assertEqual(place_at_brick.yPosition.formulaTree.value, "MINUS")
-        self.assertEqual(place_at_brick.yPosition.formulaTree.rightChild.type, catformula.FormulaElement.ElementType.NUMBER)
-        self.assertEqual(place_at_brick.yPosition.formulaTree.rightChild.value, str(-self.project.objects[1].get_scratchY()))
+        assert isinstance(place_at_brick, catbricks.PlaceAtBrick), "Mismatch to Scratch behavior: Implicit PlaceAtBrick is missing"
+        assert place_at_brick.xPosition.formulaTree.type == catformula.FormulaElement.ElementType.NUMBER
+        assert place_at_brick.xPosition.formulaTree.value == str(self.project.objects[1].get_scratchX())
+        assert place_at_brick.yPosition.formulaTree.type == catformula.FormulaElement.ElementType.OPERATOR
+        assert place_at_brick.yPosition.formulaTree.value == "MINUS"
+        assert place_at_brick.yPosition.formulaTree.rightChild.type == catformula.FormulaElement.ElementType.NUMBER
+        assert place_at_brick.yPosition.formulaTree.rightChild.value == str(-self.project.objects[1].get_scratchY())
         # TODO: test for implicit bricks
 
         sprite1_looks = sprite_1.getLookDataList()
-        self.assertTrue(sprite1_looks, "No looks in sprite1")
-        self.assertTrue(all(isinstance(_, catcommon.LookData) for _ in sprite1_looks), "Wrong classes in look list1")
+        assert sprite1_looks
+        assert all(isinstance(_, catcommon.LookData) for _ in sprite1_looks)
         sprite1_sounds = sprite_1.getSoundList()
-        self.assertTrue(sprite1_sounds, "No sounds in sprite1")
-        self.assertTrue(all(isinstance(_, catcommon.SoundInfo) for _ in sprite1_sounds), "Wrong classes in sound list1")
+        assert sprite1_sounds
+        assert all(isinstance(_, catcommon.SoundInfo) for _ in sprite1_sounds)
 
         sprite_2 = sprites[2]
-        self.assertEqual("Cassy Dance", sprite_2.getName())
-        self.assertEqual([catbase.StartScript], [_.__class__ for _ in sprite_2.scriptList])
+        assert sprite_2.getName() == "Cassy Dance"
+        assert [_.__class__ for _ in sprite_2.scriptList] == [catbase.StartScript]
         sprite2_looks = sprite_2.getLookDataList()
-        self.assertTrue(sprite2_looks, "No looks in sprite2")
-        self.assertTrue(all(isinstance(_, catcommon.LookData) for _ in sprite2_looks), "Wrong classes in look list2")
+        assert sprite2_looks
+        assert all(isinstance(_, catcommon.LookData) for _ in sprite2_looks)
 
     def test_can_convert_script_to_catrobat_script_class(self):
         scratch_script = self.project.objects[1].scripts[0]
         catr_script = converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE)
-        self.assertTrue(catr_script, "No script from conversion")
+        assert catr_script
         expected_script_class = [catbase.StartScript]
         expected_brick_classes = [catbricks.WaitBrick, catbricks.NoteBrick, catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.LoopEndBrick]
         self.assertScriptClasses(expected_script_class, expected_brick_classes, catr_script)
 
     def test_can_convert_costume_to_catrobat_lookdata_class(self):
         costumes = self.project.objects[1].get_costumes()
-        for expected_values, costume in zip([("costume1", "f9a1c175dbe2e5dee472858dd30d16bb_costume1.svg"), ("costume2", "6e8bd9ae68fdb02b7e1e3df656a75635_costume2.svg")], costumes):
+        for (expected_name, expected_file_name), costume in zip([("costume1", "f9a1c175dbe2e5dee472858dd30d16bb_costume1.svg"), ("costume2", "6e8bd9ae68fdb02b7e1e3df656a75635_costume2.svg")], costumes):
             look = converter._catrobat_look_from(costume)
-            self.assertTrue(isinstance(look, catcommon.LookData), "Costume conversion return wrong class")
-            self.assertEqual(look.getLookName(), expected_values[0], "Look name wrong")
-            self.assertEqual(look.getLookFileName(), expected_values[1], "Look file name wrong")
+            assert isinstance(look, catcommon.LookData)
+            assert look.getLookName() == expected_name
+            assert look.getLookFileName() == expected_file_name
 
     def test_can_convert_sound_to_catrobat_soundinfo_class(self):
         sounds = self.project.objects[1].get_sounds()
-        for expected_values, sound in zip([("meow", "83c36d806dc92327b9e7049a565c6bff_meow.wav"), ], sounds):
+        for (expected_name, expected_file_name), sound in zip([("meow", "83c36d806dc92327b9e7049a565c6bff_meow.wav"), ], sounds):
             soundinfo = converter._catrobat_sound_from(sound)
-            self.assertTrue(isinstance(soundinfo, catcommon.SoundInfo), "Sound conversion return wrong class")
-            self.assertEqual(soundinfo.getTitle(), expected_values[0], "Sound name wrong")
-            self.assertEqual(soundinfo.getSoundFileName(), expected_values[1], "Sound file name wrong")
+            assert isinstance(soundinfo, catcommon.SoundInfo)
+            assert soundinfo.getTitle() == expected_name
+            assert soundinfo.getSoundFileName() == expected_file_name
 
 
 class TestConvertBlocks(common_testing.BaseTestCase):
@@ -206,19 +206,19 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def test_can_convert_loop_blocks(self):
         scratch_do_loop = ["doRepeat", 10, [[u'forward:', 10], [u'playDrum', 1, 0.2], [u'forward:', -10], [u'playDrum', 1, 0.2]]]
         catr_do_loop = converter._catrobat_bricks_from(scratch_do_loop, DUMMY_CATR_SPRITE)
-        self.assertTrue(isinstance(catr_do_loop, list))
-        # 1 loop start + 4 inner loop bricks +2 inner note bicks (playDrum not suppored) + 1 loop end = 8
-        self.assertEqual(8, len(catr_do_loop))
+        assert isinstance(catr_do_loop, list)
+        # 1 loop start + 4 inner loop bricks +2 inner note bricks (playDrum not supported) + 1 loop end = 8
+        assert len(catr_do_loop) == 8
         expected_brick_classes = [catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.LoopEndBrick]
-        self.assertEqual(expected_brick_classes, [_.__class__ for _ in catr_do_loop])
+        assert [_.__class__ for _ in catr_do_loop] == expected_brick_classes
 
     def test_can_convert_waitelapsedfrom_block(self):
         scratch_block = ["wait:elapsed:from:", 1]
         [catr_brick] = converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        self.assertTrue(isinstance(catr_brick, catbricks.WaitBrick))
+        assert isinstance(catr_brick, catbricks.WaitBrick)
         formula_seconds = catr_brick.timeToWaitInSeconds.formulaTree
-        self.assertEqual(formula_seconds.type, catformula.FormulaElement.ElementType.NUMBER)
-        self.assertEqual(formula_seconds.value, "1.0")
+        assert formula_seconds.type == catformula.FormulaElement.ElementType.NUMBER
+        assert formula_seconds.value == "1.0"
 
     def test_fail_convert_playsound_block_if_sound_missing(self):
         scratch_block = ["playSound:", "bird"]
@@ -226,32 +226,33 @@ class TestConvertBlocks(common_testing.BaseTestCase):
             converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
 
     def test_can_convert_playsound_block(self):
-        scratch_block = ["playSound:", "bird"]
-        dummy_sprite = self.get_sprite_with_soundinfo(scratch_block[1])
+        scratch_block = _, sound_name = ["playSound:", "bird"]
+        dummy_sprite = self.get_sprite_with_soundinfo(sound_name)
         [catr_brick] = converter._catrobat_bricks_from(scratch_block, dummy_sprite)
-        self.assertTrue(isinstance(catr_brick, catbricks.PlaySoundBrick))
-        self.assertEqual(scratch_block[1], catr_brick.sound.getTitle())
+        assert isinstance(catr_brick, catbricks.PlaySoundBrick)
+        assert catr_brick.sound.getTitle() == sound_name
 
     def test_can_convert_doplaysoundandwait_block(self):
-        scratch_block = ["doPlaySoundAndWait", "bird"]
-        dummy_sprite = self.get_sprite_with_soundinfo(scratch_block[1])
+        scratch_block = _, sound_name = ["doPlaySoundAndWait", "bird"]
+        dummy_sprite = self.get_sprite_with_soundinfo(sound_name)
         [play_sound_brick, wait_brick] = converter._catrobat_bricks_from(scratch_block, dummy_sprite)
-        self.assertTrue(isinstance(play_sound_brick, catbricks.PlaySoundBrick))
-        self.assertEqual(scratch_block[1], play_sound_brick.sound.getTitle())
-        self.assertTrue(isinstance(wait_brick, catbricks.WaitBrick))
+        assert isinstance(play_sound_brick, catbricks.PlaySoundBrick)
+        assert play_sound_brick.sound.getTitle() == sound_name
+        assert isinstance(wait_brick, catbricks.WaitBrick)
+        # FIXME: assert for wait variable is missing
 
     def test_can_convert_nextcostume_block(self):
         scratch_block = ["nextCostume"]
         [catr_brick] = converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        self.assertTrue(isinstance(catr_brick, catbricks.NextLookBrick))
+        assert isinstance(catr_brick, catbricks.NextLookBrick)
 
     def test_can_convert_glideto_block(self):
-        scratch_block = ["glideSecs:toX:y:elapsed:from:", 5, 174, -122]
+        scratch_block = _, glide_duration, glide_x, glide_y = ["glideSecs:toX:y:elapsed:from:", 5, 174, -122]
         [catr_brick] = converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        self.assertTrue(isinstance(catr_brick, catbricks.GlideToBrick))
-        self.assertEqual(scratch_block[1], int(float(catr_brick.durationInSeconds.formulaTree.getValue())))
-        self.assertEqual(scratch_block[2], int(float(catr_brick.xDestination.formulaTree.getValue())))
-        self.assertEqual(scratch_block[3], -1 * int(float(catr_brick.yDestination.formulaTree.rightChild.getValue())))
+        assert isinstance(catr_brick, catbricks.GlideToBrick)
+        assert int(float(catr_brick.durationInSeconds.formulaTree.getValue())) == glide_duration
+        assert int(float(catr_brick.xDestination.formulaTree.getValue())) == glide_x
+        assert -1 * int(float(catr_brick.yDestination.formulaTree.rightChild.getValue())) == glide_y
 
     def test_can_convert_startscene_block(self):
         scratch_block = _, look_name = ["startScene", "look1"]
@@ -260,13 +261,13 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         catr_script = converter._catrobat_script_from(script, self.sprite_stub)
         converter._catr_project = None
         stub_scripts = self.sprite_stub.scriptList
-        self.assertEqual(1, stub_scripts.size())
-        self.assert_(isinstance(stub_scripts.get(0), catbase.BroadcastScript))
+        assert stub_scripts.size() == 1
+        assert isinstance(stub_scripts.get(0), catbase.BroadcastScript)
 
         expected_msg = converter._background_look_to_broadcast_message(look_name)
-        self.assertEqual(expected_msg, stub_scripts.get(0).getBroadcastMessage())
-        self.assert_(isinstance(catr_script.getBrickList().get(0), catbricks.BroadcastBrick))
-        self.assertEqual(expected_msg, catr_script.getBrickList().get(0).getBroadcastMessage())
+        assert expected_msg, stub_scripts.get(0).getBroadcastMessage()
+        assert isinstance(catr_script.getBrickList().get(0), catbricks.BroadcastBrick)
+        assert expected_msg, catr_script.getBrickList().get(0).getBroadcastMessage()
 
 
 class TestConvertScripts(unittest.TestCase):

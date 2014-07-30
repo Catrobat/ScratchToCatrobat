@@ -34,7 +34,7 @@ class WebApiTest(common_testing.BaseTestCase):
             result_folder_path = self._testresult_folder_path
             scratchwebapi.download_project(project_url, result_folder_path)
             # TODO: replace with verifying function
-            self.assertTrue(scratch.Project(result_folder_path))
+            assert scratch.Project(result_folder_path)
 
     def test_fail_on_wrong_url(self):
         for wrong_url in ['http://www.tugraz.at', 'http://www.ist.tugraz.at/', 'http://scratch.mit.edu/', 'http://scratch.mit.edu/projects']:

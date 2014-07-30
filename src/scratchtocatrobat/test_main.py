@@ -41,7 +41,7 @@ class MainTest(common_testing.ProjectTestCase):
         if len(args) == 1:
             args += [output_path]
         return_val = self._main_method(args)
-        self.assertEqual(main.EXIT_SUCCESS, return_val)
+        assert return_val == main.EXIT_SUCCESS
 
         project_name = scratchwebapi.request_project_name_for(project_id)
         self.assertValidCatrobatProgramPackageAndUnpackIf(converter.converted_output_path(output_path, project_name), project_name)

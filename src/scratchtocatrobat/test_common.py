@@ -35,11 +35,11 @@ class TestDictAccessWrapper(common.DictAccessWrapper):
 class DictAccessWrapperTest(common_testing.BaseTestCase):
 
     def test_can_use_contains_dynamically_for_keys(self):
-        self.assertEqual(False, TestDictAccessWrapper({}).contains_None())
-        self.assertEqual(False, TestDictAccessWrapper({'', False, None}).contains_None())
-        self.assertEqual(True, TestDictAccessWrapper({'', False, None, 'None'}).contains_None())
-        self.assertEqual(True, TestDictAccessWrapper({'keyWithUppercaseAndNumbers123'}).contains_keyWithUppercaseAndNumbers123())
-        self.assertEqual(True, TestDictAccessWrapper({u'unicodeKey'}).contains_unicodeKey())
+        assert not TestDictAccessWrapper({}).contains_None()
+        assert not TestDictAccessWrapper({'', False, None}).contains_None()
+        assert TestDictAccessWrapper({'', False, None, 'None'}).contains_None()
+        assert TestDictAccessWrapper({'keyWithUppercaseAndNumbers123'}).contains_keyWithUppercaseAndNumbers123()
+        assert TestDictAccessWrapper({u'unicodeKey'}).contains_unicodeKey()
 
     def test_can_use_index_for_keys(self):
         for dict_access_object in (TestDictAccessWrapper({}), TestDictAccessWrapper({'', False, None})):
@@ -48,16 +48,16 @@ class DictAccessWrapperTest(common_testing.BaseTestCase):
                 self.failOnMissingException()
             except KeyError:
                 pass
-        self.assertEqual(True, TestDictAccessWrapper({'None': True})['None'])
-        self.assertEqual(True, TestDictAccessWrapper({'keyWithUppercaseAndNumbers123': True})['keyWithUppercaseAndNumbers123'])
-        self.assertEqual(True, TestDictAccessWrapper({u'unicodeKey': True})['unicodeKey'])
+        assert TestDictAccessWrapper({'None': True})['None']
+        assert TestDictAccessWrapper({'keyWithUppercaseAndNumbers123': True})['keyWithUppercaseAndNumbers123']
+        assert TestDictAccessWrapper({u'unicodeKey': True})['unicodeKey']
 
     def test_can_use_get_for_keys(self):
-        self.assertEqual(None, TestDictAccessWrapper({}).get_None())
-        self.assertEqual(None, TestDictAccessWrapper({'', False, None}).get_None())
-        self.assertEqual(True, TestDictAccessWrapper({'None': True}).get_None())
-        self.assertEqual(True, TestDictAccessWrapper({'keyWithUppercaseAndNumbers123': True}).get_keyWithUppercaseAndNumbers123())
-        self.assertEqual(True, TestDictAccessWrapper({u'unicodeKey': True}).get_unicodeKey())
+        assert TestDictAccessWrapper({}).get_None() is None
+        assert TestDictAccessWrapper({'', False, None}).get_None() is None
+        assert TestDictAccessWrapper({'None': True}).get_None()
+        assert TestDictAccessWrapper({'keyWithUppercaseAndNumbers123': True}).get_keyWithUppercaseAndNumbers123()
+        assert TestDictAccessWrapper({u'unicodeKey': True}).get_unicodeKey()
 
 
 class CommonTest(common_testing.BaseTestCase):

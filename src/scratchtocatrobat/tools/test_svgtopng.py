@@ -55,7 +55,7 @@ class SvgToPngTest(common_testing.BaseTestCase):
             assert os.path.exists(input_svg_path)
             output_png_path = svgtopng.convert(input_svg_path)
             assert os.path.exists(output_png_path)
-            self.assertEqual('png', imghdr.what(output_png_path))
+            assert imghdr.what(output_png_path) == "png"
 
 
 if __name__ == "__main__":

@@ -49,13 +49,12 @@ class ProjectExtractionTest(common_testing.BaseTestCase):
     def test_can_extract_project(self):
         for project_file in common_testing.TEST_PROJECT_FILENAME_TO_ID_MAP:
             scratch.extract_project(common.get_test_project_packed_file(project_file), self.temp_dir)
-            self.assertTrue(scratch.Project(self.temp_dir))
+            assert scratch.Project(self.temp_dir)
 
 
 class TestProjectInit(unittest.TestCase):
     def test_can_construct_on_correct_input(self):
-        project = scratch.Project(common.get_test_project_path("simple"), name="dummy", id_=common_testing.PROJECT_DUMMY_ID)
-        self.assertTrue(project, "No project object")
+        assert scratch.Project(common.get_test_project_path("simple"), name="dummy", id_=common_testing.PROJECT_DUMMY_ID)
 
     def test_fail_on_non_existing_input_path(self):
         with self.assertRaises(EnvironmentError):
@@ -87,20 +86,20 @@ class TestProjectFunc(unittest.TestCase):
         }
         for project_folder, project_id in test_project_folder_to_project_id.iteritems():
             project_path = common.get_test_project_path(project_folder)
-            self.assertEqual(project_id, scratch.Project(project_path).project_id)
+            assert project_id, scratch.Project(project_path).project_id
 
     def test_can_access_md5_name_of_stage_costumes(self):
         expected_stage_customes_md5_names = set(["510da64cf172d53750dffd23fbf73563.png", "033f926829a446a28970f59302b0572d.png"])
-        self.assertEqual(expected_stage_customes_md5_names, set(self.project.background_md5_names))
+        assert set(self.project.background_md5_names) == expected_stage_customes_md5_names
 
     def test_can_access_listened_pressed_keys(self):
         project = scratch.Project(common.get_test_project_path("keys_pressed"))
-        self.assertEqual(set(["d", "c", "a", "4", "8"]), project.listened_keys)
+        assert project.listened_keys == set(["d", "c", "a", "4", "8"])
 
     def test_can_access_unused_resources_of_project(self):
         project = scratch.Project(common.get_test_project_path("simple"), name="simple", id_=common_testing.PROJECT_DUMMY_ID)
-        self.assertGreater(len(project.unused_resource_paths), 0)
-        self.assertSetEqual(set(['0.png', '2.wav', '3.png', '4.png', '5.png', '6.png', '8.png']), set(map(os.path.basename, project.unused_resource_paths)))
+        assert len(project.unused_resource_paths) > 0
+        assert set(map(os.path.basename, project.unused_resource_paths)) == set(['0.png', '2.wav', '3.png', '4.png', '5.png', '6.png', '8.png'])
 
     def test_can_access_sound_and_costume_by_resource_name(self):
         scratch_resource_names = {
@@ -111,7 +110,7 @@ class TestProjectFunc(unittest.TestCase):
         }
         for resource_name in scratch_resource_names:
             for data_dict in self.project.find_all_resource_dicts_for(resource_name):
-                self.assertTrue("soundName" in data_dict or "costumeName" in data_dict, "No sound or costume data dict")
+                assert "soundName" in data_dict or "costumeName" in data_dict
 
 
 _OBJECT_TEMPLATE_VARIABLES = ("variables", "scripts", "sounds", "costumes")
@@ -170,11 +169,11 @@ class TestRawProjectInit(unittest.TestCase):
     def test_can_create_from_raw_content(self):
         for project_name in self.TEST_PROJECTS:
             project_data_path = os.path.join(common.get_test_project_path(project_name), scratch.SCRATCH_PROJECT_CODE_FILE)
-            self.assertTrue(scratch.RawProject.from_project_code_content(common.content_of(project_data_path)))
+            assert scratch.RawProject.from_project_code_content(common.content_of(project_data_path))
 
     def test_can_create_from_project_directory(self):
         for project_name in self.TEST_PROJECTS:
-            self.assertTrue(scratch.RawProject.from_project_folder_path(common.get_test_project_path(project_name)))
+            assert scratch.RawProject.from_project_folder_path(common.get_test_project_path(project_name))
 
     def test_fail_on_corrupt_file(self):
         with self.assertRaises(scratch.UnsupportedProjectFileError):
@@ -189,21 +188,21 @@ class TestRawProjectFunc(unittest.TestCase):
 
     def test_can_access_scratch_objects(self):
         for scratch_object in self.project.objects:
-            self.assertTrue(scratch_object)
-            self.assertTrue(isinstance(scratch_object, scratch.Object))
-        self.assertEqual("Stage", self.project.objects[0].get_objName(), "Stage object missing")
-        self.assertEqual(['Stage', 'Sprite1', 'Cassy Dance'], [_.get_objName() for _ in self.project.objects])
+            assert scratch_object
+            assert isinstance(scratch_object, scratch.Object)
+        assert self.project.objects[0].get_objName() == "Stage", "Stage object missing"
+        assert [_.get_objName() for _ in self.project.objects] == ['Stage', 'Sprite1', 'Cassy Dance']
 
     def test_can_access_stage_object(self):
         stage_object = self.project.stage_object
-        self.assertEqual("Stage", stage_object.get_objName())
+        assert stage_object.get_objName() == "Stage"
 
     def test_can_access_project_variables(self):
         variables_test_code_content = common.content_of(common.get_test_resources_path("scratch_code_only", "variables_test.json"))
         raw_project = scratch.RawProject.from_project_code_content(variables_test_code_content)
-        self.assertEqual(["$", "MarketOpen", "Multiplier", "bc1bought", "bc2bought"], [variable["name"] for variable in raw_project.get_variables()])
+        assert [variable["name"] for variable in raw_project.get_variables()] == ["$", "MarketOpen", "Multiplier", "bc1bought", "bc2bought"]
         # Scratch does not allow local variables for the stage object
-        self.assertListEqual([], raw_project.stage_object.get_variables())
+        assert raw_project.stage_object.get_variables() == []
 
 
 class TestObjectInit(unittest.TestCase):
@@ -213,9 +212,9 @@ class TestObjectInit(unittest.TestCase):
         self.raw_object = json.loads(_default_object_json_str())
 
     def test_can_construct_on_correct_input(self):
-        self.assertTrue(scratch.Object.is_valid_class_input(self.raw_object))
+        assert scratch.Object.is_valid_class_input(self.raw_object)
         scratch_object = scratch.Object(self.raw_object)
-        self.assertIsNotNone(scratch_object)
+        assert scratch_object is not None
 
     def test_fail_on_wrong_input(self):
         del self.raw_object["objName"]
@@ -225,7 +224,7 @@ class TestObjectInit(unittest.TestCase):
             wrong_raw_object
         ]
         for faulty_input in faulty_object_structures:
-            self.assertFalse(scratch.Object.is_valid_class_input(faulty_input), "Wrong input not detected: {}".format(faulty_input))
+            assert not scratch.Object.is_valid_class_input(faulty_input)
             with self.assertRaises(scratch.ObjectError):
                 scratch.Object(faulty_input)
 
@@ -237,32 +236,32 @@ class TestObjectFunc(unittest.TestCase):
 
     def test_can_access_scratch_scripts(self):
         scripts = self.scratch_object.scripts
-        self.assertGreater(len(scripts), 1)
+        assert len(scripts) > 1
         for scratch_script in scripts:
-            self.assertIsNotNone(scratch_script)
-            self.assertTrue(isinstance(scratch_script, scratch.Script))
+            assert scratch_script is not None
+            assert isinstance(scratch_script, scratch.Script)
 
     def test_can_access_scratch_costumes(self):
-        self.assertGreater(len(self.scratch_object.get_costumes()), 1)
+        assert len(self.scratch_object.get_costumes()) > 1
         for costume in self.scratch_object.get_costumes():
-            self.assertIsNotNone(costume)
-            self.assertTrue(isinstance(costume, dict))
-            self.assertIn("costumeName", costume)
+            assert costume is not None
+            assert isinstance(costume, dict)
+            assert "costumeName" in costume
 
     def test_can_access_scratch_sounds(self):
-        self.assertGreater(len(self.scratch_object.get_sounds()), 1)
+        assert len(self.scratch_object.get_sounds()) > 1
         for sound in self.scratch_object.get_sounds():
-            self.assertIsNotNone(sound)
-            self.assertTrue(isinstance(sound, dict))
-            self.assertIn("soundName", sound)
+            assert sound is not None
+            assert isinstance(sound, dict)
+            assert "soundName" in sound
 
     def test_can_access_scratch_variables(self):
-        self.assertGreater(len(self.scratch_object.get_variables()), 1)
+        assert len(self.scratch_object.get_variables()) > 1
         for variable in self.scratch_object.get_variables():
-            self.assertIsNotNone(variable)
-            self.assertTrue(isinstance(variable, dict))
-            self.assertIn("name", variable)
-            self.assertIn("value", variable)
+            assert variable is not None
+            assert isinstance(variable, dict)
+            assert "name" in variable
+            assert "value" in variable
 
 
 class TestScriptInit(unittest.TestCase):
@@ -270,7 +269,7 @@ class TestScriptInit(unittest.TestCase):
     def test_can_construct_on_correct_input(self):
         for script_input in EASY_SCRIPTS:
             script = scratch.Script(script_input)
-            self.assertTrue(script)
+            assert script
 
     def test_fail_on_wrong_input(self):
         faulty_script_structures = [
@@ -280,7 +279,7 @@ class TestScriptInit(unittest.TestCase):
             [0101, 444, "further the third one must be a list"]
         ]
         for faulty_input in faulty_script_structures:
-            self.assertFalse(scratch.Script.is_valid_script_input(faulty_input), "Wrong input not detected: {}".format(faulty_input))
+            assert not scratch.Script.is_valid_script_input(faulty_input)
             with self.assertRaises(scratch.ScriptError):
                 scratch.Script(faulty_input)
 
@@ -293,10 +292,10 @@ class TestScriptFunc(unittest.TestCase):
         self.script = scratch.Script(self.input_data)
 
     def test_can_access_blocks_from_scratch_script(self):
-        self.assertEqual('whenGreenFlag', self.script.get_type())
+        assert self.script.get_type() == 'whenGreenFlag'
         expected_block_names = ["say:duration:elapsed:from:", "doRepeat", "changeGraphicEffect:by:", "say:"]
-        self.assertEqual(expected_block_names, [block[0] for block in self.script.blocks])
-        self.assertEqual(self.script.raw_script, self.input_data[2])
+        assert [block[0] for block in self.script.blocks] == expected_block_names
+        assert self.script.raw_script == self.input_data[2]
 
 
 if __name__ == "__main__":

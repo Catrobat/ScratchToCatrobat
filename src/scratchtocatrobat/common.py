@@ -18,6 +18,7 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import copy
 import hashlib
 import logging
 import os
@@ -106,7 +107,7 @@ class DictAccessWrapper(object):
         if isinstance(dict_object, set):
             dict_object = dict.fromkeys(dict_object, None)
         assert isinstance(dict_object, dict)
-        self.__dict_object = dict_object
+        self.__dict_object = copy.deepcopy(dict_object)
 
     def _checked_dict_access(self):
         dict_ = self._dict_access_object()

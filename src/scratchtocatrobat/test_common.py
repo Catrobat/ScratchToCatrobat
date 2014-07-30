@@ -59,6 +59,14 @@ class DictAccessWrapperTest(common_testing.BaseTestCase):
         assert TestDictAccessWrapper({'keyWithUppercaseAndNumbers123': True}).get_keyWithUppercaseAndNumbers123()
         assert TestDictAccessWrapper({u'unicodeKey': True}).get_unicodeKey()
 
+    def test_can_not_modify_wrapper_dict_content(self):
+        test_dict = dict((x, "unchanged" + str(x)) for x in range(5))
+        dict_wrapper = TestDictAccessWrapper(test_dict)
+        test_key = 1
+        value_before_dict_change = dict_wrapper[test_key]
+        test_dict[test_key] = "changed"
+        assert value_before_dict_change == dict_wrapper[test_key]
+
 
 class CommonTest(common_testing.BaseTestCase):
 

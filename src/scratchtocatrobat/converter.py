@@ -231,7 +231,7 @@ class _ScratchToCatrobat(object):
     @classmethod
     def create_script(cls, scratch_script_name, sprite, arguments):
         assert sprite is not None
-        if scratch_script_name not in scratch.SCRATCH_SCRIPTS:
+        if scratch_script_name not in scratch.SCRIPTS:
             assert False, "Missing script mapping for: " + scratch_script_name
         # TODO: separate script and brick mapping
         return cls.catrobat_brick_for(scratch_script_name)(sprite, *arguments)

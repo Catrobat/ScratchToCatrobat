@@ -28,16 +28,18 @@ import zipfile
 from scratchtocatrobat import common
 from scratchtocatrobat import scratchwebapi
 
-log = common.log
+_log = common.log
+
+_PROJECT_FILE_NAME = "project.json"
 
 HTTP_PROJECT_URL_PREFIX = "http://scratch.mit.edu/projects/"
 
-SCRIPT_GREEN_FLAG, SCRIPT_RECEIVE, SCRIPT_KEY_PRESSED, SCRIPT_SENSOR_GREATER_THAN, SCRIPT_SCENE_STARTS, SCRIPT_CLICKED = SCRATCH_SCRIPTS = \
+PROJECT_REQUIRED_KEYS = ["objName", "info", "currentCostumeIndex", "penLayerMD5", "tempoBPM", "videoAlpha", "children", "costumes"]
+SCRIPT_GREEN_FLAG, SCRIPT_RECEIVE, SCRIPT_KEY_PRESSED, SCRIPT_SENSOR_GREATER_THAN, SCRIPT_SCENE_STARTS, SCRIPT_CLICKED = SCRIPTS = \
     ["whenGreenFlag", "whenIReceive", "whenKeyPressed", "whenSensorGreaterThan", "whenSceneStarts", "whenClicked", ]
-SCRATCH_PROJECT_CODE_FILE = "project.json"
 STAGE_OBJECT_NAME = "Stage"
-STAGE_HEIGHT_IN_PIXELS = 360
 STAGE_WIDTH_IN_PIXELS = 480
+STAGE_HEIGHT_IN_PIXELS = 360
 
 
 class JsonKeys(object):
@@ -81,7 +83,7 @@ class RawProject(common.DictAccessWrapper):
 
     def _verify_scratch_dictionary(self, dict_, data_origin):
         # FIXME: check which tags are really required
-        for key in ["objName", "info", "currentCostumeIndex", "penLayerMD5", "tempoBPM", "videoAlpha", "children", "costumes", "sounds"]:
+        for key in PROJECT_REQUIRED_KEYS:
             if key not in dict_:
                 raise UnsupportedProjectFileError("In project file from: '{}' key='{}' must be set.".format(data_origin, key))
 
@@ -101,7 +103,7 @@ class RawProject(common.DictAccessWrapper):
 
     @staticmethod
     def raw_project_code_from_project_folder_path(project_folder_path):
-        dict_path = os.path.join(project_folder_path, SCRATCH_PROJECT_CODE_FILE)
+        dict_path = os.path.join(project_folder_path, _PROJECT_FILE_NAME)
         if not os.path.exists(dict_path):
             raise EnvironmentError("Project file not found: {!r}. Please create.".format(dict_path))
         with open(dict_path) as fp:
@@ -175,13 +177,13 @@ class Project(RawProject):
         self.background_md5_names = set([costume[JsonKeys.COSTUME_MD5] for costume in self.stage_object.get_costumes()])
         self.unused_resource_names, self.unused_resource_paths = common.pad(zip(*self.find_unused_resources_name_and_filepath()), 2, [])
         for unused_path in self.unused_resource_paths:
-            log.warning("Project folder contains unused resource file: '%s'. These will be omitted for Catrobat project.", os.path.basename(unused_path))
+            _log.warning("Project folder contains unused resource file: '%s'. These will be omitted for Catrobat project.", os.path.basename(unused_path))
 
     def find_unused_resources_name_and_filepath(self):
         for file_path in glob.glob(os.path.join(self.project_base_path, "*")):
             md5_resource_filename = common.md5_hash(file_path) + os.path.splitext(file_path)[1]
             if md5_resource_filename not in self.resource_names:
-                if os.path.basename(file_path) != SCRATCH_PROJECT_CODE_FILE:
+                if os.path.basename(file_path) != _PROJECT_FILE_NAME:
                     yield md5_resource_filename, file_path
 
     def find_all_resource_dicts_for(self, resource_name):
@@ -217,7 +219,8 @@ class Script(object):
         self.raw_script = json_input[2]
         script_block, self.blocks = self.raw_script[0], self.raw_script[1:]
         self.type, self.arguments = script_block[0], script_block[1:]
-        if self.type not in SCRATCH_SCRIPTS:
+        # FIXME: never reached as is_valid_script_input() fails before
+        if self.type not in SCRIPTS:
             raise ScriptError("Unknown Scratch script type: {}".format(self.type))
 
     @classmethod
@@ -225,10 +228,10 @@ class Script(object):
         if (isinstance(json_input, list) and len(json_input) == 3 and isinstance(json_input[0], int) and isinstance(json_input[1], int) and isinstance(json_input[2], list)):
             # NOTE: could use a json validator instead
             script_content = json_input[2]
-            if script_content[0][0] in SCRATCH_SCRIPTS:
+            if script_content[0][0] in SCRIPTS:
                 return True
 
-        log.warning("No valid Scratch script: {}".format(json_input))
+        _log.warning("No valid Scratch script: {}".format(json_input))
         return False
 
     def get_type(self):

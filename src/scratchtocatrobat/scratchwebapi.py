@@ -84,7 +84,7 @@ def download_project(project_url, target_dir):
             fp.write(data)
 
     def project_code_path(target_dir):
-        return os.path.join(target_dir, scratch.SCRATCH_PROJECT_CODE_FILE)
+        return os.path.join(target_dir, scratch._PROJECT_FILE_NAME)
 
     # TODO: consolidate with classes from scratch module
     project_id = project_id_from_url(project_url)

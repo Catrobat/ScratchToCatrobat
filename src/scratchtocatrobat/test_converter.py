@@ -117,7 +117,7 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
         assert all(isinstance(_, catbase.Sprite) for _ in sprites)
 
         sprite_0 = sprites[0]
-        assert sprite_0.getName() == "Stage"
+        assert sprite_0.getName() == scratch.STAGE_OBJECT_NAME
         assert [_.__class__ for _ in sprite_0.scriptList] == [catbase.StartScript]
         start_script = sprite_0.scriptList[0]
         # TODO into own test case

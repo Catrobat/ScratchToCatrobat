@@ -167,7 +167,7 @@ class TestRawProjectInit(unittest.TestCase):
 
     def test_can_create_from_raw_content(self):
         for project_name in self.TEST_PROJECTS:
-            project_data_path = os.path.join(common.get_test_project_path(project_name), scratch.SCRATCH_PROJECT_CODE_FILE)
+            project_data_path = os.path.join(common.get_test_project_path(project_name), scratch._PROJECT_FILE_NAME)
             assert scratch.RawProject.from_project_code_content(common.content_of(project_data_path))
 
     def test_can_create_from_project_directory(self):
@@ -189,12 +189,12 @@ class TestRawProjectFunc(unittest.TestCase):
         for scratch_object in self.project.objects:
             assert scratch_object
             assert isinstance(scratch_object, scratch.Object)
-        assert self.project.objects[0].get_objName() == "Stage", "Stage object missing"
+        assert self.project.objects[0].get_objName() == scratch.STAGE_OBJECT_NAME, "Stage object missing"
         assert [_.get_objName() for _ in self.project.objects] == ['Stage', 'Sprite1', 'Cassy Dance']
 
     def test_can_access_stage_object(self):
         stage_object = self.project.stage_object
-        assert stage_object.get_objName() == "Stage"
+        assert stage_object.get_objName() == scratch.STAGE_OBJECT_NAME
 
     def test_can_access_project_variables(self):
         variables_test_code_content = common.content_of(common.get_test_resources_path("scratch_code_only", "variables_test.json"))

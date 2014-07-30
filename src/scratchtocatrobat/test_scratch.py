@@ -113,20 +113,16 @@ class TestProjectFunc(unittest.TestCase):
                 assert "soundName" in data_dict or "costumeName" in data_dict
 
 
-_OBJECT_TEMPLATE_VARIABLES = ("variables", "scripts", "sounds", "costumes")
 _OBJECT_JSON_STR = '''{
     "objName": "Sprite1",
-    "variables": [$%s],
-    "scripts": [$%s],
-    "sounds": [$%s],
-    "costumes": [$%s],
+    $keys
     "currentCostumeIndex": 0,
     "scratchX": 45,
     "scratchY": -102,
     "scale": 1,
     "direction": 90,
     "rotationStyle": "normal"
-}''' % _OBJECT_TEMPLATE_VARIABLES
+}'''
 _SCRIPT_JSON_STR = '[30, 355, [["whenKeyPressed", "space"], ["dummy_block"]]]'
 _SOUND_JSON_STR = '''{
     "soundName": "meow",
@@ -152,11 +148,14 @@ _VARIABLE_JSON_STR = '''{
 
 
 def _object_json_str(**kwargs):
-    for template_variable in _OBJECT_TEMPLATE_VARIABLES:
-        if template_variable not in kwargs:
-            kwargs[template_variable] = []
-    kwargs_with_str_values = dict((template_variable, ",".join(value_list)) for template_variable, value_list in kwargs.iteritems())
-    return string.Template(_OBJECT_JSON_STR).safe_substitute(**kwargs_with_str_values)
+    keys = []
+    for key, values in kwargs.iteritems():
+        if len(values) > 0:
+            keys += ["\"%s\": [%s]" % (key, ",".join(values))]
+    # to add trailing comma
+    if len(keys) > 0:
+        keys += [""]
+    return string.Template(_OBJECT_JSON_STR).safe_substitute(keys=",\n".join(keys))
 
 
 def _default_object_json_str(number_of_scripts=2, number_of_sounds=2, number_of_costumes=2, number_of_variables=2):

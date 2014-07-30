@@ -195,12 +195,12 @@ class Project(RawProject):
 class Object(common.DictAccessWrapper):
 
     def __init__(self, object_data):
-        super(Object, self).__init__(object_data)
         if not self.is_valid_class_input(object_data):
             raise ObjectError("Input is no valid Scratch object.")
         for key in (JsonKeys.SOUNDS, JsonKeys.COSTUMES, JsonKeys.SCRIPTS, JsonKeys.VARIABLES):
             if key not in object_data:
                 object_data[key] = []
+        super(Object, self).__init__(object_data)
         self.scripts = [Script(_) for _ in self.get_scripts() if Script.is_valid_script_input(_)]
 
     @classmethod

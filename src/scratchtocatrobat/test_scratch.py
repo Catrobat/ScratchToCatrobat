@@ -39,7 +39,8 @@ EASY_SCRIPTS = [
                     ["playDrum", 1, 0.2]]],
             ["changeGraphicEffect:by:", "color", 25],
             ["say:", "test"], ], ],
-    [30, 355, [["whenKeyPressed", "space"], ["changeGraphicEffect:by:", "color", 25]]]
+    [30, 355, [["whenKeyPressed", "space"], ["changeGraphicEffect:by:", "color", 25]]],
+    [30.5, 355.5, [["whenKeyPressed", "space"], ["changeGraphicEffect:by:", "color", 25]]],
 ]
 
 TEST_PROJECT_FOLDER = "dancing_castle"
@@ -296,6 +297,24 @@ class TestScriptFunc(unittest.TestCase):
         assert [block[0] for block in self.script.blocks] == expected_block_names
         assert self.script.raw_script == self.input_data[2]
 
+
+
+class TestBlockInit(unittest.TestCase):
+
+    def test_can_construct_on_correct_input(self):
+        expected_values = (
+            (4, (2, 2, 2, 1)),
+            (1, (2,)),
+            (1, (2,)),
+        )
+        for script_input, [expected_length, expected_block_children_number] in zip(EASY_SCRIPTS, expected_values):
+            assert len(scratch.Script(script_input).blocks) == expected_length
+            blocks = scratch.BlockElement.from_raw_script(script_input)
+            blocks.prettyprint()
+            assert isinstance(blocks, scratch.BlockElement) and blocks.name == "BLOCK_LIST" and len(blocks.children) == expected_length
+            nested_blocks = blocks.children
+            assert all(isinstance(block, scratch.BlockElement) for block in nested_blocks)
+            assert [len(block.children) for block in nested_blocks] == list(expected_block_children_number)
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']

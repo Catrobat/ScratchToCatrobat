@@ -18,11 +18,14 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from __future__ import print_function
+
 import copy
 import glob
 import itertools
 import json
 import os
+import sys
 import zipfile
 
 from scratchtocatrobat import common
@@ -236,6 +239,55 @@ class Script(object):
 
     def get_type(self):
         return self.type
+
+
+class BlockElement(object):
+
+    def __init__(self, name, is_value=False, arguments=None):
+        if arguments is None:
+            arguments = []
+        self.name = name
+        self.is_value = is_value
+        self.children = []
+        for argument in arguments:
+            self.add(self.from_raw_block(argument))
+
+    def add(self, first, *arguments):
+        self.children.extend(itertools.chain((first,), arguments))
+
+    def __iter__(self):
+        return iter(self.children)
+
+    def prettyprint(self, indent="", file=sys.stdout):
+        print("{} {}".format(indent, self.name), file=file)
+        for child in self:
+            child.prettyprint(indent + "    ")
+
+    def __repr__(self):
+        return "%s(%r)" % (self.__class__, self.__dict__)
+
+    @classmethod
+    def from_raw_script(cls, raw_script):
+        script = Script(raw_script)
+        return cls.from_raw_block(script.blocks)
+
+    @classmethod
+    def from_raw_block(cls, raw_block):
+        block_name = None
+        block_arguments = []
+        if isinstance(raw_block, list):
+            is_block_list = isinstance(raw_block[0], list)
+            if not is_block_list:
+                block_name, block_arguments = raw_block[0], raw_block[1:]
+                assert isinstance(block_name, (str, unicode)), "Raw block: %s" % raw_block
+            else:
+                block_name = "BLOCK_LIST"
+                block_arguments = raw_block
+            is_value = False
+        else:
+            block_name = raw_block
+            is_value = True
+        return cls(block_name, is_value=is_value, arguments=block_arguments)
 
 
 class UnsupportedProjectFileError(common.ScratchtobatError):

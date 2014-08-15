@@ -211,7 +211,6 @@ class TemporaryDirectory(object):
             self._rmdir(path)
         except OSError:
             pass
-        assert not self._path_exists(path)
 
 
 # based on: http://www.saltycrane.com/blog/2009/11/trying-out-retry-decorator-python/

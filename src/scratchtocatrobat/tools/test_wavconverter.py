@@ -41,17 +41,17 @@ class WavConverterTest(common_testing.BaseTestCase):
             os.environ[_ENV_PATH] = saved_path_env
 
     def test_can_detect_android_incompatible_wav_file(self):
-        wav_dir = os.path.join(common.get_test_resources_path(), "wav_adpcm")
+        wav_dir = os.path.join(common_testing.get_test_resources_path(), "wav_adpcm")
         for wav_path in [os.path.join(wav_dir, _) for _ in os.listdir(wav_dir)]:
             assert not wavconverter.is_android_compatible_wav(wav_path)
 
     def test_can_detect_android_compatible_wav_file(self):
-        wav_dir = os.path.join(common.get_test_resources_path(), "wav_pcm")
+        wav_dir = os.path.join(common_testing.get_test_resources_path(), "wav_pcm")
         for wav_path in [os.path.join(wav_dir, _) for _ in os.listdir(wav_dir)]:
             assert wavconverter.is_android_compatible_wav(wav_path)
 
     def test_can_convert_android_incompatible_to_compatible_wav_file(self):
-        wav_dir = os.path.join(common.get_test_resources_path(), "wav_adpcm")
+        wav_dir = os.path.join(common_testing.get_test_resources_path(), "wav_adpcm")
         for wav_path in [os.path.join(wav_dir, _) for _ in os.listdir(wav_dir)]:
             assert not wavconverter.is_android_compatible_wav(wav_path)
             converted_wav_path = os.path.join(self._testresult_folder_path, os.path.basename(wav_path))

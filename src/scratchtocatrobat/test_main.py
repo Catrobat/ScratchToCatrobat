@@ -52,7 +52,7 @@ class MainTest(common_testing.ProjectTestCase):
 
     def test_can_provide_catrobat_program_for_scratch_project_file(self):
         for project_filename, project_id in common_testing.TEST_PROJECT_FILENAME_TO_ID_MAP.iteritems():
-            self.assertMainSuccess([common.get_test_project_packed_file(project_filename)], project_id)
+            self.assertMainSuccess([common_testing.get_test_project_packed_file(project_filename)], project_id)
 
 
 if __name__ == "__main__":

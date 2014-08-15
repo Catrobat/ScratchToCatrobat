@@ -47,7 +47,7 @@ class SvgToPngTest(common_testing.BaseTestCase):
             assert svgtopng._BATIK_ENVIRONMENT_HOME in os.environ
 
     def test_can_convert_file_from_svg_to_png(self):
-        regular_svg_path = os.path.join(common.get_test_project_path("dancing_castle"), "1.svg")
+        regular_svg_path = os.path.join(common_testing.get_test_project_path("dancing_castle"), "1.svg")
         svg_path_with_fileext = os.path.join(self.temp_dir, "test_path_which_includes_extension_.svg.svg", "1.svg")
         os.makedirs(os.path.dirname(svg_path_with_fileext))
         shutil.copy(regular_svg_path, svg_path_with_fileext)

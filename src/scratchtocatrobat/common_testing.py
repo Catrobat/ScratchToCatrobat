@@ -61,6 +61,18 @@ OPTIONAL_HEADER_TAGS = ["dateTimeUpload", "description", "tags", "url", "userHan
 _log = common.log
 
 
+def get_test_resources_path(*path_parts):
+    return os.path.join(common.get_project_base_path(), "test", "res", *path_parts)
+
+
+def get_test_project_path(*path_parts):
+    return os.path.join(get_test_resources_path(), "scratch", *path_parts)
+
+
+def get_test_project_packed_file(scratch_file):
+    return os.path.join(get_test_resources_path(), "scratch_packed", scratch_file)
+
+
 class BaseTestCase(unittest.TestCase):
 
     def setUp(self):

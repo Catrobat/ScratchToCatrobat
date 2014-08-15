@@ -64,9 +64,6 @@ class JsonKeys(object):
     VARIABLES = 'variables'
 
 
-def extract_project(input_scratch, output_path):
-    with zipfile.ZipFile(input_scratch, 'r') as myzip:
-        myzip.extractall(output_path)
 
 
 class RawProject(common.DictAccessWrapper):

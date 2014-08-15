@@ -24,8 +24,8 @@ import sys
 from java.io import IOError
 from java.lang import System
 
-from scratchtocatrobat import converter
 from scratchtocatrobat import common
+from scratchtocatrobat import converter
 from scratchtocatrobat import scratch
 from scratchtocatrobat import scratchwebapi
 
@@ -65,7 +65,7 @@ def scratchtobat_main(argv):
                 scratchwebapi.download_project(scratch_project_file_or_url, scratch_project_dir)
             else:
                 log.info("Extracting project from path: '{}' ...".format(scratch_project_file_or_url))
-                scratch.extract_project(scratch_project_file_or_url, scratch_project_dir)
+                common.extract(scratch_project_file_or_url, scratch_project_dir)
             scratch_project = scratch.Project(scratch_project_dir)
             log.info("Converting scratch project %s into output folder: %s", scratch_project, output_dir)
             converter.save_as_catrobat_program_package_to(scratch_project, output_dir)

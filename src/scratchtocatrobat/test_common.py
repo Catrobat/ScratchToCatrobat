@@ -76,6 +76,6 @@ class CommonTest(common_testing.BaseTestCase):
             ("83c36d806dc92327b9e7049a565c6bff_meow.wav"): 847,
         }
         for test_path_structure, expected_duration_in_msec in test_path_structure_to_file_duration_in_msec_map.iteritems():
-            audio_file_path = common.get_test_resources_path(*("wav_pcm", test_path_structure))
+            audio_file_path = common_testing.get_test_resources_path(*("wav_pcm", test_path_structure))
             assert os.path.exists(audio_file_path)
             assert common.length_of_audio_file_in_msec(audio_file_path) == expected_duration_in_msec

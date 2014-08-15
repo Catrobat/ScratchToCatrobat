@@ -42,7 +42,7 @@ def create_catrobat_sprite_stub():
     return sprite
 
 DUMMY_CATR_SPRITE = create_catrobat_sprite_stub()
-TEST_PROJECT_PATH = common.get_test_project_path("dancing_castle")
+TEST_PROJECT_PATH = common_testing.get_test_project_path("dancing_castle")
 
 
 class TestConvertExampleProject(common_testing.ProjectTestCase):
@@ -95,7 +95,7 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
         self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, self.project.name)
 
     def test_can_convert_scratch_project_with_utf8_characters_catrobat_zip(self):
-        project = scratch.Project(common.get_test_project_path("wrong_encoding"))
+        project = scratch.Project(common_testing.get_test_project_path("wrong_encoding"))
         catrobat_zip_file_name = converter.save_as_catrobat_program_package_to(project, self._testresult_folder_path)
 
         self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, project.name)
@@ -295,7 +295,14 @@ class TestConvertScripts(unittest.TestCase):
 class TestConvertProjects(common_testing.ProjectTestCase):
 
     def _test_project(self, project_name):
-        scratch_project = scratch.Project(common.get_test_project_path(project_name), name=project_name, id_=common_testing.PROJECT_DUMMY_ID)
+        if os.path.splitext(project_name)[1]:
+            tempdir = common.TemporaryDirectory()
+            scratch_project_dir = tempdir.name
+            self.addCleanup(tempdir.cleanup)
+            common.extract(common_testing.get_test_project_packed_file(project_name), scratch_project_dir)
+        else:
+            scratch_project_dir = common_testing.get_test_project_path(project_name)
+        scratch_project = scratch.Project(scratch_project_dir, name=project_name, id_=common_testing.PROJECT_DUMMY_ID)
         catrobat_zip_file_name = converter.save_as_catrobat_program_package_to(scratch_project, self._testresult_folder_path)
         self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, project_name, unused_scratch_resources=scratch_project.unused_resource_names)
         # FIXME: no other way yet to access project object after conversion

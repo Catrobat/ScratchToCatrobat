@@ -49,28 +49,28 @@ TEST_PROJECT_FOLDER = "dancing_castle"
 class ProjectExtractionTest(common_testing.BaseTestCase):
     def test_can_extract_project(self):
         for project_file in common_testing.TEST_PROJECT_FILENAME_TO_ID_MAP:
-            scratch.extract_project(common.get_test_project_packed_file(project_file), self.temp_dir)
+            common.extract(common_testing.get_test_project_packed_file(project_file), self.temp_dir)
             assert scratch.Project(self.temp_dir)
 
 
 class TestProjectInit(unittest.TestCase):
     def test_can_construct_on_correct_input(self):
-        assert scratch.Project(common.get_test_project_path("simple"), name="dummy", id_=common_testing.PROJECT_DUMMY_ID)
+        assert scratch.Project(common_testing.get_test_project_path("simple"), name="dummy", id_=common_testing.PROJECT_DUMMY_ID)
 
     def test_fail_on_non_existing_input_path(self):
         with self.assertRaises(EnvironmentError):
             # TODO: check error message
-            scratch.Project(common.get_test_project_path("non_existing_path"))
+            scratch.Project(common_testing.get_test_project_path("non_existing_path"))
 
     def test_fail_on_project_with_missing_image_and_sound_files(self):
         with self.assertRaises(scratch.ProjectError):
             # TODO: check error type
-            scratch.Project(common.get_test_project_path("missing_resources"))
+            scratch.Project(common_testing.get_test_project_path("missing_resources"))
 
     def test_fail_on_project_with_missing_sound_files(self):
         with self.assertRaises(scratch.ProjectError):
             # TODO: check error type
-            scratch.Project(common.get_test_project_path("missing_image_resources"))
+            scratch.Project(common_testing.get_test_project_path("missing_image_resources"))
 
 
 class TestProjectFunc(unittest.TestCase):
@@ -79,14 +79,14 @@ class TestProjectFunc(unittest.TestCase):
         self.project_folder = TEST_PROJECT_FOLDER
 
     def setUp(self):
-        self.project = scratch.Project(common.get_test_project_path(self.project_folder))
+        self.project = scratch.Project(common_testing.get_test_project_path(self.project_folder))
 
     def test_can_access_project_id(self):
         test_project_folder_to_project_id = {
             "dancing_castle": "10205819",
         }
         for project_folder, project_id in test_project_folder_to_project_id.iteritems():
-            project_path = common.get_test_project_path(project_folder)
+            project_path = common_testing.get_test_project_path(project_folder)
             assert project_id, scratch.Project(project_path).project_id
 
     def test_can_access_md5_name_of_stage_costumes(self):
@@ -94,11 +94,11 @@ class TestProjectFunc(unittest.TestCase):
         assert set(self.project.background_md5_names) == expected_stage_customes_md5_names
 
     def test_can_access_listened_pressed_keys(self):
-        project = scratch.Project(common.get_test_project_path("keys_pressed"))
+        project = scratch.Project(common_testing.get_test_project_path("keys_pressed"))
         assert project.listened_keys == set(["d", "c", "a", "4", "8"])
 
     def test_can_access_unused_resources_of_project(self):
-        project = scratch.Project(common.get_test_project_path("simple"), name="simple", id_=common_testing.PROJECT_DUMMY_ID)
+        project = scratch.Project(common_testing.get_test_project_path("simple"), name="simple", id_=common_testing.PROJECT_DUMMY_ID)
         assert len(project.unused_resource_paths) > 0
         assert set(map(os.path.basename, project.unused_resource_paths)) == set(['0.png', '2.wav', '3.png', '4.png', '5.png', '6.png', '8.png'])
 
@@ -168,23 +168,23 @@ class TestRawProjectInit(unittest.TestCase):
 
     def test_can_create_from_raw_content(self):
         for project_name in self.TEST_PROJECTS:
-            project_data_path = os.path.join(common.get_test_project_path(project_name), scratch._PROJECT_FILE_NAME)
+            project_data_path = os.path.join(common_testing.get_test_project_path(project_name), scratch._PROJECT_FILE_NAME)
             assert scratch.RawProject.from_project_code_content(common.content_of(project_data_path))
 
     def test_can_create_from_project_directory(self):
         for project_name in self.TEST_PROJECTS:
-            assert scratch.RawProject.from_project_folder_path(common.get_test_project_path(project_name))
+            assert scratch.RawProject.from_project_folder_path(common_testing.get_test_project_path(project_name))
 
     def test_fail_on_corrupt_file(self):
         with self.assertRaises(scratch.UnsupportedProjectFileError):
-            scratch.RawProject.from_project_folder_path(common.get_test_project_path("faulty_json_file"))
+            scratch.RawProject.from_project_folder_path(common_testing.get_test_project_path("faulty_json_file"))
 
 
 class TestRawProjectFunc(unittest.TestCase):
 
     def setUp(self):
         unittest.TestCase.setUp(self)
-        self.project = scratch.RawProject.from_project_folder_path(common.get_test_project_path("dancing_castle"))
+        self.project = scratch.RawProject.from_project_folder_path(common_testing.get_test_project_path("dancing_castle"))
 
     def test_can_access_scratch_objects(self):
         for scratch_object in self.project.objects:
@@ -198,7 +198,7 @@ class TestRawProjectFunc(unittest.TestCase):
         assert stage_object.get_objName() == scratch.STAGE_OBJECT_NAME
 
     def test_can_access_project_variables(self):
-        variables_test_code_content = common.content_of(common.get_test_resources_path("scratch_code_only", "variables_test.json"))
+        variables_test_code_content = common.content_of(common_testing.get_test_resources_path("scratch_code_only", "variables_test.json"))
         raw_project = scratch.RawProject.from_project_code_content(variables_test_code_content)
         assert [variable["name"] for variable in raw_project.get_variables()] == ["$", "MarketOpen", "Multiplier", "bc1bought", "bc2bought"]
         # Scratch does not allow local variables for the stage object

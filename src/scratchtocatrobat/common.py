@@ -27,6 +27,7 @@ import sys
 import tempfile
 import time
 import urllib2
+import zipfile
 from datetime import datetime
 from functools import wraps
 from itertools import chain
@@ -65,18 +66,6 @@ APPLICATION_NAME = "ScratchToCatrobat Converter"
 
 def isList(obj):
     return isinstance(obj, list)
-
-
-def get_test_resources_path(*path_parts):
-    return os.path.join(get_project_base_path(), "test", "res", *path_parts)
-
-
-def get_test_project_path(*path_parts):
-    return os.path.join(get_test_resources_path(), "scratch", *path_parts)
-
-
-def get_test_project_packed_file(scratch_file):
-    return os.path.join(get_test_resources_path(), "scratch_packed", scratch_file)
 
 
 class ScratchtobatError(Exception):
@@ -288,5 +277,77 @@ def length_of_audio_file_in_msec(file_path):
     audioInputStream = AudioSystem.getAudioInputStream(java.io.File(file_path))
     format_ = audioInputStream.getFormat()
     frames = audioInputStream.getFrameLength()
-    return int((float(frames) / format_.getFrameRate()) * 1000)
+    return float(frames) / format_.getFrameRate()
 
+
+def get_os_platform():
+    """return platform name, but for Jython it uses os.name Java property"""
+    ver = sys.platform.lower()
+    if ver.startswith('java'):
+        import java.lang
+        ver = java.lang.System.getProperty("os.name").lower()
+    return ver
+
+
+def is_unix_platform():
+    return java.io.File.separatorChar == '/'
+
+
+class TimeoutError(Exception):
+    pass
+
+
+# def timeout(seconds=1, error_message=os.strerror(errno.ETIME)):
+#     assert get_os_platform() == "posix", "Only supported on Unix"
+#
+#     def decorator(func):
+#         def _handle_timeout(signum, frame):
+#             raise TimeoutError(error_message)
+#
+#         def wrapper(*args, **kwargs):
+#             signal.signal(signal.SIGALRM, _handle_timeout)
+#             signal.alarm(seconds)
+#             try:
+#                 result = func(*args, **kwargs)
+#             finally:
+#                 signal.alarm(0)
+#             return result
+#
+#         return wraps(func)(wrapper)
+#
+#     return decorator
+
+
+# based on: http://stackoverflow.com/a/22348885/1091453
+class timeout:
+    def __init__(self, seconds=1, error_message='Timeout'):
+        assert is_unix_platform(), "Only supported on Unix"
+        self.seconds = seconds
+        self.error_message = error_message
+
+    def handle_timeout(self, signum, frame):
+        raise TimeoutError(self.error_message)
+
+    def __enter__(self):
+        signal.signal(signal.SIGALRM, self.handle_timeout)
+        signal.alarm(self.seconds)
+
+    def __exit__(self, _type, _value, _traceback):
+        signal.alarm(0)
+
+
+def int_or_float(str_value):
+    assert isinstance(str_value, (str, unicode))
+    try:
+        value = int(str_value)
+    except ValueError:
+        try:
+            value = float(str_value)
+        except ValueError:
+            value = None
+    return value
+
+
+def extract(zip_path, extraction_path):
+    with zipfile.ZipFile(zip_path, 'r') as myzip:
+        myzip.extractall(extraction_path)

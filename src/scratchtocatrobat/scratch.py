@@ -225,13 +225,11 @@ class Script(object):
 
     @classmethod
     def is_valid_script_input(cls, json_input):
-        if (isinstance(json_input, list) and len(json_input) == 3 and isinstance(json_input[0], int) and isinstance(json_input[1], int) and isinstance(json_input[2], list)):
+        if (isinstance(json_input, list) and len(json_input) == 3 and all(isinstance(positional_value, (int, float)) for positional_value in json_input[0:2]) and isinstance(json_input[2], list)):
             # NOTE: could use a json validator instead
             script_content = json_input[2]
             if script_content[0][0] in SCRIPTS:
                 return True
-
-        _log.warning("No valid Scratch script: {}".format(json_input))
         return False
 
     def get_type(self):

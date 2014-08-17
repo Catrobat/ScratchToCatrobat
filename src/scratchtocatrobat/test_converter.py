@@ -95,7 +95,7 @@ class TestConvertExampleProject(common_testing.ProjectTestCase):
         self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, self.project.name)
 
     def test_can_convert_scratch_project_with_utf8_characters_catrobat_zip(self):
-        project = scratch.Project(common_testing.get_test_project_path("wrong_encoding"))
+        project = scratch.Project(common_testing.get_test_project_path("utf_encoding"))
         catrobat_zip_file_name = converter.save_as_catrobat_program_package_to(project, self._testresult_folder_path)
 
         self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, project.name)

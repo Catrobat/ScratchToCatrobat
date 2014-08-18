@@ -144,10 +144,11 @@ class TemporaryDirectory(object):
     import warnings as _warnings
     import os as _os
 
-    def __init__(self, suffix="", prefix="tmp", dir_=None):
+    def __init__(self, suffix="", prefix="tmp", dir_=None, remove_on_exit=True):
         self._closed = False
         self.name = None  # Handle mkdtemp raising an exception
         self.name = tempfile.mkdtemp(suffix, prefix, dir_)
+        self.remove_on_exit = remove_on_exit
 
     def __repr__(self):
         return "<{} {!r}>".format(self.__class__.__name__, self.name)
@@ -156,7 +157,7 @@ class TemporaryDirectory(object):
         return self.name
 
     def cleanup(self, _warn=False):
-        if self.name and not self._closed:
+        if self.name and not self._closed and self.remove_on_exit:
             try:
                 self._rmtree(self.name)
             except (TypeError, AttributeError) as ex:
@@ -211,6 +212,8 @@ class TemporaryDirectory(object):
             self._rmdir(path)
         except OSError:
             pass
+        if self._path_exists(path):
+            log.warning("could not be deleted from temporary directory: %s", path)
 
 
 # based on: http://www.saltycrane.com/blog/2009/11/trying-out-retry-decorator-python/

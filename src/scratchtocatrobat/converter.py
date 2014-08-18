@@ -485,154 +485,164 @@ def _catrobat_sound_from(scratch_sound):
     return soundinfo
 
 
-def converted_output_path(output_dir, project_name):
-    return os.path.join(output_dir, project_name + catrobat.PACKAGED_PROGRAM_FILE_EXTENSION)
 
+class ConvertedProject(object):
 
-def save_as_catrobat_program_package_to(scratch_project, output_dir):
-    def iter_dir(path):
-        for root, _, files in os.walk(path):
-            for file_ in files:
-                yield os.path.join(root, file_)
-    log.info("convert Scratch project to '%s'", output_dir)
-    with common.TemporaryDirectory() as catrobat_program_dir:
-        save_as_catrobat_program_to(scratch_project, catrobat_program_dir)
-        common.makedirs(output_dir)
-        catrobat_zip_file_path = converted_output_path(output_dir, scratch_project.name)
-        if os.path.exists(catrobat_zip_file_path):
-            shutil.rmtree(catrobat_zip_file_path)
-        with zipfile.ZipFile(catrobat_zip_file_path, 'w') as zip_fp:
-            for file_path in iter_dir(unicode(catrobat_program_dir)):
-                assert isinstance(file_path, unicode)
-                path_inside_zip = file_path.replace(catrobat_program_dir, u"")
-                zip_fp.write(file_path, path_inside_zip)
-        assert zip_fp.fp is None or zip_fp.fp.closed
+    def __init__(self, catrobat_project, scratch_project):
+        self.scratch_project = scratch_project
+        self.catrobat_program = catrobat_project
+        self.name = self.catrobat_program.getXmlHeader().getProgramName()
 
-    return catrobat_zip_file_path
+    @staticmethod
+    def _converted_output_path(output_dir, project_name):
+        return os.path.join(output_dir, catrobat.encoded_project_name(project_name) + catrobat.PACKAGED_PROGRAM_FILE_EXTENSION)
 
+    def save_as_catrobat_package_to(self, output_dir):
 
-def images_dir_of_project(temp_dir):
-    return os.path.join(temp_dir, "images")
+        def iter_dir(path):
+            for root, _, files in os.walk(path):
+                for file_ in files:
+                    yield os.path.join(root, file_)
+        log.info("convert Scratch project to '%s'", output_dir)
+        with common.TemporaryDirectory() as catrobat_program_dir:
+            self.save_as_catrobat_directory_structure_to(catrobat_program_dir)
+            common.makedirs(output_dir)
+            catrobat_zip_file_path = self._converted_output_path(output_dir, self.name)
+            log.info("  save packaged Scratch project to '%s'", catrobat_zip_file_path)
+            if os.path.exists(catrobat_zip_file_path):
+                os.remove(catrobat_zip_file_path)
+            with zipfile.ZipFile(catrobat_zip_file_path, 'w') as zip_fp:
+                for file_path in iter_dir(unicode(catrobat_program_dir)):
+                    assert isinstance(file_path, unicode)
+                    path_inside_zip = file_path.replace(catrobat_program_dir, u"")
+                    zip_fp.write(file_path, path_inside_zip)
+            assert os.path.exists(catrobat_zip_file_path), "Catrobat package not written: %s" % catrobat_zip_file_path
+        return catrobat_zip_file_path
 
+    @staticmethod
+    def _images_dir_of_project(temp_dir):
+        return os.path.join(temp_dir, "images")
 
-def sounds_dir_of_project(temp_dir):
-    return os.path.join(temp_dir, "sounds")
+    @staticmethod
+    def _sounds_dir_of_project(temp_dir):
+        return os.path.join(temp_dir, "sounds")
 
+    @staticmethod
+    def _catrobat_resource_file_name_for(scratch_md5_name, scratch_resource_name):
+        assert os.path.basename(scratch_md5_name) == scratch_md5_name and len(os.path.splitext(scratch_md5_name)[0]) == 32, "Must be MD5 hash with file ext: " + scratch_md5_name
+        resource_ext = os.path.splitext(scratch_md5_name)[1]
+        return scratch_md5_name.replace(resource_ext, "_" + scratch_resource_name + resource_ext)
 
-# TODO: change to OO
-def save_as_catrobat_program_to(scratch_project, temp_path):
+    def save_as_catrobat_directory_structure_to(self, temp_path):
 
-    def create_directory_structure():
-        sounds_path = sounds_dir_of_project(temp_path)
-        os.mkdir(sounds_path)
+        def create_directory_structure():
+            sounds_path = self._sounds_dir_of_project(temp_path)
+            os.mkdir(sounds_path)
 
-        images_path = images_dir_of_project(temp_path)
-        os.mkdir(images_path)
+            images_path = self._images_dir_of_project(temp_path)
+            os.mkdir(images_path)
 
-        for _ in (temp_path, sounds_path, images_path):
-            # TODO: into common module
-            open(os.path.join(_, catrobat.ANDROID_IGNORE_MEDIA_MARKER_FILE_NAME), 'a').close()
-        return sounds_path, images_path
+            for _ in (temp_path, sounds_path, images_path):
+                # TODO: into common module
+                open(os.path.join(_, catrobat.ANDROID_IGNORE_MEDIA_MARKER_FILE_NAME), 'a').close()
+            return sounds_path, images_path
 
-    def write_mediafiles():
-        def resource_name_for(file_path):
-            return common.md5_hash(file_path) + os.path.splitext(file_path)[1]
+        # FIXME: media file conversion not explicit
+        def write_mediafiles(original_to_converted_catrobat_resource_file_name):
+            def resource_name_for(file_path):
+                return common.md5_hash(file_path) + os.path.splitext(file_path)[1]
 
-        # FIXME: modifies Scratch project object
-        def update_resource_name(old_resource_name, new_resource_name):
-            resource_maps = list(scratch_project.find_all_resource_dicts_for(old_resource_name))
-            assert len(resource_maps) > 0
-            for resource_map in resource_maps:
-                if scratchkeys.COSTUME_MD5 in resource_map:
-                    resource_map[scratchkeys.COSTUME_MD5] = new_resource_name
-                elif scratchkeys.SOUND_MD5 in resource_map:
-                    resource_map[scratchkeys.SOUND_MD5] = new_resource_name
-                else:
-                    assert False, "Unknown dict: {}".resource_map
+            for scratch_md5_name, src_path in self.scratch_project.md5_to_resource_path_map.iteritems():
+                if scratch_md5_name in self.scratch_project.unused_resource_names:
+                    log.info("Ignoring unused resource file: %s", src_path)
+                    continue
 
-        for scratch_md5_name, src_path in scratch_project.md5_to_resource_path_map.iteritems():
-            if scratch_md5_name in scratch_project.unused_resource_names:
-                log.info("Ignoring unused resource file: %s", src_path)
-                continue
+                file_ext = os.path.splitext(scratch_md5_name)[1].lower()
+                converted_file = False
 
-            file_ext = os.path.splitext(scratch_md5_name)[1].lower()
-            converted_file = False
+                # TODO: refactor to a MediaConverter class
+                if file_ext in {".png", ".svg", ".jpg", ".gif"}:
+                    target_dir = images_path
 
-            # TODO; extract method
-            if file_ext in {".png", ".svg", ".jpg", ".gif"}:
-                target_dir = images_path
-
-                if file_ext == ".svg":
-                    # converting svg to png -> new md5 and filename
-                    src_path = svgtopng.convert(src_path)
-                    if not os.path.exists(src_path):
-                        assert False, "Not existing: {}. Available files in directory: {}".format(src_path, os.listdir(os.path.dirname(src_path)))
-                    converted_file = True
-
-            elif file_ext in {".wav", ".mp3"}:
-                target_dir = sounds_path
-                if file_ext == ".wav":
-                    if not wavconverter.is_android_compatible_wav(src_path):
-                        temp_path = src_path.replace(".wav", "converted.wav")
-                        wavconverter.convert_to_android_compatible_wav(src_path, temp_path)
-                        src_path = temp_path
+                    if file_ext == ".svg":
+                        # converting svg to png -> new md5 and filename
+                        src_path = svgtopng.convert(src_path)
+                        if not os.path.exists(src_path):
+                            assert False, "Not existing: {}. Available files in directory: {}".format(src_path, os.listdir(os.path.dirname(src_path)))
                         converted_file = True
 
-            else:
-                assert file_ext in {".json"}, "Unknown media file extension: %s" % src_path
-                continue
+                elif file_ext in {".wav", ".mp3"}:
+                    target_dir = sounds_path
+                    if file_ext == ".wav":
+                        if not wavconverter.is_android_compatible_wav(src_path):
+                            temp_path = src_path.replace(".wav", "converted.wav")
+                            wavconverter.convert_to_android_compatible_wav(src_path, temp_path)
+                            src_path = temp_path
+                            converted_file = True
 
-            assert os.path.exists(src_path), "Not existing: {}. Available files in directory: {}".format(src_path, os.listdir(os.path.dirname(src_path)))
-            if converted_file:
-                new_resource_name = resource_name_for(src_path)
-                update_resource_name(scratch_md5_name, new_resource_name)
-                scratch_md5_name = new_resource_name
-            # separate file name for each sprite in which a resource is used
-            for catrobat_file_name in _catrobat_resource_file_name_for(scratch_md5_name, scratch_project):
-                shutil.copyfile(src_path, os.path.join(target_dir, catrobat_file_name))
-            if converted_file:
-                os.remove(src_path)
+                else:
+                    assert file_ext in {".json"}, "Unknown media file extension: %s" % src_path
+                    continue
 
-    def program_source_for(catrobat_program):
-        storage_handler = catio.StorageHandler()
-        code_xml_content = storage_handler.XML_HEADER
-        code_xml_content += storage_handler.getXMLStringOfAProject(catrobat_program)
-        return code_xml_content
+                assert os.path.exists(src_path), "Not existing: {}. Available files in directory: {}".format(src_path, os.listdir(os.path.dirname(src_path)))
 
-    def write_program_source():
-        catrobat_program = catrobat_program_from(scratch_project)
+                # for Catrobat separate file is needed for resources which are used multiple times but with different names
+                for scratch_resource_name in self.scratch_project.find_all_resource_names_for(scratch_md5_name):
+                    catrobat_resource_file_name = self._catrobat_resource_file_name_for(scratch_md5_name, scratch_resource_name)
+                    if converted_file:
+                        original_resource_file_name = catrobat_resource_file_name
+                        converted_scratch_md5_name = resource_name_for(src_path)
+                        converted_resource_file_name = self._catrobat_resource_file_name_for(converted_scratch_md5_name, scratch_resource_name)
+                        catrobat_resource_file_name = original_to_converted_catrobat_resource_file_name[original_resource_file_name] = converted_resource_file_name
+                        assert catrobat_resource_file_name != original_resource_file_name
+                    shutil.copyfile(src_path, os.path.join(target_dir, catrobat_resource_file_name))
+                if converted_file:
+                    os.remove(src_path)
 
-        # TODO: extract method
-        # note: at this position because of use of sounds_path variable
-        # adding sound length variables needed for "doPlayAndWait" brick workaround
-        sprite_to_variable_initializations_map = collections.defaultdict(list)
-        for catrobat_sprite in catrobat_program.getSpriteList():
-            for sound_info in catrobat_sprite.getSoundList():
-                sound_length = common.length_of_audio_file_in_msec(os.path.join(sounds_path, sound_info.getSoundFileName()))
-                variable = catrobat_program.getUserVariables().addSpriteUserVariableToSprite(catrobat_sprite, _sound_length_variable_name_for(sound_info.getTitle()))
-                print catrobat_sprite.getName(), variable.getName()
-                sprite_to_variable_initializations_map[catrobat_sprite] += [(variable, sound_length)]
-        print sprite_to_variable_initializations_map
-        for sprite, variable_initializations in sprite_to_variable_initializations_map.iteritems():
-            variable_initialization_bricks = [catbricks.SetVariableBrick(sprite, catformula.Formula(value), variable) for variable, value in variable_initializations]
-            catrobat.add_to_start_script(variable_initialization_bricks, sprite)
+        def rename_resource_file_names_in(catrobat_program, rename_map):
+            number_of_converted = 0
+            for look_data_or_sound_info in catrobat.media_objects_in(catrobat_program):
+                # HACK: by accessing private field don't have to care about type
+                renamed_file_name = rename_map.get(look_data_or_sound_info.fileName)
+                if renamed_file_name is not None:
+                    look_data_or_sound_info.fileName = renamed_file_name
+                    number_of_converted += 1
+            assert number_of_converted >= len(rename_map)
 
-        program_source = program_source_for(catrobat_program)
-        with open(os.path.join(temp_path, catrobat.PROGRAM_SOURCE_FILE_NAME), "wb") as fp:
-            fp.write(program_source.encode("utf8"))
+        def program_source_for(catrobat_program):
+            storage_handler = catio.StorageHandler()
+            code_xml_content = storage_handler.XML_HEADER
+            code_xml_content += storage_handler.getXMLStringOfAProject(catrobat_program)
+            return code_xml_content
 
-        # copying key images needed for keyPressed substitution
-        for listened_key in scratch_project.listened_keys:
-            key_image_path = _key_image_path_for(listened_key)
-            shutil.copyfile(key_image_path, os.path.join(images_path, _key_filename_for(listened_key)))
+        def write_program_source(catrobat_program):
+            # TODO: extract method
+            # note: at this position because of use of sounds_path variable
+            # TODO: make it more explicit that the "doPlayAndWait" brick workaround depends on the following code block
+            for catrobat_sprite in catrobat_program.getSpriteList():
+                for sound_info in catrobat_sprite.getSoundList():
+                    sound_length_variable_name = _sound_length_variable_name_for(sound_info.getTitle())
+                    sound_length = common.length_of_audio_file_in_secs(os.path.join(sounds_path, sound_info.getSoundFileName()))
+                    _add_new_variable_with_initialization_value(catrobat_program, sound_length_variable_name, sound_length, catrobat_sprite, catrobat_sprite.getName())
 
-    # TODO: rename/rearrange abstracting methods
-    log.info("  Creating Catrobat project structure")
-    sounds_path, images_path = create_directory_structure()
-    log.info("  Saving media files")
-    write_mediafiles()
-    log.info("  Saving project XML file")
-    write_program_source()
+            program_source = program_source_for(catrobat_program)
+            with open(os.path.join(temp_path, catrobat.PROGRAM_SOURCE_FILE_NAME), "wb") as fp:
+                fp.write(program_source.encode("utf8"))
+
+            # copying key images needed for keyPressed substitution
+            for listened_key in self.scratch_project.listened_keys:
+                key_image_path = _key_image_path_for(listened_key)
+                shutil.copyfile(key_image_path, os.path.join(images_path, _key_filename_for(listened_key)))
+
+        # TODO: rename/rearrange abstracting methods
+        log.info("  Creating Catrobat project structure")
+        sounds_path, images_path = create_directory_structure()
+        log.info("  Saving media files")
+        original_to_converted_catrobat_resource_file_name = {}
+        write_mediafiles(original_to_converted_catrobat_resource_file_name)
+        rename_resource_file_names_in(self.catrobat_program, original_to_converted_catrobat_resource_file_name)
+        log.info("  Saving project XML file")
+        write_program_source(self.catrobat_program)
 
 
 # TODO: could be done with just user_variables instead of project object

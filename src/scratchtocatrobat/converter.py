@@ -900,10 +900,6 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
     @_register_handler(_block_name_to_handler_map, "startScene")
     def _convert_scene_block(self):
-        catr_bricks = []
-        self.sprite = self.sprite
-        catrobat_brick_class = self.CatrobatClass
-
         [look_name] = self.arguments
         background_sprite = catrobat.background_sprite_of(self.project)
         if not background_sprite:
@@ -915,16 +911,13 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         assert len(matching_looks) == 1
         [matching_look] = matching_looks
         look_message = _background_look_to_broadcast_message(look_name)
-        broadcast_brick = catrobat_brick_class(self.sprite, look_message)
-        catr_bricks += [broadcast_brick]
-
+        broadcast_brick = self.CatrobatClass(self.sprite, look_message)
         broadcast_script = catbase.BroadcastScript(background_sprite, look_message)
         set_look_brick = catbricks.SetLookBrick(background_sprite)
         set_look_brick.setLook(matching_look)
         broadcast_script.addBrick(set_look_brick)
         background_sprite.addScript(broadcast_script)
-
-        return catr_bricks
+        return [broadcast_brick]
 
     @_register_handler(_block_name_to_handler_map, "doIf", "doIfElse")
     def _convert_if_block(self):
@@ -950,7 +943,6 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
     @_register_handler(_block_name_to_handler_map, "playSound:", "doPlaySoundAndWait")
     def _convert_sound_block(self):
-        self.sprite = self.sprite
         [sound_name] = self.arguments
         soundinfo_name_to_soundinfo_map = {lookdata.getTitle(): lookdata for lookdata in self.sprite.getSoundList()}
         lookdata = soundinfo_name_to_soundinfo_map.get(sound_name)
@@ -958,11 +950,11 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             raise ConversionError("Sprite does not contain sound with name={}".format(sound_name))
         play_sound_brick = self.CatrobatClass(self.sprite)
         play_sound_brick.setSoundInfo(lookdata)
-        catr_bricks = [play_sound_brick]
+        converted_bricks = [play_sound_brick]
         if self.block_name == "doPlaySoundAndWait":
             sound_length_variable = _variable_for(_sound_length_variable_name_for(sound_name))
-            catr_bricks += [catbricks.WaitBrick(self.sprite, catformula.Formula(sound_length_variable))]
-        return catr_bricks
+            converted_bricks += [catbricks.WaitBrick(self.sprite, catformula.Formula(sound_length_variable))]
+        return converted_bricks
 
     @_register_handler(_block_name_to_handler_map, "changeVar:by:", "setVar:to:")
     def _convert_variable_block(self):

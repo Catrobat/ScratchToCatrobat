@@ -20,7 +20,6 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import unicode_literals
 
-import collections
 import itertools
 import java
 import numbers
@@ -51,6 +50,9 @@ _GENERATED_VARIABLE_PREFIX = common.APPLICATION_SHORTNAME + ":"
 _SOUND_LENGTH_VARIABLE_NAME_FORMAT = "length_of_{}_in_secs"
 
 _SPEAK_BRICK_THINK_INTRO = "I am thinking. "
+
+_SUPPORTED_IMAGE_EXTENSIONS_BY_CATROBAT = {".gif", ".jpg", ".jpeg", ".png"}
+_SUPPORTED_SOUND_EXTENSIONS_BY_CATROBAT = {".mp3", ".wav"}
 
 UNSUPPORTED_SCRATCH_BRICK_NOTE_MESSAGE_PREFIX = "Missing brick for Scratch identifier: "
 
@@ -283,14 +285,17 @@ def _variable_for(variable_name):
     return catformula.FormulaElement(catformula.FormulaElement.ElementType.USER_VARIABLE, variable_name, None)  # @UndefinedVariable
 
 
+# TODO: refactor _key_* functions to be used just once
 def _key_image_path_for(key):
     key_images_path = os.path.join(common.get_project_base_path(), 'resources', 'key_images')
     for key_filename in os.listdir(key_images_path):
         basename, _ = os.path.splitext(key_filename)
-        if basename.lower().endswith(" ".join(key.split())):
+        if basename.lower().endswith("_".join(key.split())):
             return os.path.join(key_images_path, key_filename)
+    assert False, "Key '%s' not found in %s" % (key, os.listdir(key_images_path))
 
 
+# TODO:  refactor _key_* functions to be used just once
 def _key_filename_for(key):
     assert key is not None
     key_path = _key_image_path_for(key)
@@ -298,35 +303,8 @@ def _key_filename_for(key):
     return common.md5_hash(key_path) + "_" + _key_to_broadcast_message(key) + os.path.splitext(key_path)[1]
 
 
-def _update_xml_header(xml_header, scratch_project):
-    xml_header.setApplicationBuildName("*** TODO ***")
-    xml_header.setApplicationName(common.APPLICATION_NAME)
-    xml_header.setApplicationVersion(version.__version__)
-    xml_header.setCatrobatLanguageVersion(catcommon.Constants.CURRENT_CATROBAT_LANGUAGE_VERSION)
-    xml_header.setDescription(scratch_project.description)
-    xml_header.setDeviceName("Scratch")
-    xml_header.setPlatform("Scratch")
-    # TODO: platform version should allow float
-    xml_header.setPlatformVersion(2)
-    xml_header.setScreenMode(catcommon.ScreenModes.MAXIMIZE)
-    xml_header.mediaLicense = catrobat.MEDIA_LICENSE_URI
-    xml_header.programLicense = catrobat.PROGRAM_LICENSE_URI
-    if scratch_project.project_id is not None:
-        xml_header.remixOf = scratch.HTTP_PROJECT_URL_PREFIX + scratch_project.project_id
-
-_catr_project = None
-
-
-def catrobat_program_from(scratch_project):
-    global _catr_project
-    _catr_project = catbase.Project(None, scratch_project.name)
-    _catr_project.getXmlHeader().virtualScreenHeight = scratch.STAGE_HEIGHT_IN_PIXELS
-    _catr_project.getXmlHeader().virtualScreenWidth = scratch.STAGE_WIDTH_IN_PIXELS
-    for object_ in scratch_project.objects:
-        catr_sprite = _catrobat_sprite_from(object_)
-        if object_ is scratch_project.stage_object:
-            catr_sprite.setName(catrobat.BACKGROUND_SPRITE_NAME)
-        _catr_project.addSprite(catr_sprite)
+def _generated_variable_name(variable_name):
+    return _GENERATED_VARIABLE_PREFIX + variable_name
 
 
 def _sound_length_variable_name_for(resource_name):
@@ -337,8 +315,67 @@ def _is_generated(variable_name):
     return variable_name.startswith(_GENERATED_VARIABLE_PREFIX)
 
 
+def converted(scratch_project):
+    return Converter.converted_project_for(scratch_project)
+
+
+def _preprocess_scratch_object(object_):
+    preprocessed_scripts = []
+    additional_scripts = []
+    for script_number, script in enumerate(object_.scripts):
+        preprocessed_blocks = []
+        blocks_iterator = iter(script.blocks)
+        for block_number, block in enumerate(blocks_iterator):
+            block_name, block_parameters = block[0], block[1:]
+            # WORKAROUND: as long there are no equivalent Catrobat bricks
+            if block_name in {"doUntil", "doWaitUntil"}:
+                do_until_condition, [do_until_blocks] = block_parameters[0], block_parameters[1:] if block_name == "doUntil" else [["wait:elapsed:from:", 0.0001]]
+                loop_done_variable = _generated_variable_name("_".join([object_['objName'], block_name, str(script_number), str(block_number)]))
+                broadcast_msg = loop_done_variable + "_msg"
+                loop_blocks = [["doIfElse", ["not", do_until_condition], do_until_blocks, [["broadcast:", broadcast_msg], ["setVar:to:", loop_done_variable, 1]]]]
+                loop_guard = ["doIf", ["not", ["=", ["readVariable", loop_done_variable], 1]], loop_blocks]
+                replacement_blocks = [["setVar:to:", loop_done_variable, 0], ["doForever", [loop_guard]]]
+                preprocessed_blocks += replacement_blocks
+                after_loop_raw_script = [0, 0, [["whenIReceive", broadcast_msg]] + [block for block in blocks_iterator]]
+                additional_scripts += [scratch.Script(after_loop_raw_script)]
+            else:
+                preprocessed_blocks += [block]
+        # TODO: improve
+        script.raw_script[1:] = preprocessed_blocks
+        script = scratch.Script([0, 0, script.raw_script])
+        preprocessed_scripts += [script]
+    object_.scripts = preprocessed_scripts + additional_scripts
+
+
+class Converter(object):
+
+    def __init__(self, scratch_project):
+        self.scratch_project = scratch_project
+
+    @classmethod
+    def converted_project_for(cls, scratch_project):
+        converter = Converter(scratch_project)
+        catrobat_project = converter._converted_catrobat_program()
+        assert catrobat.is_background_sprite(catrobat_project.getSpriteList().get(0))
+        return ConvertedProject(catrobat_project, scratch_project)
+
+    def _converted_catrobat_program(self):
+        _catr_project = catbase.Project(None, self.scratch_project.name)
+        self._scratch_object_converter = _ScratchObjectConverter(_catr_project)
+        self._add_converted_sprites_to(_catr_project)
+        self._add_key_sprites_to(_catr_project, self.scratch_project.listened_keys)
+        self._update_xml_header(_catr_project.getXmlHeader(), self.scratch_project.project_id, self.scratch_project.description)
+        return _catr_project
+
+    def _add_converted_sprites_to(self, catrobat_project):
+        for object_ in self.scratch_project.objects:
+            _preprocess_scratch_object(object_)
+            catr_sprite = self._scratch_object_converter(object_)
+            catrobat_project.addSprite(catr_sprite)
+
     # TODO: make it more explicit that this depends on the conversion code for "whenKeyPressed" Scratch block
-    def add_used_key_sprites(listened_keys, catrobat_project):
+    @staticmethod
+    def _add_key_sprites_to(catrobat_project, listened_keys):
         height_pos = 1
         for idx, key in enumerate(listened_keys):
             width_pos = idx
@@ -374,9 +411,30 @@ def _is_generated(variable_name):
 
             catrobat_project.addSprite(key_sprite)
 
-    add_used_key_sprites(scratch_project.listened_keys, _catr_project)
-    _update_xml_header(_catr_project.getXmlHeader(), scratch_project)
-    return _catr_project
+    @staticmethod
+    def _update_xml_header(xml_header, scratch_project_id, scratch_project_description):
+        xml_header.virtualScreenHeight = scratch.STAGE_HEIGHT_IN_PIXELS
+        xml_header.virtualScreenWidth = scratch.STAGE_WIDTH_IN_PIXELS
+        xml_header.setApplicationBuildName("*** TODO ***")
+        xml_header.setApplicationName(common.APPLICATION_NAME)
+        xml_header.setApplicationVersion(version.__version__)
+        xml_header.setCatrobatLanguageVersion(catcommon.Constants.CURRENT_CATROBAT_LANGUAGE_VERSION)
+        xml_header.setDeviceName("Scratch")
+        xml_header.setPlatform("Scratch")
+        # WORKAROUND: remove after platform version supports float
+        try:
+            xml_header.setPlatformVersion(2.0)
+        except TypeError:
+            xml_header.setPlatformVersion(2)
+        xml_header.setScreenMode(catcommon.ScreenModes.MAXIMIZE)
+        xml_header.mediaLicense = catrobat.MEDIA_LICENSE_URI
+        xml_header.programLicense = catrobat.PROGRAM_LICENSE_URI
+        assert scratch_project_id is not None
+        xml_header.remixOf = scratch.HTTP_PROJECT_URL_PREFIX + scratch_project_id
+        description = scratch_project_description
+        if len(description) > 0:
+            description += "\n\n"
+        xml_header.setDescription(description + "Made with {} version {}.\nOriginal Scratch project => {}".format(common.APPLICATION_NAME, version.__version__, xml_header.remixOf))
 
 
 class _ScratchObjectConverter(object):

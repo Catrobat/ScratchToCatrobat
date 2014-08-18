@@ -213,11 +213,15 @@ class Object(common.DictAccessWrapper):
 # TODO: rename
 class Script(object):
 
-    def __init__(self, json_input):
-        if not self.is_valid_script_input(json_input):
-            raise ScriptError("Input is no valid Scratch json script.")
-        self.raw_script = json_input[2]
+    def __init__(self, script_input):
+        if not self.is_valid_script_input(script_input):
+            raise ScriptError("Input is no valid Scratch script.")
+        self.raw_script = script_input[2]
         script_block, self.blocks = self.raw_script[0], self.raw_script[1:]
+        if not self.blocks:
+            _log.debug("Empty script: %s", script_input)
+        self.script_element = ScriptElement.from_raw_block(self.blocks)
+        assert isinstance(self.script_element, BlockList)
         self.type, self.arguments = script_block[0], script_block[1:]
         # FIXME: never reached as is_valid_script_input() fails before
         if self.type not in SCRIPTS:
@@ -236,13 +240,12 @@ class Script(object):
         return self.type
 
 
-class BlockElement(object):
+class ScriptElement(object):
 
-    def __init__(self, name, is_value=False, arguments=None):
+    def __init__(self, name=None, arguments=None):
         if arguments is None:
             arguments = []
         self.name = name
-        self.is_value = is_value
         self.children = []
         for argument in arguments:
             self.add(self.from_raw_block(argument))
@@ -253,10 +256,10 @@ class BlockElement(object):
     def __iter__(self):
         return iter(self.children)
 
-    def prettyprint(self, indent="", file=sys.stdout):
-        print("{} {}".format(indent, self.name), file=file)
+    def prettyprint(self, indent="", file_=sys.stdout):
+        print("{} {}".format(indent, self.name), file=file_)
         for child in self:
-            child.prettyprint(indent + "    ")
+            child.prettyprint(indent + "    ", file_=file_)
 
     def __repr__(self):
         return "%s(%r)" % (self.__class__, self.__dict__)
@@ -271,18 +274,46 @@ class BlockElement(object):
         block_name = None
         block_arguments = []
         if isinstance(raw_block, list):
-            is_block_list = isinstance(raw_block[0], list)
+            is_block_list = len(raw_block) == 0 or isinstance(raw_block[0], list)
             if not is_block_list:
                 block_name, block_arguments = raw_block[0], raw_block[1:]
                 assert isinstance(block_name, (str, unicode)), "Raw block: %s" % raw_block
+                Class = Block
             else:
-                block_name = "BLOCK_LIST"
                 block_arguments = raw_block
-            is_value = False
+                Class = BlockList
         else:
             block_name = raw_block
-            is_value = True
-        return cls(block_name, is_value=is_value, arguments=block_arguments)
+            Class = BlockValue
+        return Class(block_name, arguments=block_arguments)
+
+
+class Block(ScriptElement):
+    pass
+
+
+class BlockList(ScriptElement):
+
+    def __init__(self, *args, **kwargs):
+        super(BlockList, self).__init__(*args, **kwargs)
+        self.name = "<LIST>"
+
+
+class BlockValue(ScriptElement):
+    pass
+
+
+class AbstractBlocksTraverser(object):
+
+    def traverse(self, script_element):
+        assert isinstance(script_element, ScriptElement)
+        # depth first traversing
+        for child in script_element:
+            self.traverse(child)
+        self._visit(script_element)
+
+    def _visit(self, script_element):
+        raise NotImplementedError
 
 
 class UnsupportedProjectFileError(common.ScratchtobatError):

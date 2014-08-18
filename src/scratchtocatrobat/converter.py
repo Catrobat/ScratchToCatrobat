@@ -379,31 +379,84 @@ def _is_generated(variable_name):
     return _catr_project
 
 
-def _catrobat_sprite_from(scratch_object):
-    if not isinstance(scratch_object, scratch.Object):
-        raise common.ScratchtobatError("Input must be of type={}, but is={}".format(scratch.Object, type(scratch_object)))
-    sprite = catbase.Sprite(scratch_object.get_objName())
+class _ScratchObjectConverter(object):
+    _catrobat_project = None
 
-    sprite_looks = sprite.getLookDataList()
-    costume_resolution = None
-    for scratch_costume in scratch_object.get_costumes():
-        current_costume_resolution = scratch_costume.get(scratchkeys.COSTUME_RESOLUTION)
-        if not costume_resolution:
-            costume_resolution = current_costume_resolution
-        else:
-            if current_costume_resolution != costume_resolution:
-                log.warning("Costume resolution not same for all costumes")
-        sprite_looks.add(_catrobat_look_from(scratch_costume))
+    def __init__(self, catrobat_project):
+        _ScratchObjectConverter._catrobat_project = catrobat_project
 
-    sprite_sounds = sprite.getSoundList()
-    for scratch_sound in scratch_object.get_sounds():
-        sprite_sounds.add(_catrobat_sound_from(scratch_sound))
+    def __call__(self, scratch_object):
+        return self._catrobat_sprite_from(scratch_object)
 
-    # looks and sounds has to added first because of cross-validations
-    for scratch_script in scratch_object.scripts:
-        sprite.addScript(_catrobat_script_from(scratch_script, sprite))
+    def _catrobat_sprite_from(self, scratch_object):
+        if not isinstance(scratch_object, scratch.Object):
+            raise common.ScratchtobatError("Input must be of type={}, but is={}".format(scratch.Object, type(scratch_object)))
+        sprite = catbase.Sprite(scratch_object.get_objName())
+        log.debug("sprite name: %s", sprite.getName())
 
-    def add_initial_scratch_object_behaviour():
+        if scratch_object.is_stage():
+            catrobat.set_as_background(sprite)
+
+        # looks and sounds has to added first because of cross-validations
+        sprite_looks = sprite.getLookDataList()
+        costume_resolution = None
+        for scratch_costume in scratch_object.get_costumes():
+            current_costume_resolution = scratch_costume.get(scratchkeys.COSTUME_RESOLUTION)
+            if not costume_resolution:
+                costume_resolution = current_costume_resolution
+            else:
+                if current_costume_resolution != costume_resolution:
+                    log.warning("Costume resolution not same for all costumes")
+            sprite_looks.add(self._catrobat_look_from(scratch_costume))
+
+        sprite_sounds = sprite.getSoundList()
+        for scratch_sound in scratch_object.get_sounds():
+            sprite_sounds.add(self._catrobat_sound_from(scratch_sound))
+
+        for scratch_script in scratch_object.scripts:
+            sprite.addScript(self._catrobat_script_from(scratch_script, sprite))
+
+        self._add_default_behaviour_to(sprite, scratch_object, costume_resolution)
+
+        for scratch_variable in scratch_object.get_variables():
+            args = [self._catrobat_project, scratch_variable["name"], scratch_variable["value"], sprite]
+            if not scratch_object.is_stage():
+                args += [sprite.getName()]
+            _add_new_variable_with_initialization_value(*args)
+        return sprite
+
+    @staticmethod
+    def _catrobat_look_from(scratch_costume):
+        if not scratch_costume or not (isinstance(scratch_costume, dict) and all(_ in scratch_costume for _ in (scratchkeys.COSTUME_MD5, scratchkeys.COSTUME_NAME))):
+            raise common.ScratchtobatError("Wrong input, must be costume dict: {}".format(scratch_costume))
+        look = catcommon.LookData()
+
+        assert scratchkeys.COSTUME_NAME in scratch_costume
+        costume_name = scratch_costume[scratchkeys.COSTUME_NAME]
+        look.setLookName(costume_name)
+
+        assert scratchkeys.COSTUME_MD5 in scratch_costume
+        costume_filename = scratch_costume[scratchkeys.COSTUME_MD5]
+        costume_filename_ext = os.path.splitext(costume_filename)[1]
+        look.setLookFilename(costume_filename.replace(costume_filename_ext, "_" + costume_name + costume_filename_ext))
+        return look
+
+    @staticmethod
+    def _catrobat_sound_from(scratch_sound):
+        soundinfo = catcommon.SoundInfo()
+
+        assert scratchkeys.SOUND_NAME in scratch_sound
+        sound_name = scratch_sound[scratchkeys.SOUND_NAME]
+        soundinfo.setTitle(sound_name)
+
+        assert scratchkeys.SOUND_MD5 in scratch_sound
+        sound_filename = scratch_sound[scratchkeys.SOUND_MD5]
+        sound_filename_ext = os.path.splitext(sound_filename)[1]
+        soundinfo.setSoundFileName(sound_filename.replace(sound_filename_ext, "_" + sound_name + sound_filename_ext))
+        return soundinfo
+
+    @staticmethod
+    def _add_default_behaviour_to(sprite, scratch_object, costume_resolution):
         # some initial Scratch settings are done with a general JSON configuration instead with blocks. Here the equivalent bricks are added for Catrobat.
         implicit_bricks_to_add = []
 
@@ -437,53 +490,44 @@ def _catrobat_sprite_from(scratch_object):
 
         catrobat.add_to_start_script(implicit_bricks_to_add, sprite)
 
-    add_initial_scratch_object_behaviour()
-    return sprite
+    @classmethod
+    def _catrobat_script_from(cls, scratch_script, sprite):
+        if not isinstance(scratch_script, scratch.Script):
+            raise common.ScratchtobatError("Arg1 must be of type={}, but is={}".format(scratch.Script, type(scratch_script)))
+        if sprite and not isinstance(sprite, catbase.Sprite):
+            raise common.ScratchtobatError("Arg2 must be of type={}, but is={}".format(catbase.Sprite, type(sprite)))
 
+        log.debug("  script type: %s, args: %s", scratch_script.type, scratch_script.arguments)
+        cat_script = _ScratchToCatrobat.create_script(scratch_script.type, sprite, scratch_script.arguments)
+        converted_bricks = cls._catrobat_bricks_from(scratch_script.script_element, sprite)
+        assert isinstance(converted_bricks, list) and len(converted_bricks) == 1
+        [converted_bricks] = converted_bricks
+        log.debug("   --> converted: <%s>", ", ".join(map(catrobat.simple_name_for, converted_bricks)))
+        ignored_blocks = 0
+        for brick in converted_bricks:
+            # Scratch behavior: blocks can be ignored e.g. if no arguments are set
+            if not brick:
+                ignored_blocks += 1
+                continue
+            try:
+                cat_script.addBrick(brick)
+            except TypeError:
+                if isinstance(brick, (str, unicode)):
+                    log.error("string brick: %s", brick)
+                else:
+                    log.error("type: %s, value: %s", brick.type, brick.value)
+                assert False
+        if ignored_blocks != 0:
+            log.info("number of ignored Scratch blocks: %d", ignored_blocks)
+        return cat_script
 
-def _catrobat_script_from(scratch_script, sprite):
-    if not isinstance(scratch_script, scratch.Script):
-        raise common.ScratchtobatError("Arg1 must be of type={}, but is={}".format(scratch.Script, type(scratch_script)))
-    if sprite and not isinstance(sprite, catbase.Sprite):
-        raise common.ScratchtobatError("Arg2 must be of type={}, but is={}".format(catbase.Sprite, type(sprite)))
-
-    cat_script = _ScratchToCatrobat.create_script(scratch_script.type, sprite, scratch_script.arguments)
-    for scratch_block in scratch_script.blocks:
-        cat_bricks = _catrobat_bricks_from(scratch_block, sprite)
-        for brick in cat_bricks:
-            cat_script.addBrick(brick)
-    return cat_script
-
-
-def _catrobat_look_from(scratch_costume):
-    if not scratch_costume or not (isinstance(scratch_costume, dict) and all(_ in scratch_costume for _ in (scratchkeys.COSTUME_MD5, scratchkeys.COSTUME_NAME))):
-        raise common.ScratchtobatError("Wrong input, must be costume dict: {}".format(scratch_costume))
-    look = catcommon.LookData()
-
-    assert scratchkeys.COSTUME_NAME in scratch_costume
-    costume_name = scratch_costume[scratchkeys.COSTUME_NAME]
-    look.setLookName(costume_name)
-
-    assert scratchkeys.COSTUME_MD5 in scratch_costume
-    costume_filename = scratch_costume[scratchkeys.COSTUME_MD5]
-    costume_filename_ext = os.path.splitext(costume_filename)[1]
-    look.setLookFilename(costume_filename.replace(costume_filename_ext, "_" + costume_name + costume_filename_ext))
-    return look
-
-
-def _catrobat_sound_from(scratch_sound):
-    soundinfo = catcommon.SoundInfo()
-
-    assert scratchkeys.SOUND_NAME in scratch_sound
-    sound_name = scratch_sound[scratchkeys.SOUND_NAME]
-    soundinfo.setTitle(sound_name)
-
-    assert scratchkeys.SOUND_MD5 in scratch_sound
-    sound_filename = scratch_sound[scratchkeys.SOUND_MD5]
-    sound_filename_ext = os.path.splitext(sound_filename)[1]
-    soundinfo.setSoundFileName(sound_filename.replace(sound_filename_ext, "_" + sound_name + sound_filename_ext))
-    return soundinfo
-
+    @classmethod
+    def _catrobat_bricks_from(cls, scratch_block, catrobat_sprite):
+        if not isinstance(scratch_block, scratch.ScriptElement):
+            scratch_block = scratch.ScriptElement.from_raw_block(scratch_block)
+        traverser = _BlocksConversionTraverser(catrobat_sprite, cls._catrobat_project)
+        traverser.traverse(scratch_block)
+        return traverser.converted_bricks
 
 
 class ConvertedProject(object):

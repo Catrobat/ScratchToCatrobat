@@ -2,12 +2,8 @@ ScratchToCatrobat
 =================
 A tool for converting Scratch projects into Catrobat programs.
 
---------------
-
 # License
 [License](http://developer.catrobat.org/licenses) of our project (mainly AGPL v3).
-
---------------
 
 #Setup for Debian (Wheezy 7.x):
 
@@ -79,9 +75,7 @@ chmod +x ./converter
 ```sh
 mkdir output
 ```
-* The installation is finished now. The converter can now be started by calling the converter-script, e.g.
+* The installation is finished now. The converter can now be started by calling the converter-script, e.g. via:
 ```sh
 ./converter http://scratch.mit.edu/projects/10205819/ ./output
 ```
-
---------------

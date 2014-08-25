@@ -29,7 +29,7 @@ wget http://search.maven.org/remotecontent?filepath=org/python/jython-installer/
 ```
 * To install jython run following line:
 ```sh
-java -jar jython-installer-2.7-b3.jar --console
+sudo java -jar jython-installer-2.7-b3.jar --console
 [...]
 Please select your language [E/g] >>> E
 Do you want to read the license agreement now ? [y/N] >>> y

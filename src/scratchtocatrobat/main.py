@@ -65,7 +65,8 @@ def run_converter(arguments):
                 scratch_project_dir = scratch_project_file_or_url
             project = scratch.Project(scratch_project_dir)
             log.info("Converting scratch project '%s' into output folder: %s", project.name, output_dir)
-            catrobat_program_path = converter.save_as_catrobat_program_package_to(project, output_dir)
+            converted_project = converter.converted(project)
+            catrobat_program_path = converted_project.save_as_catrobat_package_to(output_dir)
             if extract_resulting_catrobat:
                 extraction_path = os.path.join(output_dir, os.path.splitext(os.path.basename(catrobat_program_path))[0])
                 if os.path.exists(extraction_path):

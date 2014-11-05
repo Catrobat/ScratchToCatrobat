@@ -151,12 +151,12 @@ class ProjectTestCase(BaseTestCase):
         assert float(catrobat_version_from_xml.text) > 0.0
 
         # TODO: refactor duplication
-        sounds_dir = converter.sounds_dir_of_project(project_path)
+        sounds_dir = converter.ConvertedProject._sounds_dir_of_project(project_path)
         for node in root.findall('.//sound/fileName'):
             sound_path = os.path.join(sounds_dir, node.text)
             assert os.path.exists(sound_path)
 
-        images_dir = converter.images_dir_of_project(project_path)
+        images_dir = converter.ConvertedProject._images_dir_of_project(project_path)
         for node in root.findall('.//look/fileName'):
             image_path = os.path.join(images_dir, node.text)
             assert os.path.exists(image_path), "Missing: {}, available files: {}".format(repr(image_path), os.listdir(os.path.dirname(image_path)))

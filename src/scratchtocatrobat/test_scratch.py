@@ -102,17 +102,6 @@ class TestProjectFunc(unittest.TestCase):
         assert len(project.unused_resource_paths) > 0
         assert set(map(os.path.basename, project.unused_resource_paths)) == set(['0.png', '2.wav', '3.png', '4.png', '5.png', '6.png', '8.png'])
 
-    def test_can_access_sound_and_costume_by_resource_name(self):
-        scratch_resource_names = {
-            "83a9787d4cb6f3b7632b4ddfebf74367.wav",
-            "510da64cf172d53750dffd23fbf73563.png",
-            "033f926829a446a28970f59302b0572d.png",
-            "83c36d806dc92327b9e7049a565c6bff.wav"
-        }
-        for resource_name in scratch_resource_names:
-            for data_dict in self.project.find_all_resource_dicts_for(resource_name):
-                assert "soundName" in data_dict or "costumeName" in data_dict
-
 
 _OBJECT_JSON_STR = '''{
     "objName": "Sprite1",
@@ -176,7 +165,7 @@ class TestRawProjectInit(unittest.TestCase):
             assert scratch.RawProject.from_project_folder_path(common_testing.get_test_project_path(project_name))
 
     def test_fail_on_corrupt_file(self):
-        with self.assertRaises(scratch.UnsupportedProjectFileError):
+        with self.assertRaises((scratch.UnsupportedProjectFileError, scratch.ObjectError)):
             scratch.RawProject.from_project_folder_path(common_testing.get_test_project_path("faulty_json_file"))
 
 
@@ -193,16 +182,10 @@ class TestRawProjectFunc(unittest.TestCase):
         assert self.project.objects[0].get_objName() == scratch.STAGE_OBJECT_NAME, "Stage object missing"
         assert [_.get_objName() for _ in self.project.objects] == ['Stage', 'Sprite1', 'Cassy Dance']
 
-    def test_can_access_stage_object(self):
-        stage_object = self.project.stage_object
-        assert stage_object.get_objName() == scratch.STAGE_OBJECT_NAME
-
     def test_can_access_project_variables(self):
         variables_test_code_content = common.content_of(common_testing.get_test_resources_path("scratch_code_only", "variables_test.json"))
         raw_project = scratch.RawProject.from_project_code_content(variables_test_code_content)
         assert [variable["name"] for variable in raw_project.get_variables()] == ["$", "MarketOpen", "Multiplier", "bc1bought", "bc2bought"]
-        # Scratch does not allow local variables for the stage object
-        assert raw_project.stage_object.get_variables() == []
 
 
 class TestObjectInit(unittest.TestCase):
@@ -298,7 +281,6 @@ class TestScriptFunc(unittest.TestCase):
         assert self.script.raw_script == self.input_data[2]
 
 
-
 class TestBlockInit(unittest.TestCase):
 
     def test_can_construct_on_correct_input(self):
@@ -309,11 +291,11 @@ class TestBlockInit(unittest.TestCase):
         )
         for script_input, [expected_length, expected_block_children_number] in zip(EASY_SCRIPTS, expected_values):
             assert len(scratch.Script(script_input).blocks) == expected_length
-            blocks = scratch.BlockElement.from_raw_script(script_input)
+            blocks = scratch.ScriptElement.from_raw_script(script_input)
             blocks.prettyprint()
-            assert isinstance(blocks, scratch.BlockElement) and blocks.name == "BLOCK_LIST" and len(blocks.children) == expected_length
+            assert isinstance(blocks, scratch.BlockList) and len(blocks.children) == expected_length
             nested_blocks = blocks.children
-            assert all(isinstance(block, scratch.BlockElement) for block in nested_blocks)
+            assert all(isinstance(block, scratch.ScriptElement) for block in nested_blocks)
             assert [len(block.children) for block in nested_blocks] == list(expected_block_children_number)
 
 if __name__ == "__main__":

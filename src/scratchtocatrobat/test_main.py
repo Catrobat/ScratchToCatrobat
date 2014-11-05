@@ -20,7 +20,6 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import unittest
 
-from scratchtocatrobat import common
 from scratchtocatrobat import common_testing
 from scratchtocatrobat import converter
 from scratchtocatrobat import main
@@ -31,7 +30,7 @@ class MainTest(common_testing.ProjectTestCase):
 
     def __init__(self, *args):
         super(MainTest, self).__init__(*args)
-        self._main_method = main.scratchtobat_main
+        self._main_method = main.run_converter
 
     def setUp(self):
         super(MainTest, self).setUp()
@@ -40,11 +39,11 @@ class MainTest(common_testing.ProjectTestCase):
         output_path = self._testresult_folder_path
         if len(args) == 1:
             args += [output_path]
-        return_val = self._main_method(args)
+        return_val = self._main_method(*args)
         assert return_val == main.EXIT_SUCCESS
 
         project_name = scratchwebapi.request_project_name_for(project_id)
-        self.assertValidCatrobatProgramPackageAndUnpackIf(converter.converted_output_path(output_path, project_name), project_name)
+        self.assertValidCatrobatProgramPackageAndUnpackIf(converter.ConvertedProject._converted_output_path(output_path, project_name), project_name)
 
     def test_can_provide_catrobat_program_for_scratch_project_link(self):
         for project_url, project_id in common_testing.TEST_PROJECT_URL_TO_ID_MAP.iteritems():

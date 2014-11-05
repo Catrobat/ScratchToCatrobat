@@ -37,8 +37,7 @@ EXIT_SUCCESS = 0
 EXIT_FAILURE = 1
 
 
-def run_converter(arguments):
-    log.info("Called with args: '{}'".format(arguments))
+def run_converter(scratch_project_file_or_url, output_dir, extract_resulting_catrobat=False, temp_rm=True):
 
     def check_environment_settings():
         if "java" not in sys.platform:
@@ -48,8 +47,6 @@ def run_converter(arguments):
 
     check_environment_settings()
 
-    scratch_project_file_or_url, output_dir, extract_resulting_catrobat = arguments["<project-url-or-package-path>"], arguments["<output-dir>"], arguments["--extracted"]
-    temp_rm = not arguments["--no-temp-rm"]
     try:
         if not os.path.isdir(output_dir):
             raise EnvironmentError("Output folder must be a directory, but is %s" % output_dir)
@@ -93,4 +90,5 @@ if __name__ == '__main__':
       -e --extracted    Extract resulting Catrobat program in output-dir.
     '''
     arguments = docopt(usage)
-    sys.exit(run_converter(arguments))
+    sys.exit(run_converter(arguments["<project-url-or-package-path>"], arguments["<output-dir>"], extract_resulting_catrobat=arguments["--extracted"], temp_rm=not arguments["--no-temp-rm"]))
+

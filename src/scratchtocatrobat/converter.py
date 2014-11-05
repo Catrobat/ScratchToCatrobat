@@ -755,21 +755,6 @@ def _add_new_variable_with_initialization_value(project, variable_name, variable
     catrobat.add_to_start_script([variable_initialization_brick], sprite)
 
 
-def _catrobat_resource_file_names_for(scratch_md5_name, scratch_project):
-    assert os.path.basename(scratch_md5_name) == scratch_md5_name and len(os.path.splitext(scratch_md5_name)[0]) == 32, "Must be MD5 hash with file ext: " + scratch_md5_name
-    catrobat_resource_names = []
-    for resource in scratch_project.find_all_resource_dicts_for(scratch_md5_name):
-        if resource:
-            try:
-                resource_name = resource[scratchkeys.SOUND_NAME] if scratchkeys.SOUND_NAME in resource else resource[scratchkeys.COSTUME_NAME]
-            except KeyError:
-                raise ConversionError("Error with: {}, {}".format(scratch_md5_name, resource))
-            resource_ext = os.path.splitext(scratch_md5_name)[1]
-            catrobat_resource_names += [scratch_md5_name.replace(resource_ext, "_" + resource_name + resource_ext)]
-    assert len(catrobat_resource_names) != 0, "{} not found (path: {}). available: {}".format(scratch_md5_name, scratch_project.md5_to_resource_path_map.get(scratch_md5_name), scratch_project.resource_names)
-    return catrobat_resource_names
-
-
 # based on: http://stackoverflow.com/a/4274204
 def _register_handler(dict_, *names):
     def dec(f):

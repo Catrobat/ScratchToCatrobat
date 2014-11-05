@@ -78,4 +78,4 @@ class CommonTest(common_testing.BaseTestCase):
         for test_path_structure, expected_duration_in_msec in test_path_structure_to_file_duration_in_msec_map.iteritems():
             audio_file_path = common_testing.get_test_resources_path(*("wav_pcm", test_path_structure))
             assert os.path.exists(audio_file_path)
-            assert common.length_of_audio_file_in_msec(audio_file_path) == expected_duration_in_msec
+            self.assertAlmostEqual(common.length_of_audio_file_in_secs(audio_file_path), expected_duration_in_msec / 1000.0, delta=0.001)

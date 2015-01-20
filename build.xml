@@ -94,7 +94,7 @@
         <fail message="You must run this target with '-Dpytest.options=options'." />
     </target>
 
-    <target name="individual-test-run" description="Runs indiviual test" depends="-ensure-test-options, init">
+    <target name="custom-test-run" description="Runs custom test" depends="-ensure-test-options, init">
         <call-pytest option="${pytest.options}" />
     </target>
 

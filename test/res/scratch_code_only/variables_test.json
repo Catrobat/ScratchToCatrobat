@@ -1,0 +1,75 @@
+{
+	"objName": "Stage",
+	"variables": [{
+			"name": "$",
+			"value": 279,
+			"isPersistent": false
+		},
+		{
+			"name": "MarketOpen",
+			"value": 0,
+			"isPersistent": false
+		},
+		{
+			"name": "Multiplier",
+			"value": "2",
+			"isPersistent": false
+		},
+		{
+			"name": "bc1bought",
+			"value": "1",
+			"isPersistent": false
+		},
+		{
+			"name": "bc2bought",
+			"value": "1",
+			"isPersistent": false
+		}],
+	"scripts": [],
+	"sounds": [],
+	"costumes": [],
+	"currentCostumeIndex": 0,
+	"penLayerMD5": "5c81a336fab8be57adc039a8a2b33ca9.png",
+	"penLayerID": -1,
+	"tempoBPM": 60,
+	"videoAlpha": 0.5,
+	"children": [{
+			"objName": "Sprite2",
+			"variables": [{
+					"name": "Sprite2_variable_1",
+					"value": 0,
+					"isPersistent": false
+				},
+                {
+					"name": "Sprite2_variable_2",
+					"value": 0,
+					"isPersistent": false
+				}
+                ],            
+			"scripts": [],
+			"sounds": [],
+			"costumes": [],
+			"currentCostumeIndex": 0,
+			"scratchX": -9,
+			"scratchY": 159,
+			"scale": 1,
+			"direction": 90,
+			"rotationStyle": "normal",
+			"isDraggable": false,
+			"indexInLibrary": 4,
+			"visible": false,
+			"spriteInfo": {
+			}
+		}
+		],
+	"info": {
+		"projectID": "23818734",
+		"swfVersion": "v421",
+		"videoOn": false,
+		"scriptCount": 63,
+		"spriteCount": 12,
+		"flashVersion": "MAC 14,0,0,145",
+		"userAgent": "Mozilla\/5.0 (Macintosh; Intel Mac OS X 10.9; rv:17.0) Gecko\/20100101 Firefox\/17.0"
+	}
+}
+

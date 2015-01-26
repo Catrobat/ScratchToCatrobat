@@ -24,25 +24,34 @@ import subprocess
 from distutils.spawn import find_executable
 from java.lang import System
 
-from scratchtocatrobat import common
+from scratchtocatrobat import logger
+
+_log = logger.log
 
 _SOX_BINARY = "sox"
 _SOX_OUTPUT_PCM_PATTERN = re.compile("Sample Encoding:.* PCM")
+# TODO: refactor to single mediaconverter class together with svgtopng
 # WORKAROUND: jython + find_executable() leads to wrong result if ".exe" extension is missing
 if System.getProperty("os.name").lower().startswith("win"):
     _SOX_BINARY += ".exe"
-_sox_path = find_executable(_SOX_BINARY)
-if not _sox_path or _sox_path == _SOX_BINARY:
-    raise common.ScratchtobatError("Sox binary not found on system path. Please add.")
-assert os.path.exists(_sox_path)
+
+
+def _checked_sox_path():
+    _sox_path = find_executable(_SOX_BINARY)
+    if not _sox_path or _sox_path == _SOX_BINARY:
+        raise EnvironmentError("Sox binary must be available on system path.")
+    assert os.path.exists(_sox_path)
+    return _sox_path
 
 
 def is_android_compatible_wav(file_path):
     assert file_path and os.path.exists(file_path), file_path
-    info_output = subprocess.check_output([_sox_path, "--info", file_path])
+    info_output = subprocess.check_output([_checked_sox_path(), "--info", file_path])
     return _SOX_OUTPUT_PCM_PATTERN.search(info_output) is not None
 
 
 def convert_to_android_compatible_wav(input_path, output_path):
+    _log.info("      converting '%s' to android compatible wav '%s'", input_path, output_path)
     # '-R' option ensures deterministic output
-    subprocess.check_call([_sox_path, input_path, "-R", "-t", "wavpcm", "-e", "unsigned-integer", output_path])
+    subprocess.check_call([_checked_sox_path(), input_path, "-R", "-t", "wavpcm", "-e", "unsigned-integer", output_path])
+

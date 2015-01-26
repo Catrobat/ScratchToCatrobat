@@ -20,14 +20,17 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import unicode_literals
 
+import glob
 import os
 import shutil
+import subprocess
 import tempfile
 import unittest
 import urllib2
 import zipfile
 from codecs import open
-from java.lang import System
+from java.io import BufferedReader, InputStreamReader
+from java.lang import ProcessBuilder, Runtime, String, StringBuilder, System
 from xml.etree import ElementTree
 
 import org.catrobat.catroid.common as catcommon
@@ -102,6 +105,11 @@ class BaseTestCase(unittest.TestCase):
 
     def failOnMissingException(self):
         self.fail("Exception not thrown")
+
+    @classmethod
+    def get_test_resources_paths(cls, *args):
+        target_resource_path = get_test_resources_path(*args)
+        return [_ for _ in glob.glob(os.path.join(target_resource_path, "*"))]
 
 
 class ProjectTestCase(BaseTestCase):
@@ -189,3 +197,36 @@ class ProjectTestCase(BaseTestCase):
                 return (elem1.type == elem2.type and elem1.value == elem2.value and _compare_formula_elements(elem1.leftChild, elem2.leftChild) and _compare_formula_elements(elem1.rightChild, elem2.rightChild))
 
         return _compare_formula_elements(formula1.formulaTree, formula2.formulaTree)
+
+
+def call_returning_exit_and_output(exec_args, **popen_args):
+    def readInputStream(inputStream):
+        reader = BufferedReader(InputStreamReader(inputStream))
+        builder = StringBuilder()
+        line = None
+        while True:
+            line = reader.readLine()
+            if line is None:
+                break
+            builder.append(line)
+            builder.append(System.getProperty("line.separator"))
+        return builder.toString()
+
+    # WORKAOUND: because capturing output of Jython's subprocess module at testing with
+    # pytest is not possible using Java implementation
+    pb = ProcessBuilder(exec_args)
+    env = popen_args.get('env')
+    if env:
+        process_env = pb.environment()
+        for key in list(process_env.keySet()):
+            if key not in env:
+                _log.debug("remove from process-env: %s", key)
+                process_env.remove(key)
+        for key in env:
+            process_env.put(key, env[key])
+    pb.redirectErrorStream(True)
+    process = pb.start()
+    stdout = readInputStream(process.getInputStream())
+    exitValue = process.waitFor()
+    return exitValue, (stdout, stdout)
+

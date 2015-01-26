@@ -36,9 +36,9 @@ class SvgToPngTest(common_testing.BaseTestCase):
             env_backup = os.environ.copy()
             del os.environ[svgtopng._BATIK_ENVIRONMENT_HOME]
         try:
-            svgtopng.convert("Dummy_path")
-            self.fail("Expected exception not thrown")
-        except common.ScratchtobatError:
+            svgtopng.convert("dummy.svg")
+            self.fail("Expected exception 'EnvironmentError' not thrown")
+        except EnvironmentError:
             pass
         finally:
             if env_backup:
@@ -53,7 +53,9 @@ class SvgToPngTest(common_testing.BaseTestCase):
         shutil.copy(regular_svg_path, svg_path_with_fileext)
         for input_svg_path in [regular_svg_path, svg_path_with_fileext]:
             assert os.path.exists(input_svg_path)
+
             output_png_path = svgtopng.convert(input_svg_path)
+
             assert os.path.exists(output_png_path)
             assert imghdr.what(output_png_path) == "png"
 
@@ -61,3 +63,4 @@ class SvgToPngTest(common_testing.BaseTestCase):
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
+

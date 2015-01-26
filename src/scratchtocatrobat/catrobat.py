@@ -33,6 +33,7 @@ import org.catrobat.catroid.formulaeditor as catformula
 _BACKGROUND_SPRITE_NAME = "Hintergrund"
 
 ANDROID_IGNORE_MEDIA_MARKER_FILE_NAME = ".nomedia"
+CATROBAT_LANGUAGE_VERSION = float("{0:.2f}".format(catcommon.Constants.CURRENT_CATROBAT_LANGUAGE_VERSION))
 MEDIA_LICENSE_URI = "http://developer.catrobat.org/ccbysa_v3"
 PACKAGED_PROGRAM_FILE_EXTENSION = catcommon.Constants.CATROBAT_EXTENSION
 PROGRAM_LICENSE_URI = "http://developer.catrobat.org/agpl_v3"
@@ -102,7 +103,7 @@ def _sprite_of(project, sprite_name):
 
 def user_variable_of(project, variable_name, sprite_name=None):
     '''
-    If `sprite_name` is None the project variables are checked. 
+    If `sprite_name` is None the project variables are checked.
     '''
     user_variables = project.getUserVariables()
     if sprite_name is None:

@@ -18,8 +18,26 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import sys
+import logging
+import os
+from datetime import datetime
 
-from scratchtocatrobat import main
+log = logging.getLogger("scratchtocatrobat")
 
-sys.exit(main.scratchtocatrobat_main(sys.argv[1:]))
+
+def initialize_logging():
+    log.setLevel(logging.DEBUG)
+
+    fh = logging.FileHandler(os.path.join(os.getcwd(), 'log', "scratchtocatrobat-{}.log".format(datetime.now().isoformat().replace(":", "_"))))
+    fh_fmt = logging.Formatter("%(asctime)s %(levelname)-8s %(message)s (%(filename)s:%(lineno)s)")
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(fh_fmt)
+    log.addHandler(fh)
+
+    ch = logging.StreamHandler()
+    ch_fmt = logging.Formatter("%(asctime)s %(levelname)-8s %(message)s")
+    ch.setLevel(logging.INFO)
+    ch.setFormatter(ch_fmt)
+    log.addHandler(ch)
+
+    log.debug("Logging initialized")

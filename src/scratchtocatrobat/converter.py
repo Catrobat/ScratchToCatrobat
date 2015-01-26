@@ -418,7 +418,7 @@ class Converter(object):
         xml_header.setApplicationBuildName("*** TODO ***")
         xml_header.setApplicationName(common.APPLICATION_NAME)
         xml_header.setApplicationVersion(version.__version__)
-        xml_header.setCatrobatLanguageVersion(catcommon.Constants.CURRENT_CATROBAT_LANGUAGE_VERSION)
+        xml_header.setCatrobatLanguageVersion(catrobat.CATROBAT_LANGUAGE_VERSION)
         xml_header.setDeviceName("Scratch")
         xml_header.setPlatform("Scratch")
         # WORKAROUND: remove after platform version supports float

@@ -30,22 +30,31 @@ _BATIK_CLI_JAR = "batik-rasterizer.jar"
 
 log = logging.getLogger(__name__)
 
+_batik_jar_path = None
+
+
+# TODO: refactor to single mediaconverter class together with wavconverter
+def _checked_batik_jar_path():
+    if _BATIK_ENVIRONMENT_HOME not in os.environ:
+        raise EnvironmentError("Environment variable '{}' must be set to batik library location.".format(_BATIK_ENVIRONMENT_HOME))
+    batik_jar_path = os.path.join(os.environ[_BATIK_ENVIRONMENT_HOME], _BATIK_CLI_JAR)
+    if not os.path.exists(batik_jar_path):
+        raise EnvironmentError("Batik jar '{}' must be existing in {}.".format(batik_jar_path, os.path.dirname(batik_jar_path)))
+    _batik_jar_path = batik_jar_path
+    return _batik_jar_path
+
 
 def convert(input_svg_path):
     assert isinstance(input_svg_path, (str, unicode))
-    if _BATIK_ENVIRONMENT_HOME not in os.environ:
-        raise common.ScratchtobatError("Please create environment variable '{}' and set to batik library location.".format(_BATIK_ENVIRONMENT_HOME))
-    batik_jar_path = os.path.join(os.environ[_BATIK_ENVIRONMENT_HOME], _BATIK_CLI_JAR)
-    if not os.path.exists(batik_jar_path):
-        raise common.ScratchtobatError("Jar not found: '{}'. Place batik library at {}.".format(batik_jar_path, os.path.dirname(batik_jar_path)))
     assert os.path.splitext(input_svg_path)[1] == ".svg"
 
     output_png_path = os.path.splitext(input_svg_path)[0] + ".png"
     try:
-        subprocess.check_output(['java', '-jar', batik_jar_path, input_svg_path, '-scriptSecurityOff'], stderr=subprocess.STDOUT)
+        subprocess.check_output(['java', '-jar', _checked_batik_jar_path(), input_svg_path, '-scriptSecurityOff'], stderr=subprocess.STDOUT)
         assert os.path.exists(output_png_path)
     except subprocess.CalledProcessError, e:
         assert e.output
-        raise EnvironmentError("PNG to SVG conversion call failed:\n%s" % e.output)
+        raise common.ScratchtobatError("PNG to SVG conversion call failed:\n%s" % e.output)
 
     return output_png_path
+

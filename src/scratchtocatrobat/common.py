@@ -20,7 +20,6 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import copy
 import hashlib
-import logging
 import os
 import socket
 import sys
@@ -28,7 +27,6 @@ import tempfile
 import time
 import urllib2
 import zipfile
-from datetime import datetime
 from functools import wraps
 from itertools import chain
 from itertools import repeat
@@ -37,30 +35,26 @@ from itertools import islice
 import java
 from javax.sound.sampled import AudioSystem
 
-from org.python.core import PyReflectedField
+from org.python.core import PyReflectedField  # pydev: @UnresolvedImport
 
+from scratchtocatrobat import logger
 
-def get_project_base_path():
-    return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-
-log = logging.getLogger("scratchtocatrobat")
-log.setLevel(logging.DEBUG)
-formatter = logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s")
-
-fh = logging.FileHandler(os.path.join(os.getcwd(), "scratchtocatrobat-{}.log".format(datetime.now().isoformat().replace(":", "_"))))
-fh.setLevel(logging.DEBUG)
-fh.setFormatter(formatter)
-log.addHandler(fh)
-
-ch = logging.StreamHandler()
-ch.setLevel(logging.INFO)
-ch.setFormatter(formatter)
-log.addHandler(ch)
-
-log.debug("Logging initialized")
+log = logger.log
 
 APPLICATION_NAME = "ScratchToCatrobat Converter"
 APPLICATION_SHORTNAME = APPLICATION_NAME.split()[0]
+
+
+# TODO: move into common_testing
+def get_project_base_path():
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+
+
+def is_unix_platform():
+    return java.io.File.separatorChar == '/'
+
+
+JYTHON_BINARY = "jython" if is_unix_platform() else "jython.bat"
 
 
 def isList(obj):
@@ -287,10 +281,6 @@ def get_os_platform():
     if ver.startswith('java'):
         ver = java.lang.System.getProperty("os.name").lower()
     return ver
-
-
-def is_unix_platform():
-    return java.io.File.separatorChar == '/'
 
 
 def int_or_float(str_value):

@@ -18,12 +18,18 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import os
+import subprocess
 import unittest
 
+from scratchtocatrobat import common
 from scratchtocatrobat import common_testing
 from scratchtocatrobat import converter
 from scratchtocatrobat import main
 from scratchtocatrobat import scratchwebapi
+from scratchtocatrobat.tools import svgtopng
+
+_DEFAULT_INTERPRETER = common.JYTHON_BINARY
 
 
 class MainTest(common_testing.ProjectTestCase):
@@ -31,15 +37,41 @@ class MainTest(common_testing.ProjectTestCase):
     def __init__(self, *args):
         super(MainTest, self).__init__(*args)
         self._main_method = main.run_converter
+        self.base_exec_args = ["python", os.path.join(common.get_project_base_path(), "run.py")]
+
+    def execute_run_script(self, args, env=None):
+        if not env:
+            env = dict()
+            assert os.environ.get('JYTHON_HOME')
+            env['JYTHON_HOME'] = os.environ['JYTHON_HOME']
+            env = os.environ
+        exec_args = self.base_exec_args + list(args)
+        #return common_testing.call_returning_exit(exec_args, env=env)
+        return common_testing.call_returning_exit_and_output(exec_args, env=env)[0]
+
+    def execute_main_module_check(self, module_args=None, interpreter=_DEFAULT_INTERPRETER, interpreter_options=None):
+        if not module_args:
+            module_args = ["--version"]
+        if not interpreter_options:
+            interpreter_options = []
+        assert isinstance(module_args, (list, tuple))
+        assert interpreter in ["python", _DEFAULT_INTERPRETER]
+        assert isinstance(interpreter_options, (list, tuple))
+        assert self.test_environ
+
+        call_args = [interpreter] + interpreter_options + ["-m", main.__name__] + module_args
+        return_val, (stdout, stderr) = common_testing.call_returning_exit_and_output(call_args, env=self.test_environ)
+        return return_val, (stdout, stderr)
 
     def setUp(self):
         super(MainTest, self).setUp()
+        self.test_environ = dict(os.environ)
 
     def assertMainSuccess(self, args, project_id):
         output_path = self._testresult_folder_path
         if len(args) == 1:
             args += [output_path]
-        return_val = self._main_method(*args)
+        return_val = self.execute_run_script(args)
         assert return_val == main.EXIT_SUCCESS
 
         project_name = scratchwebapi.request_project_name_for(project_id)
@@ -53,7 +85,58 @@ class MainTest(common_testing.ProjectTestCase):
         for project_filename, project_id in common_testing.TEST_PROJECT_FILENAME_TO_ID_MAP.iteritems():
             self.assertMainSuccess([common_testing.get_test_project_packed_file(project_filename)], project_id)
 
+# FIXME: needs an regular python installation with the same module dependencies (docopt)
+#     def test_fail_on_execution_with_non_jython(self):
+#         package_subdir_path = os.path.join(*main.__name__.split(".")[:-1])
+#         base_package_path = os.path.dirname(main.__file__).replace(package_subdir_path, "")
+#         self.test_environ["PYTHONPATH"] += os.pathsep + base_package_path
+#
+#         return_val, (stdout, stderr) = self.execute_main_module_check(module_args=["--check-env-only"], interpreter="python")
+#
+#         assert stderr, stdout
+#         assert "Jython" in stderr
+#         assert return_val == main.EXIT_FAILURE
+
+    def test_fail_on_expected_jython_java_access_property_missing(self):
+        package_subdir_path = os.path.join(*main.__name__.split(".")[:-1])
+        base_package_path = os.path.dirname(main.__file__).replace(package_subdir_path, "")
+        self.test_environ["PYTHONPATH"] += os.pathsep + base_package_path
+
+        return_val, (stdout, stderr) = self.execute_main_module_check(interpreter_options=["-D%s=true" % main._JYTHON_RESPECT_JAVA_ACCESSIBILITY_PROPERTY])
+
+        assert stderr, stdout
+        assert "Jython registry property 'python.security.respectJavaAccessibility' must be set to 'false'" in stderr
+        assert return_val == main.EXIT_FAILURE
+
+    def test_fail_to_execute_with_sox_binary_not_on_path(self):
+        splitted_path_env = self.test_environ['PATH'].split(os.pathsep)
+        self.test_environ['PATH'] = os.pathsep.join(path for path in splitted_path_env if 'sox' not in path)
+
+        return_val, (stdout, stderr) = self.execute_main_module_check()
+
+        assert stderr, stdout
+        assert "Sox binary must be available on system path" in stderr
+        assert return_val == main.EXIT_FAILURE
+
+    def test_fail_to_execute_with_batik_env_home_not_set(self):
+        self.test_environ = dict(os.environ)
+        del self.test_environ[svgtopng._BATIK_ENVIRONMENT_HOME]
+
+        return_val, (stdout, stderr) = self.execute_main_module_check()
+
+        assert stderr, stdout
+        assert "Environment variable 'BATIK_HOME' must be set to batik library location" in stderr
+        assert return_val == main.EXIT_FAILURE
+
+    def test_can_get_catrobat_language_version(self):
+        return_val, (stdout, stderr) = self.execute_main_module_check()
+        assert "Catrobat language version:" in stdout
+        # NOTE: with Jython the docopt module prints some debug information as first stderr line
+        # assert not stderr
+        assert return_val == main.EXIT_SUCCESS
+
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
+

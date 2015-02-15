@@ -54,7 +54,9 @@ def simple_name_for(brick):
         simple_class_name = "%s:" % (type(brick))
 
     if isinstance(brick, catbricks.NoteBrick):
-        simple_class_name += ": '%s'" % brick.note
+        #FIXME !! note-attribute removed from java class, now node is a formula!
+        simple_class_name += ": 'S2CC-TODO: UNKNOWN_MESSAGE'"
+#        simple_class_name += ": '%s'" % brick.note
     elif isinstance(brick, catformula.FormulaElement):
         simple_class_name += ": " + brick.getValue()
     elif isinstance(brick, catformula.Formula):
@@ -153,7 +155,8 @@ def add_to_start_script(bricks, sprite, position=0):
                 return script
         else:
             _log.debug("  start script not found, creating one")
-            start_script = catbase.StartScript(sprite)
+            start_script = catbase.StartScript()
+#            start_script = catbase.StartScript(sprite)
             sprite.addScript(0, start_script)
             return start_script
 

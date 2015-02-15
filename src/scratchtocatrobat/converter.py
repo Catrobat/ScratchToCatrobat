@@ -82,7 +82,9 @@ def _with_unmapped_blocks_replaced_as_default_formula_value(arguments):
 
 def _placeholder_for_unmapped_bricks_to(catr_sprite, *args):
     arguments = ", ".join(map(catrobat.simple_name_for, args))
-    return [_DEFAULT_BRICK_CLASS(catr_sprite, 500), catbricks.NoteBrick(catr_sprite, UNSUPPORTED_SCRATCH_BRICK_NOTE_MESSAGE_PREFIX + arguments)]
+    temp = _DEFAULT_BRICK_CLASS(500)
+    return [temp, catbricks.NoteBrick(UNSUPPORTED_SCRATCH_BRICK_NOTE_MESSAGE_PREFIX + arguments)]
+#    return [_DEFAULT_BRICK_CLASS(catr_sprite, 500), catbricks.NoteBrick(catr_sprite, UNSUPPORTED_SCRATCH_BRICK_NOTE_MESSAGE_PREFIX + arguments)]
 
 
 def _key_to_broadcast_message(key_name):
@@ -147,9 +149,11 @@ class _ScratchToCatrobat(object):
         #
         "whenGreenFlag": catbase.StartScript,
         "whenIReceive": catbase.BroadcastScript,
-        "whenKeyPressed": lambda sprite, key: catbase.BroadcastScript(sprite, _key_to_broadcast_message(key)),
+        "whenKeyPressed": lambda key: catbase.BroadcastScript(_key_to_broadcast_message(key)),
+#        "whenKeyPressed": lambda sprite, key: catbase.BroadcastScript(sprite, _key_to_broadcast_message(key)),
         # TODO: "whenSensorGreaterThan"
-        "whenSceneStarts": lambda sprite, look_name: catbase.BroadcastScript(sprite, _background_look_to_broadcast_message(look_name)),
+        "whenSceneStarts": lambda look_name: catbase.BroadcastScript(_background_look_to_broadcast_message(look_name)),
+#        "whenSceneStarts": lambda sprite, look_name: catbase.BroadcastScript(sprite, _background_look_to_broadcast_message(look_name)),
         "whenClicked": catbase.WhenScript,
 
         #
@@ -158,7 +162,8 @@ class _ScratchToCatrobat(object):
         "broadcast:": catbricks.BroadcastBrick,
         "doBroadcastAndWait": catbricks.BroadcastWaitBrick,
         # TODO: creation method for FormulaElement object
-        "wait:elapsed:from:": lambda sprite, duration: catbricks.WaitBrick(sprite, catformula.Formula(duration)),
+        "wait:elapsed:from:": lambda duration: catbricks.WaitBrick(catformula.Formula(duration)),
+#        "wait:elapsed:from:": lambda sprite, duration: catbricks.WaitBrick(sprite, catformula.Formula(duration)),
 
         # conditionals
         "doForever": catbricks.ForeverBrick,
@@ -175,7 +180,8 @@ class _ScratchToCatrobat(object):
         "forward:": catbricks.MoveNStepsBrick,
         "pointTowards:": catbricks.PointToBrick,
         "gotoX:y:": catbricks.PlaceAtBrick,
-        "glideSecs:toX:y:elapsed:from:": lambda sprite, duration, x_pos, y_pos: catbricks.GlideToBrick(sprite, x_pos, y_pos, _sec_to_msec(duration) if isinstance(duration, numbers.Number) else duration),
+        "glideSecs:toX:y:elapsed:from:": lambda duration, x_pos, y_pos: catbricks.GlideToBrick(x_pos, y_pos, _sec_to_msec(duration) if isinstance(duration, numbers.Number) else duration),
+#        "glideSecs:toX:y:elapsed:from:": lambda sprite, duration, x_pos, y_pos: catbricks.GlideToBrick(sprite, x_pos, y_pos, _sec_to_msec(duration) if isinstance(duration, numbers.Number) else duration),
         "xpos:": catbricks.SetXBrick,
         "ypos:": catbricks.SetYBrick,
         "bounceOffEdge": catbricks.IfOnEdgeBounceBrick,
@@ -194,14 +200,22 @@ class _ScratchToCatrobat(object):
         "nextScene": catbricks.NextLookBrick,  # only allowed in scene object so same as nextLook
 
         # TODO: remove lambdas to increase readability
-        "changeGraphicEffect:by:": lambda sprite, effect_type, value:
-            catbricks.ChangeBrightnessByNBrick(sprite, value) if effect_type == 'brightness' else
-            catbricks.ChangeGhostEffectByNBrick(sprite, value) if effect_type == 'ghost' else
-            _placeholder_for_unmapped_bricks_to(sprite, effect_type, value),
-        "setGraphicEffect:to:": lambda sprite, effect_type, value:
-            catbricks.SetBrightnessBrick(sprite, value) if effect_type == 'brightness' else
-            catbricks.SetGhostEffectBrick(sprite, value) if effect_type == 'ghost' else
-            _placeholder_for_unmapped_bricks_to(sprite, effect_type, value),
+        "changeGraphicEffect:by:": lambda effect_type, value:
+            catbricks.ChangeBrightnessByNBrick(value) if effect_type == 'brightness' else
+            catbricks.ChangeGhostEffectByNBrick(value) if effect_type == 'ghost' else
+            _placeholder_for_unmapped_bricks_to(effect_type, value),
+        "setGraphicEffect:to:": lambda effect_type, value:
+            catbricks.SetBrightnessBrick(value) if effect_type == 'brightness' else
+            catbricks.SetGhostEffectBrick(value) if effect_type == 'ghost' else
+            _placeholder_for_unmapped_bricks_to(effect_type, value),
+#        "changeGraphicEffect:by:": lambda sprite, effect_type, value:
+#            catbricks.ChangeBrightnessByNBrick(sprite, value) if effect_type == 'brightness' else
+#            catbricks.ChangeGhostEffectByNBrick(sprite, value) if effect_type == 'ghost' else
+#            _placeholder_for_unmapped_bricks_to(sprite, effect_type, value),
+#        "setGraphicEffect:to:": lambda sprite, effect_type, value:
+#            catbricks.SetBrightnessBrick(sprite, value) if effect_type == 'brightness' else
+#            catbricks.SetGhostEffectBrick(sprite, value) if effect_type == 'ghost' else
+#            _placeholder_for_unmapped_bricks_to(sprite, effect_type, value),
         "filterReset": catbricks.ClearGraphicEffectBrick,
         "changeSizeBy:": catbricks.ChangeSizeByNBrick,
         "setSizeTo:": catbricks.SetSizeToBrick,
@@ -227,7 +241,7 @@ class _ScratchToCatrobat(object):
 
         # sensors
         # WORKAROUND: using ROUND for Catrobat float => Scratch int
-        "soundLevel": lambda *_args: catrobat.formula_element_for(catformula.Functions.ROUND, arguments=[catrobat.formula_element_for(catformula.Sensors.LOUDNESS)]),
+        "soundLevel": lambda *_args: catrobat.formula_element_for(catformula.Functions.ROUND, arguments=[catrobat.formula_element_for(catformula.Sensors.LOUDNESS)]),  # @UndefinedVariable
     }.items() + compute_block_parameters_mapping.items() + operators_mapping.items())
 
     # TODO: check if necessary
@@ -251,7 +265,8 @@ class _ScratchToCatrobat(object):
         if scratch_script_name not in scratch.SCRIPTS:
             assert False, "Missing script mapping for: " + scratch_script_name
         # TODO: separate script and brick mapping
-        return cls.catrobat_brick_class_for(scratch_script_name)(sprite, *arguments)
+        return cls.catrobat_brick_class_for(scratch_script_name)(*arguments)
+#        return cls.catrobat_brick_class_for(scratch_script_name)(sprite, *arguments)
 
 
 def _create_variable_brick(sprite, value, user_variable, Class):
@@ -278,7 +293,8 @@ def _create_variable_brick(sprite, value, user_variable, Class):
 
         return catformula.Formula(java_variable_value)
 
-    return Class(sprite, catrobat_formula_from(value), user_variable)
+    return Class(catrobat_formula_from(value), user_variable)
+#    return Class(sprite, catrobat_formula_from(value), user_variable)
 
 
 def _variable_for(variable_name):
@@ -389,8 +405,10 @@ class Converter(object):
             key_sprite.getLookDataList().add(key_look)
 
             # initialize key images in left upper corner
-            when_started_script = catbase.StartScript(key_sprite)
-            set_look_brick = catbricks.SetLookBrick(key_sprite)
+            when_started_script = catbase.StartScript()
+#            when_started_script = catbase.StartScript(key_sprite)
+            set_look_brick = catbricks.SetLookBrick()
+#            set_look_brick = catbricks.SetLookBrick(key_sprite)
             set_look_brick.setLook(key_look)
 
             # special handling wider button
@@ -399,14 +417,18 @@ class Converter(object):
                 height_pos = 2
             y_pos = (scratch.STAGE_HEIGHT_IN_PIXELS / 2) - 40 * height_pos
             x_pos = -(scratch.STAGE_WIDTH_IN_PIXELS / 2) + 40 * (width_pos + 1)
-            place_at_brick = catbricks.PlaceAtBrick(key_sprite, x_pos, y_pos)
+            place_at_brick = catbricks.PlaceAtBrick(x_pos, y_pos)
+#            place_at_brick = catbricks.PlaceAtBrick(key_sprite, x_pos, y_pos)
 
-            bricks = [place_at_brick, set_look_brick, catbricks.SetSizeToBrick(key_sprite, 33)]
+            bricks = [place_at_brick, set_look_brick, catbricks.SetSizeToBrick(33)]
+#            bricks = [place_at_brick, set_look_brick, catbricks.SetSizeToBrick(key_sprite, 33)]
             when_started_script.getBrickList().addAll(bricks)
             key_sprite.addScript(when_started_script)
 
-            when_tapped_script = catbase.WhenScript(key_sprite)
-            when_tapped_script.addBrick(catbricks.BroadcastBrick(key_sprite, key_message))
+            when_tapped_script = catbase.WhenScript()
+#            when_tapped_script = catbase.WhenScript(key_sprite)
+            when_tapped_script.addBrick(catbricks.BroadcastBrick(key_message))
+#            when_tapped_script.addBrick(catbricks.BroadcastBrick(key_sprite, key_message))
             key_sprite.addScript(when_tapped_script)
 
             catrobat_project.addSprite(key_sprite)
@@ -522,21 +544,25 @@ class _ScratchObjectConverter(object):
         sprite_startup_look_idx = scratch_object.get_currentCostumeIndex()
         if sprite_startup_look_idx is not None:
             spriteStartupLook = sprite.getLookDataList()[sprite_startup_look_idx]
-            set_look_brick = catbricks.SetLookBrick(sprite)
+            set_look_brick = catbricks.SetLookBrick()
+#            set_look_brick = catbricks.SetLookBrick(sprite)
             set_look_brick.setLook(spriteStartupLook)
             implicit_bricks_to_add += [set_look_brick]
 
         # object's scratchX and scratchY Keys determine position
         x_pos = scratch_object.get_scratchX() or 0
         y_pos = scratch_object.get_scratchY() or 0
-        place_at_brick = catbricks.PlaceAtBrick(sprite, int(x_pos), int(y_pos))
+        place_at_brick = catbricks.PlaceAtBrick(int(x_pos), int(y_pos))
+#        place_at_brick = catbricks.PlaceAtBrick(sprite, int(x_pos), int(y_pos))
         implicit_bricks_to_add += [place_at_brick]
 
         object_scale = scratch_object.get_scale() or 1
-        implicit_bricks_to_add += [catbricks.SetSizeToBrick(sprite, object_scale * 100.0 / costume_resolution)]
+        implicit_bricks_to_add += [catbricks.SetSizeToBrick(object_scale * 100.0 / costume_resolution)]
+#        implicit_bricks_to_add += [catbricks.SetSizeToBrick(sprite, object_scale * 100.0 / costume_resolution)]
 
         object_direction = scratch_object.get_direction() or 90
-        implicit_bricks_to_add += [catbricks.PointInDirectionBrick(sprite, object_direction)]
+        implicit_bricks_to_add += [catbricks.PointInDirectionBrick(object_direction)]
+#        implicit_bricks_to_add += [catbricks.PointInDirectionBrick(sprite, object_direction)]
 
         object_visible = scratch_object.get_visible()
         if object_visible is not None and not object_visible:
@@ -851,7 +877,8 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
                             converted_args = [self.arguments[0]] + [catformula.Formula(arg) for arg in self.arguments[1:]]
 
                     if not is_catrobat_enum:
-                        converted_value = CatrobatClass(self.sprite, *converted_args)
+                        converted_value = CatrobatClass(*converted_args)
+                        #converted_value = CatrobatClass(self.sprite, *converted_args)
                     else:
                         converted_value = catrobat.formula_element_for(CatrobatClass, converted_args)
                     assert converted_value, "No result for {} with args {}".format(self.block_name, converted_args)
@@ -876,12 +903,15 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         self.block_name = self.block_name
         if self.block_name == 'doRepeat':
             times_value, nested_bricks = brick_arguments
-            catr_loop_start_brick = self.CatrobatClass(self.sprite, catformula.Formula(times_value))
+            catr_loop_start_brick = self.CatrobatClass(catformula.Formula(times_value))
+#            catr_loop_start_brick = self.CatrobatClass(self.sprite, catformula.Formula(times_value))
         else:
             assert self.block_name == 'doForever', self.block_name
             [nested_bricks] = brick_arguments
-            catr_loop_start_brick = self.CatrobatClass(self.sprite)
-        return [catr_loop_start_brick] + nested_bricks + [catbricks.LoopEndBrick(self.sprite, catr_loop_start_brick)]
+            catr_loop_start_brick = self.CatrobatClass()
+#            catr_loop_start_brick = self.CatrobatClass(self.sprite)
+        return [catr_loop_start_brick] + nested_bricks + [catbricks.LoopEndBrick(catr_loop_start_brick)]
+#        return [catr_loop_start_brick] + nested_bricks + [catbricks.LoopEndBrick(self.sprite, catr_loop_start_brick)]
 
     @_register_handler(_block_name_to_handler_map, "startScene")
     def _convert_scene_block(self):
@@ -933,12 +963,14 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         lookdata = soundinfo_name_to_soundinfo_map.get(sound_name)
         if not lookdata:
             raise ConversionError("Sprite does not contain sound with name={}".format(sound_name))
-        play_sound_brick = self.CatrobatClass(self.sprite)
+        play_sound_brick = self.CatrobatClass()
+#        play_sound_brick = self.CatrobatClass(self.sprite)
         play_sound_brick.setSoundInfo(lookdata)
         converted_bricks = [play_sound_brick]
         if self.block_name == "doPlaySoundAndWait":
             sound_length_variable = _variable_for(_sound_length_variable_name_for(sound_name))
-            converted_bricks += [catbricks.WaitBrick(self.sprite, catformula.Formula(sound_length_variable))]
+            converted_bricks += [catbricks.WaitBrick(catformula.Formula(sound_length_variable))]
+#            converted_bricks += [catbricks.WaitBrick(self.sprite, catformula.Formula(sound_length_variable))]
         return converted_bricks
 
     @_register_handler(_block_name_to_handler_map, "changeVar:by:", "setVar:to:")
@@ -958,4 +990,5 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         if self.block_name.startswith("think:"):
             text = _SPEAK_BRICK_THINK_INTRO + text
         # FIXME: value should depend on text length and optionally args
-        return [catbricks.SpeakBrick(self.sprite, text), catbricks.WaitBrick(self.sprite, 1000)]
+        return [catbricks.SpeakBrick(text), catbricks.WaitBrick(1000)]
+#        return [catbricks.SpeakBrick(self.sprite, text), catbricks.WaitBrick(self.sprite, 1000)]

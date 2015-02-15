@@ -1,0 +1,24 @@
+#!/bin/bash
+#
+# Usage:
+# converter <sb2-file or project url to be converted> <output_dir>
+#
+# e.g.
+# converter http://scratch.mit.edu/projects/10205819/ ~/output
+#
+# => TODO: Usage-check in converter-script. Check if two required params are set
+#
+
+export S2C_HOME=`pwd`
+export JYTHON_HOME=/Users/ralph/jython2.7b2/
+export JYTHON_EXECUTABLE=$JYTHON_HOME/jython
+export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.7.0_55.jdk/Contents/Home
+
+export JYTHON_STANDALONE_JAR=$JYTHON_HOME/jython.jar
+export PYTHONPATH=$PYTHONPATH:$S2C_HOME/src
+export BATIK_HOME=$S2C_HOME/lib/batik-1.7
+export JYTHONPATH=$S2C_HOME:$S2C_HOME/src/scratchtocatrobat:$S2C_HOME/lib/catroid_class_hierarchy.jar:$S2C_HOME/lib/xmlpull-1.1.3.1.jar:$S2C_HOME/lib/xpp3_min-1.1.4c.jar:$S2C_HOME/lib/xstream-1.4.7.jar:$S2C_HOME/src:$S2C_HOME/lib/batik-1.7/batik-rasterizer.jar
+
+echo --- CONVERTER START ---
+$JYTHON_EXECUTABLE $S2C_HOME/src/scratchtocatrobat/main.py $1 $2
+echo --- CONVERTER END ---

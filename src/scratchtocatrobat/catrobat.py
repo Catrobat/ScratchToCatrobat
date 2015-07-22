@@ -107,18 +107,29 @@ def user_variable_of(project, variable_name, sprite_name=None):
     '''
     If `sprite_name` is None the project variables are checked.
     '''
-    user_variables = project.getUserVariables()
+#----------------------
+# since v0.95
+    user_variables = project.getDataContainer()
     if sprite_name is None:
         return user_variables.findUserVariable(variable_name, user_variables.projectVariables)
     else:
         sprite = _sprite_of(project, sprite_name)
         return user_variables.getUserVariable(variable_name, sprite)
+# earlier
+#    user_variables = project.getUserVariables()
+#    if sprite_name is None:
+#        return user_variables.findUserVariable(variable_name, user_variables.projectVariables)
+#    else:
+#        sprite = _sprite_of(project, sprite_name)
+#        return user_variables.getUserVariable(variable_name, sprite)
+#----------------------
 
 
 def add_user_variable(project, variable_name, sprite=None, sprite_name=None):
     ''' If `sprite_name` is set a sprite variable is added otherwise the variable is added to the project. '''
     _log.debug("adding variable '%s' to sprite '%s'", variable_name, sprite_name if sprite_name is not None else "<Stage>")
-    user_variables = project.getUserVariables()
+    user_variables = project.getDataContainer()
+#    user_variables = project.getUserVariables()
     if sprite_name is None:
         added_user_variable = user_variables.addProjectUserVariable(variable_name)
     else:
@@ -130,11 +141,13 @@ def add_user_variable(project, variable_name, sprite=None, sprite_name=None):
 
 def defined_variable_names_in(project, sprite_name=None, sprite=None):
     if sprite_name is None:
-        user_variables = project.getUserVariables().projectVariables
+        user_variables = project.getDataContainer().projectVariables
+        #user_variables = project.getUserVariables().projectVariables
     else:
         if sprite is None:
             sprite = _sprite_of(project, sprite_name)
-        user_variables = project.getUserVariables().getOrCreateVariableListForSprite(sprite)
+        user_variables = project.getDataContainer().getOrCreateVariableListForSprite(sprite)
+        #user_variables = project.getUserVariables().getOrCreateVariableListForSprite(sprite)
     return [user_variable.getName() for user_variable in user_variables]
 
 

@@ -976,11 +976,13 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "changeVar:by:", "setVar:to:")
     def _convert_variable_block(self):
         variable_name, value = self.arguments
-        user_variable = self.project.getUserVariables().getUserVariable(variable_name, self.sprite)
+        user_variable = self.project.getDataContainer().getUserVariable(variable_name, self.sprite)
+        #user_variable = self.project.getUserVariables().getUserVariable(variable_name, self.sprite)
         if user_variable is None and _is_generated(variable_name):
             # WORKAROUND: for generated variables added in preprocessing step (e.g doUntil rewrite)
             catrobat.add_user_variable(self.project, variable_name, self.sprite, self.sprite.getName())
-            user_variable = self.project.getUserVariables().getUserVariable(variable_name, self.sprite)
+            user_variable = self.project.getDataContainer().getUserVariable(variable_name, self.sprite)
+#            user_variable = self.project.getUserVariables().getUserVariable(variable_name, self.sprite)
             assert user_variable is not None and user_variable.getName() == variable_name, "variable: %s, sprite_name: %s" % (variable_name, self.sprite.getName())
         return [self.CatrobatClass(self.sprite, value, user_variable)]
 

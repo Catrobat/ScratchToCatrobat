@@ -10,9 +10,9 @@
 #
 
 export S2C_HOME=`pwd`
-export JYTHON_HOME=/Users/ralph/jython2.7b2/
-export JYTHON_EXECUTABLE=$JYTHON_HOME/jython
-export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.7.0_55.jdk/Contents/Home
+export JYTHON_HOME=/Users/r4ll3/Development/Desktop/jython2.7b/
+export JYTHON_EXECUTABLE=$JYTHON_HOME/bin/jython
+export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.8.0_51.jdk/Contents/Home
 
 export JYTHON_STANDALONE_JAR=$JYTHON_HOME/jython.jar
 export PYTHONPATH=$PYTHONPATH:$S2C_HOME/src

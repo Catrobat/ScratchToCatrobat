@@ -9,7 +9,7 @@
 # => TODO: Usage-check in converter-script. Check if two required params are set
 #
 
-export S2C_HOME=`pwd`
+export S2C_HOME=$(dirname $0)
 export JYTHON_HOME=/Users/r4ll3/Development/Desktop/jython2.7b/
 export JYTHON_EXECUTABLE=$JYTHON_HOME/bin/jython
 export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.8.0_51.jdk/Contents/Home

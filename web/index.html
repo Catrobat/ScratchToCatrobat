@@ -1,39 +1,85 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
-    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" >
-
+<!DOCTYPE html>
+<html>
 <head>
-<meta http-equiv="Content-type" content="text/html; charset=iso-8859-1" />
-<link rel="stylesheet" type="text/css" media="screen"
-    title="CSS for s2c"
-    href="./s2c.css" />
-<title>Scratch to Catrobat Converter</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+  <meta name="robots" content="noindex,nofollow"/>
+  <meta name="viewport" content="width=device-width">
+  <title>Scratch to Catrobat Converter</title>
+  <link rel="stylesheet" href="./css/bootstrap.min.css">
+  <link rel="stylesheet" href="./css/bootstrap-theme.min.css">
+  <script src="./js/bootstrap.min.js"></script>
+  <link rel="shortcut icon" href="./images/logo/favicon.png" />
+  <link rel="stylesheet" href="./css/main.css" media="screen"/>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+  <script>
+    jQuery(document).ready(function($) {
+$("#btn-convert").removeClass("deactivate-button").addClass("activate-button");
+      $("#field-url").on("focus click", function() {
+        $(this).select();
+      });
+    });
+  </script>
 </head>
-
 <body>
+  <div id="wrapper">
+    <header>
+      <nav>
+        <div id="header-top">
+          <div><a href="https://share.catrob.at/pocketcode/help">Tutorials</a></div>
+          <div><a href="http://www.catrobat.org">About</a></div>
+        </div>
 
-<h1 style="text-align:center">Convert Scratch projects to Catrobat</h1>
-<br />
+        <div id="header-left">
+          <div id="logo">
+            <a href="/pocketcode/">
+              <img src="/images/logo/logo_text.png" alt="Pocket Code Logo" />
+            </a>
+          </div>
+        </div>
+      </nav>
+    </header>
 
-<table align="center" cellpadding="5" bgcolor="#E7E7F7"><tr>
-<td>
-<form action="convert.php" method="post">
-<b>Enter a Scratch project URL</b><br />
-<input type="text" name="url" size="80"
-    value="http://scratch.mit.edu/projects/10205819/"/>
-
-<input type="submit" name="submit" value="Convert!" />
-</form>
-</td></tr>
-
-<tr><td>
-<form action="convert.php" method="post" enctype="multipart/form-data">
-<b>or upload a Scratch project</b><br />
-<input type="file" name="filename" size="80"/>
-<input type="submit" name="submit" value="Convert!" />
-</form>
-</td></tr></table>
-
+    <article>
+      <div id="featuredPrograms">
+		<p>&nbsp;</p>
+		<div>
+	        <h2>Convert Scratch projects to Catrobat</h2>
+            <p>Quickly turn your Scratch desktop projects into full-fledged mobile Catrobat projects</p>
+			<p>&nbsp;</p>
+            <form action="convert.php" method="post" enctype="multipart/form-data">
+				<b>Enter a Scratch project URL</b><br />
+				<input type="text" id="field-url" name="url" size="40" value="http://scratch.mit.edu/projects/10205819/" style="border:1px #CCCCCC solid;font-size:2em;" />
+            <p style="text-align:center">or</p>
+            <b>upload a Scratch project</b><br />
+			<div class="input-field">
+              <input type="file" name="filename" size="80" class="size-large input-search" />
+            </div>
+			<input type="submit" name="submit" id="btn-convert" value="Convert" class="convert-button deactivate-button" />
+	        </form>
+		</div>
+		<div>
+          <p>&nbsp;</p>
+          <h2>How it works</h2>
+          <div>
+            <ul>
+              <li>Select your Scratch project of choice or enter the project URL in the input field above and hit the "Convert" button.</li>
+              <li>After the conversion is finished a QR-Code will be shown.</li>
+              <li>Install and open the PocketCode app on your <a href="https://play.google.com/store/apps/details?id=org.catrobat.catroid" target="_blank">Android</a> or iOS device.</li>
+              <li>Now hold your device over the QR Code so that it's clearly visible within your smartphone's screen.</li>
+              <li>Your project should subsequently open on your mobile device.</li>
+			  <li>Have fun! :)</li>
+            </ul>
+          </div>
+		</div>
+      </div>
+    </article>
+  </div>
+  <p>&nbsp;</p>
+  <footer>
+    <div id="footer-menu" class="footer-padding">
+      <div>&copy; Copyright 2014 - 2015 Catrobat Team</div>
+    </div>
+  </footer>
 </body>
 </html>

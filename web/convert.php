@@ -1,43 +1,30 @@
 <?php
 
-# Settings 
-
-DEFINE('JYTHON_EXE', '/opt/jython27/jython');
+# Settings
+//DEFINE('JYTHON_EXE', '/opt/jython27/jython');
+DEFINE('JYTHON_EXE', '/Users/r4ll3/Development/Desktop/jython2.7b/bin/jython');
 DEFINE('S2C_MAIN', '-m scratchtobat.main');
 
 ###########################################
 
-function replace_extension($filename, $new_extension) 
-{
-	$info = pathinfo($filename);
-	return $info['dirname'].DIRECTORY_SEPARATOR.$info['filename'] . '.' . $new_extension;
-}
-
-# from http://stackoverflow.com/a/17280327/1091453jkjkjkjjj
-function tempdir($dir=NULL,$prefix=NULL) {
-  $template = "{$prefix}XXXXXX";
-  if (($dir) && (is_dir($dir))) { $tmpdir = "--tmpdir=$dir"; }
-  else { $tmpdir = '--tmpdir=' . sys_get_temp_dir(); }
-  return exec("mktemp -d $tmpdir $template");
-}
-
 if ((!isset($_FILES["filename"]["tmp_name"]) || empty($_FILES["filename"]["tmp_name"])) && 
-      (!isset($_POST['url']) || empty($_POST['url'])))
-{
+      (!isset($_POST['url']) || empty($_POST['url']))) {
 	error_log("Files: ".print_r($_FILES, true));
 	error_log("Post: ".print_r($_POST, true));
   die("No file selected to convert!");
 }
 
 $file_or_url = isset($_POST['url']) ? $_POST['url'] : $_FILES["filename"]["tmp_name"];
-$output_dir = tempdir();
-$cmd = JYTHON_EXE.' '.S2C_MAIN.' '.escapeshellcmd($file_or_url).' '.$output_dir;
+//$cmd = JYTHON_EXE.' '.S2C_MAIN.' '.escapeshellcmd($file_or_url).' '.$output_dir;
+if (isset($_POST['url'] && strpos($file_or_url, 'http://scratch.mit.edu/projects/') === false) {
+	die("Invalid URL given!");
+}
+$output_dir = '../output/';
+$cmd = '../converter '.escapeshellcmd($file_or_url).' '.$output_dir;
 $sys_rv = exec($cmd);
 
 $output_files = glob($output_dir.DIRECTORY_SEPARATOR."*.catrobat");
-
-if ($sys_rv == 1 || count($output_files) != 1)
-{
+if ($sys_rv == 1 || count($output_files) != 1) {
 	die("Conversion failed!");
 }
 
@@ -62,4 +49,3 @@ if (connection_aborted()) {
 		}
 	} 
 }
-?>

@@ -30,6 +30,7 @@ h1, .h1 {
 }
 h2, .h2 {
   font-size: 20px;
+  margin-bottom:5px;
 }
 
 #wrapper, footer {
@@ -47,9 +48,6 @@ h2, .h2 {
   #wrapper {
     padding-bottom: 85px;
   }
-  .footer-expand #wrapper {
-    padding-bottom: 281px;
-  }
   .standard-col-text {
     -webkit-column-count: 1;
     -webkit-column-gap: 25px;
@@ -62,10 +60,12 @@ h2, .h2 {
 }
 
 footer {
-  margin-top: -178px !important;
   background-color: #177f8d;
   color: #fff;
   font-size: 13px;
+  padding: 3px;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 footer a {
   color: #fff;
@@ -186,16 +186,6 @@ header nav #menu {
 }
 header nav #menu .btn-menu {
   border-left: 1px solid white;
-}
-header nav #menu input {
-  background: #96CED6;
-  border: 0;
-  padding: 8px;
-  width: 200px;
-  -webkit-border-radius: 2px;
-  -moz-border-radius: 2px;
-  border-radius: 2px;
-  margin-right: 8px;
 }
 header nav #menu-mobile {
   display: none;

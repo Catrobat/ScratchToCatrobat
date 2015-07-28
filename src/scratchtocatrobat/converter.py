@@ -202,11 +202,11 @@ class _ScratchToCatrobat(object):
         # TODO: remove lambdas to increase readability
         "changeGraphicEffect:by:": lambda effect_type, value:
             catbricks.ChangeBrightnessByNBrick(value) if effect_type == 'brightness' else
-            catbricks.ChangeGhostEffectByNBrick(value) if effect_type == 'ghost' else
+            catbricks.ChangeTransparencyByNBrick(value) if effect_type == 'ghost' else
             _placeholder_for_unmapped_bricks_to(effect_type, value),
         "setGraphicEffect:to:": lambda effect_type, value:
             catbricks.SetBrightnessBrick(value) if effect_type == 'brightness' else
-            catbricks.SetGhostEffectBrick(value) if effect_type == 'ghost' else
+            catbricks.SetTransparencyBrick(value) if effect_type == 'ghost' else
             _placeholder_for_unmapped_bricks_to(effect_type, value),
 #        "changeGraphicEffect:by:": lambda sprite, effect_type, value:
 #            catbricks.ChangeBrightnessByNBrick(sprite, value) if effect_type == 'brightness' else

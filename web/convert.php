@@ -37,7 +37,6 @@ foreach ($outputFiles as $oldOutputFile) { // iterate files
         unlink($oldOutputFile); // delete file
 	}
 }
-exit();
 
 $cmd = '../converter ' . escapeshellcmd($fileOrURL) . ' ' . $outputDir;
 $sysRV = exec($cmd);

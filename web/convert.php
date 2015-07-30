@@ -56,7 +56,7 @@ $fileName = basename($zipFile);
 error_log("Zipfile: " . $zipFile . " basename: " . $fileName);
 
 header("Content-Type: application/catrobat+zip");
-header("Content-Disposition: attachment; filename=$file_name");
+header("Content-Disposition: attachment; filename=$fileName");
 header("Content-Length: " . filesize($zipFile));
 readfile($zipFile);
 

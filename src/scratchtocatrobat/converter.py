@@ -949,7 +949,8 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
     @_register_handler(_block_name_to_handler_map, "lookLike:")
     def _convert_look_block(self):
-        set_look_brick = self.CatrobatClass(self.sprite)
+#        set_look_brick = self.CatrobatClass(self.sprite)
+        set_look_brick = self.CatrobatClass()
         [look_name] = self.arguments
         assert isinstance(look_name, (str, unicode)), type(look_name)
         look = next((look for look in self.sprite.getLookDataList() if look.getLookName() == look_name), None)

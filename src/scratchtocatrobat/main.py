@@ -75,7 +75,6 @@ def run_converter(scratch_project_file_or_url, output_dir, extract_resulting_cat
             APP_PATH = os.path.realpath(os.path.dirname(__file__))
             scratch_project_dir = os.path.join(APP_PATH, "..", "..", "data", "tmp")
             if os.path.exists(scratch_project_dir):
-                print("test")
                 shutil.rmtree(scratch_project_dir)
                 os.makedirs(scratch_project_dir)
 ######### TEMP!!!
@@ -132,7 +131,7 @@ def main():
         kwargs['extract_resulting_catrobat'] = arguments["--extracted"]
         kwargs['temp_rm'] = not arguments["--no-temp-rm"]
         kwargs['show_version_only'] = arguments["--version"]
-        output_dir = arguments["<output-dir>"] == None if arguments["<output-dir>"] else OUTPUT_PATH
+        output_dir = arguments["<output-dir>"] if arguments["<output-dir>"] != None else OUTPUT_PATH
         sys.exit(run_converter(arguments["<project-url-or-package-path>"], output_dir, **kwargs))
     except Exception as e:
         log.exception(e)

@@ -633,19 +633,22 @@ class ConvertedProject(object):
                 for file_ in files:
                     yield os.path.join(root, file_)
         log.info("convert Scratch project to '%s'", output_dir)
-        with common.TemporaryDirectory() as catrobat_program_dir:
-            self.save_as_catrobat_directory_structure_to(catrobat_program_dir)
-            common.makedirs(output_dir)
-            catrobat_zip_file_path = self._converted_output_path(output_dir, self.name)
-            log.info("  save packaged Scratch project to '%s'", catrobat_zip_file_path)
-            if os.path.exists(catrobat_zip_file_path):
-                os.remove(catrobat_zip_file_path)
-            with zipfile.ZipFile(catrobat_zip_file_path, 'w') as zip_fp:
-                for file_path in iter_dir(unicode(catrobat_program_dir)):
-                    assert isinstance(file_path, unicode)
-                    path_inside_zip = file_path.replace(catrobat_program_dir, u"")
-                    zip_fp.write(file_path, path_inside_zip)
-            assert os.path.exists(catrobat_zip_file_path), "Catrobat package not written: %s" % catrobat_zip_file_path
+
+        APP_PATH = os.path.realpath(os.path.dirname(__file__))
+        catrobat_program_dir = os.path.join(APP_PATH, "..", "..", "data", "tmp")
+#        with common.TemporaryDirectory() as catrobat_program_dir:
+        self.save_as_catrobat_directory_structure_to(catrobat_program_dir)
+        common.makedirs(output_dir)
+        catrobat_zip_file_path = self._converted_output_path(output_dir, self.name)
+        log.info("  save packaged Scratch project to '%s'", catrobat_zip_file_path)
+        if os.path.exists(catrobat_zip_file_path):
+            os.remove(catrobat_zip_file_path)
+        with zipfile.ZipFile(catrobat_zip_file_path, 'w') as zip_fp:
+            for file_path in iter_dir(unicode(catrobat_program_dir)):
+                assert isinstance(file_path, unicode)
+                path_inside_zip = file_path.replace(catrobat_program_dir, u"")
+                zip_fp.write(file_path, path_inside_zip)
+        assert os.path.exists(catrobat_zip_file_path), "Catrobat package not written: %s" % catrobat_zip_file_path
         return catrobat_zip_file_path
 
     @staticmethod

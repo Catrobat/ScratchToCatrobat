@@ -28,7 +28,7 @@ from docopt import docopt
 from scratchtocatrobat import logger
 
 logger.initialize_logging()
-log = logging.getLogger(__name__)
+log = logging.getLogger("scratchtocatrobat.main")
 
 class ExitCode(object):
     SUCCESS = 0
@@ -70,26 +70,36 @@ def run_converter(scratch_project_file_or_url, output_dir, extract_resulting_cat
             log.info("calling converter")
             if not os.path.isdir(output_dir):
                 raise EnvironmentError("Output folder must be a directory, but is %s" % output_dir)
-            with common.TemporaryDirectory(remove_on_exit=temp_rm) as scratch_project_dir:
-                if scratch_project_file_or_url.startswith("http://"):
-                    log.info("Downloading project from URL: '{}' to temp dir {} ...".format(scratch_project_file_or_url, scratch_project_dir))
-                    scratchwebapi.download_project(scratch_project_file_or_url, scratch_project_dir)
-                elif os.path.isfile(scratch_project_file_or_url):
-                    log.info("Extracting project from path: '{}' ...".format(scratch_project_file_or_url))
-                    common.extract(scratch_project_file_or_url, scratch_project_dir)
-                else:
-                    log.info("Loading project from path: '{}' ...".format(scratch_project_file_or_url))
-                    scratch_project_dir = scratch_project_file_or_url
-                project = scratch.Project(scratch_project_dir)
-                log.info("Converting scratch project '%s' into output folder: %s", project.name, output_dir)
-                converted_project = converter.converted(project)
-                catrobat_program_path = converted_project.save_as_catrobat_package_to(output_dir)
-                if extract_resulting_catrobat:
-                    extraction_path = os.path.join(output_dir, os.path.splitext(os.path.basename(catrobat_program_path))[0])
-                    if os.path.exists(extraction_path):
-                        shutil.rmtree(extraction_path)
-                    common.makedirs(extraction_path)
-                    common.extract(catrobat_program_path, extraction_path)
+
+######### TEMP!!!
+            APP_PATH = os.path.realpath(os.path.dirname(__file__))
+            scratch_project_dir = os.path.join(APP_PATH, "..", "..", "data", "tmp")
+            if os.path.exists(scratch_project_dir):
+                print("test")
+                shutil.rmtree(scratch_project_dir)
+                os.makedirs(scratch_project_dir)
+######### TEMP!!!
+
+#            with common.TemporaryDirectory(remove_on_exit=temp_rm) as scratch_project_dir:
+            if scratch_project_file_or_url.startswith("http://"):
+                log.info("Downloading project from URL: '{}' to temp dir {} ...".format(scratch_project_file_or_url, scratch_project_dir))
+                scratchwebapi.download_project(scratch_project_file_or_url, scratch_project_dir)
+            elif os.path.isfile(scratch_project_file_or_url):
+                log.info("Extracting project from path: '{}' ...".format(scratch_project_file_or_url))
+                common.extract(scratch_project_file_or_url, scratch_project_dir)
+            else:
+                log.info("Loading project from path: '{}' ...".format(scratch_project_file_or_url))
+                scratch_project_dir = scratch_project_file_or_url
+            project = scratch.Project(scratch_project_dir)
+            log.info("Converting scratch project '%s' into output folder: %s", project.name, output_dir)
+            converted_project = converter.converted(project)
+            catrobat_program_path = converted_project.save_as_catrobat_package_to(output_dir)
+            if extract_resulting_catrobat:
+                extraction_path = os.path.join(output_dir, os.path.splitext(os.path.basename(catrobat_program_path))[0])
+                if os.path.exists(extraction_path):
+                    shutil.rmtree(extraction_path)
+                common.makedirs(extraction_path)
+                common.extract(catrobat_program_path, extraction_path)
     except (common.ScratchtobatError, EnvironmentError, IOError) as e:
         log.error(e)
         return ExitCode.FAILURE

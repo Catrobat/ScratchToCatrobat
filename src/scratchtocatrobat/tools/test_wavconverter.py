@@ -21,7 +21,6 @@
 import os
 import unittest
 
-from scratchtocatrobat import common
 from scratchtocatrobat import common_testing
 from scratchtocatrobat.tools import wavconverter
 
@@ -40,8 +39,8 @@ class WavConverterTest(common_testing.BaseTestCase):
 
     @classmethod
     def setUpClass(cls):
-       assert len(cls.adpcm_wavfile_paths()) == 7
-       assert len(cls.pcm_wavfile_paths()) == 2
+        assert len(cls.adpcm_wavfile_paths()) == 7
+        assert len(cls.pcm_wavfile_paths()) == 2
 
     def test_fail_on_missing_sox_binary(self):
         saved_path_env = os.environ[_ENV_PATH]

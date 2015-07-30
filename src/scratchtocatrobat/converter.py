@@ -201,6 +201,7 @@ class _ScratchToCatrobat(object):
 
         # TODO: remove lambdas to increase readability
         "changeGraphicEffect:by:": lambda effect_type, value:
+    
             catbricks.ChangeBrightnessByNBrick(value) if effect_type == 'brightness' else
             catbricks.ChangeTransparencyByNBrick(value) if effect_type == 'ghost' else
             _placeholder_for_unmapped_bricks_to(effect_type, value),
@@ -303,7 +304,7 @@ def _variable_for(variable_name):
 
 # TODO: refactor _key_* functions to be used just once
 def _key_image_path_for(key):
-    key_images_path = os.path.join(common.get_project_base_path(), 'resources', 'key_images')
+    key_images_path = os.path.join(common.get_project_base_path(), 'resources', 'images', 'keys')
     for key_filename in os.listdir(key_images_path):
         basename, _ = os.path.splitext(key_filename)
         if basename.lower().endswith("_".join(key.split())):

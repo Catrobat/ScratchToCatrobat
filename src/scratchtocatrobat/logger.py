@@ -24,11 +24,10 @@ from datetime import datetime
 
 log = logging.getLogger("scratchtocatrobat")
 
-
 def initialize_logging():
     log.setLevel(logging.DEBUG)
 
-    fh = logging.FileHandler(os.path.join(os.getcwd(), 'log', "scratchtocatrobat-{}.log".format(datetime.now().isoformat().replace(":", "_"))))
+    fh = logging.FileHandler(os.path.join(os.getcwd(), 'data', 'log', "scratchtocatrobat-{}.log".format(datetime.now().isoformat().replace(":", "_"))))
     fh_fmt = logging.Formatter("%(asctime)s %(levelname)-8s %(message)s (%(filename)s:%(lineno)s)")
     fh.setLevel(logging.DEBUG)
     fh.setFormatter(fh_fmt)

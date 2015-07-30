@@ -30,7 +30,7 @@ if (isset($_POST['url'])
 
 ignore_user_abort(true);
 
-$outputDir = '../web_output/';
+$outputDir = '../data/web_output/';
 $outputFiles = glob($outputDir.DIRECTORY_SEPARATOR."*.catrobat");
 foreach ($outputFiles as $oldOutputFile) { // iterate files
     if (is_file($oldOutputFile)) {
@@ -38,7 +38,7 @@ foreach ($outputFiles as $oldOutputFile) { // iterate files
 	}
 }
 
-$cmd = '../converter ' . escapeshellcmd($fileOrURL) . ' ' . $outputDir;
+$cmd = '../run.py ' . escapeshellcmd($fileOrURL) . ' ' . $outputDir;
 $sysRV = exec($cmd);
 
 $outputFiles = glob($outputDir.DIRECTORY_SEPARATOR."*.catrobat");

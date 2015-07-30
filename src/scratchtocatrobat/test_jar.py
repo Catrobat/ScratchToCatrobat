@@ -18,12 +18,12 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import os
-import subprocess
+#import os
+#import subprocess
 import unittest
 
-from scratchtocatrobat import common
-from scratchtocatrobat import test_main
+#from scratchtocatrobat import common
+#from scratchtocatrobat import test_main
 
 # TODO: fixing Jar build:
 #

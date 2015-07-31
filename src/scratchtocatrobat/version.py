@@ -20,5 +20,5 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # TODO: replace with real version number
-__version_info__ = (0, 2, 0)
+__version_info__ = (0, 2, 1)
 __version__ = '.'.join(str(number) for number in __version_info__)

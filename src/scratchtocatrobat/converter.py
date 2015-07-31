@@ -634,21 +634,19 @@ class ConvertedProject(object):
                     yield os.path.join(root, file_)
         log.info("convert Scratch project to '%s'", output_dir)
 
-        APP_PATH = os.path.realpath(os.path.dirname(__file__))
-        catrobat_program_dir = os.path.join(APP_PATH, "..", "..", "data", "tmp")
-#        with common.TemporaryDirectory() as catrobat_program_dir:
-        self.save_as_catrobat_directory_structure_to(catrobat_program_dir)
-        common.makedirs(output_dir)
-        catrobat_zip_file_path = self._converted_output_path(output_dir, self.name)
-        log.info("  save packaged Scratch project to '%s'", catrobat_zip_file_path)
-        if os.path.exists(catrobat_zip_file_path):
-            os.remove(catrobat_zip_file_path)
-        with zipfile.ZipFile(catrobat_zip_file_path, 'w') as zip_fp:
-            for file_path in iter_dir(unicode(catrobat_program_dir)):
-                assert isinstance(file_path, unicode)
-                path_inside_zip = file_path.replace(catrobat_program_dir, u"")
-                zip_fp.write(file_path, path_inside_zip)
-        assert os.path.exists(catrobat_zip_file_path), "Catrobat package not written: %s" % catrobat_zip_file_path
+        with common.TemporaryDirectory() as catrobat_program_dir:
+            self.save_as_catrobat_directory_structure_to(catrobat_program_dir)
+            common.makedirs(output_dir)
+            catrobat_zip_file_path = self._converted_output_path(output_dir, self.name)
+            log.info("  save packaged Scratch project to '%s'", catrobat_zip_file_path)
+            if os.path.exists(catrobat_zip_file_path):
+                os.remove(catrobat_zip_file_path)
+            with zipfile.ZipFile(catrobat_zip_file_path, 'w') as zip_fp:
+                for file_path in iter_dir(unicode(catrobat_program_dir)):
+                    assert isinstance(file_path, unicode)
+                    path_inside_zip = file_path.replace(catrobat_program_dir, u"")
+                    zip_fp.write(file_path, path_inside_zip)
+            assert os.path.exists(catrobat_zip_file_path), "Catrobat package not written: %s" % catrobat_zip_file_path
         return catrobat_zip_file_path
 
     @staticmethod
@@ -940,10 +938,11 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
     @_register_handler(_block_name_to_handler_map, "doIf", "doIfElse")
     def _convert_if_block(self):
+        print(type(self.arguments[0]))
+        assert 2 <= len(self.arguments) <= 3
         if_begin_brick = catbricks.IfLogicBeginBrick(self.sprite, catformula.Formula(self.arguments[0]))
         if_else_brick = catbricks.IfLogicElseBrick(self.sprite, if_begin_brick)
         if_end_brick = catbricks.IfLogicEndBrick(self.sprite, if_else_brick, if_begin_brick)
-        assert 2 <= len(self.arguments) <= 3
         if_bricks, [else_bricks] = self.arguments[1], self.arguments[2:] or [[]]
         return [if_begin_brick] + if_bricks + [if_else_brick] + else_bricks + [if_end_brick]
 

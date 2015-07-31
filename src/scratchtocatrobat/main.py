@@ -26,6 +26,7 @@ import shutil
 import sys
 from docopt import docopt
 from scratchtocatrobat import logger
+import scratch
 
 logger.initialize_logging()
 log = logging.getLogger("scratchtocatrobat.main")
@@ -124,7 +125,11 @@ def main():
         kwargs['temp_rm'] = not arguments["--no-temp-rm"]
         kwargs['show_version_only'] = arguments["--version"]
         output_dir = arguments["<output-dir>"] if arguments["<output-dir>"] != None else OUTPUT_PATH
-        sys.exit(run_converter(arguments["<project-url-or-package-path>"], output_dir, **kwargs))
+        project_url_or_package_path = arguments["<project-url-or-package-path>"].replace("https://", "http://")
+        if project_url_or_package_path.startswith("http://") and not project_url_or_package_path.startswith(scratch.HTTP_PROJECT_URL_PREFIX):
+            log.error("No valid scratch URL given {0}[ID]".format(scratch.HTTP_PROJECT_URL_PREFIX))
+            sys.exit(ExitCode.FAILURE)
+        sys.exit(run_converter(project_url_or_package_path, output_dir, **kwargs))
     except Exception as e:
         log.exception(e)
         sys.exit(ExitCode.FAILURE)

@@ -14,14 +14,14 @@
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
   <script>
     jQuery(document).ready(function($) {
-$("#btn-convert").removeClass("deactivate-button").addClass("activate-button");
-      $("#field-url").on("focus click", function() {
-        $(this).select();
-      });
+		$("#btn-convert").removeClass("deactivate-button").addClass("activate-button");
     });
   </script>
 </head>
 <body>
+  <div class="ribbon">
+    <a href="#">version 0.2.1</a>
+  </div>
   <div id="wrapper">
     <header>
       <nav>
@@ -48,26 +48,27 @@ $("#btn-convert").removeClass("deactivate-button").addClass("activate-button");
             <p>Quickly turn your Scratch desktop projects into full-fledged mobile Catrobat projects</p>
 			<p>&nbsp;</p>
             <form action="convert.php" method="post" enctype="multipart/form-data">
-				<b>Enter a Scratch project URL</b><br />
-				<input type="text" id="field-url" name="url" size="40" value="http://scratch.mit.edu/projects/10205819/" style="border:1px #CCCCCC solid;font-size:2em;" />
-			<p>&nbsp;</p>
-            <p style="font-size:18px;">or</p>
-			<p>&nbsp;</p>
-            <b>upload a Scratch project</b><br />
+				<p style="font-size:18px;">Enter a Scratch project URL ...</p>
+				<div class="input-field">
+					<input type="text" id="field-url" name="url" value="http://scratch.mit.edu/projects/10205819/" class="clearable" />
+				</div>
+			<div class="separator-line"></div>
+            <p style="font-size:18px;">... or upload a Scratch project ...</p>
 			<div class="input-field">
-              <input type="file" name="filename" class="size-large input-search" />
+              <input type="file" id="field-filename" name="filename" class="size-large input-search" />
             </div>
+			<div class="separator-line"></div>
 			<input type="submit" name="submit" id="btn-convert" value="Convert" class="convert-button deactivate-button" />
 	        </form>
 		</div>
+		<div class="separator-line big-margin"></div>
 		<div>
-          <p>&nbsp;</p>
           <h2>How it works</h2>
           <div>
             <ul>
               <li>Select your Scratch project of choice or enter the project URL in the input field above and hit the "Convert" button.</li>
               <li>After the conversion has finished a QR-Code will be shown.</li>
-              <li>Install and open the PocketCode app on your <a href="https://play.google.com/store/apps/details?id=org.catrobat.catroid" target="_blank">Android</a> or iOS device.</li>
+              <li>Install and open the PocketCode app on your <a href="https://play.google.com/store/apps/details?id=org.catrobat.catroid" target="_blank">Android</a> or iOS device (coming soon).</li>
               <li>Now hold your device over the QR Code so that it's clearly visible within your smartphone's screen.</li>
               <li>Your project should subsequently open on your mobile device.</li>
 			  <li>Have fun! :)</li>

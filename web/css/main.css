@@ -33,6 +33,57 @@ h2, .h2 {
   margin-bottom:5px;
 }
 
+div.input-field {
+	margin-top:0.5em;
+}
+
+input.convert-button {
+    width: 318px;
+    box-sizing: border-box;
+    border: 0 none;
+    border-radius: 4px;
+    color: #FFFFFF;
+    font-size: 26px;
+    font-weight: bold;
+    margin-top: 30px;
+    padding: 10px;
+    text-align: center;
+    text-shadow: 1px 1px 1px #333;
+    text-transform: uppercase;
+    cursor: pointer;
+    line-height: normal;
+    box-sizing: border-box;
+}
+
+input#field-filename {
+    cursor: pointer;
+}
+
+.deactivate-button {
+	background-color: lightgrey;
+}
+
+.activate-button {
+    background-color: #177f8d;
+}
+
+input#field-url {
+	width:80%;
+	max-width:500px;
+	color:#333;
+	padding:5px;
+	padding-left:10px;
+	padding-right:10px;
+	font-size:1.5em;
+	border:4px #5A777f solid;
+	border-radius: 5px;
+}
+
+input#field-url:focus {
+	outline-width:0;
+	border:4px #999 solid;
+}
+
 #wrapper, footer {
   margin: 0 auto;
   width: 85%;
@@ -70,32 +121,6 @@ footer {
 footer a {
   color: #fff;
   text-decoration: none;
-}
-
-.convert-button {
-    width: 318px;
-    box-sizing: border-box;
-    border: 0 none;
-    border-radius: 4px;
-    color: #FFFFFF;
-    font-size: 26px;
-    font-weight: bold;
-    margin-top: 30px;
-    padding: 10px;
-    text-align: center;
-    text-shadow: 1px 1px 1px #333;
-    text-transform: uppercase;
-    cursor: pointer;
-    line-height: normal;
-    box-sizing: border-box;
-}
-
-.deactivate-button {
-	background-color: lightgrey;
-}
-
-.activate-button {
-    background-color: #177f8d;
 }
 
 @media screen and (max-width: 767px) {
@@ -139,7 +164,9 @@ footer a {
   text-align: center;
 }
 header {
-  padding: 20px 0;
+  padding-bottom:0.9em;
+  margin-bottom:1em;
+  border-bottom:1px solid #333;
 }
 header nav #header-left,
 header nav #header-right {
@@ -271,3 +298,52 @@ header nav #searchbar {
   }
 }
 
+.separator-line {
+	margin-top:2em;
+	margin-bottom:2em;
+	height:1px;
+	background:#333;
+	border-bottom:1px solid #333;
+}
+
+.big-margin {
+	margin-top:6em;
+	margin-bottom:3em;
+	height:1px;
+	background:#333;
+	border-bottom:1px solid #333;
+}
+
+/* ----------- Ribbon ----------- */
+.ribbon {
+  background-color: #a00;
+  overflow: hidden;
+  white-space: nowrap;
+  /* top left corner */
+  position: absolute;
+  left: -55px;
+  top: 40px;
+  /* 45 deg ccw rotation */
+  -webkit-transform: rotate(-45deg);
+     -moz-transform: rotate(-45deg);
+      -ms-transform: rotate(-45deg);
+       -o-transform: rotate(-45deg);
+          transform: rotate(-45deg);
+  /* shadow */
+  -webkit-box-shadow: 0 0 10px #888;
+     -moz-box-shadow: 0 0 10px #888;
+          box-shadow: 0 0 10px #888;
+}
+.ribbon a {
+  border: 1px solid #faa;
+  color: #fff;
+  display: block;
+  font: bold 160% 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  margin: 1px 0;
+  padding: 10px 50px;
+  text-align: center;
+  text-decoration: none;
+  /* shadow */
+  text-shadow: 0 0 5px #444;
+}
+/* ------------------------------ */

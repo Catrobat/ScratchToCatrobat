@@ -38,7 +38,7 @@ foreach ($outputFiles as $oldOutputFile) { // iterate files
 	}
 }
 
-$cmd = '../run.py ' . escapeshellcmd($fileOrURL) . ' ' . $outputDir;
+$cmd = '../run ' . escapeshellcmd($fileOrURL) . ' ' . $outputDir;
 $sysRV = exec($cmd);
 
 $outputFiles = glob($outputDir.DIRECTORY_SEPARATOR."*.catrobat");

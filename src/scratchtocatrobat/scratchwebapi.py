@@ -27,6 +27,7 @@ from urlparse import urlparse
 
 from scratchtocatrobat import common
 
+# TODO: config file...
 # NOTE: without "projects." because at least svg files are not available with this domain
 _HTTP_API_ASSET = "http://scratch.mit.edu/internalapi/asset/{}/get/"
 # source: http://wiki.scratch.mit.edu/wiki/Scratch_File_Format_%282.0%29#Using_HTTP_requests
@@ -66,8 +67,8 @@ def download_project(project_url, target_dir):
         try:
             response_data = common.url_response_data(request_url)
             # FIXME: fails for some projects...
-            #verify_hash = hashlib.md5(response_data).hexdigest()
-            #assert verify_hash == os.path.splitext(md5_file_name)[0], "MD5 hash of response data not matching"
+            verify_hash = hashlib.md5(response_data).hexdigest()
+            assert verify_hash == os.path.splitext(md5_file_name)[0], "MD5 hash of response data not matching"
             return response_data
         except urllib2.HTTPError as e:
             raise common.ScratchtobatError("Error with {}: '{}'".format(request_url, e))
@@ -103,6 +104,7 @@ def _project_info_request_url(project_id):
 
 
 def _request_project_info(project_id):
+    # TODO: cache this request...
     response_data = common.url_response_data(_project_info_request_url(project_id))
     return json.loads(response_data)
 

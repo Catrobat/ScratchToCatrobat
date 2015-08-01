@@ -210,7 +210,7 @@ class TemporaryDirectory(object):
 
 
 # based on: http://www.saltycrane.com/blog/2009/11/trying-out-retry-decorator-python/
-def retry(ExceptionToCheck, tries=3, delay=1, backoff=1, hook=None):
+def retry(ExceptionToCheck, tries=4, delay=1, backoff=1, hook=None):
     """Retry calling the decorated function using an exponential backoff.
 
     http://www.saltycrane.com/blog/2009/11/trying-out-retry-decorator-python/
@@ -244,7 +244,7 @@ def fields_of(java_class):
     return [name for name, type_ in vars(java_class).iteritems() if isinstance(type_, PyReflectedField)]
 
 
-def url_response_data(url, retries=3, hook=None, timeout=3, log=log):
+def url_response_data(url, retries=4, hook=None, timeout=4, log=log):
     def retry_hook(exc, tries, delay):
         log.warning("  retrying after %s:'%s' in %f secs (remaining trys: %d)", type(exc).__name__, exc, delay, tries)
     if hook is None:

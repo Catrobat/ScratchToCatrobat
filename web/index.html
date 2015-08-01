@@ -15,6 +15,26 @@
   <script>
     jQuery(document).ready(function($) {
 		$("#btn-convert").removeClass("deactivate-button").addClass("activate-button");
+		$("#field-url").blur(function() {
+			var projectURL = $(this).val();
+			var urlParts = projectURL.split("/");
+			$("#field-url-validation-result").html("");
+			if (urlParts.length < 5) {
+				$("#field-url-validation-result").append($("<div></div>").text("Invalid URL given!").css("color", "#FF0000").css("font-weight", "bold"));
+				$("#btn-convert").removeClass("deactivate-button").removeClass("activate-button").addClass("deactivate-button");
+				$(this).focus();
+				return;
+			}
+			var projectID = urlParts[urlParts.length - 1];
+			if (projectID == "") {
+				projectID = urlParts[urlParts.length - 2];
+			}
+			var projectMetadataURL = "https://scratch.mit.edu/api/v1/project/" + projectID + "/?format=json";
+			$.getJSON(projectMetadataURL, function(data) {
+				$("#field-url-validation-result").append($("<div></div>").text("Title of project: " + data["title"]).css("font-weight", "bold"));
+			});
+			$("#btn-convert").removeClass("deactivate-button").removeClass("activate-button").addClass("activate-button");
+		});
     });
   </script>
 </head>
@@ -52,6 +72,7 @@
 				<div class="input-field">
 					<input type="text" id="field-url" name="url" value="http://scratch.mit.edu/projects/10205819/" class="clearable" />
 				</div>
+				<div id="field-url-validation-result"></div>
 			<div class="separator-line"></div>
             <p style="font-size:18px;">... or upload a Scratch project ...</p>
 			<div class="input-field">

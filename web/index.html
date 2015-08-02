@@ -31,7 +31,9 @@
 			}
 			var projectMetadataURL = "https://scratch.mit.edu/api/v1/project/" + projectID + "/?format=json";
 			$.getJSON(projectMetadataURL, function(data) {
-				$("#field-url-validation-result").append($("<div></div>").text("Title of project: " + data["title"]).css("font-weight", "bold"));
+				var div = $("<div></div>").html("<b>Title of project:</b> " + data["title"]);
+				var projectMetadataDiv = $("<div></div>").append(div);
+				$("#field-url-validation-result").append(projectMetadataDiv);
 			});
 			$("#btn-convert").removeClass("deactivate-button").removeClass("activate-button").addClass("activate-button");
 		});

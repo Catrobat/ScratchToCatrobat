@@ -31,7 +31,7 @@ import sys
 # CONFIGURATION
 #
 ################################################################################
-JYTHON_HOME_PATH = "/Users/r4ll3/Development/Desktop/jython2.7b/"
+JYTHON_HOME_PATH = "/usr/jython/"
 
 ################################################################################
 #

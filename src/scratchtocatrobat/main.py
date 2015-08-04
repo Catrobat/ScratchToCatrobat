@@ -68,31 +68,35 @@ def run_converter(scratch_project_file_or_url, output_dir, extract_resulting_cat
         if show_version_only:
             # TODO: should return last modfication date or source control tag of Catrobat classes
             print("Catrobat language version:", catrobat.CATROBAT_LANGUAGE_VERSION)
-        else:
-            log.info("calling converter")
-            if not os.path.isdir(output_dir):
-                raise EnvironmentError("Output folder must be a directory, but is %s" % output_dir)
+            return ExitCode.SUCCESS
 
-            with common.TemporaryDirectory(remove_on_exit=temp_rm) as scratch_project_dir:
-                if scratch_project_file_or_url.startswith("http://"):
-                    log.info("Downloading project from URL: '{}' to temp dir {} ...".format(scratch_project_file_or_url, scratch_project_dir))
-                    scratchwebapi.download_project(scratch_project_file_or_url, scratch_project_dir)
-                elif os.path.isfile(scratch_project_file_or_url):
-                    log.info("Extracting project from path: '{}' ...".format(scratch_project_file_or_url))
-                    common.extract(scratch_project_file_or_url, scratch_project_dir)
-                else:
-                    log.info("Loading project from path: '{}' ...".format(scratch_project_file_or_url))
-                    scratch_project_dir = scratch_project_file_or_url
-                project = scratch.Project(scratch_project_dir)
-                log.info("Converting scratch project '%s' into output folder: %s", project.name, output_dir)
-                converted_project = converter.converted(project)
-                catrobat_program_path = converted_project.save_as_catrobat_package_to(output_dir)
-                if extract_resulting_catrobat:
-                    extraction_path = os.path.join(output_dir, os.path.splitext(os.path.basename(catrobat_program_path))[0])
-                    if os.path.exists(extraction_path):
-                        shutil.rmtree(extraction_path)
-                    common.makedirs(extraction_path)
-                    common.extract(catrobat_program_path, extraction_path)
+        log.info("calling converter")
+        if not os.path.isdir(output_dir):
+            raise EnvironmentError("Output folder must be a directory, but is %s" % output_dir)
+
+        with common.TemporaryDirectory(remove_on_exit=temp_rm) as scratch_project_dir:
+
+            if scratch_project_file_or_url.startswith("http://"):
+                log.info("Downloading project from URL: '{}' to temp dir {} ...".format(scratch_project_file_or_url, scratch_project_dir))
+                scratchwebapi.download_project(scratch_project_file_or_url, scratch_project_dir)
+            elif os.path.isfile(scratch_project_file_or_url):
+                log.info("Extracting project from path: '{}' ...".format(scratch_project_file_or_url))
+                common.extract(scratch_project_file_or_url, scratch_project_dir)
+            else:
+                log.info("Loading project from path: '{}' ...".format(scratch_project_file_or_url))
+                scratch_project_dir = scratch_project_file_or_url
+
+            project = scratch.Project(scratch_project_dir)
+            log.info("Converting scratch project '%s' into output folder: %s", project.name, output_dir)
+            converted_project = converter.converted(project)
+            catrobat_program_path = converted_project.save_as_catrobat_package_to(output_dir)
+            if extract_resulting_catrobat:
+                extraction_path = os.path.join(output_dir, os.path.splitext(os.path.basename(catrobat_program_path))[0])
+                if os.path.exists(extraction_path):
+                    shutil.rmtree(extraction_path)
+                common.makedirs(extraction_path)
+                common.extract(catrobat_program_path, extraction_path)
+
     except (common.ScratchtobatError, EnvironmentError, IOError) as e:
         log.error(e)
         return ExitCode.FAILURE
@@ -126,10 +130,12 @@ def main():
         kwargs['temp_rm'] = not arguments["--no-temp-rm"]
         kwargs['show_version_only'] = arguments["--version"]
         output_dir = arguments["<output-dir>"] if arguments["<output-dir>"] != None else OUTPUT_PATH
-        project_url_or_package_path = arguments["<project-url-or-package-path>"].replace("https://", "http://")
-        if project_url_or_package_path.startswith("http://") and not project_url_or_package_path.startswith(scratch.HTTP_PROJECT_URL_PREFIX):
-            log.error("No valid scratch URL given {0}[ID]".format(scratch.HTTP_PROJECT_URL_PREFIX))
-            sys.exit(ExitCode.FAILURE)
+        project_url_or_package_path = ""
+        if arguments["<project-url-or-package-path>"]:
+            project_url_or_package_path = arguments["<project-url-or-package-path>"].replace("https://", "http://")
+            if project_url_or_package_path.startswith("http://") and not project_url_or_package_path.startswith(scratch.HTTP_PROJECT_URL_PREFIX):
+                log.error("No valid scratch URL given {0}[ID]".format(scratch.HTTP_PROJECT_URL_PREFIX))
+                sys.exit(ExitCode.FAILURE)
         sys.exit(run_converter(project_url_or_package_path, output_dir, **kwargs))
     except Exception as e:
         log.exception(e)

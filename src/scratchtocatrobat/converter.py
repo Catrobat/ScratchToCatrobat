@@ -728,6 +728,7 @@ class ConvertedProject(object):
                 for sound_info in catrobat_sprite.getSoundList():
                     sound_length_variable_name = _sound_length_variable_name_for(sound_info.getTitle())
                     sound_length = common.length_of_audio_file_in_secs(os.path.join(sounds_path, sound_info.getSoundFileName()))
+                    sound_length = round(sound_length, 3) # accuracy +/- 0.5 milliseconds
                     _add_new_variable_with_initialization_value(catrobat_program, sound_length_variable_name, sound_length, catrobat_sprite, catrobat_sprite.getName())
 
             program_source = program_source_for(catrobat_program)

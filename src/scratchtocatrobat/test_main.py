@@ -37,7 +37,7 @@ class MainTest(common_testing.ProjectTestCase):
     def __init__(self, *args):
         super(MainTest, self).__init__(*args)
         self._main_method = main.run_converter
-        self.base_exec_args = ["python", os.path.join(common.get_project_base_path(), "run.py")]
+        self.base_exec_args = ["python", os.path.join(common.get_project_base_path(), "run")]
 
     def execute_run_script(self, args, env=None):
         if not env:
@@ -49,13 +49,15 @@ class MainTest(common_testing.ProjectTestCase):
         #return common_testing.call_returning_exit(exec_args, env=env)
         return common_testing.call_returning_exit_and_output(exec_args, env=env)[0]
 
-    def execute_main_module_check(self, module_args=None, interpreter=_DEFAULT_INTERPRETER, interpreter_options=None):
+    def execute_main_module_check(self, module_args=None, interpreter=None, interpreter_options=None):
+        if interpreter is None:
+            assert 'JYTHON_HOME' in self.test_environ, "Environment variable JYTHON_HOME must be set!"
+            interpreter = self.test_environ['JYTHON_HOME'] + "/bin/" + _DEFAULT_INTERPRETER
         if not module_args:
             module_args = ["--version"]
         if not interpreter_options:
             interpreter_options = []
         assert isinstance(module_args, (list, tuple))
-        assert interpreter in ["python", _DEFAULT_INTERPRETER]
         assert isinstance(interpreter_options, (list, tuple))
         assert self.test_environ
 
@@ -98,25 +100,20 @@ class MainTest(common_testing.ProjectTestCase):
 #         assert return_val == main.EXIT_FAILURE
 
     def test_fail_on_expected_jython_java_access_property_missing(self):
-        package_subdir_path = os.path.join(*main.__name__.split(".")[:-1])
-        base_package_path = os.path.dirname(main.__file__).replace(package_subdir_path, "")
-        self.test_environ["PYTHONPATH"] += os.pathsep + base_package_path
+        #package_subdir_path = os.path.join(*main.__name__.split(".")[:-1])
+        #base_package_path = os.path.dirname(main.__file__).replace(package_subdir_path, "")
+        #self.test_environ["PYTHONPATH"] += os.pathsep + base_package_path
 
         return_val, (stdout, stderr) = self.execute_main_module_check(interpreter_options=["-D%s=true" % main._JYTHON_RESPECT_JAVA_ACCESSIBILITY_PROPERTY])
-
         assert stderr, stdout
         assert "Jython registry property 'python.security.respectJavaAccessibility' must be set to 'false'" in stderr
         assert return_val == main.ExitCode.FAILURE
 
-    def test_fail_to_execute_with_sox_binary_not_on_path(self):
-        splitted_path_env = self.test_environ['PATH'].split(os.pathsep)
-        self.test_environ['PATH'] = os.pathsep.join(path for path in splitted_path_env if 'sox' not in path)
-
+    def test_check_if_sox_binary_can_be_found(self):
         return_val, (stdout, stderr) = self.execute_main_module_check()
-
         assert stderr, stdout
-        assert "Sox binary must be available on system path" in stderr
-        assert return_val == main.ExitCode.FAILURE
+        assert "Sox binary must be available on system path" not in stderr
+        assert return_val == main.ExitCode.SUCCESS
 
     def test_fail_to_execute_with_batik_env_home_not_set(self):
         self.test_environ = dict(os.environ)

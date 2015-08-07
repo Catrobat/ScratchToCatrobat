@@ -83,7 +83,6 @@ def _placeholder_for_unmapped_bricks_to(catr_sprite, *args):
     arguments = ", ".join(map(catrobat.simple_name_for, args))
     temp = _DEFAULT_BRICK_CLASS(500)
     return [temp, catbricks.NoteBrick(UNSUPPORTED_SCRATCH_BRICK_NOTE_MESSAGE_PREFIX + arguments)]
-#    return [_DEFAULT_BRICK_CLASS(catr_sprite, 500), catbricks.NoteBrick(catr_sprite, UNSUPPORTED_SCRATCH_BRICK_NOTE_MESSAGE_PREFIX + arguments)]
 
 
 def _key_to_broadcast_message(key_name):
@@ -189,9 +188,9 @@ class _ScratchToCatrobat(object):
         "readVariable": lambda variable_name: _variable_for(variable_name),
 
         # formula lists
-        "append:toList:": lambda value, list_name: _add_item_to_user_list_brick(value, list_name),
-        "insert:at:ofList:": lambda value, position_string, list_name: _insert_item_into_user_list_brick(value, position_string, list_name),
-        "deleteLine:ofList:": lambda position_string, list_name: _delete_item_of_user_list_brick(position_string, list_name),
+        "append:toList:": catbricks.AddItemToUserListBrick,
+        "insert:at:ofList:": catbricks.InsertItemIntoUserListBrick,
+        "deleteLine:ofList:": catbricks.DeleteItemOfUserListBrick,
 
         # looks
         "lookLike:": catbricks.SetLookBrick,
@@ -223,8 +222,6 @@ class _ScratchToCatrobat(object):
         "changeVolumeBy:": catbricks.ChangeVolumeByNBrick,
         "setVolumeTo:": catbricks.SetVolumeToBrick,
 
-        # TODO: "\\\\"
-
         # sprite values
         "xpos": catformula.Sensors.OBJECT_X,
         "ypos": catformula.Sensors.OBJECT_Y,
@@ -235,13 +232,6 @@ class _ScratchToCatrobat(object):
         # WORKAROUND: using ROUND for Catrobat float => Scratch int
         "soundLevel": lambda *_args: catrobat.formula_element_for(catformula.Functions.ROUND, arguments=[catrobat.formula_element_for(catformula.Sensors.LOUDNESS)]),  # @UndefinedVariable
     }.items() + compute_block_parameters_mapping.items() + operators_mapping.items())
-
-    # TODO: check if necessary
-    parameters = {
-        "brightness",
-        "color",  # unsupported
-        "ghost",
-    }
 
     @classmethod
     def catrobat_brick_class_for(cls, scratch_block_name):
@@ -259,67 +249,9 @@ class _ScratchToCatrobat(object):
         # TODO: separate script and brick mapping
         return cls.catrobat_brick_class_for(scratch_script_name)(*arguments)
 
-def _add_item_to_user_list_brick(value, list_name):
-    # TODO: retrieve list by name in catrobat-MODULE!!!
-    user_list = None
-    #user_variables = self.project.getDataContainer()
-
-    print("add_item")
-    print(value)
-    print(list_name)
-
-    value_formula = catrobat.create_formula_with_value(value)
-    return catbricks.AddItemToUserListBrick(value)
-#    return catbricks.AddItemToUserListBrick(value_formula, user_list)
-
-def _insert_item_into_user_list_brick(value, position_string, list_name):
-    index = position_string
-    if position_string == "last":
-        log.error("'LAST' not yet supported for insert_item_into_user_list_brick!!")
-        index = 1
-    elif position_string == "random":
-        log.error("'RANDOM' not yet supported for insert_item_into_user_list_brick!!")
-        index = 1
-
-    # TODO: retrieve list by name in catrobat-MODULE!!!
-    user_list = None
-    #user_variables = self.project.getDataContainer()
-
-    print("insert_item")
-    print value
-    print index
-
-    value_formula = catrobat.create_formula_with_value(value)
-    index_formula = catrobat.create_formula_with_value(index)
-    return catbricks.InsertItemIntoUserListBrick(value, index)
-#    return catbricks.InsertItemIntoUserListBrick(value_formula, index_formula, user_list)
-
-def _delete_item_of_user_list_brick(position_string, list_name):
-    index = position_string
-    if position_string == "last":
-        log.error("'LAST' not yet supported for insert_item_into_user_list_brick!!")
-        index = 1
-    elif position_string == "all":
-        # TODO: repeat loop workaround...
-        log.error("'ALL' not yet supported for insert_item_into_user_list_brick!!")
-        index = 1
-
-    # TODO: retrieve list by name in catrobat-MODULE!!!
-    user_list = None
-    #user_variables = self.project.getDataContainer()
-
-    print("delete_item")
-    print index
-
-    index_formula = catrobat.create_formula_with_value(index)
-#    return catbricks.DeleteItemOfUserListBrick(index_formula, user_list)
-    return catbricks.DeleteItemOfUserListBrick(index)
-
-#def _create_variable_brick(sprite, value, user_variable, Class):
 def _create_variable_brick(value, user_variable, Class):
     assert Class in set([catbricks.SetVariableBrick, catbricks.ChangeVariableBrick])
     return Class(catrobat.create_formula_with_value(value), user_variable)
-#    return Class(sprite, catrobat.create_formula_with_value(value), user_variable)
 
 
 def _variable_for(variable_name):
@@ -767,7 +699,7 @@ class ConvertedProject(object):
                 for sound_info in catrobat_sprite.getSoundList():
                     sound_length_variable_name = _sound_length_variable_name_for(sound_info.getTitle())
                     sound_length = common.length_of_audio_file_in_secs(os.path.join(sounds_path, sound_info.getSoundFileName()))
-                    sound_length = round(sound_length, 3) # accuracy +/- 0.5 milliseconds
+                    sound_length = round(sound_length, 3) # accuracy +/- 0.5 milliseconds => review if we really need this...
                     _add_new_variable_with_initialization_value(catrobat_program, sound_length_variable_name, sound_length, catrobat_sprite, catrobat_sprite.getName())
 
             program_source = program_source_for(catrobat_program)
@@ -890,7 +822,12 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
                     elif try_number == 2:
                         converted_args = [catformula.Formula(arg) for arg in self.arguments]
                     elif try_number == 3:
-                        if len(self.arguments) == 2 and self.arguments[0] in _ScratchToCatrobat.parameters:
+                        parameters = {
+                            "brightness",
+                            "color",  # unsupported
+                            "ghost",
+                        }
+                        if len(self.arguments) == 2 and self.arguments[0] in parameters:
                             converted_args = [self.arguments[0]] + [catformula.Formula(arg) for arg in self.arguments[1:]]
 
                     if not is_catrobat_enum:
@@ -977,6 +914,76 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             set_look_brick.setLook(look)
             return [set_look_brick]
 
+    @_register_handler(_block_name_to_handler_map, "append:toList:")
+    def _convert_append_to_list_block(self):
+        [value, list_name] = self.arguments
+        # TODO: retrieve list by name in catrobat-MODULE!!!
+        user_list = None
+        #user_variables = self.project.getDataContainer()
+
+        print("add_item")
+        print(value)
+        print(list_name)
+    
+        value_formula = catrobat.create_formula_with_value(value)
+        if isinstance(value, (str, unicode)):
+            print("   >>> String!!")
+            return self.CatrobatClass(1)
+        else:
+            return self.CatrobatClass(value)
+    #    return self.CatrobatClass(value_formula, user_list)
+
+    @_register_handler(_block_name_to_handler_map, "insert:at:ofList:")
+    def _convert_insert_at_of_list_block(self):
+        [value, position_string, list_name] = self.arguments
+        index = position_string
+        if position_string == "last":
+            log.error("'LAST' not yet supported for insert_item_into_user_list_brick!!")
+            index = 1
+        elif position_string == "random":
+            log.error("'RANDOM' not yet supported for insert_item_into_user_list_brick!!")
+            index = 1
+    
+        # TODO: retrieve list by name in catrobat-MODULE!!!
+        user_list = None
+        #user_variables = self.project.getDataContainer()
+    
+        print("insert_item")
+        print value
+        print index
+    
+        value_formula = catrobat.create_formula_with_value(value)
+        index_formula = catrobat.create_formula_with_value(index)
+        if isinstance(value, (str, unicode)):
+            print("   >>> String!!")
+            return self.CatrobatClass(1, index)
+        else:
+            return self.CatrobatClass(value, index)
+    #    return self.CatrobatClass(value_formula, index_formula, user_list)
+
+    @_register_handler(_block_name_to_handler_map, "deleteLine:ofList:")
+    def _convert_delete_line_of_list_block(self):
+        [position_string, list_name] = self.arguments
+        index = position_string
+        if position_string == "last":
+            log.error("'LAST' not yet supported for insert_item_into_user_list_brick!!")
+            index = 1
+        elif position_string == "all":
+            # TODO: repeat loop workaround...
+            log.error("'ALL' not yet supported for insert_item_into_user_list_brick!!")
+            index = 1
+    
+        # TODO: retrieve list by name in catrobat-MODULE!!!
+        user_list = None
+        #user_variables = self.project.getDataContainer()
+    
+        print("delete_item")
+        print index
+    
+        index_formula = catrobat.create_formula_with_value(index)
+    #    return self.CatrobatClass(index_formula, user_list)
+        return self.CatrobatClass(index)
+
     @_register_handler(_block_name_to_handler_map, "playSound:", "doPlaySoundAndWait")
     def _convert_sound_block(self):
         [sound_name] = self.arguments
@@ -1001,7 +1008,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             catrobat.add_user_variable(self.project, variable_name, self.sprite, self.sprite.getName())
             user_variable = self.project.getDataContainer().getUserVariable(variable_name, self.sprite)
             assert user_variable is not None and user_variable.getName() == variable_name, "variable: %s, sprite_name: %s" % (variable_name, self.sprite.getName())
-        return [self.CatrobatClass(self.sprite, value, user_variable)]
+        return [self.CatrobatClass(value, user_variable)]
 
     @_register_handler(_block_name_to_handler_map, "say:duration:elapsed:from:", "say:", "think:duration:elapsed:from:", "think:")
     def _convert_say_think_blocks(self):

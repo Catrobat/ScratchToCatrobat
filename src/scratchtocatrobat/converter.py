@@ -21,7 +21,6 @@
 from __future__ import unicode_literals
 
 import itertools
-import java
 import numbers
 import os
 import shutil
@@ -189,6 +188,11 @@ class _ScratchToCatrobat(object):
         "changeVar:by:": lambda *args: _create_variable_brick(*itertools.chain(args, [catbricks.ChangeVariableBrick])),
         "readVariable": lambda variable_name: _variable_for(variable_name),
 
+        # formula lists
+        "append:toList:": lambda value, list_name: _add_item_to_user_list_brick(value, list_name),
+        "insert:at:ofList:": lambda value, position_string, list_name: _insert_item_into_user_list_brick(value, position_string, list_name),
+        "deleteLine:ofList:": lambda position_string, list_name: _delete_item_of_user_list_brick(position_string, list_name),
+
         # looks
         "lookLike:": catbricks.SetLookBrick,
         "nextCostume": catbricks.NextLookBrick,
@@ -255,32 +259,67 @@ class _ScratchToCatrobat(object):
         # TODO: separate script and brick mapping
         return cls.catrobat_brick_class_for(scratch_script_name)(*arguments)
 
-def _create_variable_brick(sprite, value, user_variable, Class):
+def _add_item_to_user_list_brick(value, list_name):
+    # TODO: retrieve list by name in catrobat-MODULE!!!
+    user_list = None
+    #user_variables = self.project.getDataContainer()
+
+    print("add_item")
+    print(value)
+    print(list_name)
+
+    value_formula = catrobat.create_formula_with_value(value)
+    return catbricks.AddItemToUserListBrick(value)
+#    return catbricks.AddItemToUserListBrick(value_formula, user_list)
+
+def _insert_item_into_user_list_brick(value, position_string, list_name):
+    index = position_string
+    if position_string == "last":
+        log.error("'LAST' not yet supported for insert_item_into_user_list_brick!!")
+        index = 1
+    elif position_string == "random":
+        log.error("'RANDOM' not yet supported for insert_item_into_user_list_brick!!")
+        index = 1
+
+    # TODO: retrieve list by name in catrobat-MODULE!!!
+    user_list = None
+    #user_variables = self.project.getDataContainer()
+
+    print("insert_item")
+    print value
+    print index
+
+    value_formula = catrobat.create_formula_with_value(value)
+    index_formula = catrobat.create_formula_with_value(index)
+    return catbricks.InsertItemIntoUserListBrick(value, index)
+#    return catbricks.InsertItemIntoUserListBrick(value_formula, index_formula, user_list)
+
+def _delete_item_of_user_list_brick(position_string, list_name):
+    index = position_string
+    if position_string == "last":
+        log.error("'LAST' not yet supported for insert_item_into_user_list_brick!!")
+        index = 1
+    elif position_string == "all":
+        # TODO: repeat loop workaround...
+        log.error("'ALL' not yet supported for insert_item_into_user_list_brick!!")
+        index = 1
+
+    # TODO: retrieve list by name in catrobat-MODULE!!!
+    user_list = None
+    #user_variables = self.project.getDataContainer()
+
+    print("delete_item")
+    print index
+
+    index_formula = catrobat.create_formula_with_value(index)
+#    return catbricks.DeleteItemOfUserListBrick(index_formula, user_list)
+    return catbricks.DeleteItemOfUserListBrick(index)
+
+#def _create_variable_brick(sprite, value, user_variable, Class):
+def _create_variable_brick(value, user_variable, Class):
     assert Class in set([catbricks.SetVariableBrick, catbricks.ChangeVariableBrick])
-
-    def catrobat_formula_from(variable_value):
-        # TODO: verify general correctness
-        if not variable_value:
-            variable_value = 0
-        elif isinstance(variable_value, (str, unicode)):
-            try:
-                variable_value = common.int_or_float(variable_value)
-            except:
-                log.warning("Ignoring unsupported variable value: '%s'. Set to 0.", variable_value)
-                variable_value = 0
-
-        if type(variable_value) is int:
-            java_variable_value = java.lang.Integer(variable_value)
-        elif isinstance(variable_value, (float, long)):
-            java_variable_value = java.lang.Double(variable_value)
-        else:
-            assert isinstance(variable_value, catformula.FormulaElement), variable_value
-            java_variable_value = variable_value
-
-        return catformula.Formula(java_variable_value)
-
-    return Class(catrobat_formula_from(value), user_variable)
-#    return Class(sprite, catrobat_formula_from(value), user_variable)
+    return Class(catrobat.create_formula_with_value(value), user_variable)
+#    return Class(sprite, catrobat.create_formula_with_value(value), user_variable)
 
 
 def _variable_for(variable_name):
@@ -755,7 +794,7 @@ class ConvertedProject(object):
 def _add_new_variable_with_initialization_value(project, variable_name, variable_value, sprite, sprite_name=None):
     user_variable = catrobat.add_user_variable(project, variable_name, sprite=sprite, sprite_name=sprite_name)
     assert user_variable is not None
-    variable_initialization_brick = _create_variable_brick(sprite, variable_value, user_variable, catbricks.SetVariableBrick)
+    variable_initialization_brick = _create_variable_brick(variable_value, user_variable, catbricks.SetVariableBrick)
     catrobat.add_to_start_script([variable_initialization_brick], sprite)
 
 

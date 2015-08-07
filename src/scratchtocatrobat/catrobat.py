@@ -20,6 +20,7 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import itertools
 import numbers
+import java
 
 from scratchtocatrobat import common
 
@@ -123,6 +124,24 @@ def user_variable_of(project, variable_name, sprite_name=None):
 #        return user_variables.getUserVariable(variable_name, sprite)
 #----------------------
 
+def create_formula_with_value(variable_value):
+    # TODO: verify general correctness
+    if not variable_value:
+        variable_value = 0
+    elif isinstance(variable_value, (str, unicode)):
+        try:
+            variable_value = common.int_or_float(variable_value)
+        except:
+            _log.warning("Ignoring unsupported variable value: '%s'. Set to 0.", variable_value)
+            variable_value = 0
+    if type(variable_value) is int:
+        java_variable_value = java.lang.Integer(variable_value)
+    elif isinstance(variable_value, (float, long)):
+        java_variable_value = java.lang.Double(variable_value)
+    else:
+        assert isinstance(variable_value, catformula.FormulaElement), variable_value
+        java_variable_value = variable_value
+    return catformula.Formula(java_variable_value)
 
 def add_user_variable(project, variable_name, sprite=None, sprite_name=None):
     ''' If `sprite_name` is set a sprite variable is added otherwise the variable is added to the project. '''

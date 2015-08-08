@@ -58,10 +58,8 @@ UNSUPPORTED_SCRATCH_BRICK_NOTE_MESSAGE_PREFIX = "Missing brick for Scratch ident
 
 log = common.log
 
-
 class ConversionError(common.ScratchtobatError):
         pass
-
 
 class UnmappedBlock(object):
 
@@ -75,32 +73,25 @@ class UnmappedBlock(object):
     def to_placeholder_brick(self):
         return _placeholder_for_unmapped_bricks_to(self.sprite, *self.block_and_args)
 
-
 def _with_unmapped_blocks_replaced_as_default_formula_value(arguments):
     return [_DEFAULT_FORMULA_ELEMENT if isinstance(argument, UnmappedBlock) else argument for argument in arguments]
-
 
 def _placeholder_for_unmapped_bricks_to(catr_sprite, *args):
     arguments = ", ".join(map(catrobat.simple_name_for, args))
     temp = _DEFAULT_BRICK_CLASS(500)
     return [temp, catbricks.NoteBrick(UNSUPPORTED_SCRATCH_BRICK_NOTE_MESSAGE_PREFIX + arguments)]
 
-
 def _key_to_broadcast_message(key_name):
     return "key " + key_name + " pressed"
-
 
 def _background_look_to_broadcast_message(look_name):
     return "start background scene: " + look_name
 
-
 def _next_background_look_broadcast_message():
     return "set background to next look"
 
-
 def _sec_to_msec(duration):
     return duration * 1000
-
 
 # note: for Scratch blocks without mapping placeholder Catrobat bricks will be added
 class _ScratchToCatrobat(object):
@@ -460,14 +451,15 @@ class _ScratchObjectConverter(object):
             sprite_sounds.add(self._catrobat_sound_from(scratch_sound))
 
         if not scratch_object.is_stage() and scratch_object.get_lists() is not None:
-            data_container = self._catrobat_project.getDataContainer()
-            for user_list in scratch_object.get_lists():
-                data_container.addSpriteUserListToSprite(sprite, user_list["listName"])
+            catr_data_container = self._catrobat_project.getDataContainer()
+            for user_list_data in scratch_object.get_lists():
+                assert len(user_list_data["listName"]) > 0
+                catr_data_container.addSpriteUserListToSprite(sprite, user_list_data["listName"])
 
         for scratch_script in scratch_object.scripts:
             sprite.addScript(self._catrobat_script_from(scratch_script, sprite))
 
-        self._add_default_behaviour_to(sprite, scratch_object, costume_resolution)
+        self._add_default_behaviour_to(sprite, self._catrobat_project, scratch_object, costume_resolution)
 
         for scratch_variable in scratch_object.get_variables():
             args = [self._catrobat_project, scratch_variable["name"], scratch_variable["value"], sprite]
@@ -507,9 +499,23 @@ class _ScratchObjectConverter(object):
         return soundinfo
 
     @staticmethod
-    def _add_default_behaviour_to(sprite, scratch_object, costume_resolution):
+    def _add_default_behaviour_to(sprite, catrobat_project, scratch_object, costume_resolution):
         # some initial Scratch settings are done with a general JSON configuration instead with blocks. Here the equivalent bricks are added for Catrobat.
         implicit_bricks_to_add = []
+
+        # create AddItemToUserListBrick bricks to propagate user lists with their default values
+        if not scratch_object.is_stage() and scratch_object.get_lists() is not None:
+            catr_data_container = catrobat_project.getDataContainer()
+            for user_list_data in scratch_object.get_lists():
+                assert len(user_list_data["listName"]) > 0
+                catr_data_container.addSpriteUserListToSprite(sprite, user_list_data["listName"])
+                catr_user_list = catrobat.find_sprite_user_list_by_name(catrobat_project, sprite, user_list_data["listName"])
+                assert catr_user_list
+                if "contents" not in user_list_data:
+                    continue
+                for value in user_list_data["contents"]:
+                    catr_value_formula = catrobat.create_formula_with_value(value)
+                    implicit_bricks_to_add += [catbricks.AddItemToUserListBrick(catr_value_formula, catr_user_list)]
 
         # object's currentCostumeIndex determines active costume at startup
         sprite_startup_look_idx = scratch_object.get_currentCostumeIndex()

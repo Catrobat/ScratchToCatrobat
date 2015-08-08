@@ -105,6 +105,13 @@ def _sprite_of(project, sprite_name):
 def find_global_or_sprite_user_list_by_name(project, sprite, list_name):
     return project.getDataContainer().getUserList(list_name, sprite)
 
+def find_sprite_user_list_by_name(project, sprite, list_name):
+    user_lists = project.getDataContainer().getSpriteListOfLists(sprite)
+    for user_list in user_lists:
+        if user_list.getName() == list_name:
+            return user_list
+    return None
+
 def user_variable_of(project, variable_name, sprite_name=None):
     '''
     If `sprite_name` is None the project variables are checked.

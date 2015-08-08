@@ -102,37 +102,19 @@ def _sprite_of(project, sprite_name):
             break
     return sprite
 
-def find_user_list_by_name(project, list_name):
-    user_list = None
-
-    # TODO: retrieve sprite user list by name in catrobat-MODULE!!!
-
-    if user_list is None:
-        for global_user_list in project.getDataContainer().getProjectLists():
-            if global_user_list.getName() == list_name:
-                user_list = global_user_list
-    return user_list
+def find_global_or_sprite_user_list_by_name(project, sprite, list_name):
+    return project.getDataContainer().getUserList(list_name, sprite)
 
 def user_variable_of(project, variable_name, sprite_name=None):
     '''
     If `sprite_name` is None the project variables are checked.
     '''
-#----------------------
-# since v0.95
     data_container = project.getDataContainer()
     if sprite_name is None:
         return data_container.findUserVariable(variable_name, data_container.projectVariables)
     else:
         sprite = _sprite_of(project, sprite_name)
         return data_container.getUserVariable(variable_name, sprite)
-# earlier
-#    user_variables = project.getUserVariables()
-#    if sprite_name is None:
-#        return user_variables.findUserVariable(variable_name, user_variables.projectVariables)
-#    else:
-#        sprite = _sprite_of(project, sprite_name)
-#        return user_variables.getUserVariable(variable_name, sprite)
-#----------------------
 
 def create_formula_with_value(variable_value):
     var_value = 0
@@ -161,7 +143,6 @@ def add_user_variable(project, variable_name, sprite=None, sprite_name=None):
     ''' If `sprite_name` is set a sprite variable is added otherwise the variable is added to the project. '''
     _log.debug("adding variable '%s' to sprite '%s'", variable_name, sprite_name if sprite_name is not None else "<Stage>")
     user_variables = project.getDataContainer()
-#    user_variables = project.getUserVariables()
     if sprite_name is None:
         added_user_variable = user_variables.addProjectUserVariable(variable_name)
     else:
@@ -174,12 +155,10 @@ def add_user_variable(project, variable_name, sprite=None, sprite_name=None):
 def defined_variable_names_in(project, sprite_name=None, sprite=None):
     if sprite_name is None:
         user_variables = project.getDataContainer().projectVariables
-        #user_variables = project.getUserVariables().projectVariables
     else:
         if sprite is None:
             sprite = _sprite_of(project, sprite_name)
         user_variables = project.getDataContainer().getOrCreateVariableListForSprite(sprite)
-        #user_variables = project.getUserVariables().getOrCreateVariableListForSprite(sprite)
     return [user_variable.getName() for user_variable in user_variables]
 
 
@@ -201,7 +180,6 @@ def add_to_start_script(bricks, sprite, position=0):
         else:
             _log.debug("  start script not found, creating one")
             start_script = catbase.StartScript()
-#            start_script = catbase.StartScript(sprite)
             sprite.addScript(0, start_script)
             return start_script
 

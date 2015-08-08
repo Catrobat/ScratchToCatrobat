@@ -25,6 +25,7 @@ import unittest
 import org.catrobat.catroid.common as catcommon
 import org.catrobat.catroid.content as catbase
 import org.catrobat.catroid.content.bricks as catbricks
+import org.catrobat.catroid.content.bricks.Brick as catbasebrick
 import org.catrobat.catroid.formulaeditor as catformula
 
 from scratchtocatrobat import catrobat
@@ -34,12 +35,15 @@ from scratchtocatrobat import scratch
 from scratchtocatrobat import converter
 
 
-def create_catrobat_sprite_stub():
-    sprite = catbase.Sprite("Dummy")
+def create_catrobat_sprite_stub(name=None):
+    sprite = catbase.Sprite("Dummy" if name is None else name)
     looks = sprite.getLookDataList()
     for lookname in ["look1", "look2", "look3"]:
         looks.add(catrobat.create_lookdata(lookname, None))
     return sprite
+
+def create_catrobat_background_sprite_stub():
+    return create_catrobat_sprite_stub(catrobat._BACKGROUND_SPRITE_NAME)
 
 DUMMY_CATR_SPRITE = create_catrobat_sprite_stub()
 TEST_PROJECT_PATH = common_testing.get_test_project_path("dancing_castle")
@@ -201,12 +205,13 @@ def ConverterTestClass(class_):
     return Wrapper
 
 
-@ConverterTestClass
+#@ConverterTestClass
 class TestConvertBlocks(common_testing.BaseTestCase):
+    block_converter = converter._ScratchObjectConverter(catbase.Project(None, "__test_project__"))
 
     def setUp(self):
         super(TestConvertBlocks, self).setUp()
-        self.sprite_stub = create_catrobat_sprite_stub()
+        self.sprite_stub = create_catrobat_background_sprite_stub()
 
     def get_sprite_with_soundinfo(self, soundinfo_name):
         dummy_sound = catcommon.SoundInfo()
@@ -215,10 +220,12 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         dummy_sprite.getSoundList().add(dummy_sound)
         return dummy_sprite
 
-    # TODO: change to note-brick check
     def test_fail_on_unknown_block(self):
-        with self.assertRaises(common.ScratchtobatError):
-            self.block_converter._catrobat_bricks_from(['wrong_block_name_zzz', 10, 10], DUMMY_CATR_SPRITE)
+        #with self.assertRaises(common.ScratchtobatError):
+        [catr_brick] = self.block_converter._catrobat_bricks_from(['wrong_block_name_zzz', 10, 10], DUMMY_CATR_SPRITE)
+        # TODO: change to note-brick check later!!!
+        #assert isinstance(catr_brick, catbricks.NoteBrick)
+        assert isinstance(catr_brick, converter.UnmappedBlock)
 
     def test_can_convert_loop_blocks(self):
         scratch_do_loop = ["doRepeat", 10, [[u'forward:', 10], [u'playDrum', 1, 0.2], [u'forward:', -10], [u'playDrum', 1, 0.2]]]
@@ -233,9 +240,10 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         scratch_block = ["wait:elapsed:from:", 1]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.WaitBrick)
-        formula_seconds = catr_brick.timeToWaitInSeconds.formulaTree
-        assert formula_seconds.type == catformula.FormulaElement.ElementType.NUMBER  # @UndefinedVariable
-        assert formula_seconds.value == "1.0"
+        # TODO: this is no real error and should therefore be suppressed in PyDev...
+        formula_tree_seconds = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.TIME_TO_WAIT_IN_SECONDS).formulaTree
+        assert formula_tree_seconds.type == catformula.FormulaElement.ElementType.NUMBER  # @UndefinedVariable
+        assert formula_tree_seconds.value == "1.0"
 
     def test_fail_convert_playsound_block_if_sound_missing(self):
         scratch_block = ["playSound:", "bird"]
@@ -267,14 +275,20 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         scratch_block = _, glide_duration, glide_x, glide_y = ["glideSecs:toX:y:elapsed:from:", 5, 174, -122]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.GlideToBrick)
-        assert int(float(catr_brick.durationInSeconds.formulaTree.getValue())) == glide_duration
-        assert int(float(catr_brick.xDestination.formulaTree.getValue())) == glide_x
-        assert -1 * int(float(catr_brick.yDestination.formulaTree.rightChild.getValue())) == glide_y
+        # TODO: these are no real errors and should therefore be suppressed in PyDev...
+        durationInSecondsFormula = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.DURATION_IN_SECONDS)
+        xDestinationFormula = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.X_DESTINATION)
+        yDestinationFormula = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.Y_DESTINATION)
+        assert int(float(durationInSecondsFormula.formulaTree.getValue())) == glide_duration
+        assert int(float(xDestinationFormula.formulaTree.getValue())) == glide_x
+        assert -1 * int(float(yDestinationFormula.formulaTree.rightChild.getValue())) == glide_y
 
     def test_can_convert_startscene_block(self):
         scratch_block = _, look_name = ["startScene", "look1"]
         script = scratch.Script([30, 355, [['whenGreenFlag'], scratch_block]])
-        converter._catr_project = catbase.Project(None, "TestDummyProject")
+        project = catbase.Project(None, "TestDummyProject")
+        project.addSprite(self.sprite_stub)
+        converter._catr_project = project
         catr_script = self.block_converter._catrobat_script_from(script, self.sprite_stub)
         converter._catr_project = None
         stub_scripts = self.sprite_stub.scriptList

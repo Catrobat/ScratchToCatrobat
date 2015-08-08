@@ -924,7 +924,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         print("add_item")
         print(value)
         print(list_name)
-    
+
         value_formula = catrobat.create_formula_with_value(value)
         if isinstance(value, (str, unicode)):
             print("   >>> String!!")

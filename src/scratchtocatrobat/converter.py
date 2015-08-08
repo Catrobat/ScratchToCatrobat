@@ -329,7 +329,7 @@ class Converter(object):
 
     def _converted_catrobat_program(self):
         _catr_project = catbase.Project(None, self.scratch_project.name)
-        self._scratch_object_converter = _ScratchObjectConverter(_catr_project)
+        self._scratch_object_converter = _ScratchObjectConverter(_catr_project, self.scratch_project)
         self._add_global_user_lists_to(_catr_project)
         self._add_converted_sprites_to(_catr_project)
         self._add_key_sprites_to(_catr_project, self.scratch_project.listened_keys)
@@ -341,8 +341,8 @@ class Converter(object):
             return
 
         for global_user_list in self.scratch_project.global_user_lists:
-            # TODO: use this as soon as show/hide-formula-list-bricks are available in Catrobat => global_formula_list["visible"]
-            # TODO: use this as soon as Catrobat supports this => global_formula_list["isPersistent"]
+            # TODO: use "visible" as soon as show/hide-formula-list-bricks are available in Catrobat => global_formula_list["visible"]
+            # TODO: use "isPersistent" as soon as Catrobat supports this => global_formula_list["isPersistent"]
             data_container = catrobat_project.getDataContainer()
             data_container.addProjectUserList(global_user_list["listName"])
 
@@ -418,9 +418,11 @@ class Converter(object):
 
 class _ScratchObjectConverter(object):
     _catrobat_project = None
+    _scratch_project = None
 
-    def __init__(self, catrobat_project):
+    def __init__(self, catrobat_project, scratch_project):
         _ScratchObjectConverter._catrobat_project = catrobat_project
+        _ScratchObjectConverter._scratch_project = scratch_project
 
     def __call__(self, scratch_object):
         return self._catrobat_sprite_from(scratch_object)
@@ -459,7 +461,7 @@ class _ScratchObjectConverter(object):
         for scratch_script in scratch_object.scripts:
             sprite.addScript(self._catrobat_script_from(scratch_script, sprite))
 
-        self._add_default_behaviour_to(sprite, self._catrobat_project, scratch_object, costume_resolution)
+        self._add_default_behaviour_to(sprite, self._catrobat_project, scratch_object, self._scratch_project, costume_resolution)
 
         for scratch_variable in scratch_object.get_variables():
             args = [self._catrobat_project, scratch_variable["name"], scratch_variable["value"], sprite]
@@ -499,17 +501,28 @@ class _ScratchObjectConverter(object):
         return soundinfo
 
     @staticmethod
-    def _add_default_behaviour_to(sprite, catrobat_project, scratch_object, costume_resolution):
+    def _add_default_behaviour_to(sprite, catrobat_project, scratch_object, scratch_project, costume_resolution):
         # some initial Scratch settings are done with a general JSON configuration instead with blocks. Here the equivalent bricks are added for Catrobat.
         implicit_bricks_to_add = []
 
-        # create AddItemToUserListBrick bricks to propagate user lists with their default values
+        # create AddItemToUserListBrick bricks to populate user lists with their default values
+        # global lists will be populated in StartScript of background/stage sprite object
+        if scratch_object.is_stage() and scratch_object.get_lists() is not None:
+            for global_user_list_data in scratch_project.global_user_lists:
+                list_name = global_user_list_data["listName"]
+                assert len(list_name) > 0
+                catr_user_list = catrobat.find_global_user_list_by_name(catrobat_project, sprite, list_name)
+                if "contents" not in global_user_list_data:
+                    continue
+                for value in global_user_list_data["contents"]:
+                    catr_value_formula = catrobat.create_formula_with_value(value)
+                    implicit_bricks_to_add += [catbricks.AddItemToUserListBrick(catr_value_formula, catr_user_list)]
+
         if not scratch_object.is_stage() and scratch_object.get_lists() is not None:
-            catr_data_container = catrobat_project.getDataContainer()
             for user_list_data in scratch_object.get_lists():
-                assert len(user_list_data["listName"]) > 0
-                catr_data_container.addSpriteUserListToSprite(sprite, user_list_data["listName"])
-                catr_user_list = catrobat.find_sprite_user_list_by_name(catrobat_project, sprite, user_list_data["listName"])
+                list_name = user_list_data["listName"]
+                assert len(list_name) > 0
+                catr_user_list = catrobat.find_sprite_user_list_by_name(catrobat_project, sprite, list_name)
                 assert catr_user_list
                 if "contents" not in user_list_data:
                     continue

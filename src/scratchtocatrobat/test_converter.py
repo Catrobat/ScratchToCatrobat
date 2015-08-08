@@ -52,7 +52,6 @@ TEST_PROJECT_PATH = common_testing.get_test_project_path("dancing_castle")
 def _dummy_project():
         return scratch.Project(TEST_PROJECT_PATH, name="dummy")
 
-
 # TODO: fix / reorganize test
 #
 # class TestConvertExampleProject(common_testing.ProjectTestCase):
@@ -204,13 +203,16 @@ def ConverterTestClass(class_):
             class_(*args, **kwargs)
     return Wrapper
 
-
-#@ConverterTestClass
 class TestConvertBlocks(common_testing.BaseTestCase):
+
     block_converter = converter._ScratchObjectConverter(catbase.Project(None, "__test_project__"))
+    _name_of_test_list = "my_test_list"
 
     def setUp(self):
         super(TestConvertBlocks, self).setUp()
+        # create and add user list for user list bricks to project
+        self.block_converter._catrobat_project.getDataContainer().addProjectUserList(self._name_of_test_list)
+        # create dummy sprite
         self.sprite_stub = create_catrobat_background_sprite_stub()
 
     def get_sprite_with_soundinfo(self, soundinfo_name):
@@ -240,9 +242,8 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         scratch_block = ["wait:elapsed:from:", 1]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.WaitBrick)
-        # TODO: this is no real error and should therefore be suppressed in PyDev...
-        formula_tree_seconds = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.TIME_TO_WAIT_IN_SECONDS).formulaTree
-        assert formula_tree_seconds.type == catformula.FormulaElement.ElementType.NUMBER  # @UndefinedVariable
+        formula_tree_seconds = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.TIME_TO_WAIT_IN_SECONDS).formulaTree # @UndefinedVariable
+        assert formula_tree_seconds.type == catformula.FormulaElement.ElementType.NUMBER
         assert formula_tree_seconds.value == "1.0"
 
     def test_fail_convert_playsound_block_if_sound_missing(self):
@@ -257,53 +258,204 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert isinstance(catr_brick, catbricks.PlaySoundBrick)
         assert catr_brick.sound.getTitle() == sound_name
 
-    def test_can_convert_append_int_to_list_block(self):
-        # TODO: create list first...
-        scratch_block = ["append:toList:", 1, "my_test_list"]
+    def test_can_convert_append_number_to_list_block(self):
+        value = "1.23"
+        scratch_block = ["append:toList:", value, self._name_of_test_list]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.AddItemToUserListBrick)
+        formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.LIST_ADD_ITEM).formulaTree # @UndefinedVariable
+        assert formula_tree_value.type == catformula.FormulaElement.ElementType.NUMBER
+        assert formula_tree_value.value == value
 
     def test_can_convert_append_str_to_list_block(self):
-        # TODO: create list first...
-        scratch_block = ["append:toList:", "DummyString", "my_test_list"]
+        value = "DummyString"
+        scratch_block = ["append:toList:", value, self._name_of_test_list]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.AddItemToUserListBrick)
+        formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.LIST_ADD_ITEM).formulaTree # @UndefinedVariable
+        assert formula_tree_value.type == catformula.FormulaElement.ElementType.STRING
+        assert formula_tree_value.value == value
 
-    def test_can_convert_insert_at_numeric_index_in_list_block(self):
-        # TODO: create list first...
-        scratch_block = ["insert:at:ofList:", "DummyString", 2, "my_test_list"]
+    def test_can_convert_insert_numeric_value_at_numeric_index_in_list_block(self):
+        index = 2
+        value = "1.23"
+        scratch_block = ["insert:at:ofList:", value, index, self._name_of_test_list]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.InsertItemIntoUserListBrick)
 
-    def test_can_convert_insert_at_last_position_in_list_block(self):
-        # TODO: create list first...
-        scratch_block = ["insert:at:ofList:", "DummyString", "last", "my_test_list"]
+        formula_tree_index = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.INSERT_ITEM_INTO_USERLIST_INDEX).formulaTree # @UndefinedVariable
+        assert formula_tree_index.type == catformula.FormulaElement.ElementType.NUMBER
+        assert formula_tree_index.value == str(index)
+        formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.INSERT_ITEM_INTO_USERLIST_VALUE).formulaTree # @UndefinedVariable
+        assert formula_tree_value.type == catformula.FormulaElement.ElementType.NUMBER
+        assert formula_tree_value.value == value
+
+    def test_can_convert_insert_string_at_last_position_in_list_block(self):
+        value = "DummyString"
+        scratch_block = ["insert:at:ofList:", value, "last", self._name_of_test_list]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.InsertItemIntoUserListBrick)
+
+        formula_tree_index = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.INSERT_ITEM_INTO_USERLIST_INDEX).formulaTree # @UndefinedVariable
+        assert formula_tree_index.type == catformula.FormulaElement.ElementType.FUNCTION
+        assert formula_tree_index.value == "NUMBER_OF_ITEMS"
+        assert formula_tree_index.leftChild
+        assert formula_tree_index.rightChild == None
+        formula_element_left_child = formula_tree_index.leftChild
+        assert formula_element_left_child.type == catformula.FormulaElement.ElementType.USER_LIST
+        assert formula_element_left_child.value == self._name_of_test_list
+        formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.INSERT_ITEM_INTO_USERLIST_VALUE).formulaTree # @UndefinedVariable
+        assert formula_tree_value.type == catformula.FormulaElement.ElementType.STRING
+        assert formula_tree_value.value == value
 
     def test_can_convert_insert_at_random_position_in_list_block(self):
-        # TODO: create list first...
-        scratch_block = ["insert:at:ofList:", "DummyString", "random", "my_test_list"]
+        value = "DummyString"
+        scratch_block = ["insert:at:ofList:", value, "random", self._name_of_test_list]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.InsertItemIntoUserListBrick)
 
+        formula_tree_index = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.INSERT_ITEM_INTO_USERLIST_INDEX).formulaTree # @UndefinedVariable
+        assert formula_tree_index.type == catformula.FormulaElement.ElementType.FUNCTION
+        assert formula_tree_index.value == "RAND"
+        assert formula_tree_index.leftChild
+        assert formula_tree_index.rightChild
+        formula_element_left_child = formula_tree_index.leftChild
+        assert formula_element_left_child.type == catformula.FormulaElement.ElementType.NUMBER
+        assert formula_element_left_child.value == "1"
+        formula_element_right_child = formula_tree_index.rightChild
+        assert formula_element_right_child.type == catformula.FormulaElement.ElementType.FUNCTION
+        assert formula_element_right_child.value == "NUMBER_OF_ITEMS"
+        assert formula_element_right_child.leftChild
+        assert formula_element_right_child.rightChild == None
+        formula_element_inner_left_child = formula_element_right_child.leftChild
+        assert formula_element_inner_left_child.type == catformula.FormulaElement.ElementType.USER_LIST
+        assert formula_element_inner_left_child.value == self._name_of_test_list
+        formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.INSERT_ITEM_INTO_USERLIST_VALUE).formulaTree # @UndefinedVariable
+        assert formula_tree_value.type == catformula.FormulaElement.ElementType.STRING
+        assert formula_tree_value.value == value
+
     def test_can_convert_delete_line_from_list_by_index_block(self):
-        # TODO: create list first...
-        scratch_block = ["deleteLine:ofList:", 2, "my_test_list"]
+        index = 2
+        scratch_block = ["deleteLine:ofList:", index, self._name_of_test_list]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.DeleteItemOfUserListBrick)
+        formula_tree_list_delete_item = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.LIST_DELETE_ITEM).formulaTree # @UndefinedVariable
+        assert formula_tree_list_delete_item.type == catformula.FormulaElement.ElementType.NUMBER
+        assert formula_tree_list_delete_item.value == str(index)
 
     def test_can_convert_delete_last_line_from_list_block(self):
-        # TODO: create list first...
-        scratch_block = ["deleteLine:ofList:", "last", "my_test_list"]
+        scratch_block = ["deleteLine:ofList:", "last", self._name_of_test_list]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.DeleteItemOfUserListBrick)
 
+        formula_tree_list_delete_item = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.LIST_DELETE_ITEM).formulaTree # @UndefinedVariable
+        assert formula_tree_list_delete_item.type == catformula.FormulaElement.ElementType.FUNCTION
+        assert formula_tree_list_delete_item.value == "NUMBER_OF_ITEMS"
+        assert formula_tree_list_delete_item.leftChild
+        assert formula_tree_list_delete_item.rightChild == None
+        formula_element_left_child = formula_tree_list_delete_item.leftChild
+        assert formula_element_left_child.type == catformula.FormulaElement.ElementType.USER_LIST
+        assert formula_element_left_child.value == self._name_of_test_list
+
     def test_can_convert_delete_all_lines_from_list_block(self):
-        # TODO: create list first...
-        scratch_block = ["deleteLine:ofList:", "all", "my_test_list"]
+        scratch_block = ["deleteLine:ofList:", "all", self._name_of_test_list]
+        catr_brick_list = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert len(catr_brick_list) == 3
+        assert isinstance(catr_brick_list[0], catbricks.RepeatBrick)
+
+        formula_tree_times_to_repeat = catr_brick_list[0].getFormulaWithBrickField(catbasebrick.BrickField.TIMES_TO_REPEAT).formulaTree # @UndefinedVariable
+        assert formula_tree_times_to_repeat.type == catformula.FormulaElement.ElementType.FUNCTION
+        assert formula_tree_times_to_repeat.value == "NUMBER_OF_ITEMS"
+        assert formula_tree_times_to_repeat.leftChild
+        assert formula_tree_times_to_repeat.rightChild == None
+        formula_element_left_child = formula_tree_times_to_repeat.leftChild
+        assert formula_element_left_child.type == catformula.FormulaElement.ElementType.USER_LIST
+        assert formula_element_left_child.value == self._name_of_test_list
+
+        formula_tree_list_delete_item = catr_brick_list[1].getFormulaWithBrickField(catbasebrick.BrickField.LIST_DELETE_ITEM).formulaTree # @UndefinedVariable
+        assert formula_tree_list_delete_item.type == catformula.FormulaElement.ElementType.NUMBER
+        assert formula_tree_list_delete_item.value == "1"
+
+        assert catr_brick_list[0].loopEndBrick == catr_brick_list[2]
+        assert catr_brick_list[2].loopBeginBrick == catr_brick_list[0]
+
+        assert isinstance(catr_brick_list[1], catbricks.DeleteItemOfUserListBrick)
+        assert isinstance(catr_brick_list[2], catbricks.LoopEndBrick)
+
+    def test_can_convert_set_line_via_str_index_of_list_to_block(self):
+        index = "2"
+        value = "1"
+        scratch_block = ["setLine:ofList:to:", index, self._name_of_test_list, value]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        assert isinstance(catr_brick, catbricks.DeleteItemOfUserListBrick)
+        assert isinstance(catr_brick, catbricks.ReplaceItemInUserListBrick)
+
+        formula_tree_index = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.REPLACE_ITEM_IN_USERLIST_INDEX).formulaTree # @UndefinedVariable
+        assert formula_tree_index.type == catformula.FormulaElement.ElementType.NUMBER
+        assert formula_tree_index.value == index
+
+        formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.REPLACE_ITEM_IN_USERLIST_VALUE).formulaTree # @UndefinedVariable
+        assert formula_tree_value.type == catformula.FormulaElement.ElementType.NUMBER
+        assert formula_tree_value.value == value
+
+    def test_can_convert_set_line_via_numeric_index_of_list_to_block(self):
+        index = 2
+        value = "1"
+        scratch_block = ["setLine:ofList:to:", index, self._name_of_test_list, value]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.ReplaceItemInUserListBrick)
+
+        formula_tree_index = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.REPLACE_ITEM_IN_USERLIST_INDEX).formulaTree # @UndefinedVariable
+        assert formula_tree_index.type == catformula.FormulaElement.ElementType.NUMBER
+        assert formula_tree_index.value == str(index)
+
+        formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.REPLACE_ITEM_IN_USERLIST_VALUE).formulaTree # @UndefinedVariable
+        assert formula_tree_value.type == catformula.FormulaElement.ElementType.NUMBER
+        assert formula_tree_value.value == value
+
+    def test_can_convert_set_last_line_of_list_to_block(self):
+        value = "1"
+        scratch_block = ["setLine:ofList:to:", "last", self._name_of_test_list, value]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.ReplaceItemInUserListBrick)
+
+        formula_tree_index = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.REPLACE_ITEM_IN_USERLIST_INDEX).formulaTree # @UndefinedVariable
+        assert formula_tree_index.type == catformula.FormulaElement.ElementType.FUNCTION
+        assert formula_tree_index.value == "NUMBER_OF_ITEMS"
+        assert formula_tree_index.leftChild
+        assert formula_tree_index.rightChild == None
+        formula_element_left_child = formula_tree_index.leftChild
+        assert formula_element_left_child.type == catformula.FormulaElement.ElementType.USER_LIST
+        assert formula_element_left_child.value == self._name_of_test_list
+
+        formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.REPLACE_ITEM_IN_USERLIST_VALUE).formulaTree # @UndefinedVariable
+        assert formula_tree_value.type == catformula.FormulaElement.ElementType.NUMBER
+        assert formula_tree_value.value == value
+
+    def test_can_convert_set_random_line_of_list_to_with_numeric_value_block(self):
+        value = "1.23"
+        scratch_block = ["setLine:ofList:to:", "random", self._name_of_test_list, value]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.ReplaceItemInUserListBrick)
+
+        formula_tree_index = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.REPLACE_ITEM_IN_USERLIST_INDEX).formulaTree # @UndefinedVariable
+        assert formula_tree_index.type == catformula.FormulaElement.ElementType.FUNCTION
+        assert formula_tree_index.value == "RAND"
+        assert formula_tree_index.leftChild
+        assert formula_tree_index.rightChild
+        formula_element_left_child = formula_tree_index.leftChild
+        assert formula_element_left_child.type == catformula.FormulaElement.ElementType.NUMBER
+        assert formula_element_left_child.value == "1"
+        formula_element_right_child = formula_tree_index.rightChild
+        assert formula_element_right_child.type == catformula.FormulaElement.ElementType.FUNCTION
+        assert formula_element_right_child.value == "NUMBER_OF_ITEMS"
+        assert formula_element_right_child.leftChild
+        assert formula_element_right_child.rightChild == None
+        formula_element_inner_left_child = formula_element_right_child.leftChild
+        assert formula_element_inner_left_child.type == catformula.FormulaElement.ElementType.USER_LIST
+        assert formula_element_inner_left_child.value == self._name_of_test_list
+        formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.REPLACE_ITEM_IN_USERLIST_VALUE).formulaTree # @UndefinedVariable
+        assert formula_tree_value.type == catformula.FormulaElement.ElementType.NUMBER
+        assert formula_tree_value.value == value
 
     def test_can_convert_doplaysoundandwait_block(self):
         scratch_block = _, sound_name = ["doPlaySoundAndWait", "bird"]
@@ -323,10 +475,9 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         scratch_block = _, glide_duration, glide_x, glide_y = ["glideSecs:toX:y:elapsed:from:", 5, 174, -122]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.GlideToBrick)
-        # TODO: those errors are no real errors and should therefore be suppressed in PyDev...
-        durationInSecondsFormula = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.DURATION_IN_SECONDS)
-        xDestinationFormula = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.X_DESTINATION)
-        yDestinationFormula = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.Y_DESTINATION)
+        durationInSecondsFormula = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.DURATION_IN_SECONDS) # @UndefinedVariable
+        xDestinationFormula = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.X_DESTINATION) # @UndefinedVariable
+        yDestinationFormula = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.Y_DESTINATION) # @UndefinedVariable
         assert int(float(durationInSecondsFormula.formulaTree.getValue())) == glide_duration
         assert int(float(xDestinationFormula.formulaTree.getValue())) == glide_x
         assert -1 * int(float(yDestinationFormula.formulaTree.rightChild.getValue())) == glide_y

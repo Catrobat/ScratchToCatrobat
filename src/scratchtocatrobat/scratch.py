@@ -53,6 +53,7 @@ class JsonKeys(object):
     SOUND_ID = "soundID"
     SOUND_NAME = "soundName"
     SOUNDS = "sounds"
+    LISTS = "lists"
     VARIABLES = 'variables'
 
 PROJECT_SPECIFIC_KEYS = ["info", "currentCostumeIndex", "penLayerMD5", "tempoBPM", "videoAlpha", "children"]
@@ -69,7 +70,7 @@ class Object(common.DictAccessWrapper):
     def __init__(self, object_data):
         if not self.is_valid_class_input(object_data):
             raise ObjectError("Input is no valid Scratch object.")
-        for key in (JsonKeys.SOUNDS, JsonKeys.COSTUMES, JsonKeys.SCRIPTS, JsonKeys.VARIABLES):
+        for key in (JsonKeys.SOUNDS, JsonKeys.COSTUMES, JsonKeys.SCRIPTS, JsonKeys.LISTS, JsonKeys.VARIABLES):
             if key not in object_data:
                 object_data[key] = []
         super(Object, self).__init__(object_data)

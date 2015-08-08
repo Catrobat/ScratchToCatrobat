@@ -356,14 +356,9 @@ class Converter(object):
             data_container.addProjectUserList(global_user_list["listName"])
 
     def _add_converted_sprites_to(self, catrobat_project):
-        for object_ in self.scratch_project.objects:
-            _preprocess_scratch_object(object_)
-            catr_sprite = self._scratch_object_converter(object_)
-            data_container = catrobat_project.getDataContainer()
-            # add sprite user lists
-            if "lists" in object_:
-                for user_list in object_["lists"]:
-                    data_container.addSpriteUserListToSprite(catr_sprite, user_list["listName"])
+        for scratch_object in self.scratch_project.objects:
+            _preprocess_scratch_object(scratch_object)
+            catr_sprite = self._scratch_object_converter(scratch_object)
             catrobat_project.addSprite(catr_sprite)
 
     # TODO: make it more explicit that this depends on the conversion code for "whenKeyPressed" Scratch block
@@ -463,6 +458,11 @@ class _ScratchObjectConverter(object):
         sprite_sounds = sprite.getSoundList()
         for scratch_sound in scratch_object.get_sounds():
             sprite_sounds.add(self._catrobat_sound_from(scratch_sound))
+
+        if not scratch_object.is_stage() and scratch_object.get_lists() is not None:
+            data_container = self._catrobat_project.getDataContainer()
+            for user_list in scratch_object.get_lists():
+                data_container.addSpriteUserListToSprite(sprite, user_list["listName"])
 
         for scratch_script in scratch_object.scripts:
             sprite.addScript(self._catrobat_script_from(scratch_script, sprite))
@@ -938,7 +938,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     def _convert_append_to_list_block(self):
         [value, list_name] = self.arguments
 
-        user_list = catrobat.find_user_list_by_name(self.project, list_name)
+        user_list = catrobat.find_global_or_sprite_user_list_by_name(self.project, self.sprite, list_name)
         assert user_list is not None
         value_formula = catrobat.create_formula_with_value(value)
         return self.CatrobatClass(value_formula, user_list)
@@ -973,7 +973,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         else:
             index_formula = catrobat.create_formula_with_value(position_string)
 
-        user_list = catrobat.find_user_list_by_name(self.project, list_name)
+        user_list = catrobat.find_global_or_sprite_user_list_by_name(self.project, self.sprite, list_name)
         assert user_list is not None
         value_formula = catrobat.create_formula_with_value(value)
         assert index_formula is not None
@@ -1004,7 +1004,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         else:
             index_formula = catrobat.create_formula_with_value(position_string)
 
-        user_list = catrobat.find_user_list_by_name(self.project, list_name)
+        user_list = catrobat.find_global_or_sprite_user_list_by_name(self.project, self.sprite, list_name)
         assert user_list is not None
         assert index_formula is not None
         return prepend_bricks + [self.CatrobatClass(index_formula, user_list)] + append_bricks
@@ -1039,7 +1039,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         else:
             index_formula = catrobat.create_formula_with_value(position_string)
 
-        user_list = catrobat.find_user_list_by_name(self.project, list_name)
+        user_list = catrobat.find_global_or_sprite_user_list_by_name(self.project, self.sprite, list_name)
         assert user_list is not None
         value_formula = catrobat.create_formula_with_value(value)
         assert index_formula is not None

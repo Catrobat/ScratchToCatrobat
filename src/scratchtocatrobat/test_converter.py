@@ -257,6 +257,54 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert isinstance(catr_brick, catbricks.PlaySoundBrick)
         assert catr_brick.sound.getTitle() == sound_name
 
+    def test_can_convert_append_int_to_list_block(self):
+        # TODO: create list first...
+        scratch_block = ["append:toList:", 1, "my_test_list"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.AddItemToUserListBrick)
+
+    def test_can_convert_append_str_to_list_block(self):
+        # TODO: create list first...
+        scratch_block = ["append:toList:", "DummyString", "my_test_list"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.AddItemToUserListBrick)
+
+    def test_can_convert_insert_at_numeric_index_in_list_block(self):
+        # TODO: create list first...
+        scratch_block = ["insert:at:ofList:", "DummyString", 2, "my_test_list"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.InsertItemIntoUserListBrick)
+
+    def test_can_convert_insert_at_last_position_in_list_block(self):
+        # TODO: create list first...
+        scratch_block = ["insert:at:ofList:", "DummyString", "last", "my_test_list"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.InsertItemIntoUserListBrick)
+
+    def test_can_convert_insert_at_random_position_in_list_block(self):
+        # TODO: create list first...
+        scratch_block = ["insert:at:ofList:", "DummyString", "random", "my_test_list"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.InsertItemIntoUserListBrick)
+
+    def test_can_convert_delete_line_from_list_by_index_block(self):
+        # TODO: create list first...
+        scratch_block = ["deleteLine:ofList:", 2, "my_test_list"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.DeleteItemOfUserListBrick)
+
+    def test_can_convert_delete_last_line_from_list_block(self):
+        # TODO: create list first...
+        scratch_block = ["deleteLine:ofList:", "last", "my_test_list"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.DeleteItemOfUserListBrick)
+
+    def test_can_convert_delete_all_lines_from_list_block(self):
+        # TODO: create list first...
+        scratch_block = ["deleteLine:ofList:", "all", "my_test_list"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.DeleteItemOfUserListBrick)
+
     def test_can_convert_doplaysoundandwait_block(self):
         scratch_block = _, sound_name = ["doPlaySoundAndWait", "bird"]
         dummy_sprite = self.get_sprite_with_soundinfo(sound_name)
@@ -275,7 +323,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         scratch_block = _, glide_duration, glide_x, glide_y = ["glideSecs:toX:y:elapsed:from:", 5, 174, -122]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.GlideToBrick)
-        # TODO: these are no real errors and should therefore be suppressed in PyDev...
+        # TODO: those errors are no real errors and should therefore be suppressed in PyDev...
         durationInSecondsFormula = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.DURATION_IN_SECONDS)
         xDestinationFormula = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.X_DESTINATION)
         yDestinationFormula = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.Y_DESTINATION)

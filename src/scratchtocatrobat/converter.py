@@ -192,6 +192,9 @@ class _ScratchToCatrobat(object):
         "append:toList:": catbricks.AddItemToUserListBrick,
         "insert:at:ofList:": catbricks.InsertItemIntoUserListBrick,
         "deleteLine:ofList:": catbricks.DeleteItemOfUserListBrick,
+        "setLine:ofList:to:": catbricks.ReplaceItemInUserListBrick,
+        #"showList:": catbricks.*, # TODO: implement this as soon as Catrobat supports this...
+        #"hideList:": catbricks.*, # TODO: implement this as soon as Catrobat supports this...
 
         # looks
         "lookLike:": catbricks.SetLookBrick,
@@ -942,7 +945,8 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
     @_register_handler(_block_name_to_handler_map, "insert:at:ofList:")
     def _convert_insert_at_of_list_block(self):
-        [value, position_string, list_name] = self.arguments
+        [value, position, list_name] = self.arguments
+        position_string = position if isinstance(position, (str, unicode)) else str(position)
         if position_string == "last":
             # TODO: verify for off-by-one error!!
             left_formula_elem_type = catformula.FormulaElement.ElementType.USER_LIST
@@ -977,7 +981,8 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
     @_register_handler(_block_name_to_handler_map, "deleteLine:ofList:")
     def _convert_delete_line_of_list_block(self):
-        [position_string, list_name] = self.arguments
+        [position, list_name] = self.arguments
+        position_string = position if isinstance(position, (str, unicode)) else str(position)
         index_formula = None
         prepend_bricks = []
         append_bricks = []
@@ -997,13 +1002,60 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
                 append_bricks += [catbricks.LoopEndBrick(catr_loop_start_brick)]
                 index_formula = catrobat.create_formula_with_value("1") # first item to be deleted for n-times!
         else:
-            assert isinstance(position_string, int)
             index_formula = catrobat.create_formula_with_value(position_string)
 
         user_list = catrobat.find_user_list_by_name(self.project, list_name)
         assert user_list is not None
         assert index_formula is not None
         return prepend_bricks + [self.CatrobatClass(index_formula, user_list)] + append_bricks
+
+    @_register_handler(_block_name_to_handler_map, "setLine:ofList:to:")
+    def _convert_set_line_of_list_to_block(self):
+        [position, list_name, value] = self.arguments
+        position_string = position if isinstance(position, (str, unicode)) else str(position)
+        if position_string == "last":
+            # TODO: verify for off-by-one error!!
+            left_formula_elem_type = catformula.FormulaElement.ElementType.USER_LIST
+            left_formula_elem = catformula.FormulaElement(left_formula_elem_type, list_name, None)
+            formula_elem_type = catformula.FormulaElement.ElementType.FUNCTION
+            formula_element = catformula.FormulaElement(formula_elem_type, "NUMBER_OF_ITEMS", None)
+            formula_element.setLeftChild(left_formula_elem)
+            index_formula = catformula.Formula(formula_element)
+        elif position_string == "random":
+            # TODO: verify for off-by-one error!!
+            inner_left_formula_elem_type = catformula.FormulaElement.ElementType.USER_LIST
+            inner_left_formula_elem = catformula.FormulaElement(inner_left_formula_elem_type, list_name, None)
+            right_formula_elem_type = catformula.FormulaElement.ElementType.FUNCTION
+            right_formula_element = catformula.FormulaElement(right_formula_elem_type, "NUMBER_OF_ITEMS", None)
+            right_formula_element.setLeftChild(inner_left_formula_elem)
+
+            left_formula_elem_type = catformula.FormulaElement.ElementType.NUMBER
+            first_index_of_list = "1"
+            left_formula_element = catformula.FormulaElement(left_formula_elem_type, first_index_of_list, None)
+
+            formula_elem_type = catformula.FormulaElement.ElementType.FUNCTION
+            formula_element = catformula.FormulaElement(formula_elem_type, "RAND", None, left_formula_element, right_formula_element)
+            index_formula = catformula.Formula(formula_element)
+        else:
+            index_formula = catrobat.create_formula_with_value(position_string)
+
+        user_list = catrobat.find_user_list_by_name(self.project, list_name)
+        assert user_list is not None
+        value_formula = catrobat.create_formula_with_value(value)
+        assert index_formula is not None
+        return self.CatrobatClass(value_formula, index_formula, user_list)
+
+    @_register_handler(_block_name_to_handler_map, "showList:")
+    def _convert_show_list_block(self):
+        #["showList:", "myList"] # for testing purposes...
+        [list_name] = self.arguments
+        assert "IMPLEMENT THIS AS SOON AS CATROBAT SUPPORTS THIS!!"
+
+    @_register_handler(_block_name_to_handler_map, "hideList:")
+    def _convert_hide_list_block(self):
+        #["hideList:", "myList"] # for testing purposes...
+        [list_name] = self.arguments
+        assert "IMPLEMENT THIS AS SOON AS CATROBAT SUPPORTS THIS!!"
 
     @_register_handler(_block_name_to_handler_map, "playSound:", "doPlaySoundAndWait")
     def _convert_sound_block(self):

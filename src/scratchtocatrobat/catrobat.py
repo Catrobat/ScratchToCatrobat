@@ -102,6 +102,16 @@ def _sprite_of(project, sprite_name):
             break
     return sprite
 
+def find_user_list_by_name(project, list_name):
+    user_list = None
+
+    # TODO: retrieve sprite user list by name in catrobat-MODULE!!!
+
+    if user_list is None:
+        for global_user_list in project.getDataContainer().getProjectLists():
+            if global_user_list.getName() == list_name:
+                user_list = global_user_list
+    return user_list
 
 def user_variable_of(project, variable_name, sprite_name=None):
     '''
@@ -109,12 +119,12 @@ def user_variable_of(project, variable_name, sprite_name=None):
     '''
 #----------------------
 # since v0.95
-    user_variables = project.getDataContainer()
+    data_container = project.getDataContainer()
     if sprite_name is None:
-        return user_variables.findUserVariable(variable_name, user_variables.projectVariables)
+        return data_container.findUserVariable(variable_name, data_container.projectVariables)
     else:
         sprite = _sprite_of(project, sprite_name)
-        return user_variables.getUserVariable(variable_name, sprite)
+        return data_container.getUserVariable(variable_name, sprite)
 # earlier
 #    user_variables = project.getUserVariables()
 #    if sprite_name is None:

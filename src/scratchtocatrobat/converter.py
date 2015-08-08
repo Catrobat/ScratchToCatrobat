@@ -41,6 +41,7 @@ from scratchtocatrobat import version
 from scratchtocatrobat.scratch import JsonKeys as scratchkeys
 from scratchtocatrobat.tools import svgtopng
 from scratchtocatrobat.tools import wavconverter
+from __builtin__ import None
 
 _DEFAULT_BRICK_CLASS = catbricks.WaitBrick
 _DEFAULT_FORMULA_ELEMENT = catformula.FormulaElement(catformula.FormulaElement.ElementType.NUMBER, str(00001), None)  # @UndefinedVariable (valueOf)
@@ -335,15 +336,31 @@ class Converter(object):
     def _converted_catrobat_program(self):
         _catr_project = catbase.Project(None, self.scratch_project.name)
         self._scratch_object_converter = _ScratchObjectConverter(_catr_project)
+        self._add_global_user_lists_to(_catr_project)
         self._add_converted_sprites_to(_catr_project)
         self._add_key_sprites_to(_catr_project, self.scratch_project.listened_keys)
         self._update_xml_header(_catr_project.getXmlHeader(), self.scratch_project.project_id, self.scratch_project.description)
         return _catr_project
 
+    def _add_global_user_lists_to(self, catrobat_project):
+        if self.scratch_project.global_user_lists is None:
+            return
+
+        for global_user_list in self.scratch_project.global_user_lists:
+            # TODO: use this as soon as show/hide-formula-list-bricks are available in Catrobat => global_formula_list["visible"]
+            # TODO: use this as soon as Catrobat supports this => global_formula_list["isPersistent"]
+            data_container = catrobat_project.getDataContainer()
+            data_container.addProjectUserList(global_user_list["listName"])
+
     def _add_converted_sprites_to(self, catrobat_project):
         for object_ in self.scratch_project.objects:
             _preprocess_scratch_object(object_)
             catr_sprite = self._scratch_object_converter(object_)
+            data_container = catrobat_project.getDataContainer()
+            # add sprite user lists
+            if "lists" in object_:
+                for user_list in object_["lists"]:
+                    data_container.addSpriteUserListToSprite(catr_sprite, user_list["listName"])
             catrobat_project.addSprite(catr_sprite)
 
     # TODO: make it more explicit that this depends on the conversion code for "whenKeyPressed" Scratch block
@@ -917,72 +934,76 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "append:toList:")
     def _convert_append_to_list_block(self):
         [value, list_name] = self.arguments
-        # TODO: retrieve list by name in catrobat-MODULE!!!
-        user_list = None
-        #user_variables = self.project.getDataContainer()
 
-        print("add_item")
-        print(value)
-        print(list_name)
-
+        user_list = catrobat.find_user_list_by_name(self.project, list_name)
+        assert user_list is not None
         value_formula = catrobat.create_formula_with_value(value)
-        if isinstance(value, (str, unicode)):
-            print("   >>> String!!")
-            return self.CatrobatClass(1)
-        else:
-            return self.CatrobatClass(value)
-    #    return self.CatrobatClass(value_formula, user_list)
+        return self.CatrobatClass(value_formula, user_list)
 
     @_register_handler(_block_name_to_handler_map, "insert:at:ofList:")
     def _convert_insert_at_of_list_block(self):
         [value, position_string, list_name] = self.arguments
-        index = position_string
         if position_string == "last":
-            log.error("'LAST' not yet supported for insert_item_into_user_list_brick!!")
-            index = 1
+            # TODO: verify for off-by-one error!!
+            left_formula_elem_type = catformula.FormulaElement.ElementType.USER_LIST
+            left_formula_elem = catformula.FormulaElement(left_formula_elem_type, list_name, None)
+            formula_elem_type = catformula.FormulaElement.ElementType.FUNCTION
+            formula_element = catformula.FormulaElement(formula_elem_type, "NUMBER_OF_ITEMS", None)
+            formula_element.setLeftChild(left_formula_elem)
+            index_formula = catformula.Formula(formula_element)
         elif position_string == "random":
-            log.error("'RANDOM' not yet supported for insert_item_into_user_list_brick!!")
-            index = 1
-    
-        # TODO: retrieve list by name in catrobat-MODULE!!!
-        user_list = None
-        #user_variables = self.project.getDataContainer()
-    
-        print("insert_item")
-        print value
-        print index
-    
-        value_formula = catrobat.create_formula_with_value(value)
-        index_formula = catrobat.create_formula_with_value(index)
-        if isinstance(value, (str, unicode)):
-            print("   >>> String!!")
-            return self.CatrobatClass(1, index)
+            # TODO: verify for off-by-one error!!
+            inner_left_formula_elem_type = catformula.FormulaElement.ElementType.USER_LIST
+            inner_left_formula_elem = catformula.FormulaElement(inner_left_formula_elem_type, list_name, None)
+            right_formula_elem_type = catformula.FormulaElement.ElementType.FUNCTION
+            right_formula_element = catformula.FormulaElement(right_formula_elem_type, "NUMBER_OF_ITEMS", None)
+            right_formula_element.setLeftChild(inner_left_formula_elem)
+
+            left_formula_elem_type = catformula.FormulaElement.ElementType.NUMBER
+            first_index_of_list = "1"
+            left_formula_element = catformula.FormulaElement(left_formula_elem_type, first_index_of_list, None)
+
+            formula_elem_type = catformula.FormulaElement.ElementType.FUNCTION
+            formula_element = catformula.FormulaElement(formula_elem_type, "RAND", None, left_formula_element, right_formula_element)
+            index_formula = catformula.Formula(formula_element)
         else:
-            return self.CatrobatClass(value, index)
-    #    return self.CatrobatClass(value_formula, index_formula, user_list)
+            index_formula = catrobat.create_formula_with_value(position_string)
+
+        user_list = catrobat.find_user_list_by_name(self.project, list_name)
+        assert user_list is not None
+        value_formula = catrobat.create_formula_with_value(value)
+        assert index_formula is not None
+        return self.CatrobatClass(value_formula, index_formula, user_list)
 
     @_register_handler(_block_name_to_handler_map, "deleteLine:ofList:")
     def _convert_delete_line_of_list_block(self):
         [position_string, list_name] = self.arguments
-        index = position_string
-        if position_string == "last":
-            log.error("'LAST' not yet supported for insert_item_into_user_list_brick!!")
-            index = 1
-        elif position_string == "all":
-            # TODO: repeat loop workaround...
-            log.error("'ALL' not yet supported for insert_item_into_user_list_brick!!")
-            index = 1
-    
-        # TODO: retrieve list by name in catrobat-MODULE!!!
-        user_list = None
-        #user_variables = self.project.getDataContainer()
-    
-        print("delete_item")
-        print index
-    
-        index_formula = catrobat.create_formula_with_value(index)
-    #    return self.CatrobatClass(index_formula, user_list)
-        return self.CatrobatClass(index)
+        index_formula = None
+        prepend_bricks = []
+        append_bricks = []
+        if position_string in ["last", "all"]:
+            # TODO: verify for off-by-one error!!
+            left_formula_elem_type = catformula.FormulaElement.ElementType.USER_LIST
+            left_formula_elem = catformula.FormulaElement(left_formula_elem_type, list_name, None)
+            formula_elem_type = catformula.FormulaElement.ElementType.FUNCTION
+            formula_element = catformula.FormulaElement(formula_elem_type, "NUMBER_OF_ITEMS", None)
+            formula_element.setLeftChild(left_formula_elem)
+            index_formula = catformula.Formula(formula_element)
+
+            if position_string == "all":
+                # repeat loop workaround...
+                catr_loop_start_brick = catbricks.RepeatBrick(index_formula)
+                prepend_bricks += [catr_loop_start_brick]
+                append_bricks += [catbricks.LoopEndBrick(catr_loop_start_brick)]
+                index_formula = catrobat.create_formula_with_value("1") # first item to be deleted for n-times!
+        else:
+            assert isinstance(position_string, int)
+            index_formula = catrobat.create_formula_with_value(position_string)
+
+        user_list = catrobat.find_user_list_by_name(self.project, list_name)
+        assert user_list is not None
+        assert index_formula is not None
+        return prepend_bricks + [self.CatrobatClass(index_formula, user_list)] + append_bricks
 
     @_register_handler(_block_name_to_handler_map, "playSound:", "doPlaySoundAndWait")
     def _convert_sound_block(self):

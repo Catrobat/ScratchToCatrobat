@@ -180,7 +180,9 @@ class Project(RawProject):
         else:
             self.project_id = self.get_info().get("projectID")
         if not self.project_id:
-            raise ProjectError("No project id specified in project file. Please provide project id with constructor.")
+            self.project_id = "0"
+            name = "Testproject"
+            #raise ProjectError("No project id specified in project file. Please provide project id with constructor.")
         if name is not None:
             self.name = name
             self.description = ""
@@ -199,9 +201,11 @@ class Project(RawProject):
             # TODO: rename to verify_object?
             verify_resources(scratch_object.get_sounds() + scratch_object.get_costumes())
 
+        self.global_user_lists = [scratch_obj.get_lists() for scratch_obj in self.objects if scratch_obj.is_stage()][0]
+
         listened_keys = []
-        for object_ in self.objects:
-            for script in object_.scripts:
+        for scratch_obj in self.objects:
+            for script in scratch_obj.scripts:
                 if script.type == SCRIPT_KEY_PRESSED:
                     assert len(script.arguments) == 1
                     listened_keys += script.arguments

@@ -19,25 +19,42 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
-import os
-from datetime import datetime
 
 log = logging.getLogger("scratchtocatrobat")
 
-def initialize_logging():
+def log_level_for_string(log_level_string):
+    if log_level_string == "FATAL":
+        return logging.FATAL
+    elif log_level_string == "CRITICAL":
+        return logging.CRITICAL
+    elif log_level_string == "ERROR":
+        return logging.ERROR
+    elif log_level_string == "WARNING" or log_level_string == "WARN":
+        return logging.WARN
+    elif log_level_string == "INFO":
+        return logging.INFO
+    elif log_level_string == "DEBUG":
+        return logging.DEBUG
+    else:
+        return logging.INFO
+
+def setup_logging():
+    import os
+    from datetime import datetime
+    from tools import helpers
     log.setLevel(logging.DEBUG)
 
-    APP_PATH = os.path.realpath(os.path.dirname(__file__))
-    fh = logging.FileHandler(os.path.join(APP_PATH, '..', '..', 'data', 'log', "s2cc-{}.log".format(datetime.now().isoformat().replace(":", "_"))))
-    fh_fmt = logging.Formatter("%(asctime)s %(levelname)-8s %(message)s (%(filename)s:%(lineno)s)")
-    fh.setLevel(logging.DEBUG)
+    log_dir = helpers.config.get("PATHS", "log_dir")
+    fh = logging.FileHandler(os.path.join(log_dir, "s2cc-{}.log".format(datetime.now().isoformat().replace(":", "_"))))
+    fh_fmt = logging.Formatter(helpers.config.get("LOG", "file_log_format").replace("\\", ""))
+
+    fh.setLevel(log_level_for_string(helpers.config.get("LOG", "file_log_level")))
     fh.setFormatter(fh_fmt)
     log.addHandler(fh)
 
     ch = logging.StreamHandler()
-    ch_fmt = logging.Formatter("%(asctime)s %(levelname)-8s %(message)s")
-    ch.setLevel(logging.INFO)
+    ch_fmt = logging.Formatter(helpers.config.get("LOG", "stdout_log_format").replace("\\", ""))
+    ch.setLevel(log_level_for_string(helpers.config.get("LOG", "stdout_log_level")))
     ch.setFormatter(ch_fmt)
     log.addHandler(ch)
-
     log.debug("Logging initialized")

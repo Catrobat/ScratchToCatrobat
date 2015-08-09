@@ -29,9 +29,8 @@ from docopt import docopt
 from scratchtocatrobat import logger
 from scratchtocatrobat.tools import helpers
 
-logger.initialize_logging()
+logger.setup_logging()
 log = logging.getLogger("scratchtocatrobat.main")
-
 
 def run_converter(scratch_project_file_or_url, output_dir, extract_resulting_catrobat=False, temp_rm=True, show_version_only=False):
     def check_base_environment():

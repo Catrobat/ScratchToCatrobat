@@ -118,7 +118,7 @@ def main():
         kwargs['extract_resulting_catrobat'] = arguments["--extracted"]
         kwargs['temp_rm'] = not arguments["--no-temp-rm"]
         kwargs['show_version_only'] = arguments["--version"]
-        output_dir = helpers.config.get("PATHS", "output_dir")
+        output_dir = helpers.config.get("PATHS", "output")
         output_dir = arguments["<output-dir>"] if arguments["<output-dir>"] != None else output_dir
         project_url_or_package_path = ""
         if arguments["<project-url-or-package-path>"]:

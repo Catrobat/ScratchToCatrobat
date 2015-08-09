@@ -28,22 +28,22 @@ import sys
 sys.path.append("./src")
 from scratchtocatrobat.tools import helpers
 
-data_dir = helpers.config.get("PATHS", "data_dir")
-log_dir = helpers.config.get("PATHS", "log_dir")
-output_dir = helpers.config.get("PATHS", "output_dir")
-web_output_dir = helpers.config.get("PATHS", "web_output_dir")
-tmp_dir = helpers.config.get("PATHS", "tmp_dir")
+data_dir = helpers.config.get("PATHS", "data")
+log_dir = helpers.config.get("PATHS", "logging")
+output_dir = helpers.config.get("PATHS", "output")
+web_output_dir = helpers.config.get("PATHS", "web_output")
+tmp_dir = helpers.config.get("PATHS", "tmp")
 
-jython_home_dir = helpers.config.get("PATHS", "jython_home_dir")
+jython_home_dir = helpers.config.get("PATHS", "jython_home")
 if not os.path.exists(jython_home_dir) or not os.path.isdir(jython_home_dir):
     error("Invalid jython home path given. No valid directory. Please update 'jython_home_dir' in run.py")
 
-jython_path = helpers.config.get("PATHS", "jython_exec_path")
+jython_path = helpers.config.get("PATHS", "jython_exec")
 if not os.path.exists(jython_path):
     error("Jython script path '%s' must exist." % jython_path.replace(".bat", "[.bat]"))
 
 env = os.environ
-env['JYTHONPATH'] = helpers.config.get("PATHS", "jython_path")
+env['JYTHONPATH'] = helpers.config.get("PATHS", "jython")
 
 helpers.make_dir_if_not_exists(data_dir)
 helpers.make_dir_if_not_exists(log_dir)

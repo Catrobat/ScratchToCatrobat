@@ -44,7 +44,7 @@ class MainTest(common_testing.ProjectTestCase):
         if not env:
             env = dict()
             assert os.environ.get('JYTHON_HOME')
-            env['JYTHON_HOME'] = helpers.config.get("PATHS", "jython_home_dir")
+            env['JYTHON_HOME'] = helpers.config.get("PATHS", "jython_home")
             env = os.environ
         exec_args = self.base_exec_args + list(args)
         #return common_testing.call_returning_exit(exec_args, env=env)

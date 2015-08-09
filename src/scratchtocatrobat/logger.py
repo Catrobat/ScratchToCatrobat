@@ -22,7 +22,7 @@ import logging
 
 log = logging.getLogger("scratchtocatrobat")
 
-def log_level_for_string(log_level_string):
+def _log_level_for_string(log_level_string):
     if log_level_string == "FATAL":
         return logging.FATAL
     elif log_level_string == "CRITICAL":
@@ -44,17 +44,17 @@ def setup_logging():
     from tools import helpers
     log.setLevel(logging.DEBUG)
 
-    log_dir = helpers.config.get("PATHS", "log_dir")
+    log_dir = helpers.config.get("PATHS", "logging")
     fh = logging.FileHandler(os.path.join(log_dir, "s2cc-{}.log".format(datetime.now().isoformat().replace(":", "_"))))
     fh_fmt = logging.Formatter(helpers.config.get("LOG", "file_log_format").replace("\\", ""))
 
-    fh.setLevel(log_level_for_string(helpers.config.get("LOG", "file_log_level")))
+    fh.setLevel(_log_level_for_string(helpers.config.get("LOG", "file_log_level")))
     fh.setFormatter(fh_fmt)
     log.addHandler(fh)
 
     ch = logging.StreamHandler()
     ch_fmt = logging.Formatter(helpers.config.get("LOG", "stdout_log_format").replace("\\", ""))
-    ch.setLevel(log_level_for_string(helpers.config.get("LOG", "stdout_log_level")))
+    ch.setLevel(_log_level_for_string(helpers.config.get("LOG", "stdout_log_level")))
     ch.setFormatter(ch_fmt)
     log.addHandler(ch)
     log.debug("Logging initialized")

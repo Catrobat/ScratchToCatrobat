@@ -34,18 +34,16 @@ _batik_jar_path = None
 def _checked_batik_jar_path():
 #     if _BATIK_ENVIRONMENT_HOME not in os.environ:
 #         raise EnvironmentError("Environment variable '{}' must be set to batik library location.".format(_BATIK_ENVIRONMENT_HOME))
-    batik_home_dir = helpers.config.get("PATHS", "batik_home_dir")
+    batik_home_dir = helpers.config.get("PATHS", "batik_home")
     batik_jar_path = os.path.join(batik_home_dir, _BATIK_CLI_JAR)
     if not os.path.exists(batik_jar_path):
         raise EnvironmentError("Batik jar '{}' must be existing in {}.".format(batik_jar_path, os.path.dirname(batik_jar_path)))
     _batik_jar_path = batik_jar_path
     return _batik_jar_path
 
-
 def convert(input_svg_path):
     assert isinstance(input_svg_path, (str, unicode))
     assert os.path.splitext(input_svg_path)[1] == ".svg"
-
     output_png_path = os.path.splitext(input_svg_path)[0] + ".png"
     try:
         subprocess.check_output(['java', '-jar', _checked_batik_jar_path(), input_svg_path, '-scriptSecurityOff'], stderr=subprocess.STDOUT)
@@ -53,6 +51,4 @@ def convert(input_svg_path):
     except subprocess.CalledProcessError, e:
         assert e.output
         raise common.ScratchtobatError("PNG to SVG conversion call failed:\n%s" % e.output)
-
     return output_png_path
-

@@ -131,26 +131,22 @@ def user_variable_of(project, variable_name, sprite_name=None):
         return data_container.getUserVariable(variable_name, sprite)
 
 def create_formula_with_value(variable_value):
-    var_value = 0
-    if not variable_value:
-        var_value = 0
+    assert variable_value
+    if type(variable_value) is int:
+        java_variable_value = java.lang.Integer(variable_value)
+    elif isinstance(variable_value, (float, long)):
+        java_variable_value = java.lang.Double(variable_value)
     elif isinstance(variable_value, (str, unicode)):
         try:
-            var_value = common.int_or_float(variable_value)
+            temp = common.int_or_float(variable_value)
+            if temp is not None:
+                variable_value = java.lang.Integer(temp) if isinstance(temp, int) else java.lang.Double(temp)
+            java_variable_value = variable_value
         except:
-            _log.warning("Ignoring unsupported variable value: '%s'. Set to 0.", variable_value)
-        if var_value == None:
-            var_value = variable_value
-
-    if type(var_value) is int:
-        java_variable_value = java.lang.Integer(var_value)
-    elif isinstance(var_value, (float, long)):
-        java_variable_value = java.lang.Double(var_value)
-    elif isinstance(var_value, (str, unicode)):
-        java_variable_value = var_value
+            java_variable_value = variable_value
     else:
-        assert isinstance(var_value, catformula.FormulaElement), var_value
-        java_variable_value = var_value
+        assert isinstance(variable_value, catformula.FormulaElement)
+        java_variable_value = variable_value
     return catformula.Formula(java_variable_value)
 
 def add_user_variable(project, variable_name, sprite=None, sprite_name=None):

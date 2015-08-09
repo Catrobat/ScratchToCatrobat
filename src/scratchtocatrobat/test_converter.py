@@ -199,13 +199,13 @@ def ConverterTestClass(class_):
     class Wrapper:
         def __init__(self, *args, **kwargs):
             _dummy_project = catbase.Project(None, "__test_project__")
-            self.block_converter = converter._ScratchObjectConverter(_dummy_project)
+            self.block_converter = converter._ScratchObjectConverter(_dummy_project, None)
             class_(*args, **kwargs)
     return Wrapper
 
 class TestConvertBlocks(common_testing.BaseTestCase):
 
-    block_converter = converter._ScratchObjectConverter(catbase.Project(None, "__test_project__"))
+    block_converter = converter._ScratchObjectConverter(catbase.Project(None, "__test_project__"), None)
     _name_of_test_list = "my_test_list"
 
     def setUp(self):

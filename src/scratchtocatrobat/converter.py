@@ -956,7 +956,6 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "append:toList:")
     def _convert_append_to_list_block(self):
         [value, list_name] = self.arguments
-
         user_list = catrobat.find_global_or_sprite_user_list_by_name(self.project, self.sprite, list_name)
         assert user_list is not None
         value_formula = catrobat.create_formula_with_value(value)
@@ -965,8 +964,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "insert:at:ofList:")
     def _convert_insert_at_of_list_block(self):
         [value, position, list_name] = self.arguments
-        position_string = position if isinstance(position, (str, unicode)) else str(position)
-        if position_string == "last":
+        if position == "last":
             # TODO: verify for off-by-one error!!
             left_formula_elem_type = catformula.FormulaElement.ElementType.USER_LIST
             left_formula_elem = catformula.FormulaElement(left_formula_elem_type, list_name, None)
@@ -974,7 +972,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             formula_element = catformula.FormulaElement(formula_elem_type, "NUMBER_OF_ITEMS", None)
             formula_element.setLeftChild(left_formula_elem)
             index_formula = catformula.Formula(formula_element)
-        elif position_string == "random":
+        elif position == "random":
             # TODO: verify for off-by-one error!!
             inner_left_formula_elem_type = catformula.FormulaElement.ElementType.USER_LIST
             inner_left_formula_elem = catformula.FormulaElement(inner_left_formula_elem_type, list_name, None)
@@ -990,7 +988,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             formula_element = catformula.FormulaElement(formula_elem_type, "RAND", None, left_formula_element, right_formula_element)
             index_formula = catformula.Formula(formula_element)
         else:
-            index_formula = catrobat.create_formula_with_value(position_string)
+            index_formula = catrobat.create_formula_with_value(position)
 
         user_list = catrobat.find_global_or_sprite_user_list_by_name(self.project, self.sprite, list_name)
         assert user_list is not None
@@ -1001,11 +999,10 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "deleteLine:ofList:")
     def _convert_delete_line_of_list_block(self):
         [position, list_name] = self.arguments
-        position_string = position if isinstance(position, (str, unicode)) else str(position)
         index_formula = None
         prepend_bricks = []
         append_bricks = []
-        if position_string in ["last", "all"]:
+        if position in ["last", "all"]:
             # TODO: verify for off-by-one error!!
             left_formula_elem_type = catformula.FormulaElement.ElementType.USER_LIST
             left_formula_elem = catformula.FormulaElement(left_formula_elem_type, list_name, None)
@@ -1014,14 +1011,14 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             formula_element.setLeftChild(left_formula_elem)
             index_formula = catformula.Formula(formula_element)
 
-            if position_string == "all":
+            if position == "all":
                 # repeat loop workaround...
                 catr_loop_start_brick = catbricks.RepeatBrick(index_formula)
                 prepend_bricks += [catr_loop_start_brick]
                 append_bricks += [catbricks.LoopEndBrick(catr_loop_start_brick)]
                 index_formula = catrobat.create_formula_with_value("1") # first item to be deleted for n-times!
         else:
-            index_formula = catrobat.create_formula_with_value(position_string)
+            index_formula = catrobat.create_formula_with_value(position)
 
         user_list = catrobat.find_global_or_sprite_user_list_by_name(self.project, self.sprite, list_name)
         assert user_list is not None
@@ -1031,8 +1028,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "setLine:ofList:to:")
     def _convert_set_line_of_list_to_block(self):
         [position, list_name, value] = self.arguments
-        position_string = position if isinstance(position, (str, unicode)) else str(position)
-        if position_string == "last":
+        if position == "last":
             # TODO: verify for off-by-one error!!
             left_formula_elem_type = catformula.FormulaElement.ElementType.USER_LIST
             left_formula_elem = catformula.FormulaElement(left_formula_elem_type, list_name, None)
@@ -1040,7 +1036,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             formula_element = catformula.FormulaElement(formula_elem_type, "NUMBER_OF_ITEMS", None)
             formula_element.setLeftChild(left_formula_elem)
             index_formula = catformula.Formula(formula_element)
-        elif position_string == "random":
+        elif position == "random":
             # TODO: verify for off-by-one error!!
             inner_left_formula_elem_type = catformula.FormulaElement.ElementType.USER_LIST
             inner_left_formula_elem = catformula.FormulaElement(inner_left_formula_elem_type, list_name, None)
@@ -1056,7 +1052,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             formula_element = catformula.FormulaElement(formula_elem_type, "RAND", None, left_formula_element, right_formula_element)
             index_formula = catformula.Formula(formula_element)
         else:
-            index_formula = catrobat.create_formula_with_value(position_string)
+            index_formula = catrobat.create_formula_with_value(position)
 
         user_list = catrobat.find_global_or_sprite_user_list_by_name(self.project, self.sprite, list_name)
         assert user_list is not None

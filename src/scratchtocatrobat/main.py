@@ -124,7 +124,7 @@ def main():
         project_url_or_package_path = ""
         if arguments["<project-url-or-package-path>"]:
             project_url_or_package_path = arguments["<project-url-or-package-path>"].replace("https://", "http://")
-            scratch_url_prefix = helpers.config.get("URL", "scratch_prefix")
+            scratch_url_prefix = helpers.config.get("SCRATCH_API", "project_url_prefix")
             if project_url_or_package_path.startswith("http://") and not project_url_or_package_path.startswith(scratch_url_prefix):
                 log.error("No valid scratch URL given {0}[ID]".format(scratch_url_prefix))
                 sys.exit(helpers.ExitCode.FAILURE)

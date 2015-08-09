@@ -25,25 +25,17 @@ import re
 import urllib2
 from urlparse import urlparse
 from scratchtocatrobat import common
-
-# TODO: config file...
-# NOTE: without "projects." because at least svg files are not available with this domain
-_HTTP_API_ASSET = "http://scratch.mit.edu/internalapi/asset/{}/get/"
-# source: http://wiki.scratch.mit.edu/wiki/Scratch_File_Format_%282.0%29#Using_HTTP_requests
-_HTTP_API_PROJECT = "http://projects.scratch.mit.edu/internalapi/project/{}/get/"
-_HTTP_API_PROJECT_INFO = "https://scratch.mit.edu/api/v1/project/{}/?format=json"
+from tools import helpers
 
 _log = common.log
-
 
 class ProjectInfoKeys(object):
     PROJECT_DESCRIPTION = 'description'
     PROJECT_NAME = 'title'
 
-
 def request_project_code(project_id):
     def project_json_request_url(project_id):
-        return _HTTP_API_PROJECT.format(project_id)
+        return helpers.config.get("SCRATCH_API", "project_url_template").format(project_id)
 
     try:
         request_url = project_json_request_url(project_id)
@@ -52,12 +44,10 @@ def request_project_code(project_id):
     except None as e:
         raise common.ScratchtobatError("Error with {}: '{}'".format(request_url, e))
 
-
 def download_project(project_url, target_dir):
-    from tools import helpers
     import scratch
     # TODO: fix circular reference
-    scratch_url_prefix = helpers.config.get("URL", "scratch_prefix")
+    scratch_url_prefix = helpers.config.get("SCRATCH_API", "project_url_prefix")
     _HTTP_PROJECT_URL_PATTERN = scratch_url_prefix + r'\d+/?'
     if not re.match(_HTTP_PROJECT_URL_PATTERN, project_url):
         raise common.ScratchtobatError("Project URL must be matching '{}'. Given: {}".format(scratch_url_prefix + '<project id>', project_url))
@@ -75,7 +65,7 @@ def download_project(project_url, target_dir):
             raise common.ScratchtobatError("Error with {}: '{}'".format(request_url, e))
 
     def project_resource_request_url(md5_file_name):
-        return _HTTP_API_ASSET.format(md5_file_name)
+        return helpers.config.get("SCRATCH_API", "asset_url_template").format(md5_file_name)
 
     def project_id_from_url(project_url):
         normalized_url = project_url.strip("/")
@@ -99,21 +89,17 @@ def download_project(project_url, target_dir):
         resource_file_path = os.path.join(target_dir, md5_file_name)
         write_to(request_resource_data(md5_file_name), resource_file_path)
 
-
 def _project_info_request_url(project_id):
-    return _HTTP_API_PROJECT_INFO.format(project_id)
-
+    return helpers.config.get("SCRATCH_API", "project_info_url_template").format(project_id)
 
 def _request_project_info(project_id):
     # TODO: cache this request...
     response_data = common.url_response_data(_project_info_request_url(project_id))
     return json.loads(response_data)
 
-
 # TODO: class instead of request functions
 def request_project_name_for(project_id):
     return _request_project_info(project_id)[ProjectInfoKeys.PROJECT_NAME]
-
 
 def request_project_description_for(project_id):
     return _request_project_info(project_id)[ProjectInfoKeys.PROJECT_DESCRIPTION]

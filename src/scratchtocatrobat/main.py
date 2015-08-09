@@ -31,8 +31,9 @@ from scratchtocatrobat.tools import helpers
 
 logger.setup_logging()
 log = logging.getLogger("scratchtocatrobat.main")
+__version__ = helpers.application_info("name")
 
-def run_converter(scratch_project_file_or_url, output_dir, extract_resulting_catrobat=False, temp_rm=True, show_version_only=False):
+def run_converter(scratch_project_file_or_url, output_dir, extract_resulting_catrobat=False, temp_rm=True, show_version_only=False, show_info_only=False):
     def check_base_environment():
         if "java" not in sys.platform:
             raise EnvironmentError("Must be called with Jython interpreter.")
@@ -58,9 +59,18 @@ def run_converter(scratch_project_file_or_url, output_dir, extract_resulting_cat
         check_base_environment()
         check_converter_environment()
 
-        if show_version_only:
+        if show_version_only or show_info_only:
             # TODO: should return last modfication date or source control tag of Catrobat classes
+            if show_info_only:
+                print("-"*80)
+                print(helpers.application_info("name"))
+                print("-"*80)
+            print(helpers.application_info("short_name"), "Version:", helpers.application_info("version"))
             print("Catrobat language version:", catrobat.CATROBAT_LANGUAGE_VERSION)
+            if show_version_only:
+                return helpers.ExitCode.SUCCESS
+            print("Build Name:", helpers.application_info("build_name"))
+            print("Build:", helpers.application_info("build_number"))
             return helpers.ExitCode.SUCCESS
 
         log.info("calling converter")
@@ -106,10 +116,12 @@ def main():
       'main.py' <project-url-or-package-path> <output-dir> [--extracted] [--no-temp-rm]
       'main.py' <project-url-or-package-path> [--extracted] [--no-temp-rm]
       'main.py' --version
+      'main.py' --info
 
     Options:
-      -h --help         Show this screen.
-      --version         Show version.
+      -h --help         Shows this screen.
+      --version         Shows version of this application.
+      --info            Shows information and configuration details about this application.
       -e --extracted    Extract resulting Catrobat program in output-dir.
     '''
     arguments = docopt(usage)
@@ -118,6 +130,7 @@ def main():
         kwargs['extract_resulting_catrobat'] = arguments["--extracted"]
         kwargs['temp_rm'] = not arguments["--no-temp-rm"]
         kwargs['show_version_only'] = arguments["--version"]
+        kwargs['show_info_only'] = arguments["--info"]
         output_dir = helpers.config.get("PATHS", "output")
         output_dir = arguments["<output-dir>"] if arguments["<output-dir>"] != None else output_dir
         project_url_or_package_path = ""

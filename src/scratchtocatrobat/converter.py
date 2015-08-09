@@ -37,7 +37,6 @@ import org.catrobat.catroid.io as catio
 from scratchtocatrobat import catrobat
 from scratchtocatrobat import common
 from scratchtocatrobat import scratch
-from scratchtocatrobat import version
 from scratchtocatrobat.scratch import JsonKeys as scratchkeys
 from scratchtocatrobat.tools import svgtopng
 from scratchtocatrobat.tools import wavconverter
@@ -47,7 +46,7 @@ from __builtin__ import None
 _DEFAULT_BRICK_CLASS = catbricks.WaitBrick
 _DEFAULT_FORMULA_ELEMENT = catformula.FormulaElement(catformula.FormulaElement.ElementType.NUMBER, str(00001), None)  # @UndefinedVariable (valueOf)
 
-_GENERATED_VARIABLE_PREFIX = common.APPLICATION_SHORTNAME + ":"
+_GENERATED_VARIABLE_PREFIX = helpers.application_info("short_name") + ":"
 _SOUND_LENGTH_VARIABLE_NAME_FORMAT = "length_of_{}_in_secs"
 
 _SPEAK_BRICK_THINK_INTRO = "I am thinking. "
@@ -395,27 +394,22 @@ class Converter(object):
     def _update_xml_header(xml_header, scratch_project_id, scratch_project_description):
         xml_header.virtualScreenHeight = scratch.STAGE_HEIGHT_IN_PIXELS
         xml_header.virtualScreenWidth = scratch.STAGE_WIDTH_IN_PIXELS
-        xml_header.setApplicationBuildName("*** TODO ***")
-        xml_header.setApplicationName(common.APPLICATION_NAME)
-        xml_header.setApplicationVersion(version.__version__)
+        xml_header.setApplicationBuildName(helpers.application_info("build_name"))
+        xml_header.setApplicationName(helpers.application_info("name"))
+        xml_header.setApplicationVersion(helpers.application_info("version"))
         xml_header.setCatrobatLanguageVersion(catrobat.CATROBAT_LANGUAGE_VERSION)
-        xml_header.setDeviceName("Scratch")
-        xml_header.setPlatform("Scratch")
-        # WORKAROUND: remove after platform version supports float
-        try:
-            xml_header.setPlatformVersion(2.0)
-        except TypeError:
-            xml_header.setPlatformVersion(2)
+        xml_header.setDeviceName(helpers.scratch_info("device_name"))
+        xml_header.setPlatform(helpers.scratch_info("platform"))
+        xml_header.setPlatformVersion(float(helpers.scratch_info("platform_version")))
         xml_header.setScreenMode(catcommon.ScreenModes.MAXIMIZE)
-        xml_header.mediaLicense = catrobat.MEDIA_LICENSE_URI
-        xml_header.programLicense = catrobat.PROGRAM_LICENSE_URI
+        xml_header.mediaLicense = helpers.catrobat_info("media_license_url")
+        xml_header.programLicense = helpers.catrobat_info("program_license_url")
         assert scratch_project_id is not None
         xml_header.remixOf = helpers.config.get("SCRATCH_API", "project_url_prefix") + scratch_project_id
         description = scratch_project_description
         if len(description) > 0:
             description += "\n\n"
-        xml_header.setDescription(description + "Made with {} version {}.\nOriginal Scratch project => {}".format(common.APPLICATION_NAME, version.__version__, xml_header.remixOf))
-
+        xml_header.setDescription(description + "Made with {} version {}.\nOriginal Scratch project => {}".format(helpers.application_info("name"), helpers.application_info("version"), xml_header.remixOf))
 
 class _ScratchObjectConverter(object):
     _catrobat_project = None
@@ -1064,13 +1058,13 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "showList:")
     def _convert_show_list_block(self):
         #["showList:", "myList"] # for testing purposes...
-        [list_name] = self.arguments
+        #[list_name] = self.arguments
         assert "IMPLEMENT THIS AS SOON AS CATROBAT SUPPORTS THIS!!"
 
     @_register_handler(_block_name_to_handler_map, "hideList:")
     def _convert_hide_list_block(self):
         #["hideList:", "myList"] # for testing purposes...
-        [list_name] = self.arguments
+        #[list_name] = self.arguments
         assert "IMPLEMENT THIS AS SOON AS CATROBAT SUPPORTS THIS!!"
 
     @_register_handler(_block_name_to_handler_map, "playSound:", "doPlaySoundAndWait")

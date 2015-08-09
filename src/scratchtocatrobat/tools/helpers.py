@@ -22,7 +22,6 @@
 import os
 import sys
 
-
 ################################################################################
 # IMMUTABLE PATHS
 ################################################################################
@@ -42,7 +41,7 @@ class CatrobatConfigParser(object):
     def __init__(self):
         import ConfigParser
         self.config_parser = ConfigParser.ConfigParser()
-    def get(self, section, option, raw=False, vars=None):
+    def get(self, section, option):
         import re
         entry = self.config_parser.get(section, option)
         entry = entry.replace("${APP_PATH}", APP_PATH)
@@ -72,6 +71,15 @@ def make_dir_if_not_exists(path):
             error("Invalid path '{0}'. This is NO directory.".format(path))
     except Exception, e:
         error(e)
+
+def application_info(key):
+    return config.get("APPLICATION", key)
+
+def catrobat_info(key):
+    return config.get("CATROBAT", key)
+
+def scratch_info(key):
+    return config.get("SCRATCH", key)
 
 def _setup_configuration():
     make_dir_if_not_exists(CFG_PATH)

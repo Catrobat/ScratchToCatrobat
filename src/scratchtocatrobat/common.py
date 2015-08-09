@@ -31,19 +31,12 @@ from functools import wraps
 from itertools import chain
 from itertools import repeat
 from itertools import islice
-
 import java
 from javax.sound.sampled import AudioSystem
-
 from org.python.core import PyReflectedField  # pydev: @UnresolvedImport
-
 from scratchtocatrobat import logger
 
 log = logger.log
-
-APPLICATION_NAME = "ScratchToCatrobat Converter"
-APPLICATION_SHORTNAME = APPLICATION_NAME.split()[0]
-
 
 # TODO: move into common_testing
 def get_project_base_path():

@@ -27,24 +27,18 @@ import shutil
 import sys
 from docopt import docopt
 from scratchtocatrobat import logger
-import scratch
+from scratchtocatrobat.tools import helpers
 
 logger.initialize_logging()
 log = logging.getLogger("scratchtocatrobat.main")
-
-class ExitCode(object):
-    SUCCESS = 0
-    FAILURE = 1
-
-_JYTHON_RESPECT_JAVA_ACCESSIBILITY_PROPERTY = "python.security.respectJavaAccessibility"
 
 
 def run_converter(scratch_project_file_or_url, output_dir, extract_resulting_catrobat=False, temp_rm=True, show_version_only=False):
     def check_base_environment():
         if "java" not in sys.platform:
             raise EnvironmentError("Must be called with Jython interpreter.")
-        if System.getProperty(_JYTHON_RESPECT_JAVA_ACCESSIBILITY_PROPERTY) != 'false':
-            raise EnvironmentError("Jython registry property '%s' must be set to 'false'." % _JYTHON_RESPECT_JAVA_ACCESSIBILITY_PROPERTY)
+        if System.getProperty(helpers.JYTHON_RESPECT_JAVA_ACCESSIBILITY_PROPERTY) != 'false':
+            raise EnvironmentError("Jython registry property '%s' must be set to 'false'." % helpers.JYTHON_RESPECT_JAVA_ACCESSIBILITY_PROPERTY)
 
     def check_converter_environment():
         # TODO: refactor to combined class with explicit environment check method
@@ -56,7 +50,7 @@ def run_converter(scratch_project_file_or_url, output_dir, extract_resulting_cat
         from java.lang import System
     except ImportError:
         log.error("Must be called with Jython interpreter.")
-        return ExitCode.FAILURE
+        return helpers.ExitCode.FAILURE
 
     # nested import to be able to check for Jython interpreter first
     from scratchtocatrobat import catrobat, common, converter, scratch, scratchwebapi, tools
@@ -68,7 +62,7 @@ def run_converter(scratch_project_file_or_url, output_dir, extract_resulting_cat
         if show_version_only:
             # TODO: should return last modfication date or source control tag of Catrobat classes
             print("Catrobat language version:", catrobat.CATROBAT_LANGUAGE_VERSION)
-            return ExitCode.SUCCESS
+            return helpers.ExitCode.SUCCESS
 
         log.info("calling converter")
         if not os.path.isdir(output_dir):
@@ -99,11 +93,11 @@ def run_converter(scratch_project_file_or_url, output_dir, extract_resulting_cat
 
     except (common.ScratchtobatError, EnvironmentError, IOError) as e:
         log.error(e)
-        return ExitCode.FAILURE
+        return helpers.ExitCode.FAILURE
     except Exception as e:
         log.exception(e)
-        return ExitCode.FAILURE
-    return ExitCode.SUCCESS
+        return helpers.ExitCode.FAILURE
+    return helpers.ExitCode.SUCCESS
 
 def main():
     log = logging.getLogger("scratchtocatrobat.main")
@@ -121,25 +115,23 @@ def main():
     '''
     arguments = docopt(usage)
     try:
-        SRC_PATH = os.path.realpath(os.path.dirname(__file__))
-        APP_PATH = os.path.join(SRC_PATH, "..", "..")
-        DATA_PATH = os.path.join(APP_PATH, "data")
-        OUTPUT_PATH = os.path.join(DATA_PATH, "output")
         kwargs = {}
         kwargs['extract_resulting_catrobat'] = arguments["--extracted"]
         kwargs['temp_rm'] = not arguments["--no-temp-rm"]
         kwargs['show_version_only'] = arguments["--version"]
-        output_dir = arguments["<output-dir>"] if arguments["<output-dir>"] != None else OUTPUT_PATH
+        output_dir = helpers.config.get("PATHS", "output_dir")
+        output_dir = arguments["<output-dir>"] if arguments["<output-dir>"] != None else output_dir
         project_url_or_package_path = ""
         if arguments["<project-url-or-package-path>"]:
             project_url_or_package_path = arguments["<project-url-or-package-path>"].replace("https://", "http://")
-            if project_url_or_package_path.startswith("http://") and not project_url_or_package_path.startswith(scratch.HTTP_PROJECT_URL_PREFIX):
-                log.error("No valid scratch URL given {0}[ID]".format(scratch.HTTP_PROJECT_URL_PREFIX))
-                sys.exit(ExitCode.FAILURE)
+            scratch_url_prefix = helpers.config.get("URL", "scratch_prefix")
+            if project_url_or_package_path.startswith("http://") and not project_url_or_package_path.startswith(scratch_url_prefix):
+                log.error("No valid scratch URL given {0}[ID]".format(scratch_url_prefix))
+                sys.exit(helpers.ExitCode.FAILURE)
         sys.exit(run_converter(project_url_or_package_path, output_dir, **kwargs))
     except Exception as e:
         log.exception(e)
-        sys.exit(ExitCode.FAILURE)
+        sys.exit(helpers.ExitCode.FAILURE)
 
 if __name__ == '__main__':
     main()

@@ -28,6 +28,7 @@ from scratchtocatrobat import converter
 from scratchtocatrobat import main
 from scratchtocatrobat import scratchwebapi
 from scratchtocatrobat.tools import svgtopng
+from scratchtocatrobat.tools import helpers
 
 _DEFAULT_INTERPRETER = common.JYTHON_BINARY
 
@@ -43,7 +44,7 @@ class MainTest(common_testing.ProjectTestCase):
         if not env:
             env = dict()
             assert os.environ.get('JYTHON_HOME')
-            env['JYTHON_HOME'] = os.environ['JYTHON_HOME']
+            env['JYTHON_HOME'] = helpers.config.get("PATHS", "jython_home_dir")
             env = os.environ
         exec_args = self.base_exec_args + list(args)
         #return common_testing.call_returning_exit(exec_args, env=env)

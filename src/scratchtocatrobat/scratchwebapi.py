@@ -24,7 +24,6 @@ import os
 import re
 import urllib2
 from urlparse import urlparse
-
 from scratchtocatrobat import common
 
 # TODO: config file...
@@ -55,11 +54,13 @@ def request_project_code(project_id):
 
 
 def download_project(project_url, target_dir):
+    from tools import helpers
+    import scratch
     # TODO: fix circular reference
-    from scratchtocatrobat import scratch
-    _HTTP_PROJECT_URL_PATTERN = scratch.HTTP_PROJECT_URL_PREFIX + r'\d+/?'
+    scratch_url_prefix = helpers.config.get("URL", "scratch_prefix")
+    _HTTP_PROJECT_URL_PATTERN = scratch_url_prefix + r'\d+/?'
     if not re.match(_HTTP_PROJECT_URL_PATTERN, project_url):
-        raise common.ScratchtobatError("Project URL must be matching '{}'. Given: {}".format(scratch.HTTP_PROJECT_URL_PREFIX + '<project id>', project_url))
+        raise common.ScratchtobatError("Project URL must be matching '{}'. Given: {}".format(scratch_url_prefix + '<project id>', project_url))
     assert len(os.listdir(target_dir)) == 0
 
     def request_resource_data(md5_file_name):

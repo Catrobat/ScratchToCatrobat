@@ -41,6 +41,7 @@ from scratchtocatrobat import version
 from scratchtocatrobat.scratch import JsonKeys as scratchkeys
 from scratchtocatrobat.tools import svgtopng
 from scratchtocatrobat.tools import wavconverter
+from scratchtocatrobat.tools import helpers
 from __builtin__ import None
 
 _DEFAULT_BRICK_CLASS = catbricks.WaitBrick
@@ -409,7 +410,7 @@ class Converter(object):
         xml_header.mediaLicense = catrobat.MEDIA_LICENSE_URI
         xml_header.programLicense = catrobat.PROGRAM_LICENSE_URI
         assert scratch_project_id is not None
-        xml_header.remixOf = scratch.HTTP_PROJECT_URL_PREFIX + scratch_project_id
+        xml_header.remixOf = helpers.config.get("URL", "scratch_prefix") + scratch_project_id
         description = scratch_project_description
         if len(description) > 0:
             description += "\n\n"

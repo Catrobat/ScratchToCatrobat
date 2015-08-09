@@ -21,23 +21,21 @@
 import logging
 import os
 import subprocess
-
 from scratchtocatrobat import common
+from scratchtocatrobat.tools import helpers
 
 # TODO: replace CLI call with API
-_BATIK_ENVIRONMENT_HOME = "BATIK_HOME"
 _BATIK_CLI_JAR = "batik-rasterizer.jar"
 
 log = logging.getLogger(__name__)
-
 _batik_jar_path = None
-
 
 # TODO: refactor to single mediaconverter class together with wavconverter
 def _checked_batik_jar_path():
-    if _BATIK_ENVIRONMENT_HOME not in os.environ:
-        raise EnvironmentError("Environment variable '{}' must be set to batik library location.".format(_BATIK_ENVIRONMENT_HOME))
-    batik_jar_path = os.path.join(os.environ[_BATIK_ENVIRONMENT_HOME], _BATIK_CLI_JAR)
+#     if _BATIK_ENVIRONMENT_HOME not in os.environ:
+#         raise EnvironmentError("Environment variable '{}' must be set to batik library location.".format(_BATIK_ENVIRONMENT_HOME))
+    batik_home_dir = helpers.config.get("PATHS", "batik_home_dir")
+    batik_jar_path = os.path.join(batik_home_dir, _BATIK_CLI_JAR)
     if not os.path.exists(batik_jar_path):
         raise EnvironmentError("Batik jar '{}' must be existing in {}.".format(batik_jar_path, os.path.dirname(batik_jar_path)))
     _batik_jar_path = batik_jar_path

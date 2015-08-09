@@ -35,9 +35,6 @@ _log = common.log
 
 _PROJECT_FILE_NAME = "project.json"
 
-HTTP_PROJECT_URL_PREFIX = "http://scratch.mit.edu/projects/"
-
-
 class JsonKeys(object):
     BASELAYER_ID = "baseLayerID"
     CHILDREN = "children"

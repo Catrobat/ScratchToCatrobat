@@ -19,76 +19,37 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from __future__ import print_function
 
+from __future__ import print_function
 import os
 import platform
 import subprocess
 import sys
+sys.path.append("./src")
+from scratchtocatrobat.tools import helpers
 
-################################################################################
-#
-# CONFIGURATION
-#
-################################################################################
-JYTHON_HOME_PATH = "/usr/jython/"
+data_dir = helpers.config.get("PATHS", "data_dir")
+log_dir = helpers.config.get("PATHS", "log_dir")
+output_dir = helpers.config.get("PATHS", "output_dir")
+web_output_dir = helpers.config.get("PATHS", "web_output_dir")
+tmp_dir = helpers.config.get("PATHS", "tmp_dir")
 
-################################################################################
-#
-# SETUP
-#
-################################################################################
+jython_home_dir = helpers.config.get("PATHS", "jython_home_dir")
+if not os.path.exists(jython_home_dir) or not os.path.isdir(jython_home_dir):
+    error("Invalid jython home path given. No valid directory. Please update 'jython_home_dir' in run.py")
 
-APP_PATH = os.path.realpath(os.path.dirname(__file__))
-LIB_PATH = os.path.join(APP_PATH, "lib")
-SRC_PATH = os.path.join(APP_PATH, "src")
-
-DATA_PATH = os.path.join(APP_PATH, "data")
-LOG_PATH = os.path.join(DATA_PATH, "log")
-OUTPUT_PATH = os.path.join(DATA_PATH, "output")
-WEB_OUTPUT_PATH = os.path.join(DATA_PATH, "web_output")
-TMP_PATH = os.path.join(DATA_PATH, "tmp")
-
-class ExitCode(object):
-    SUCCESS = 0
-    FAILURE = 1
-
-def error(msg):
-    print(msg)
-    sys.exit(ExitCode.FAILURE)
-
-def make_dir_if_not_exists(path):
-    try:
-        if not os.path.exists(path):
-            os.makedirs(path)
-        elif not os.path.isdir(path):
-            error("Invalid path '{0}'. This is NO directory.".format(path))
-    except Exception, e:
-        error(e)
+jython_path = helpers.config.get("PATHS", "jython_exec_path")
+if not os.path.exists(jython_path):
+    error("Jython script path '%s' must exist." % jython_path.replace(".bat", "[.bat]"))
 
 env = os.environ
-env['JYTHONPATH'] = env.get('JYTHONPATH') or APP_PATH + ':' + APP_PATH + '/src/scratchtocatrobat:' + LIB_PATH + '/catroid_class_hierarchy.jar:' + LIB_PATH + '/xmlpull-1.1.3.1.jar:' + LIB_PATH + '/xpp3_min-1.1.4c.jar:' + LIB_PATH + '/xstream-1.4.7.jar:' + SRC_PATH + ':' + LIB_PATH + '/batik-1.7/batik-rasterizer.jar'
-env['JYTHON_HOME'] = env.get('JYTHON_HOME') or JYTHON_HOME_PATH
-env['CLASSPATH'] = env.get('CLASSPATH') or '' + os.pathsep + LIB_PATH
-env['BATIK_HOME'] = os.path.join(LIB_PATH, "batik-1.7")
-env['JYTHON_STANDALONE_JAR'] = os.path.join(env.get('JYTHON_HOME'), "jython.jar")
+env['JYTHONPATH'] = helpers.config.get("PATHS", "jython_path")
 
-jython_home = env.get('JYTHON_HOME')
-if not jython_home:
-    error("Environment variable 'JYTHON_HOME' must be set.")
-elif not os.path.exists(jython_home) or not os.path.isdir(jython_home):
-    error("Invalid jython home path given. No valid directory. Please update JYTHON_HOME_PATH in run.py")
-jython_path = os.path.join(jython_home, "bin", "jython")
-if platform.system().lower().startswith("win"):
-    jython_path += ".bat"
-if not os.path.exists(jython_path):
-    error("Jython script path '%s' must exist.", jython_path.replace(".bat", "[.bat]"))
-
-make_dir_if_not_exists(DATA_PATH)
-make_dir_if_not_exists(LOG_PATH)
-make_dir_if_not_exists(OUTPUT_PATH)
-make_dir_if_not_exists(WEB_OUTPUT_PATH)
-make_dir_if_not_exists(TMP_PATH)
+helpers.make_dir_if_not_exists(data_dir)
+helpers.make_dir_if_not_exists(log_dir)
+helpers.make_dir_if_not_exists(output_dir)
+helpers.make_dir_if_not_exists(web_output_dir)
+helpers.make_dir_if_not_exists(tmp_dir)
 
 exec_args = [jython_path, "-m", "scratchtocatrobat.main"] + sys.argv[1:]
 sys.exit(subprocess.call(exec_args, env=env))

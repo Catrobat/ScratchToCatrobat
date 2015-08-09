@@ -23,3 +23,4 @@ local.properties
 /.project
 /.pydevproject
 data
+environment.ini

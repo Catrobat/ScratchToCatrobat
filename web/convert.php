@@ -4,6 +4,10 @@
 // Parameter validation
 //------------------------------------------------------------------------------
 
+if (isset($argv[1])) {
+	$_POST['url'] = $argv[1];
+}
+
 $tmpNameNotGiven = (! isset($_FILES["filename"]["tmp_name"])
                  || empty($_FILES["filename"]["tmp_name"]));
 $URLNotGiven = (! isset($_POST['url']) || empty($_POST['url']));

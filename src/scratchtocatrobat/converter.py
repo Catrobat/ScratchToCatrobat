@@ -112,9 +112,12 @@ class _ScratchToCatrobat(object):
         "randomFrom:to:": catformula.Functions.RAND,
         "%": catformula.Functions.MOD,
         #  TODO:
-        # "10^"
-        # "floor"
-        # "ceiling"
+        # "10^",
+        # "floor",
+        # "ceiling",
+        "getLine:ofList:": catformula.Functions.LIST_ITEM,
+        "lineCountOfList:": catformula.Functions.NUMBER_OF_ITEMS,
+        "list:contains:": catformula.Functions.CONTAINS
     }
 
     unary_operators_mapping = {
@@ -884,6 +887,73 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             new_stack_values = UnmappedBlock(self.sprite, *([self.block_name] + self.arguments))
         return new_stack_values
 
+    # formula blocks (compute, operator, ...)
+    @_register_handler(_block_name_to_handler_map, "lineCountOfList:")
+    def _convert_line_count_of_list_block(self):
+        [list_name] = self.arguments
+        user_list = catrobat.find_global_or_sprite_user_list_by_name(self.project, self.sprite, list_name)
+        assert user_list is not None
+        left_formula_elem_type = catformula.FormulaElement.ElementType.USER_LIST
+        left_formula_elem = catformula.FormulaElement(left_formula_elem_type, list_name, None)
+        formula_elem_type = catformula.FormulaElement.ElementType.FUNCTION
+        formula_element = catformula.FormulaElement(formula_elem_type, "NUMBER_OF_ITEMS", None)
+        formula_element.setLeftChild(left_formula_elem)
+        return formula_element
+
+    @_register_handler(_block_name_to_handler_map, "list:contains:")
+    def _convert_list_contains_block(self):
+        [list_name, value] = self.arguments
+        user_list = catrobat.find_global_or_sprite_user_list_by_name(self.project, self.sprite, list_name)
+        assert user_list is not None
+        left_formula_elem_type = catformula.FormulaElement.ElementType.USER_LIST
+        left_formula_elem = catformula.FormulaElement(left_formula_elem_type, list_name, None)
+        formula_elem_type = catformula.FormulaElement.ElementType.FUNCTION
+        formula_element = catformula.FormulaElement(formula_elem_type, "CONTAINS", None)
+        formula_element.setLeftChild(left_formula_elem)
+        right_formula_elem = catrobat.create_formula_with_value(value)
+        formula_element.setRightChild(right_formula_elem.getRoot())
+        return formula_element
+
+    @_register_handler(_block_name_to_handler_map, "getLine:ofList:")
+    def _convert_get_line_of_list_block(self):
+        [position, list_name] = self.arguments
+        user_list = catrobat.find_global_or_sprite_user_list_by_name(self.project, self.sprite, list_name)
+        assert user_list is not None
+
+        if position == "last":
+            # TODO: verify for off-by-one error!!
+            left_formula_elem_type = catformula.FormulaElement.ElementType.USER_LIST
+            left_formula_elem = catformula.FormulaElement(left_formula_elem_type, list_name, None)
+            formula_elem_type = catformula.FormulaElement.ElementType.FUNCTION
+            index_formula_element = catformula.FormulaElement(formula_elem_type, "NUMBER_OF_ITEMS", None)
+            index_formula_element.setLeftChild(left_formula_elem)
+        elif position == "random":
+            # TODO: verify for off-by-one error!!
+            inner_left_formula_elem_type = catformula.FormulaElement.ElementType.USER_LIST
+            inner_left_formula_elem = catformula.FormulaElement(inner_left_formula_elem_type, list_name, None)
+            right_formula_elem_type = catformula.FormulaElement.ElementType.FUNCTION
+            right_formula_element = catformula.FormulaElement(right_formula_elem_type, "NUMBER_OF_ITEMS", None)
+            right_formula_element.setLeftChild(inner_left_formula_elem)
+
+            left_formula_elem_type = catformula.FormulaElement.ElementType.NUMBER
+            first_index_of_list = "1"
+            left_formula_element = catformula.FormulaElement(left_formula_elem_type, first_index_of_list, None)
+
+            formula_elem_type = catformula.FormulaElement.ElementType.FUNCTION
+            index_formula_element = catformula.FormulaElement(formula_elem_type, "RAND", None, left_formula_element, right_formula_element)
+        else:
+            index_formula = catrobat.create_formula_with_value(position)
+            index_formula_element = index_formula.getRoot()
+
+        right_formula_elem_type = catformula.FormulaElement.ElementType.USER_LIST
+        right_formula_elem = catformula.FormulaElement(right_formula_elem_type, list_name, None)
+        formula_elem_type = catformula.FormulaElement.ElementType.FUNCTION
+        formula_element = catformula.FormulaElement(formula_elem_type, "LIST_ITEM", None)
+        formula_element.setRightChild(right_formula_elem)
+        formula_element.setLeftChild(index_formula_element)
+        return formula_element
+
+    # action and other blocks
     @_register_handler(_block_name_to_handler_map, "doRepeat", "doForever")
     def _convert_loop_blocks(self):
         brick_arguments = self.arguments

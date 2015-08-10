@@ -36,7 +36,7 @@ tmp_dir = helpers.config.get("PATHS", "tmp")
 
 jython_home_dir = helpers.config.get("PATHS", "jython_home")
 if not os.path.exists(jython_home_dir) or not os.path.isdir(jython_home_dir):
-    error("Invalid jython home path given. No valid directory. Please update 'jython_home_dir' in run.py")
+    error("Invalid jython home path given. No valid directory. Please update 'jython_home_dir' in the config file.")
 
 jython_path = helpers.config.get("PATHS", "jython_exec")
 if not os.path.exists(jython_path):

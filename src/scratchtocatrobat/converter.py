@@ -97,6 +97,7 @@ def _sec_to_msec(duration):
 class _ScratchToCatrobat(object):
 
     compute_block_parameters_mapping = {
+        # math functions
         "abs": catformula.Functions.ABS,
         "sqrt": catformula.Functions.SQRT,
         "sin": catformula.Functions.SIN,
@@ -115,9 +116,16 @@ class _ScratchToCatrobat(object):
         # "10^",
         # "floor",
         # "ceiling",
+
+        # user list functions
         "getLine:ofList:": catformula.Functions.LIST_ITEM,
         "lineCountOfList:": catformula.Functions.NUMBER_OF_ITEMS,
-        "list:contains:": catformula.Functions.CONTAINS
+        "list:contains:": catformula.Functions.CONTAINS,
+
+        # string functions
+        "stringLength:": catformula.Functions.LENGTH,
+        "letter:of:": catformula.Functions.LETTER,
+        "concatenate:with:": catformula.Functions.JOIN
     }
 
     unary_operators_mapping = {
@@ -949,8 +957,39 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         right_formula_elem = catformula.FormulaElement(right_formula_elem_type, list_name, None)
         formula_elem_type = catformula.FormulaElement.ElementType.FUNCTION
         formula_element = catformula.FormulaElement(formula_elem_type, "LIST_ITEM", None)
-        formula_element.setRightChild(right_formula_elem)
         formula_element.setLeftChild(index_formula_element)
+        formula_element.setRightChild(right_formula_elem)
+        return formula_element
+
+    @_register_handler(_block_name_to_handler_map, "stringLength:")
+    def _convert_string_length_block(self):
+        [value] = self.arguments
+        left_formula_elem = catrobat.create_formula_with_value(value).getRoot()
+        formula_elem_type = catformula.FormulaElement.ElementType.FUNCTION
+        formula_element = catformula.FormulaElement(formula_elem_type, "LENGTH", None)
+        formula_element.setLeftChild(left_formula_elem)
+        return formula_element
+
+    @_register_handler(_block_name_to_handler_map, "letter:of:")
+    def _convert_letter_of_block(self):
+        [index, value] = self.arguments
+        formula_elem_type = catformula.FormulaElement.ElementType.FUNCTION
+        formula_element = catformula.FormulaElement(formula_elem_type, "LETTER", None)
+        index_formula_elem = catrobat.create_formula_with_value(index).getRoot()
+        formula_element.setLeftChild(index_formula_elem)
+        value_formula_elem = catrobat.create_formula_with_value(value).getRoot()
+        formula_element.setRightChild(value_formula_elem)
+        return formula_element
+
+    @_register_handler(_block_name_to_handler_map, "concatenate:with:")
+    def _convert_concatenate_with_block(self):
+        [value1, value2] = self.arguments
+        formula_elem_type = catformula.FormulaElement.ElementType.FUNCTION
+        formula_element = catformula.FormulaElement(formula_elem_type, "JOIN", None)
+        value1_formula_elem = catrobat.create_formula_with_value(value1).getRoot()
+        formula_element.setLeftChild(value1_formula_elem)
+        value2_formula_elem = catrobat.create_formula_with_value(value2).getRoot()
+        formula_element.setRightChild(value2_formula_elem)
         return formula_element
 
     # action and other blocks
@@ -1168,5 +1207,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         text, _args = self.arguments[0], self.arguments[1:]
         if self.block_name.startswith("think:"):
             text = _SPEAK_BRICK_THINK_INTRO + text
+            # TODO: concatenate...
+        value = catrobat.create_formula_with_value(text)
         # FIXME: value should depend on text length and optionally args
-        return [catbricks.SpeakBrick(text), catbricks.WaitBrick(1000)]
+        return [catbricks.SpeakBrick(value), catbricks.WaitBrick(1000)]

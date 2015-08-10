@@ -20,7 +20,6 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import print_function
-
 import logging
 import os
 import shutil
@@ -28,6 +27,7 @@ import sys
 from docopt import docopt
 from scratchtocatrobat import logger
 from scratchtocatrobat.tools import helpers
+from scratchtocatrobat.tools.helpers import latest_catroid_repository_release_data
 
 logger.setup_logging()
 log = logging.getLogger("scratchtocatrobat.main")
@@ -59,26 +59,20 @@ def run_converter(scratch_project_file_or_url, output_dir, extract_resulting_cat
         check_base_environment()
         check_converter_environment()
 
+        tag_name = helpers.tag_name_of_used_catroid_hierarchy()
+        latest_release_data = helpers.latest_catroid_repository_release_data()
         if show_version_only or show_info_only:
-            # TODO: should return last modfication date or source control tag of Catrobat classes
-            if show_info_only:
-                print("-"*80)
-                print(helpers.application_info("name"))
-                print("-"*80)
-            print(helpers.application_info("short_name"), "Version:", helpers.application_info("version"))
-            print("Catrobat language version:", catrobat.CATROBAT_LANGUAGE_VERSION)
-            if show_version_only:
-                return helpers.ExitCode.SUCCESS
-            print("Build Name:", helpers.application_info("build_name"))
-            print("Build:", helpers.application_info("build_number"))
+            helpers.print_info_or_version_screen(show_version_only, catrobat.CATROBAT_LANGUAGE_VERSION)
             return helpers.ExitCode.SUCCESS
+        elif latest_release_data and tag_name != latest_release_data["tag_name"]:
+            print("Latest Catroid release: %s (%s)" % (latest_release_data["tag_name"], latest_release_data["published_at"]))
+            print("%sA NEW CATROID RELEASE IS AVAILABLE!\nPLEASE UPDATE THE CLASS HIERARCHY OF THE CONVERTER FROM CATROID VERSION %s TO VERSION %s%s" % (helpers.cli_colors.FAIL, tag_name, latest_release_data["tag_name"], helpers.cli_colors.ENDC))
 
         log.info("calling converter")
         if not os.path.isdir(output_dir):
             raise EnvironmentError("Output folder must be a directory, but is %s" % output_dir)
 
         with common.TemporaryDirectory(remove_on_exit=temp_rm) as scratch_project_dir:
-
             if scratch_project_file_or_url.startswith("http://"):
                 log.info("Downloading project from URL: '{}' to temp dir {} ...".format(scratch_project_file_or_url, scratch_project_dir))
                 scratchwebapi.download_project(scratch_project_file_or_url, scratch_project_dir)

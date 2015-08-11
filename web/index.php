@@ -1,5 +1,13 @@
-
-<!DOCTYPE html>
+<?php
+$rawConfigContent = file_get_contents('../config/default.ini');
+$searchString = 'version:';
+$start = strpos($rawConfigContent, $searchString);
+$temp = substr($rawConfigContent, $start);
+$end = strpos($temp, "\n");
+$start = strlen($searchString);
+$end = $end - $start;
+$versionNumber = trim(substr($temp, $start, $end));
+?><!DOCTYPE html>
 <html>
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
@@ -42,7 +50,7 @@
 </head>
 <body>
   <div class="ribbon">
-    <a href="#">version 0.2.1</a>
+    <a href="#">version <?php echo $versionNumber; ?></a>
   </div>
   <div id="wrapper">
     <header>

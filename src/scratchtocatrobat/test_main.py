@@ -27,7 +27,6 @@ from scratchtocatrobat import common_testing
 from scratchtocatrobat import converter
 from scratchtocatrobat import main
 from scratchtocatrobat import scratchwebapi
-from scratchtocatrobat.tools import svgtopng
 from scratchtocatrobat.tools import helpers
 
 _DEFAULT_INTERPRETER = common.JYTHON_BINARY
@@ -75,7 +74,7 @@ class MainTest(common_testing.ProjectTestCase):
         if len(args) == 1:
             args += [output_path]
         return_val = self.execute_run_script(args)
-        assert return_val == main.ExitCode.SUCCESS
+        assert return_val == helpers.ExitCode.SUCCESS
 
         project_name = scratchwebapi.request_project_name_for(project_id)
         self.assertValidCatrobatProgramPackageAndUnpackIf(converter.ConvertedProject._converted_output_path(output_path, project_name), project_name)
@@ -105,33 +104,32 @@ class MainTest(common_testing.ProjectTestCase):
         #base_package_path = os.path.dirname(main.__file__).replace(package_subdir_path, "")
         #self.test_environ["PYTHONPATH"] += os.pathsep + base_package_path
 
-        return_val, (stdout, stderr) = self.execute_main_module_check(interpreter_options=["-D%s=true" % main._JYTHON_RESPECT_JAVA_ACCESSIBILITY_PROPERTY])
+        return_val, (stdout, stderr) = self.execute_main_module_check(interpreter_options=["-D%s=true" % helpers.JYTHON_RESPECT_JAVA_ACCESSIBILITY_PROPERTY])
         assert stderr, stdout
         assert "Jython registry property 'python.security.respectJavaAccessibility' must be set to 'false'" in stderr
-        assert return_val == main.ExitCode.FAILURE
+        assert return_val == helpers.ExitCode.FAILURE
 
     def test_check_if_sox_binary_can_be_found(self):
         return_val, (stdout, stderr) = self.execute_main_module_check()
         assert stderr, stdout
         assert "Sox binary must be available on system path" not in stderr
-        assert return_val == main.ExitCode.SUCCESS
+        assert return_val == helpers.ExitCode.SUCCESS
 
     def test_fail_to_execute_with_batik_env_home_not_set(self):
         self.test_environ = dict(os.environ)
-        del self.test_environ[svgtopng._BATIK_ENVIRONMENT_HOME]
-
+        del self.test_environ[helpers.config.get("PATHS", "batik_home")]
         return_val, (stdout, stderr) = self.execute_main_module_check()
 
         assert stderr, stdout
         assert "Environment variable 'BATIK_HOME' must be set to batik library location" in stderr
-        assert return_val == main.ExitCode.FAILURE
+        assert return_val == helpers.ExitCode.FAILURE
 
     def test_can_get_catrobat_language_version(self):
-        return_val, (stdout, stderr) = self.execute_main_module_check()
+        return_val, (stdout, _) = self.execute_main_module_check()
         assert "Catrobat language version:" in stdout
         # NOTE: with Jython the docopt module prints some debug information as first stderr line
         # assert not stderr
-        assert return_val == main.ExitCode.SUCCESS
+        assert return_val == helpers.ExitCode.SUCCESS
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']

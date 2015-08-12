@@ -52,4 +52,6 @@ helpers.make_dir_if_not_exists(web_output_dir)
 helpers.make_dir_if_not_exists(tmp_dir)
 
 exec_args = [jython_path, "-m", "scratchtocatrobat." + sys.argv[1]]
+if len(sys.argv) >= 3:
+    exec_args += [sys.argv[2]]
 sys.exit(subprocess.call(exec_args, env=env))

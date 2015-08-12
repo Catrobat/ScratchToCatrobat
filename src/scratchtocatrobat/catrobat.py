@@ -146,6 +146,9 @@ def create_formula_with_value(variable_value):
         java_variable_value = variable_value
     return catformula.Formula(java_variable_value)
 
+def create_formula_element_with_value(variable_value):
+    return create_formula_with_value(variable_value).getRoot()
+
 def add_user_variable(project, variable_name, sprite=None, sprite_name=None):
     ''' If `sprite_name` is set a sprite variable is added otherwise the variable is added to the project. '''
     _log.debug("adding variable '%s' to sprite '%s'", variable_name, sprite_name if sprite_name is not None else "<Stage>")

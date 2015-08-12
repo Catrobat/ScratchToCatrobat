@@ -114,7 +114,7 @@ class _ScratchToCatrobat(object):
         "randomFrom:to:": catformula.Functions.RAND,
         "%": catformula.Functions.MOD,
 
-        #  TODO: replace dummy by corresponding Catrobat function as soon as it is available...
+        #  TODO: replace "dummy" keyword by corresponding Catrobat function as soon as Catrobat supports this...
         "10 ^": "dummy",
         "floor": "dummy",
         "ceiling": "dummy",
@@ -897,89 +897,89 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             new_stack_values = UnmappedBlock(self.sprite, *([self.block_name] + self.arguments))
         return new_stack_values
 
+    def _converted_helper_brick_or_formula_element(self, arguments, block_name):
+        preserved_args = self.arguments
+        self.arguments = arguments
+        preserved_catrobat_class = self.CatrobatClass
+        self.CatrobatClass = _ScratchToCatrobat.complete_mapping.get(block_name)
+        handler_method_name = self._block_name_to_handler_map.get(block_name)
+        if handler_method_name:
+            converted_element = getattr(self, handler_method_name)()
+        else:
+            converted_element = self._regular_block_conversion()
+        self.arguments = preserved_args
+        self.CatrobatClass = preserved_catrobat_class
+        return converted_element
+
     # formula blocks (compute, operator, ...)
     @_register_handler(_block_name_to_handler_map, "floor")
     def _convert_floor_block(self):
         [value] = self.arguments
+
+        # SetVariableBrick: name=var0_name, value=value
         value_formula = catrobat.create_formula_with_value(value)
-        # TODO: make name unique!!
-        variable0_name = _GENERATED_VARIABLE_PREFIX + "floor_var0"
-        self.arguments = [variable0_name, value_formula]
-        self.CatrobatClass = catbricks.SetVariableBrick
-        set_variable_brick0 = self._convert_variable_block()[0]
+        var0_name = _GENERATED_VARIABLE_PREFIX + "floor_var0" # TODO: make name unique!!
+        set_var_brick0 = self._converted_helper_brick_or_formula_element([var0_name, value_formula], "setVar:to:")[0]
+        formula_elem = self._converted_helper_brick_or_formula_element([value_formula.getRoot()], "rounded")
 
-        value_formula_element = value_formula.getRoot()
-        formula_elem_type = catElementType.FUNCTION
-        formula_elem = catformula.FormulaElement(formula_elem_type, "ROUND", None)
-        formula_elem.setLeftChild(value_formula_element)
-        # TODO: make name unique!!
-        variable1_name = _GENERATED_VARIABLE_PREFIX + "floor_var1"
-        self.arguments = [variable1_name, catrobat.create_formula_with_value(formula_elem)]
-        set_variable_brick1 = self._convert_variable_block()[0]
+        # SetVariableBrick: name=var0_name, value=round(value)
+        var1_name = _GENERATED_VARIABLE_PREFIX + "floor_var1" # TODO: make name unique!!
+        set_var_brick1 = self._converted_helper_brick_or_formula_element([var1_name, catrobat.create_formula_with_value(formula_elem)], "setVar:to:")[0]
 
-        minus_formula_elem = catformula.FormulaElement(catElementType.FUNCTION, "MINUS", None)
-        minus_formula_elem.setLeftChild(catformula.FormulaElement(catElementType.USER_VARIABLE, variable0_name, None))
-        minus_formula_elem.setRightChild(catformula.FormulaElement(catElementType.USER_VARIABLE, variable1_name, None))
-        st_formula_elem = catformula.FormulaElement(catElementType.FUNCTION, "SMALLER_THAN", None)
-        st_formula_elem.setLeftChild(minus_formula_elem)
-        st_formula_elem.setRightChild(catrobat.create_formula_with_value("0").getRoot())
-        formula_elem = catformula.FormulaElement(catElementType.FUNCTION, "MINUS", None)
-        formula_elem.setLeftChild(catformula.FormulaElement(catElementType.USER_VARIABLE, variable1_name, None))
-        formula_elem.setRightChild(st_formula_elem)
-        # TODO: make name unique!!
-        variable2_name = _GENERATED_VARIABLE_PREFIX + "floor_var2"
-        self.arguments = [variable2_name, catrobat.create_formula_with_value(formula_elem)]
-        set_variable_brick2 = self._convert_variable_block()[0]
-        self.arguments = [value]
-        return [set_variable_brick0, set_variable_brick1, set_variable_brick2, catformula.FormulaElement(catElementType.USER_VARIABLE, variable2_name, None)]
+        # (var0 - var1)
+        left_fe = catformula.FormulaElement(catElementType.USER_VARIABLE, var0_name, None)
+        right_fe = catformula.FormulaElement(catElementType.USER_VARIABLE, var0_name, None)
+        minus_formula_elem = self._converted_helper_brick_or_formula_element([left_fe, right_fe], "-")
+
+        # ((var0 - var1) < 0)
+        args = [minus_formula_elem, catrobat.create_formula_with_value("0").getRoot()]
+        st_formula_elem = self._converted_helper_brick_or_formula_element(args, "<")
+
+        # (var1 - ((var0 - var1) < 0))
+        formula_elem = self._converted_helper_brick_or_formula_element([catformula.FormulaElement(catElementType.USER_VARIABLE, var1_name, None), st_formula_elem], "-")
+
+        # SetVariableBrick: name=var1_name, value=(var1 - ((var0 - var1) < 0))
+        var2_name = _GENERATED_VARIABLE_PREFIX + "floor_var2" # TODO: make name unique!!
+        set_var_brick2 = self._converted_helper_brick_or_formula_element([var2_name, catrobat.create_formula_with_value(formula_elem)], "setVar:to:")[0]
+
+        return [set_var_brick0, set_var_brick1, set_var_brick2, catformula.FormulaElement(catElementType.USER_VARIABLE, var2_name, None)]
 
     @_register_handler(_block_name_to_handler_map, "ceiling")
     def _convert_ceiling_block(self):
         [value] = self.arguments
-        '''
-        SetVariableBrick:  var0 = 3.2
-        SetVariableBrick:  var1 = round(var0)                # 3.0
-        SetVariableBrick:  var2 = ((var0 - var1) > 0) + var1 # 1.0 + 3.0 = 4.0
-        '''
+
+        # SetVariableBrick: name=var0_name, value=value
         value_formula = catrobat.create_formula_with_value(value)
-        # TODO: make name unique!!
-        variable0_name = _GENERATED_VARIABLE_PREFIX + "ceiling_var0"
-        self.arguments = [variable0_name, value_formula]
-        self.CatrobatClass = catbricks.SetVariableBrick
-        set_variable_brick0 = self._convert_variable_block()[0]
+        var0_name = _GENERATED_VARIABLE_PREFIX + "ceiling_var0" # TODO: make name unique!!
+        set_var_brick0 = self._converted_helper_brick_or_formula_element([var0_name, value_formula], "setVar:to:")[0]
+        formula_elem = self._converted_helper_brick_or_formula_element([value_formula.getRoot()], "rounded")
 
-        value_formula_element = value_formula.getRoot()
-        formula_elem_type = catElementType.FUNCTION
-        formula_elem = catformula.FormulaElement(formula_elem_type, "ROUND", None)
-        formula_elem.setLeftChild(value_formula_element)
-        # TODO: make name unique!!
-        variable1_name = _GENERATED_VARIABLE_PREFIX + "ceiling_var1"
-        self.arguments = [variable1_name, catrobat.create_formula_with_value(formula_elem)]
-        set_variable_brick1 = self._convert_variable_block()[0]
+        # SetVariableBrick: name=var0_name, value=round(value)
+        var1_name = _GENERATED_VARIABLE_PREFIX + "ceiling_var1" # TODO: make name unique!!
+        set_var_brick1 = self._converted_helper_brick_or_formula_element([var1_name, catrobat.create_formula_with_value(formula_elem)], "setVar:to:")[0]
 
-        minus_formula_elem = catformula.FormulaElement(catElementType.FUNCTION, "MINUS", None)
-        minus_formula_elem.setLeftChild(catformula.FormulaElement(catElementType.USER_VARIABLE, variable0_name, None))
-        minus_formula_elem.setRightChild(catformula.FormulaElement(catElementType.USER_VARIABLE, variable1_name, None))
-        gt_formula_elem = catformula.FormulaElement(catElementType.FUNCTION, "GREATER_THAN", None)
-        gt_formula_elem.setLeftChild(minus_formula_elem)
-        gt_formula_elem.setRightChild(catrobat.create_formula_with_value("0").getRoot())
-        formula_elem = catformula.FormulaElement(catElementType.FUNCTION, "PLUS", None)
-        formula_elem.setLeftChild(gt_formula_elem)
-        formula_elem.setRightChild(catformula.FormulaElement(catElementType.USER_VARIABLE, variable1_name, None))
-        # TODO: make name unique!!
-        variable2_name = _GENERATED_VARIABLE_PREFIX + "ceiling_var2"
-        self.arguments = [variable2_name, catrobat.create_formula_with_value(formula_elem)]
-        set_variable_brick2 = self._convert_variable_block()[0]
-        self.arguments = [value]
-        return [set_variable_brick0, set_variable_brick1, set_variable_brick2, catformula.FormulaElement(catElementType.USER_VARIABLE, variable2_name, None)]
+        # (var0 - var1)
+        left_fe = catformula.FormulaElement(catElementType.USER_VARIABLE, var0_name, None)
+        right_fe = catformula.FormulaElement(catElementType.USER_VARIABLE, var0_name, None)
+        minus_formula_elem = self._converted_helper_brick_or_formula_element([left_fe, right_fe], "-")
+
+        # ((var0 - var1) > 0)
+        args = [minus_formula_elem, catrobat.create_formula_with_value("0").getRoot()]
+        gt_formula_elem = self._converted_helper_brick_or_formula_element(args, ">")
+
+        # (((var0 - var1) > 0) + var1)
+        formula_elem = self._converted_helper_brick_or_formula_element([gt_formula_elem, catformula.FormulaElement(catElementType.USER_VARIABLE, var1_name, None)], "+")
+
+        # SetVariableBrick: name=var1_name, value=(((var0 - var1) > 0) + var1)
+        var2_name = _GENERATED_VARIABLE_PREFIX + "ceiling_var2" # TODO: make name unique!!
+        set_var_brick2 = self._converted_helper_brick_or_formula_element([var2_name, catrobat.create_formula_with_value(formula_elem)], "setVar:to:")[0]
+
+        return [set_var_brick0, set_var_brick1, set_var_brick2, catformula.FormulaElement(catElementType.USER_VARIABLE, var2_name, None)]
 
     @_register_handler(_block_name_to_handler_map, "10 ^")
     def _convert_pow_of_10_block(self):
         [value] = self.arguments
         '''
-        SetVariableBrick:  var0 = 3.2
-        SetVariableBrick:  var1 = round(var0)                # 3.0
-        SetVariableBrick:  var2 = var1 - ((var0 - var1) < 0) # 3.0 - 0.0 = 3.0
         '''
         #_create_variable_brick(test, catbricks.SetVariableBrick)
         return catrobat.create_formula_with_value(value).getRoot()
@@ -990,7 +990,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         user_list = catrobat.find_global_or_sprite_user_list_by_name(self.project, self.sprite, list_name)
         assert user_list is not None
         left_formula_elem = catformula.FormulaElement(catElementType.USER_LIST, list_name, None)
-        formula_element = catformula.FormulaElement(catElementType.FUNCTION, "NUMBER_OF_ITEMS", None)
+        formula_element = catformula.FormulaElement(catElementType.FUNCTION, self.CatrobatClass.toString(), None)
         formula_element.setLeftChild(left_formula_elem)
         return formula_element
 
@@ -1000,7 +1000,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         user_list = catrobat.find_global_or_sprite_user_list_by_name(self.project, self.sprite, list_name)
         assert user_list is not None
         left_formula_elem = catformula.FormulaElement(catElementType.USER_LIST, list_name, None)
-        formula_element = catformula.FormulaElement(catElementType.FUNCTION, "CONTAINS", None)
+        formula_element = catformula.FormulaElement(catElementType.FUNCTION, self.CatrobatClass.toString(), None)
         formula_element.setLeftChild(left_formula_elem)
         right_formula_elem = catrobat.create_formula_with_value(value)
         formula_element.setRightChild(right_formula_elem.getRoot())
@@ -1013,23 +1013,16 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         assert user_list is not None
 
         if position == "last":
-            left_formula_elem = catformula.FormulaElement(catElementType.USER_LIST, list_name, None)
-            index_formula_element = catformula.FormulaElement(catElementType.FUNCTION, "NUMBER_OF_ITEMS", None)
-            index_formula_element.setLeftChild(left_formula_elem)
+            index_formula_element = catformula.Formula(self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:"))
         elif position == "random":
-            inner_left_formula_elem = catformula.FormulaElement(catElementType.USER_LIST, list_name, None)
-            right_formula_element = catformula.FormulaElement(catElementType.FUNCTION, "NUMBER_OF_ITEMS", None)
-            right_formula_element.setLeftChild(inner_left_formula_elem)
-
-            first_index_of_list = "1"
-            left_formula_element = catformula.FormulaElement(catElementType.NUMBER, first_index_of_list, None)
-            index_formula_element = catformula.FormulaElement(catElementType.FUNCTION, "RAND", None, left_formula_element, right_formula_element)
+            start_formula_element = catformula.FormulaElement(catElementType.NUMBER, "1", None) # first index of list
+            end_formula_element = self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:")
+            index_formula_element = self._converted_helper_brick_or_formula_element([start_formula_element, end_formula_element], "randomFrom:to:")
         else:
-            index_formula = catrobat.create_formula_with_value(position)
-            index_formula_element = index_formula.getRoot()
+            index_formula_element = catrobat.create_formula_with_value(position).getRoot()
 
         right_formula_elem = catformula.FormulaElement(catElementType.USER_LIST, list_name, None)
-        formula_element = catformula.FormulaElement(catElementType.FUNCTION, "LIST_ITEM", None)
+        formula_element = catformula.FormulaElement(catElementType.FUNCTION, self.CatrobatClass.toString(), None)
         formula_element.setLeftChild(index_formula_element)
         formula_element.setRightChild(right_formula_elem)
         return formula_element
@@ -1038,14 +1031,14 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     def _convert_string_length_block(self):
         [value] = self.arguments
         left_formula_elem = catrobat.create_formula_with_value(value).getRoot()
-        formula_element = catformula.FormulaElement(catElementType.FUNCTION, "LENGTH", None)
+        formula_element = catformula.FormulaElement(catElementType.FUNCTION, self.CatrobatClass.toString(), None)
         formula_element.setLeftChild(left_formula_elem)
         return formula_element
 
     @_register_handler(_block_name_to_handler_map, "letter:of:")
     def _convert_letter_of_block(self):
         [index, value] = self.arguments
-        formula_element = catformula.FormulaElement(catElementType.FUNCTION, "LETTER", None)
+        formula_element = catformula.FormulaElement(catElementType.FUNCTION, self.CatrobatClass.toString(), None)
         index_formula_elem = catrobat.create_formula_with_value(index).getRoot()
         formula_element.setLeftChild(index_formula_elem)
         value_formula_elem = catrobat.create_formula_with_value(value).getRoot()
@@ -1055,7 +1048,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "concatenate:with:")
     def _convert_concatenate_with_block(self):
         [value1, value2] = self.arguments
-        formula_element = catformula.FormulaElement(catElementType.FUNCTION, "JOIN", None)
+        formula_element = catformula.FormulaElement(catElementType.FUNCTION, self.CatrobatClass.toString(), None)
         value1_formula_elem = catrobat.create_formula_with_value(value1).getRoot()
         formula_element.setLeftChild(value1_formula_elem)
         value2_formula_elem = catrobat.create_formula_with_value(value2).getRoot()
@@ -1139,18 +1132,11 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     def _convert_insert_at_of_list_block(self):
         [value, position, list_name] = self.arguments
         if position == "last":
-            left_formula_elem = catformula.FormulaElement(catElementType.USER_LIST, list_name, None)
-            formula_element = catformula.FormulaElement(catElementType.FUNCTION, "NUMBER_OF_ITEMS", None)
-            formula_element.setLeftChild(left_formula_elem)
-            index_formula = catformula.Formula(formula_element)
+            index_formula = catformula.Formula(self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:"))
         elif position == "random":
-            inner_left_formula_elem = catformula.FormulaElement(catElementType.USER_LIST, list_name, None)
-            right_formula_element = catformula.FormulaElement(catElementType.FUNCTION, "NUMBER_OF_ITEMS", None)
-            right_formula_element.setLeftChild(inner_left_formula_elem)
-
-            first_index_of_list = "1"
-            left_formula_element = catformula.FormulaElement(catElementType.NUMBER, first_index_of_list, None)
-            formula_element = catformula.FormulaElement(catElementType.FUNCTION, "RAND", None, left_formula_element, right_formula_element)
+            start_formula_element = catformula.FormulaElement(catElementType.NUMBER, "1", None) # first index of list
+            end_formula_element = self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:")
+            formula_element = self._converted_helper_brick_or_formula_element([start_formula_element, end_formula_element], "randomFrom:to:")
             index_formula = catformula.Formula(formula_element)
         else:
             index_formula = catrobat.create_formula_with_value(position)
@@ -1168,10 +1154,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         prepend_bricks = []
         append_bricks = []
         if position in ["last", "all"]:
-            left_formula_elem = catformula.FormulaElement(catElementType.USER_LIST, list_name, None)
-            formula_element = catformula.FormulaElement(catElementType.FUNCTION, "NUMBER_OF_ITEMS", None)
-            formula_element.setLeftChild(left_formula_elem)
-            index_formula = catformula.Formula(formula_element)
+            index_formula = catformula.Formula(self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:"))
 
             if position == "all":
                 # repeat loop workaround...
@@ -1191,19 +1174,12 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     def _convert_set_line_of_list_to_block(self):
         [position, list_name, value] = self.arguments
         if position == "last":
-            left_formula_elem = catformula.FormulaElement(catElementType.USER_LIST, list_name, None)
-            formula_element = catformula.FormulaElement(catElementType.FUNCTION, "NUMBER_OF_ITEMS", None)
-            formula_element.setLeftChild(left_formula_elem)
-            index_formula = catformula.Formula(formula_element)
+            index_formula = catformula.Formula(self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:"))
         elif position == "random":
-            inner_left_formula_elem = catformula.FormulaElement(catElementType.USER_LIST, list_name, None)
-            right_formula_element = catformula.FormulaElement(catElementType.FUNCTION, "NUMBER_OF_ITEMS", None)
-            right_formula_element.setLeftChild(inner_left_formula_elem)
-
-            first_index_of_list = "1"
-            left_formula_element = catformula.FormulaElement(catElementType.NUMBER, first_index_of_list, None)
-            formula_element = catformula.FormulaElement(catElementType.FUNCTION, "RAND", None, left_formula_element, right_formula_element)
-            index_formula = catformula.Formula(formula_element)
+            start_formula_element = catformula.FormulaElement(catElementType.NUMBER, "1", None) # first index of list
+            end_formula_element = self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:")
+            index_formula_element = self._converted_helper_brick_or_formula_element([start_formula_element, end_formula_element], "randomFrom:to:")
+            index_formula = catformula.Formula(index_formula_element)
         else:
             index_formula = catrobat.create_formula_with_value(position)
 

@@ -1,6 +1,6 @@
 #  ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
 #  Copyright (C) 2013-2015 The Catrobat Team
-#  (<http://developer.catrobat.org/credits>)
+#  (http://developer.catrobat.org/credits)
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU Affero General Public License as
@@ -17,7 +17,7 @@
 #  GNU Affero General Public License for more details.
 #
 #  You should have received a copy of the GNU Affero General Public License
-#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#  along with this program.  If not, see http://www.gnu.org/licenses/.
 import logging
 
 log = logging.getLogger("scratchtocatrobat")

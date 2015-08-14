@@ -52,6 +52,15 @@ class CatrobatConfigParser(object):
     def __init__(self):
         import ConfigParser
         self.config_parser = ConfigParser.ConfigParser()
+    def read(self, filenames):
+        result = self.config_parser.read(filenames)
+        self.section_items = {}
+        for section in self.config_parser.sections():
+            items = {}
+            for key, value in self.config_parser.items(section):
+                items[key] = value
+            self.section_items[section] = items
+        return result
     def _populate_placeholders_of_entry(self, entry, section, option):
         import re
         entry = entry.replace("${APP_PATH}", APP_PATH)
@@ -63,13 +72,13 @@ class CatrobatConfigParser(object):
             error("Unexpected placeholder token found in helpers file (section: %s, option: %s)!" % (section, option))
         return entry
     def items(self, section):
-        entries = self.config_parser.items(section)
-        return [(option, self._populate_placeholders_of_entry(entry, section, option)) for (option, entry) in entries]
+        items = self.section_items[section]
+        return [(option, self._populate_placeholders_of_entry(entry, section, option)) for (option, entry) in items.iteritems()]
     def get(self, section, option):
-        entry = self.config_parser.get(section, option)
-        return self._populate_placeholders_of_entry(entry, section, option)
-    def read(self, filenames):
-        return self.config_parser.read(filenames)
+        item = self.section_items[section][option]
+        return self._populate_placeholders_of_entry(item, section, option)
+    def sections(self):
+        return self.section_items.keys()
 
 class ExitCode(object):
     SUCCESS = 0
@@ -173,15 +182,107 @@ def _setup_configuration():
         error("No file permissions to read helpers file '%s'!" % CFG_DEFAULT_FILE_NAME)
 
     config = CatrobatConfigParser()
+    config.read(config_default_file_path)
     if os.path.exists(config_custom_env_file_path):
         if os.path.isdir(config_custom_env_file_path):
             error("Config file '%s' should be file, but is a directory!" % CFG_CUSTOM_ENV_FILE_NAME)
         if not os.access(config_custom_env_file_path, os.R_OK):
             error("No file permissions to read helpers file '%s'!" % CFG_CUSTOM_ENV_FILE_NAME)
-        config.read(config_custom_env_file_path)
-    else:
-        config.read(config_default_file_path)
+        config_env = CatrobatConfigParser()
+        config_env.read(config_custom_env_file_path)
+        # merge both config files together
+        for section in config.sections():
+            if section not in config_env.sections():
+                config_env.section_items[section] = config.section_items[section]
+            else:
+                merged_section = config.section_items[section]
+                merged_section.update(config_env.section_items[section])
+                config_env.section_items[section] = merged_section
+        config = config_env
     return config
+
+def inject_git_commmit_hook():
+    hook_dir_path = os.path.join(APP_PATH, ".git", "hooks")
+    make_dir_if_not_exists(hook_dir_path)
+    hook_path = os.path.join(hook_dir_path, "pre-commit")
+
+    config_default_file_path = os.path.normpath(os.path.join(CFG_PATH, CFG_DEFAULT_FILE_NAME))
+    config_custom_env_file_path = os.path.normpath(os.path.join(CFG_PATH, CFG_CUSTOM_ENV_FILE_NAME))
+
+    def formatted_shell_script_code(content):
+        lines = content.split('\n')
+        formatted_lines = []
+        ignore_line_indentation = False
+        python_code_line_indentation = -1
+        update_python_code_line_indentation = False
+        for line in lines[1:]: # skip first line
+            if "<<EOF" in line:
+                ignore_line_indentation = True
+            elif "EOF" in line:
+                ignore_line_indentation = False
+            if update_python_code_line_indentation:
+                index = 0
+                for c in line:
+                    if c is not " ":
+                        break
+                    index += 1
+                update_python_code_line_indentation = False
+                python_code_line_indentation = index
+            if ignore_line_indentation and python_code_line_indentation != -1:
+                line = line[python_code_line_indentation:]
+            else:
+                line = line.lstrip()
+            formatted_lines.append(line + '\n')
+            if ignore_line_indentation and python_code_line_indentation == -1:
+                update_python_code_line_indentation = True
+        return ''.join(formatted_lines)
+
+    shell_script_code = """
+        #!/bin/sh
+        PROJECT_DIR=`pwd`
+        CONFIG_DEFAULT_FILE_PATH="%s"
+        CONFIG_CUSTOM_ENV_FILE_PATH="%s"
+        branchName=`/usr/bin/env git symbolic-ref HEAD | sed -e 's,.*/\\(.*\\),\\1,'`
+        gitCount=`/usr/bin/env git rev-list $branchName |wc -l | sed 's/^ *//;s/ *$//'`
+        simpleBranchName=`/usr/bin/env git rev-parse --abbrev-ref HEAD`
+        buildNumber="$((gitCount + 1))"
+        buildNumber+="-$simpleBranchName"
+
+        /usr/bin/env python - <<EOF
+            def update_build_number(config_file_name, number):
+                # TODO: regex...
+                content = open(config_file_name).read()
+                search_str = "build_number:"
+                start_pos = content.find(search_str)
+                if start_pos == -1:
+                    return # not found...
+                else:
+                    start_pos += len(search_str)
+                end_pos = content.find("\\n", start_pos)
+                old_build_no_str = "{0}{1}".format(search_str, content[start_pos:end_pos])
+                new_build_no_str = "{0}  {1}".format(search_str, number)
+                content = content.replace(old_build_no_str, new_build_no_str)
+                with open(config_file_name, 'w') as config_file:
+                    config_file.write(content)
+            update_build_number("${CONFIG_DEFAULT_FILE_PATH}", "${buildNumber}")
+            import os
+            if os.path.isfile("${CONFIG_CUSTOM_ENV_FILE_PATH}"):
+                update_build_number("${CONFIG_CUSTOM_ENV_FILE_PATH}", "${buildNumber}")
+        EOF
+
+        # Add modified config file to the staging area
+        # NOTE: Only the default config file is part of the repository!
+        cd ${PROJECT_DIR}
+        if [ -f "$CONFIG_DEFAULT_FILE_PATH" ]; then
+        /usr/bin/env git add ${CONFIG_DEFAULT_FILE_PATH}
+        fi
+        exit 0
+    """ % (config_default_file_path, config_custom_env_file_path)
+
+    formatted_shell_script_code = formatted_shell_script_code(shell_script_code)
+    with open(hook_path, "w") as shell_script_file:
+        shell_script_file.write(formatted_shell_script_code)
+    os.chmod(hook_path, 0755)
 
 config = _setup_configuration()
 

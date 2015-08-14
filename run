@@ -51,5 +51,7 @@ helpers.make_dir_if_not_exists(output_dir)
 helpers.make_dir_if_not_exists(web_output_dir)
 helpers.make_dir_if_not_exists(tmp_dir)
 
+helpers.inject_git_commmit_hook()
+
 exec_args = [jython_path, "-m", "scratchtocatrobat.main"] + sys.argv[1:]
 sys.exit(subprocess.call(exec_args, env=env))

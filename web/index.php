@@ -1,12 +1,17 @@
 <?php
+function valueForConfigKey($key, $rawConfigContent) {
+	$start = strpos($rawConfigContent, $key);
+	$temp = substr($rawConfigContent, $start);
+	$end = strpos($temp, "\n");
+	$start = strlen($key);
+	$end = $end - $start;
+	return trim(substr($temp, $start, $end));
+}
+
 $rawConfigContent = file_get_contents('../config/default.ini');
-$searchString = 'version:';
-$start = strpos($rawConfigContent, $searchString);
-$temp = substr($rawConfigContent, $start);
-$end = strpos($temp, "\n");
-$start = strlen($searchString);
-$end = $end - $start;
-$versionNumber = trim(substr($temp, $start, $end));
+$versionNumber = valueForConfigKey('version:', $rawConfigContent);
+$buildName = valueForConfigKey('build_name:', $rawConfigContent);
+$buildNumber = valueForConfigKey('build_number:', $rawConfigContent);
 ?><!DOCTYPE html>
 <html>
 <head>
@@ -23,6 +28,10 @@ $versionNumber = trim(substr($temp, $start, $end));
   <script>
     jQuery(document).ready(function($) {
 		$("#btn-convert").removeClass("deactivate-button").addClass("activate-button");
+		$("#version-link").click(function() {
+			alert("Build: <?php echo $buildName; ?>, <?php echo $buildNumber; ?>");
+			return false;
+		})
 		$("#field-url").blur(function() {
 			var projectURL = $(this).val();
 			var urlParts = projectURL.split("/");
@@ -50,7 +59,7 @@ $versionNumber = trim(substr($temp, $start, $end));
 </head>
 <body>
   <div class="ribbon">
-    <a href="#">version <?php echo $versionNumber; ?></a>
+    <a href="#" id="version-link">version <?php echo $versionNumber; ?></a>
   </div>
   <div id="wrapper">
     <header>

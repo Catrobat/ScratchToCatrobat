@@ -321,8 +321,8 @@ header nav #searchbar {
   white-space: nowrap;
   /* top left corner */
   position: absolute;
-  left: -55px;
-  top: 40px;
+  left: -60px;
+  top: 30px;
   /* 45 deg ccw rotation */
   -webkit-transform: rotate(-45deg);
      -moz-transform: rotate(-45deg);

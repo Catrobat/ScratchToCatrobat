@@ -25,3 +25,5 @@ local.properties
 /.pydevproject
 data
 environment.ini
+sample_projects
+sourcecodefilter/workspace

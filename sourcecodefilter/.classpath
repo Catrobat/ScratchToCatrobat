@@ -16,5 +16,6 @@
 	<classpathentry kind="lib" path="lib/org.eclipse.jface.text_3.10.0.v20150603-1752.jar"/>
 	<classpathentry kind="lib" path="lib/org.eclipse.osgi_3.10.100.v20150529-1857.jar"/>
 	<classpathentry kind="lib" path="lib/org.eclipse.text_3.5.400.v20150505-1044.jar"/>
+	<classpathentry kind="lib" path="lib/snakeyaml-1.16.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

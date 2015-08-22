@@ -96,7 +96,8 @@ public class ConverterRelevantCatroidSource {
         }
     }
 
-    private static ASTParser astParser = ASTParser.newParser(AST.JLS4);
+    @SuppressWarnings("deprecation")
+	private static ASTParser astParser = ASTParser.newParser(AST.JLS4);
     static {
         astParser.setKind(ASTParser.K_COMPILATION_UNIT);
     }

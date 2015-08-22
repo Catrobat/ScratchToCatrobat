@@ -1,0 +1,346 @@
+# Main settings
+git_tag: 0.9.16
+archive_extension: "zip"
+URL: "https://github.com/Catrobat/Catroid/archive/%{tag_name}.%{archive_extension}"
+download_path: "./workspace/input"
+extraction_path: "./workspace/output/src"
+relative_code_source_path: "catroid/src"
+
+
+# Include/exclude settings
+additional_serialization_classes:
+    - AllowedAfterDeadEndBrick
+    - Brick
+    - Constants
+    - DeadEndBrick
+    - DroneBrick
+    - DroneMoveBrick
+    - ElementType
+    - Formula
+    - FormulaElement
+    - Functions
+    - Operators
+    - NestingBrick
+    - ScreenModes
+    - ScreenValues
+    - ScriptBrick
+    - Sensors
+    - Look
+    - StorageHandler
+    - ProjectManager
+    - UserListBrick
+    - UserVariableBrick
+
+preserved_interfaces:
+    - Brick
+    - BroadcastMessage
+    - Converter
+    - LoopBeginBrick
+    - MindstormsSensor
+    - MindstormsCommand
+
+additional_helper_classes:
+    - BroadcastMessage
+    - Constants
+    - CatroidFieldKeySorter
+    - UserVariablesContainer
+    - ConcurrentFormulaHashMap
+    - XStreamBrickConverter
+    - XStreamConcurrentFormulaHashMapConverter
+    - XStreamScriptConverter
+    - XStreamSettingConverter # introduced in v0.95
+    - LegoNXTSetting
+    - NXTPort
+    - NXTSensor
+    - NXTSensorType
+    - NXTSensorMode
+    - Command
+    - CommandType
+    - MindstormsReply
+    - LOOKUP
+    - XStreamToSupportCatrobatLanguageVersion095AndBefore # introduced in v0.95
+    # - XStreamToSupportCatrobatLanguageVersion092AndBefore # removed in v0.95
+    - XStreamUserVariableConverter
+    # exception classes
+    - ProjectException
+    - MindstormsException
+    - CompatibilityProjectException
+    - LoadingProjectException
+    - OutdatedVersionProjectException
+    - FileChecksumContainer
+
+class_to_preserved_fields_mapping:
+    BroadcastReceiverBrick:
+        - broadcastMessage
+    # Formula:
+    #    - internFormula
+    FormulaElement:
+        - parent
+    LegoNxtMotorMoveBrick:
+        - motorEnum
+    LegoNxtMotorStopBrick:
+        - motorEnum
+    LegoNxtMotorTurnAngleBrick:
+        - motorEnum
+    LegoNxtPlayToneBrick:
+        - motorEnum
+    PlaySoundBrick:
+        - oldSelectedSound
+    PointToBrick:
+        - oldSelectedObject
+    Script:
+        - brick
+    Sprite:
+        [look, isPaused, newUserBrickNext]
+    SetLookBrick:
+        - oldSelectedLook
+    UserVariable:
+        - value
+    WhenScript:
+        - position
+    ProjectManager:
+        [INSTANCE, project, currentScript, currentSprite, currentUserBrick]
+    IfLogicBeginBrick:
+        [ifElseBrick, ifEndBrick]
+    IfLogicElseBrick:
+        [ifBeginBrick, ifEndBrick]
+    IfLogicEndBrick:
+        [ifBeginBrick, ifElseBrick]
+    ForeverBrick:
+        - loopEndBrick
+    RepeatBrick:
+        - loopEndBrick
+    LoopEndBrick:
+        - loopBeginBrick
+    UserBrick:
+        - lastDataVersion
+    UserScriptDefinitionBrick:
+        - brick
+    UserScriptDefinitionBrickElements:
+        - version
+    # introduced in v0.95 {
+    UserList:
+        - list
+    UserBrickParameter:
+        - parent
+    SetVariableBrick:
+        - defaultPrototypeToken
+    PhiroMotorMoveBackwardBrick:
+        - motorEnum
+    PhiroMotorMoveForwardBrick:
+        - motorEnum
+    PhiroMotorStopBrick:
+        - motorEnum
+    PhiroPlayToneBrick:
+        - toneEnum
+    PhiroRGBLightBrick:
+        - eyeEnum
+    # }
+
+class_to_preserved_methods_mapping:
+    Functions:
+        - isFunction
+        - getFunctionByValue
+    BroadcastScript:
+        - setBroadcastMessage
+        - getBroadcastMessage
+        - getScriptBrick
+    StartScript:
+        - getScriptBrick
+    WhenScript:
+        - getScriptBrick
+    Project:
+        - ifLandscapeSwitchWidthAndHeight
+        - addSprite
+        - setName
+        - getName
+    SoundInfo:
+        - compareTo
+        - setTitle
+        - getTitle
+    LookData:
+        - setLookFilename
+    FormulaElement:
+        # - getInternTokenList",
+        - getRoot
+        - replaceElement
+        - replaceWithSubElement
+        - clone
+    Formula:
+        - getRoot
+        - clone
+    PlaySoundBrick:
+        - setSoundInfo
+    StorageHandler:
+        - getInstance
+        - setXstreamAliases
+        - getXMLStringOfAProject
+    ScriptBrick:
+        # - initScript
+        - getScriptSafe
+    # Script:
+    #     - init
+    Sprite:
+        # - init
+        - getLookDataList
+        - getScript
+        - getScriptIndex
+        - getNumberOfScripts
+        - getUserBrickList
+        - addScript
+    UserVariablesContainer:
+        - addSpriteUserVariableToSprite
+        - getOrCreateVariableListForSprite
+    FormulaBrick:
+        - addAllowedBrickField
+        - getFormulaWithBrickField
+        - setFormulaWithBrickField
+    # introduced in v0.95 {
+    DataContainer:
+        - addUserBrickVariable
+        - addUserBrickUserVariableToUserBrick
+        - addSpriteUserVariable
+        - addSpriteUserVariableToSprite
+        - addProjectUserVariable
+        - getOrCreateVariableListForUserBrick
+        - getOrCreateVariableListForSprite
+        - cleanVariableListForSprite
+        - getUserVariable
+        - getUserVariableContext
+        - findUserVariable
+        - getUserList
+        - addSpriteUserList
+        - addSpriteUserListToSprite
+        - addProjectUserList
+        - getOrCreateUserListListForSprite
+        - findUserList
+        - getUserList"
+    AddItemToUserListBrick:
+        - initializeBrickFields
+    ChangeTransparencyByNBrick:
+        - initializeBrickFields
+    DeleteItemOfUserListBrick:
+        - initializeBrickFields
+    InsertItemIntoUserListBrick:
+        - initializeBrickFields
+    LegoNxtMotorMoveBrick:
+        - initializeBrickFields
+    PhiroMotorMoveBackwardBrick:
+        - initializeBrickFields
+    PhiroMotorMoveForwardBrick:
+        - initializeBrickFields
+    PhiroPlayToneBrick:
+        - initializeBrickFields
+    PhiroRGBLightBrick:
+        - initializeBrickFields
+    ReplaceItemInUserListBrick:
+        - initializeBrickFields
+    SetTransparencyBrick:
+        - initializeBrickFields
+
+    LoopBeginBrick:
+        - getLoopEndBrick
+        - setLoopEndBrick
+    # }
+
+    DroneMoveBrick:
+        - initializeBrickFields
+    GlideToBrick:
+        - initializeBrickFields
+    ChangeBrightnessByNBrick:
+        - initializeBrickFields
+    ChangeGhostEffectByNBrick:
+        - initializeBrickFields
+    ChangeSizeByNBrick:
+        - initializeBrickFields
+    ChangeVariableBrick:
+        - initializeBrickFields
+    ChangeVolumeByNBrick:
+        - initializeBrickFields
+    ChangeXByNBrick:
+        - initializeBrickFields
+    ChangeYByNBrick:
+        - initializeBrickFields
+    GoNStepsBackBrick:
+        - initializeBrickFields
+    IfLogicBeginBrick:
+        - initializeBrickFields
+    LegoNxtMotorActionBrick:
+        - initializeBrickFields
+    LegoNxtMotorTurnAngleBrick:
+        - initializeBrickFields
+    LegoNxtPlayToneBrick:
+        - initializeBrickFields
+    MoveNStepsBrick:
+        - initializeBrickFields
+    NoteBrick:
+        - initializeBrickFields
+    PlaceAtBrick:
+        - initializeBrickFields
+    PointInDirectionBrick:
+        - initializeBrickFields
+    RepeatBrick:
+        - initializeBrickFields
+    SetBrightnessBrick:
+        - initializeBrickFields
+    SetGhostEffectBrick:
+        - initializeBrickFields
+    SetSizeToBrick:
+        - initializeBrickFields
+    SetVariableBrick:
+        - initializeBrickFields
+    SetVolumeToBrick:
+        - initializeBrickFields
+    SetXBrick:
+        - initializeBrickFields
+    SetYBrick:
+        - initializeBrickFields
+    SpeakBrick:
+        - initializeBrickFields
+    TurnLeftBrick:
+        - initializeBrickFields
+    TurnRightBrick:
+        - initializeBrickFields
+    VibrationBrick:
+        - initializeBrickFields
+    WaitBrick:
+        - initializeBrickFields
+    UserBrick:
+        - getUserScriptDefinitionBrickElements
+        - copyFormulasMatchingNames
+    UserScriptDefinitionBrick:
+        - setUserBrick
+        - getScriptSafe
+    UserScriptDefinitionBrickElements:
+        - getUserScriptDefinitionBrickElementList
+    WhenBrick:
+        - getScriptSafe
+    BroadcastReceiverBrick:
+        - getScriptSafe
+    WhenStartedBrick:
+        - getScriptSafe
+    ProjectManager:
+        - getInstance
+        - addSprite
+        - addScript
+        - spriteExists
+
+class_to_remove_fields_mapping:
+    Constants:
+        [DEFAULT_ROOT, TMP_PATH, TMP_IMAGE_PATH, TEXT_TO_SPEECH_TMP_PATH]
+    Look:
+        [actionsToRestart, pixmap, whenParallelAction, shader]
+    NXTSensor:
+        - connection
+
+class_to_remove_methods_mapping:
+    ProjectManager:
+        [uploadProject, loadProject, cancelLoadProject, canLoadProject, saveProject,
+        initializeDefaultProject, initializeDroneProject, initializeNewProject,
+        deleteCurrentProject, deleteProject, renameProject, addSprite,
+        addScript, spriteExists]
+    Look:
+        [createBrightnessContrastShader, checkImageChanged, setWhenParallelAction]
+    NXTSensor:
+        [resetScaledValue, getSensorReadings, getUpdateInterval,
+        updateLastSensorValue, getLastSensorValue]

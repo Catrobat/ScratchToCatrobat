@@ -116,8 +116,8 @@ class _ScratchToCatrobat(object):
 
         #  TODO: replace "dummy" keyword by corresponding Catrobat function as soon as Catrobat supports this...
         "10 ^": "dummy",
-        "floor": "dummy",
-        "ceiling": "dummy",
+        "floor": "dummy", #catformula.Functions.FLOOR,
+        "ceiling": "dummy", #catformula.Functions.CEIL,
 
         # user list functions
         "getLine:ofList:": catformula.Functions.LIST_ITEM,

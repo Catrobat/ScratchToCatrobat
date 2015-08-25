@@ -979,10 +979,22 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "10 ^")
     def _convert_pow_of_10_block(self):
         [value] = self.arguments
-        '''
-        '''
-        #_create_variable_brick(test, catbricks.SetVariableBrick)
-        return catrobat.create_formula_element_with_value(value)
+
+        # unfortunately 10^x and pow(x) functions are not yet available in Catroid
+        # but Catroid already supports exp(x) and ln(x) functions
+        # since 10^x == exp(x*ln(10)) we can use 3 math functions to achieve the correct result!
+
+        # ln(10)
+        ln_formula_elem = catformula.Formula(self._converted_helper_brick_or_formula_element([10], "ln")).getRoot()
+
+        # x*ln(10)     (where x:=value)
+        exponent_formula_elem = catformula.Formula(self._converted_helper_brick_or_formula_element([value, ln_formula_elem], "*")).getRoot()
+
+        # exp(x*ln(10))
+        result_formula_elem = catformula.Formula(self._converted_helper_brick_or_formula_element([exponent_formula_elem], "e^")).getRoot()
+
+        # round(exp(x*ln(10)))     (use round to get rid of rounding errors)
+        return catformula.Formula(self._converted_helper_brick_or_formula_element([result_formula_elem], "rounded")).getRoot()
 
     @_register_handler(_block_name_to_handler_map, "lineCountOfList:")
     def _convert_line_count_of_list_block(self):

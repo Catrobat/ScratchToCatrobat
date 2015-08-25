@@ -311,6 +311,38 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert inner_user_list_formula_element.leftChild == None
         assert inner_user_list_formula_element.rightChild == None
 
+    # 10 ^
+    def test_can_convert_pow_of_10_block(self):
+        exponent = 6
+        base = 10
+        scratch_block = ["10 ^", exponent]
+        [rounded_result_formula_element] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(rounded_result_formula_element, catformula.FormulaElement)
+        assert rounded_result_formula_element.type == catformula.FormulaElement.ElementType.FUNCTION
+        assert rounded_result_formula_element.value == catformula.Functions.ROUND.toString() # @UndefinedVariable
+        assert rounded_result_formula_element.rightChild == None
+        result_formula_element = rounded_result_formula_element.leftChild
+        assert result_formula_element.type == catformula.FormulaElement.ElementType.FUNCTION
+        assert result_formula_element.value == catformula.Functions.EXP.toString() # @UndefinedVariable
+        assert result_formula_element.rightChild == None
+        mult_formula_element = result_formula_element.leftChild
+        assert mult_formula_element.type == catformula.FormulaElement.ElementType.OPERATOR
+        assert mult_formula_element.value == catformula.Operators.MULT.toString() # @UndefinedVariable
+        value_formula_element = mult_formula_element.leftChild
+        assert value_formula_element.type == catformula.FormulaElement.ElementType.NUMBER
+        assert value_formula_element.value == str(exponent)
+        assert value_formula_element.leftChild == None
+        assert value_formula_element.rightChild == None
+        ln_formula_element = mult_formula_element.rightChild
+        assert ln_formula_element.type == catformula.FormulaElement.ElementType.FUNCTION
+        assert ln_formula_element.value == catformula.Functions.LN.toString() # @UndefinedVariable
+        assert ln_formula_element.rightChild == None
+        base_formula_element = ln_formula_element.leftChild
+        assert base_formula_element.type == catformula.FormulaElement.ElementType.NUMBER
+        assert base_formula_element.value == str(10)
+        assert base_formula_element.leftChild == None
+        assert base_formula_element.rightChild == None
+
     # lineCountOfList:
     def test_can_convert_line_count_of_list_block(self):
         scratch_block = ["lineCountOfList:", self._name_of_test_list]

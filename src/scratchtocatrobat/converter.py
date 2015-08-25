@@ -259,8 +259,8 @@ class _ScratchToCatrobat(object):
 
 def _create_variable_brick(value, user_variable, Class):
     assert Class in set([catbricks.SetVariableBrick, catbricks.ChangeVariableBrick])
+    assert isinstance(user_variable, catformula.UserVariable)
     return Class(catrobat.create_formula_with_value(value), user_variable)
-
 
 def _variable_for(variable_name):
     return catformula.FormulaElement(catElementType.USER_VARIABLE, variable_name, None)  # @UndefinedVariable
@@ -466,6 +466,13 @@ class _ScratchObjectConverter(object):
                 assert len(user_list_data["listName"]) > 0
                 catr_data_container.addSpriteUserListToSprite(sprite, user_list_data["listName"])
 
+        for scratch_variable in scratch_object.get_variables():
+            sprite_name = sprite.getName() if not scratch_object.is_stage() else None
+            user_variable = catrobat.add_user_variable(self._catrobat_project, scratch_variable["name"], sprite=sprite, sprite_name=sprite_name)
+            assert user_variable is not None
+            user_variable = self._catrobat_project.getDataContainer().getUserVariable(scratch_variable["name"], sprite)
+            assert user_variable is not None
+
         for scratch_script in scratch_object.scripts:
             sprite.addScript(self._catrobat_script_from(scratch_script, sprite))
 
@@ -475,7 +482,7 @@ class _ScratchObjectConverter(object):
             args = [self._catrobat_project, scratch_variable["name"], scratch_variable["value"], sprite]
             if not scratch_object.is_stage():
                 args += [sprite.getName()]
-            _add_new_variable_with_initialization_value(*args)
+            _assign_initialization_value_to_user_variable(*args)
         return sprite
 
     @staticmethod
@@ -595,7 +602,7 @@ class _ScratchObjectConverter(object):
                 else:
                     log.error("type: %s, value: %s", brick.type, brick.value)
                 assert False
-        if ignored_blocks != 0:
+        if ignored_blocks > 0:
             log.info("number of ignored Scratch blocks: %d", ignored_blocks)
         return cat_script
 
@@ -747,7 +754,7 @@ class ConvertedProject(object):
                     sound_length_variable_name = _sound_length_variable_name_for(sound_info.getTitle())
                     sound_length = common.length_of_audio_file_in_secs(os.path.join(sounds_path, sound_info.getSoundFileName()))
                     sound_length = round(sound_length, 3) # accuracy +/- 0.5 milliseconds => review if we really need this...
-                    _add_new_variable_with_initialization_value(catrobat_program, sound_length_variable_name, sound_length, catrobat_sprite, catrobat_sprite.getName())
+                    _add_new_user_variable_with_initialization_value(catrobat_program, sound_length_variable_name, sound_length, catrobat_sprite, catrobat_sprite.getName())
 
             program_source = program_source_for(catrobat_program)
             with open(os.path.join(temp_path, catrobat.PROGRAM_SOURCE_FILE_NAME), "wb") as fp:
@@ -770,12 +777,17 @@ class ConvertedProject(object):
 
 
 # TODO: could be done with just user_variables instead of project object
-def _add_new_variable_with_initialization_value(project, variable_name, variable_value, sprite, sprite_name=None):
+def _add_new_user_variable_with_initialization_value(project, variable_name, variable_value, sprite, sprite_name=None):
     user_variable = catrobat.add_user_variable(project, variable_name, sprite=sprite, sprite_name=sprite_name)
     assert user_variable is not None
     variable_initialization_brick = _create_variable_brick(variable_value, user_variable, catbricks.SetVariableBrick)
     catrobat.add_to_start_script([variable_initialization_brick], sprite)
 
+def _assign_initialization_value_to_user_variable(project, variable_name, variable_value, sprite, sprite_name=None):
+    user_variable = project.getDataContainer().getUserVariable(variable_name, sprite)
+    assert user_variable is not None and user_variable.getName() == variable_name, "variable: %s, sprite_name: %s" % (variable_name, sprite.getName())
+    variable_initialization_brick = _create_variable_brick(variable_value, user_variable, catbricks.SetVariableBrick)
+    catrobat.add_to_start_script([variable_initialization_brick], sprite)
 
 # based on: http://stackoverflow.com/a/4274204
 def _register_handler(dict_, *names):
@@ -797,6 +809,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         self.sprite = catrobat_sprite
         self.project = catrobat_project
         self._stack = []
+        self._child_stack = []
 
     @property
     def stack(self):
@@ -824,6 +837,14 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         del self._stack[-1]
         if not isinstance(new_stack_values, list):
             new_stack_values = [new_stack_values]
+        # TODO: simplify this...
+        if len(self._child_stack) > 0 and len(new_stack_values) == len([val for val in new_stack_values if isinstance(val, catbricks.Brick)]):
+            self._stack += self._child_stack[-1]
+            del self._child_stack[-1]
+        if len(new_stack_values) > 1 and isinstance(new_stack_values[-1], catformula.FormulaElement):
+            # TODO: lambda check if all entries are instance of Brick
+            self._child_stack += [new_stack_values[:-1]]
+            new_stack_values = [new_stack_values[-1]]
         self._stack += new_stack_values
 
     def _converted_script_element(self):
@@ -916,65 +937,67 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     def _convert_floor_block(self):
         [value] = self.arguments
 
-        # SetVariableBrick: name=var0_name, value=value
-        value_formula = catrobat.create_formula_with_value(value)
         var0_name = _GENERATED_VARIABLE_PREFIX + "floor_var0" # TODO: make name unique!!
-        set_var_brick0 = self._converted_helper_brick_or_formula_element([var0_name, value_formula], "setVar:to:")[0]
-        formula_elem = self._converted_helper_brick_or_formula_element([value_formula.getRoot()], "rounded")
-
-        # SetVariableBrick: name=var0_name, value=round(value)
         var1_name = _GENERATED_VARIABLE_PREFIX + "floor_var1" # TODO: make name unique!!
-        set_var_brick1 = self._converted_helper_brick_or_formula_element([var1_name, catrobat.create_formula_with_value(formula_elem)], "setVar:to:")[0]
+        var2_name = _GENERATED_VARIABLE_PREFIX + "floor_var2" # TODO: make name unique!!
+        var0_fe = _variable_for(var0_name)
+        var1_fe = _variable_for(var1_name)
+        var2_fe = _variable_for(var2_name)
+
+        # SetVariableBrick: name=var0_name, value=value
+        [set_var_brick0] = self._converted_helper_brick_or_formula_element([var0_name, value], "setVar:to:")
+
+        # SetVariableBrick: name=var1_name, value=round(value)
+        rounded_var0_fe = self._converted_helper_brick_or_formula_element([var0_fe], "rounded")
+        [set_var_brick1] = self._converted_helper_brick_or_formula_element([var1_name, rounded_var0_fe], "setVar:to:")
 
         # (var0 - var1)
-        left_fe = catformula.FormulaElement(catElementType.USER_VARIABLE, var0_name, None)
-        right_fe = catformula.FormulaElement(catElementType.USER_VARIABLE, var0_name, None)
-        minus_formula_elem = self._converted_helper_brick_or_formula_element([left_fe, right_fe], "-")
+        minus_fe = self._converted_helper_brick_or_formula_element([var0_fe, var1_fe], "-")
 
         # ((var0 - var1) < 0)
-        args = [minus_formula_elem, catrobat.create_formula_element_with_value("0")]
+        args = [minus_fe, catrobat.create_formula_element_with_value("0")]
         st_formula_elem = self._converted_helper_brick_or_formula_element(args, "<")
 
         # (var1 - ((var0 - var1) < 0))
-        formula_elem = self._converted_helper_brick_or_formula_element([catformula.FormulaElement(catElementType.USER_VARIABLE, var1_name, None), st_formula_elem], "-")
+        formula_elem = self._converted_helper_brick_or_formula_element([var1_fe, st_formula_elem], "-")
 
         # SetVariableBrick: name=var1_name, value=(var1 - ((var0 - var1) < 0))
-        var2_name = _GENERATED_VARIABLE_PREFIX + "floor_var2" # TODO: make name unique!!
-        set_var_brick2 = self._converted_helper_brick_or_formula_element([var2_name, catrobat.create_formula_with_value(formula_elem)], "setVar:to:")[0]
+        [set_var_brick2] = self._converted_helper_brick_or_formula_element([var2_name, formula_elem], "setVar:to:")
 
-        return [set_var_brick0, set_var_brick1, set_var_brick2, catformula.FormulaElement(catElementType.USER_VARIABLE, var2_name, None)]
+        return [set_var_brick0, set_var_brick1, set_var_brick2, var2_fe]
 
     @_register_handler(_block_name_to_handler_map, "ceiling")
     def _convert_ceiling_block(self):
         [value] = self.arguments
 
-        # SetVariableBrick: name=var0_name, value=value
-        value_formula = catrobat.create_formula_with_value(value)
         var0_name = _GENERATED_VARIABLE_PREFIX + "ceiling_var0" # TODO: make name unique!!
-        set_var_brick0 = self._converted_helper_brick_or_formula_element([var0_name, value_formula], "setVar:to:")[0]
-        formula_elem = self._converted_helper_brick_or_formula_element([value_formula.getRoot()], "rounded")
-
-        # SetVariableBrick: name=var0_name, value=round(value)
         var1_name = _GENERATED_VARIABLE_PREFIX + "ceiling_var1" # TODO: make name unique!!
-        set_var_brick1 = self._converted_helper_brick_or_formula_element([var1_name, catrobat.create_formula_with_value(formula_elem)], "setVar:to:")[0]
+        var2_name = _GENERATED_VARIABLE_PREFIX + "ceiling_var2" # TODO: make name unique!!
+        var0_fe = _variable_for(var0_name)
+        var1_fe = _variable_for(var1_name)
+        var2_fe = _variable_for(var2_name)
+
+        # SetVariableBrick: name=var0_name, value=value
+        [set_var_brick0] = self._converted_helper_brick_or_formula_element([var0_name, value], "setVar:to:")
+
+        # SetVariableBrick: name=var1_name, value=round(value)
+        rounded_var0_fe = self._converted_helper_brick_or_formula_element([var0_fe], "rounded")
+        [set_var_brick1] = self._converted_helper_brick_or_formula_element([var1_name, rounded_var0_fe], "setVar:to:")
 
         # (var0 - var1)
-        left_fe = catformula.FormulaElement(catElementType.USER_VARIABLE, var0_name, None)
-        right_fe = catformula.FormulaElement(catElementType.USER_VARIABLE, var0_name, None)
-        minus_formula_elem = self._converted_helper_brick_or_formula_element([left_fe, right_fe], "-")
+        minus_fe = self._converted_helper_brick_or_formula_element([var0_fe, var1_fe], "-")
 
         # ((var0 - var1) > 0)
-        args = [minus_formula_elem, catrobat.create_formula_element_with_value("0")]
+        args = [minus_fe, catrobat.create_formula_element_with_value("0")]
         gt_formula_elem = self._converted_helper_brick_or_formula_element(args, ">")
 
         # (((var0 - var1) > 0) + var1)
-        formula_elem = self._converted_helper_brick_or_formula_element([gt_formula_elem, catformula.FormulaElement(catElementType.USER_VARIABLE, var1_name, None)], "+")
+        formula_elem = self._converted_helper_brick_or_formula_element([gt_formula_elem, var1_fe], "+")
 
         # SetVariableBrick: name=var1_name, value=(((var0 - var1) > 0) + var1)
-        var2_name = _GENERATED_VARIABLE_PREFIX + "ceiling_var2" # TODO: make name unique!!
-        set_var_brick2 = self._converted_helper_brick_or_formula_element([var2_name, catrobat.create_formula_with_value(formula_elem)], "setVar:to:")[0]
+        [set_var_brick2] = self._converted_helper_brick_or_formula_element([var2_name, formula_elem], "setVar:to:")
 
-        return [set_var_brick0, set_var_brick1, set_var_brick2, catformula.FormulaElement(catElementType.USER_VARIABLE, var2_name, None)]
+        return [set_var_brick0, set_var_brick1, set_var_brick2, var2_fe]
 
     @_register_handler(_block_name_to_handler_map, "10 ^")
     def _convert_pow_of_10_block(self):
@@ -985,16 +1008,16 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         # since 10^x == exp(x*ln(10)) we can use 3 math functions to achieve the correct result!
 
         # ln(10)
-        ln_formula_elem = catformula.Formula(self._converted_helper_brick_or_formula_element([10], "ln")).getRoot()
+        ln_formula_elem = self._converted_helper_brick_or_formula_element([10], "ln")
 
         # x*ln(10)     (where x:=value)
-        exponent_formula_elem = catformula.Formula(self._converted_helper_brick_or_formula_element([value, ln_formula_elem], "*")).getRoot()
+        exponent_formula_elem = self._converted_helper_brick_or_formula_element([value, ln_formula_elem], "*")
 
         # exp(x*ln(10))
-        result_formula_elem = catformula.Formula(self._converted_helper_brick_or_formula_element([exponent_formula_elem], "e^")).getRoot()
+        result_formula_elem = self._converted_helper_brick_or_formula_element([exponent_formula_elem], "e^")
 
         # round(exp(x*ln(10)))     (use round to get rid of rounding errors)
-        return catformula.Formula(self._converted_helper_brick_or_formula_element([result_formula_elem], "rounded")).getRoot()
+        return self._converted_helper_brick_or_formula_element([result_formula_elem], "rounded")
 
     @_register_handler(_block_name_to_handler_map, "lineCountOfList:")
     def _convert_line_count_of_list_block(self):
@@ -1229,14 +1252,12 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
     @_register_handler(_block_name_to_handler_map, "changeVar:by:", "setVar:to:")
     def _convert_variable_block(self):
-        print(len(self.arguments))
-        print(self.arguments)
         [variable_name, value] = self.arguments
-        print(variable_name)
-        print(value)
         user_variable = self.project.getDataContainer().getUserVariable(variable_name, self.sprite)
-        if user_variable is None and _is_generated(variable_name):
+        if user_variable is None:
             # WORKAROUND: for generated variables added in preprocessing step (e.g doUntil rewrite)
+            # must be generated user variable, otherwise the variable must have already been added at this stage!
+            assert(_is_generated(variable_name))
             catrobat.add_user_variable(self.project, variable_name, self.sprite, self.sprite.getName())
             user_variable = self.project.getDataContainer().getUserVariable(variable_name, self.sprite)
             assert user_variable is not None and user_variable.getName() == variable_name, "variable: %s, sprite_name: %s" % (variable_name, self.sprite.getName())

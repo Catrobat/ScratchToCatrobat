@@ -72,12 +72,12 @@ class UnmappedBlock(object):
         return catrobat.simple_name_for(self.block_and_args)
 
     def to_placeholder_brick(self):
-        return _placeholder_for_unmapped_bricks_to(self.sprite, *self.block_and_args)
+        return _placeholder_for_unmapped_bricks_to(*self.block_and_args)
 
 def _with_unmapped_blocks_replaced_as_default_formula_value(arguments):
     return [_DEFAULT_FORMULA_ELEMENT if isinstance(argument, UnmappedBlock) else argument for argument in arguments]
 
-def _placeholder_for_unmapped_bricks_to(catr_sprite, *args):
+def _placeholder_for_unmapped_bricks_to(*args):
     arguments = ", ".join(map(catrobat.simple_name_for, args))
     temp = _DEFAULT_BRICK_CLASS(500)
     return [temp, catbricks.NoteBrick(UNSUPPORTED_SCRATCH_BRICK_NOTE_MESSAGE_PREFIX + arguments)]
@@ -210,11 +210,11 @@ class _ScratchToCatrobat(object):
         "changeGraphicEffect:by:": lambda effect_type, value:
             catbricks.ChangeBrightnessByNBrick(value) if effect_type == 'brightness' else
             catbricks.ChangeTransparencyByNBrick(value) if effect_type == 'ghost' else
-            _placeholder_for_unmapped_bricks_to(effect_type, value),
+            _placeholder_for_unmapped_bricks_to("changeGraphicEffect:by:", effect_type, value),
         "setGraphicEffect:to:": lambda effect_type, value:
             catbricks.SetBrightnessBrick(value) if effect_type == 'brightness' else
             catbricks.SetTransparencyBrick(value) if effect_type == 'ghost' else
-            _placeholder_for_unmapped_bricks_to(effect_type, value),
+            _placeholder_for_unmapped_bricks_to("setGraphicEffect:to:", effect_type, value),
         "filterReset": catbricks.ClearGraphicEffectBrick,
         "changeSizeBy:": catbricks.ChangeSizeByNBrick,
         "setSizeTo:": catbricks.SetSizeToBrick,
@@ -451,8 +451,7 @@ class _ScratchObjectConverter(object):
             current_costume_resolution = scratch_costume.get(scratchkeys.COSTUME_RESOLUTION)
             if not costume_resolution:
                 costume_resolution = current_costume_resolution
-            else:
-                if current_costume_resolution != costume_resolution:
+            elif current_costume_resolution != costume_resolution:
                     log.warning("Costume resolution not same for all costumes")
             sprite_looks.add(self._catrobat_look_from(scratch_costume))
 
@@ -560,7 +559,8 @@ class _ScratchObjectConverter(object):
         implicit_bricks_to_add += [place_at_brick]
 
         object_scale = scratch_object.get_scale() or 1
-        implicit_bricks_to_add += [catbricks.SetSizeToBrick(object_scale * 100.0 / costume_resolution)]
+        if costume_resolution is not None:
+            implicit_bricks_to_add += [catbricks.SetSizeToBrick(object_scale * 100.0 / costume_resolution)]
 
         object_direction = scratch_object.get_direction() or 90
         implicit_bricks_to_add += [catbricks.PointInDirectionBrick(object_direction)]
@@ -583,11 +583,18 @@ class _ScratchObjectConverter(object):
             raise common.ScratchtobatError("Arg2 must be of type={}, but is={}".format(catbase.Sprite, type(sprite)))
 
         log.debug("  script type: %s, args: %s", scratch_script.type, scratch_script.arguments)
-        cat_script = _ScratchToCatrobat.create_script(scratch_script.type, sprite, scratch_script.arguments)
+        try:
+            cat_script = _ScratchToCatrobat.create_script(scratch_script.type, sprite, scratch_script.arguments)
+        except:
+            cat_script = catbase.StartScript()
+            wait_and_note_brick = _placeholder_for_unmapped_bricks_to("UNSUPPORTED SCRIPT", scratch_script.type)
+            for brick in wait_and_note_brick:
+                cat_script.addBrick(brick)
         converted_bricks = cls._catrobat_bricks_from(scratch_script.script_element, sprite)
         assert isinstance(converted_bricks, list) and len(converted_bricks) == 1
         [converted_bricks] = converted_bricks
-        log.debug("   --> converted: <%s>", ", ".join(map(catrobat.simple_name_for, converted_bricks)))
+#         print(map(catrobat.simple_name_for, converted_bricks))
+#         log.debug("   --> converted: <%s>", ", ".join(map(catrobat.simple_name_for, converted_bricks)))
         ignored_blocks = 0
         for brick in converted_bricks:
             # Scratch behavior: blocks can be ignored e.g. if no arguments are set
@@ -834,13 +841,15 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         self.arguments = self._pop_stack(arguments_start_index)
 
         new_stack_values = self._converted_script_element()
+
         del self._stack[-1]
         if not isinstance(new_stack_values, list):
             new_stack_values = [new_stack_values]
         # TODO: simplify this...
         if len(self._child_stack) > 0 and len(new_stack_values) == len([val for val in new_stack_values if isinstance(val, catbricks.Brick)]):
-            self._stack += self._child_stack[-1]
-            del self._child_stack[-1]
+            for brick_list in reversed(self._child_stack):
+                self._stack += brick_list
+            self._child_stack = []
         if len(new_stack_values) > 1 and isinstance(new_stack_values[-1], catformula.FormulaElement):
             # TODO: lambda check if all entries are instance of Brick
             self._child_stack += [new_stack_values[:-1]]
@@ -860,10 +869,13 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             log.debug("    block to convert: %s, arguments: %s", block_name, catrobat.simple_name_for(self.arguments))
             self.CatrobatClass = _ScratchToCatrobat.catrobat_brick_class_for(block_name)
             handler_method_name = self._block_name_to_handler_map.get(block_name)
-            if handler_method_name is not None:
-                converted_element = getattr(self, handler_method_name)()
-            else:
-                converted_element = self._regular_block_conversion()
+            try:
+                if handler_method_name is not None:
+                    converted_element = getattr(self, handler_method_name)()
+                else:
+                    converted_element = self._regular_block_conversion()
+            except:
+                converted_element = _placeholder_for_unmapped_bricks_to(block_name)
         elif isinstance(self.script_element, scratch.BlockValue):
             converted_element = [script_element.name]
         else:
@@ -1106,6 +1118,9 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "startScene")
     def _convert_scene_block(self):
         [look_name] = self.arguments
+        # TODO: implement!
+        #if look_name == "next backdrop": => use NextLookBrick
+        #if look_name == "previous backdrop": => not sure...
         background_sprite = catrobat.background_sprite_of(self.project)
         if not background_sprite:
             assert catrobat.is_background_sprite(self.sprite)

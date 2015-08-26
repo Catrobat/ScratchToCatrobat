@@ -20,7 +20,6 @@
 #  along with this program.  If not, see http://www.gnu.org/licenses/.
 from __future__ import print_function
 
-import collections
 import glob
 import itertools
 import json
@@ -53,7 +52,8 @@ class JsonKeys(object):
     LISTS = "lists"
     VARIABLES = 'variables'
 
-PROJECT_SPECIFIC_KEYS = ["info", "currentCostumeIndex", "penLayerMD5", "tempoBPM", "videoAlpha", "children"]
+#PROJECT_SPECIFIC_KEYS = ["info", "currentCostumeIndex", "penLayerMD5", "tempoBPM", "videoAlpha", "children"]
+PROJECT_SPECIFIC_KEYS = ["info", "currentCostumeIndex", "penLayerMD5", "tempoBPM", "children"]
 SCRIPT_GREEN_FLAG, SCRIPT_RECEIVE, SCRIPT_KEY_PRESSED, SCRIPT_SENSOR_GREATER_THAN, SCRIPT_SCENE_STARTS, SCRIPT_CLICKED = SCRIPTS = \
     ["whenGreenFlag", "whenIReceive", "whenKeyPressed", "whenSensorGreaterThan", "whenSceneStarts", "whenClicked", ]
 STAGE_OBJECT_NAME = "Stage"

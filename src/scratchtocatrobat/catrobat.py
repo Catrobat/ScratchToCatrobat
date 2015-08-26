@@ -128,7 +128,7 @@ def user_variable_of(project, variable_name, sprite_name=None):
         return data_container.getUserVariable(variable_name, sprite)
 
 def create_formula_with_value(variable_value):
-    assert variable_value
+    assert variable_value != None
     if type(variable_value) is int:
         java_variable_value = java.lang.Integer(variable_value)
     elif isinstance(variable_value, (float, long)):

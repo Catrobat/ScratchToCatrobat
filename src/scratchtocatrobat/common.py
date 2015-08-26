@@ -27,6 +27,7 @@ import tempfile
 import time
 import urllib2
 import zipfile
+import shutil
 from functools import wraps
 from itertools import chain
 from itertools import repeat
@@ -57,25 +58,30 @@ def isList(obj):
 class ScratchtobatError(Exception):
     pass
 
-
 def md5_hash(input_path):
     with open(input_path, "rb") as fp:
         return hashlib.md5(fp.read()).hexdigest()
-
 
 def makedirs(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
+def copy_dir(source_dir, destination_dir, overwrite=False):
+    if overwrite:
+        rm_dir(destination_dir)
+    shutil.copytree(source_dir, destination_dir)
+
+def rm_dir(dir_path):
+    if not os.path.isdir(dir_path):
+        return
+    shutil.rmtree(dir_path)
 
 # source for pad methods: http://stackoverflow.com/a/3438986
 def pad_infinite(iterable, padding=None):
     return chain(iterable, repeat(padding))
 
-
 def pad(iterable, size, padding=None):
     return islice(pad_infinite(iterable, padding), size)
-
 
 class DictAccessWrapper(object):
     def __init__(self, dict_object):
@@ -231,11 +237,9 @@ def retry(ExceptionToCheck, tries=4, delay=1, backoff=1, hook=None):
 
     return deco_retry
 
-
 def fields_of(java_class):
     assert isinstance(java_class, java.lang.Class)
     return [name for name, type_ in vars(java_class).iteritems() if isinstance(type_, PyReflectedField)]
-
 
 def url_response_data(url, retries=4, hook=None, timeout=4, log=log):
     def retry_hook(exc, tries, delay):
@@ -255,11 +259,9 @@ def url_response_data(url, retries=4, hook=None, timeout=4, log=log):
         # WORKAROUND: little more descriptive
         raise IOError("socket.timeout")
 
-
 def content_of(path):
     with open(path) as f:
         return f.read()
-
 
 def length_of_audio_file_in_secs(file_path):
     audioInputStream = AudioSystem.getAudioInputStream(java.io.File(file_path))
@@ -267,14 +269,12 @@ def length_of_audio_file_in_secs(file_path):
     frames = audioInputStream.getFrameLength()
     return float(frames) / format_.getFrameRate()
 
-
 def get_os_platform():
     """return platform name, but for Jython it uses os.name Java property"""
     ver = sys.platform.lower()
     if ver.startswith('java'):
         ver = java.lang.System.getProperty("os.name").lower()
     return ver
-
 
 def int_or_float(str_value):
     assert isinstance(str_value, (str, unicode))
@@ -286,7 +286,6 @@ def int_or_float(str_value):
         except ValueError:
             value = None
     return value
-
 
 def extract(zip_path, extraction_path):
     with zipfile.ZipFile(zip_path, 'r') as myzip:

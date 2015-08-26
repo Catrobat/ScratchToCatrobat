@@ -22,12 +22,10 @@
 from __future__ import print_function
 import logging
 import os
-import shutil
 import sys
 from docopt import docopt
 from scratchtocatrobat import logger
 from scratchtocatrobat.tools import helpers
-from scratchtocatrobat.tools.helpers import latest_catroid_repository_release_data
 
 logger.setup_logging()
 log = logging.getLogger("scratchtocatrobat.main")
@@ -89,9 +87,10 @@ def run_converter(scratch_project_file_or_url, output_dir, extract_resulting_cat
             catrobat_program_path = converted_project.save_as_catrobat_package_to(output_dir)
             if extract_resulting_catrobat:
                 extraction_path = os.path.join(output_dir, os.path.splitext(os.path.basename(catrobat_program_path))[0])
-                if os.path.exists(extraction_path):
-                    shutil.rmtree(extraction_path)
+                common.rm_dir(extraction_path)
                 common.makedirs(extraction_path)
+                scratch_output_path = os.path.join(extraction_path, "scratch")
+                common.copy_dir(scratch_project_dir, scratch_output_path, overwrite=True)
                 common.extract(catrobat_program_path, extraction_path)
 
     except (common.ScratchtobatError, EnvironmentError, IOError) as e:

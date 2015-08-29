@@ -565,8 +565,10 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     # playSound:
     def test_fail_convert_playsound_block_if_sound_missing(self):
         scratch_block = ["playSound:", "bird"]
-        with self.assertRaises(converter.ConversionError):
-            self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert len(bricks) == 2
+        assert isinstance(bricks[0], catbricks.WaitBrick)
+        assert isinstance(bricks[1], catbricks.NoteBrick)
 
     # playSound:
     def test_can_convert_playsound_block(self):

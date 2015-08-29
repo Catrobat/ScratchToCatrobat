@@ -1,5 +1,8 @@
 ScratchToCatrobat
 =================
+[![Build Status](https://travis-ci.org/rsamer/ScratchToCatrobat.svg?branch=master)](https://travis-ci.org/rsamer/ScratchToCatrobat)
+[![Version](https://img.shields.io/badge/version-0.4a-blue.svg)](https://img.shields.io/badge/version-0.4a-blue.svg)
+
 A tool for converting Scratch projects into Catrobat programs.
 
 Catrobat is a visual programming language and set of creativity tools for smartphones, tablets, and mobile browsers. Catrobat programs can be written by using the Catroid programming system on Android phones and tablets, using Catroid, or Catty for iPhones.

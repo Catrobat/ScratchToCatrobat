@@ -26,6 +26,7 @@ import os
 import shutil
 import types
 import zipfile
+import re
 from codecs import open
 
 import org.catrobat.catroid.common as catcommon
@@ -408,6 +409,9 @@ class Converter(object):
         xml_header.virtualScreenHeight = scratch.STAGE_HEIGHT_IN_PIXELS
         xml_header.virtualScreenWidth = scratch.STAGE_WIDTH_IN_PIXELS
         xml_header.setApplicationBuildName(helpers.application_info("build_name"))
+        nums = re.findall(r'\d+', helpers.application_info("build_number"))
+        build_number = int(nums[0]) if len(nums) > 0 else 0
+        xml_header.setApplicationBuildNumber(build_number)
         xml_header.setApplicationName(helpers.application_info("name"))
         xml_header.setApplicationVersion(helpers.application_info("version"))
         xml_header.setCatrobatLanguageVersion(catrobat.CATROBAT_LANGUAGE_VERSION)

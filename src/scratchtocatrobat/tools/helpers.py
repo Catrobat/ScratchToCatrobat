@@ -22,6 +22,7 @@
 from __future__ import print_function
 import os
 import sys
+import string
 
 ################################################################################
 # IMMUTABLE PATHS
@@ -75,8 +76,13 @@ class CatrobatConfigParser(object):
         items = self.section_items[section]
         return [(option, self._populate_placeholders_of_entry(entry, section, option)) for (option, entry) in items.iteritems()]
     def get(self, section, option):
-        item = self.section_items[section][option]
-        return self._populate_placeholders_of_entry(item, section, option)
+        options = [option] if type(option) is not list else option
+        result = []
+        for option in options:
+            assert isinstance(option, (str, unicode))
+            item = self.section_items[section][option]
+            result += [self._populate_placeholders_of_entry(item, section, option)]
+        return result if len(result) > 1 else result[0]
     def sections(self):
         return self.section_items.keys()
 
@@ -89,13 +95,15 @@ def error(msg):
     sys.exit(ExitCode.FAILURE)
 
 def make_dir_if_not_exists(path):
-    try:
-        if not os.path.exists(path):
-            os.makedirs(path)
-        elif not os.path.isdir(path):
-            error("Invalid path '{0}'. This is NO directory.".format(path))
-    except Exception, e:
-        error(e)
+    paths = [path] if type(path) is not list else path
+    for path in paths:
+        try:
+            if not os.path.exists(path):
+                os.makedirs(path)
+            elif not os.path.isdir(path):
+                error("Invalid path '{0}'. This is NO directory.".format(path))
+        except Exception, e:
+            error(e)
 
 def application_info(key):
     return config.get("APPLICATION", key)
@@ -202,7 +210,11 @@ def _setup_configuration():
     return config
 
 def inject_git_commmit_hook():
-    hook_dir_path = os.path.join(APP_PATH, ".git", "hooks")
+    git_dir = os.path.join(APP_PATH, ".git")
+    if not os.path.isdir(git_dir): # abort, might not be a git repository...
+        return
+
+    hook_dir_path = os.path.join(git_dir, "hooks")
     make_dir_if_not_exists(hook_dir_path)
     hook_path = os.path.join(hook_dir_path, "pre-commit")
 

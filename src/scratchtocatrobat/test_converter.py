@@ -18,7 +18,6 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see http://www.gnu.org/licenses/.
-import glob
 import os
 import unittest
 
@@ -311,6 +310,32 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert inner_user_list_formula_element.leftChild == None
         assert inner_user_list_formula_element.rightChild == None
 
+    # computeFunction:of:, floor
+    def test_can_convert_floor_block(self):
+        value = 9.6
+        scratch_block = ["computeFunction:of:", "floor", value]
+        [catr_formula_element] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_formula_element, catformula.FormulaElement)
+        assert catr_formula_element.type == catformula.FormulaElement.ElementType.FUNCTION
+        assert catr_formula_element.value == catformula.Functions.FLOOR.toString() # @UndefinedVariable
+        value_formula_element = catr_formula_element.leftChild
+        assert catr_formula_element.rightChild == None
+        assert value_formula_element.type == catformula.FormulaElement.ElementType.NUMBER
+        assert value_formula_element.value == str(value)
+
+    # computeFunction:of:, ceiling
+    def test_can_convert_ceiling_block(self):
+        value = 9.6
+        scratch_block = ["computeFunction:of:", "ceiling", value]
+        [catr_formula_element] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_formula_element, catformula.FormulaElement)
+        assert catr_formula_element.type == catformula.FormulaElement.ElementType.FUNCTION
+        assert catr_formula_element.value == catformula.Functions.CEIL.toString() # @UndefinedVariable
+        value_formula_element = catr_formula_element.leftChild
+        assert catr_formula_element.rightChild == None
+        assert value_formula_element.type == catformula.FormulaElement.ElementType.NUMBER
+        assert value_formula_element.value == str(value)
+
     # 10 ^
     def test_can_convert_pow_of_10_block(self):
         exponent = 6
@@ -339,7 +364,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert ln_formula_element.rightChild == None
         base_formula_element = ln_formula_element.leftChild
         assert base_formula_element.type == catformula.FormulaElement.ElementType.NUMBER
-        assert base_formula_element.value == str(10)
+        assert base_formula_element.value == str(base)
         assert base_formula_element.leftChild == None
         assert base_formula_element.rightChild == None
 
@@ -944,12 +969,13 @@ class TestConvertProjects(common_testing.ProjectTestCase):
         }
         for project_name, sound_to_sound_length_map in scratch_project_to_sound_to_sound_length_map.iteritems():
             catrobat_project = self._test_project(project_name)
-            for [sound_name, containing_sprite_name], expected_sound_length in sound_to_sound_length_map.iteritems():
+#             for [sound_name, containing_sprite_name], expected_sound_length in sound_to_sound_length_map.iteritems():
+            for [sound_name, containing_sprite_name], _ in sound_to_sound_length_map.iteritems():
                 sound_length_variable_name = converter._sound_length_variable_name_for(sound_name)
                 sound_length_variable = catrobat.user_variable_of(catrobat_project, sound_length_variable_name, containing_sprite_name)
                 assert isinstance(sound_length_variable, catformula.UserVariable)
                 # TODO: check first set brick for variable
-                # assert sound_length_variable.getValue() == expected_sound_length
+#                 assert sound_length_variable.getValue() == expected_sound_length
 
     # simple test project
     def test_can_convert_project_with_unusued_files(self):

@@ -117,8 +117,8 @@ class _ScratchToCatrobat(object):
 
         #  TODO: replace "dummy" keyword by corresponding Catrobat function as soon as Catrobat supports this...
         "10 ^": "dummy",
-        "floor": "dummy", #catformula.Functions.FLOOR,
-        "ceiling": "dummy", #catformula.Functions.CEIL,
+        "floor": catformula.Functions.FLOOR,
+        "ceiling": catformula.Functions.CEIL,
 
         # user list functions
         "getLine:ofList:": catformula.Functions.LIST_ITEM,
@@ -949,72 +949,6 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         return converted_element
 
     # formula element blocks (compute, operator, ...)
-    @_register_handler(_block_name_to_handler_map, "floor")
-    def _convert_floor_block(self):
-        [value] = self.arguments
-
-        var0_name = _GENERATED_VARIABLE_PREFIX + "floor_var0" # TODO: make name unique!!
-        var1_name = _GENERATED_VARIABLE_PREFIX + "floor_var1" # TODO: make name unique!!
-        var2_name = _GENERATED_VARIABLE_PREFIX + "floor_var2" # TODO: make name unique!!
-        var0_fe = _variable_for(var0_name)
-        var1_fe = _variable_for(var1_name)
-        var2_fe = _variable_for(var2_name)
-
-        # SetVariableBrick: name=var0_name, value=value
-        [set_var_brick0] = self._converted_helper_brick_or_formula_element([var0_name, value], "setVar:to:")
-
-        # SetVariableBrick: name=var1_name, value=round(value)
-        rounded_var0_fe = self._converted_helper_brick_or_formula_element([var0_fe], "rounded")
-        [set_var_brick1] = self._converted_helper_brick_or_formula_element([var1_name, rounded_var0_fe], "setVar:to:")
-
-        # (var0 - var1)
-        minus_fe = self._converted_helper_brick_or_formula_element([var0_fe, var1_fe], "-")
-
-        # ((var0 - var1) < 0)
-        args = [minus_fe, catrobat.create_formula_element_with_value("0")]
-        st_formula_elem = self._converted_helper_brick_or_formula_element(args, "<")
-
-        # (var1 - ((var0 - var1) < 0))
-        formula_elem = self._converted_helper_brick_or_formula_element([var1_fe, st_formula_elem], "-")
-
-        # SetVariableBrick: name=var1_name, value=(var1 - ((var0 - var1) < 0))
-        [set_var_brick2] = self._converted_helper_brick_or_formula_element([var2_name, formula_elem], "setVar:to:")
-
-        return [set_var_brick0, set_var_brick1, set_var_brick2, var2_fe]
-
-    @_register_handler(_block_name_to_handler_map, "ceiling")
-    def _convert_ceiling_block(self):
-        [value] = self.arguments
-
-        var0_name = _GENERATED_VARIABLE_PREFIX + "ceiling_var0" # TODO: make name unique!!
-        var1_name = _GENERATED_VARIABLE_PREFIX + "ceiling_var1" # TODO: make name unique!!
-        var2_name = _GENERATED_VARIABLE_PREFIX + "ceiling_var2" # TODO: make name unique!!
-        var0_fe = _variable_for(var0_name)
-        var1_fe = _variable_for(var1_name)
-        var2_fe = _variable_for(var2_name)
-
-        # SetVariableBrick: name=var0_name, value=value
-        [set_var_brick0] = self._converted_helper_brick_or_formula_element([var0_name, value], "setVar:to:")
-
-        # SetVariableBrick: name=var1_name, value=round(value)
-        rounded_var0_fe = self._converted_helper_brick_or_formula_element([var0_fe], "rounded")
-        [set_var_brick1] = self._converted_helper_brick_or_formula_element([var1_name, rounded_var0_fe], "setVar:to:")
-
-        # (var0 - var1)
-        minus_fe = self._converted_helper_brick_or_formula_element([var0_fe, var1_fe], "-")
-
-        # ((var0 - var1) > 0)
-        args = [minus_fe, catrobat.create_formula_element_with_value("0")]
-        gt_formula_elem = self._converted_helper_brick_or_formula_element(args, ">")
-
-        # (((var0 - var1) > 0) + var1)
-        formula_elem = self._converted_helper_brick_or_formula_element([gt_formula_elem, var1_fe], "+")
-
-        # SetVariableBrick: name=var1_name, value=(((var0 - var1) > 0) + var1)
-        [set_var_brick2] = self._converted_helper_brick_or_formula_element([var2_name, formula_elem], "setVar:to:")
-
-        return [set_var_brick0, set_var_brick1, set_var_brick2, var2_fe]
-
     @_register_handler(_block_name_to_handler_map, "10 ^")
     def _convert_pow_of_10_block(self):
         [value] = self.arguments

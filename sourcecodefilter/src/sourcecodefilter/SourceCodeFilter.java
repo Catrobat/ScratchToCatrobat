@@ -66,20 +66,21 @@ import sourcecodefilter.ConverterRelevantCatroidSource.FilteringProject;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
-class SourceCodeFilter {
+class ExitCode {
+	public static final int FAILURE = 1;
+	public static final int SUCCESS = 0;
+}
 
-	public class ExitCode {
-		public static final int FAILURE = 1;
-		public static final int SUCCESS = 0;
-	}
+class SourceCodeFilter {
 
     private static String[] ADDITIONAL_SERIALIZATION_CLASSES = null;
     private static Set<String> PRESERVED_INTERFACES = null;
     public static String[] ADDITIONAL_HELPER_CLASSES = null;
+    public static String[] REMOVED_CLASSES = null;
     public static Map<String, Set<String>> classToPreservedFieldsMapping = null;
     public static Map<String, Set<String>> classToPreservedMethodsMapping = null;
-    public static Map<String, Set<String>> classToRemoveFieldsMapping = null;
-    public static Map<String, Set<String>> classToRemoveMethodsMapping = null;
+    public static Map<String, Set<String>> removeFieldsMapping = null;
+    public static Map<String, Set<String>> removeMethodsMapping = null;
 
     @SuppressWarnings("deprecation")
 	private static ASTParser astParser = ASTParser.newParser(AST.JLS4);
@@ -271,7 +272,6 @@ class SourceCodeFilter {
 	        String URLString = config.get("URL").toString().replace("%{tag_name}", gitTag).replace("%{archive_extension}", archiveExtension);
 	        String downloadPath = config.get("download_path").toString();
 	        URL downloadURL = new URL(URLString);
-	        ReadableByteChannel rbc = Channels.newChannel(downloadURL.openStream());
 	        File downloadDir = new File(downloadPath);
 	        downloadDir.mkdirs(); // create intermediate recursive directories if needed...
 	        if (downloadDir.isDirectory() == false) {
@@ -280,9 +280,12 @@ class SourceCodeFilter {
 	        }
 	        File archiveFile = new File(downloadDir, gitTag + "." + archiveExtension);
 	        if (archiveFile.exists() == false) {
+	        	System.out.println("Downloading new release...");
 	        	fos = new FileOutputStream(archiveFile);
+	        	ReadableByteChannel rbc = Channels.newChannel(downloadURL.openStream());
 	        	fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
 	        }
+        	System.out.println("Extracting new release...");
 	        String rootDirectoryPath = Util.extractZip(archiveFile, downloadDir.getAbsolutePath());
 	        if (rootDirectoryPath == null) {
 	        	System.exit(ExitCode.FAILURE);
@@ -305,6 +308,8 @@ class SourceCodeFilter {
 	    	Util.deleteDirectory(testOutputDir); // delete directory of path but not intermediate!!
 
 	    	// include/exclude setup
+	    	List<String> removedCls = Util.getListFromConfigForKey("removed_classes", config);
+	    	SourceCodeFilter.REMOVED_CLASSES = (String[])removedCls.toArray(new String[removedCls.size()]);
 			List<String> addSerCls = Util.getListFromConfigForKey("additional_serialization_classes", config);
 	    	SourceCodeFilter.ADDITIONAL_SERIALIZATION_CLASSES = (String[])addSerCls.toArray(new String[addSerCls.size()]);
 	    	List<String> prsIfCls = Util.getListFromConfigForKey("preserved_interfaces", config);
@@ -315,10 +320,10 @@ class SourceCodeFilter {
 	    	classToPreservedFieldsMapping = Util.convertArrayListToSetMapping(pfArrayListMap);
 	    	Map<String, ArrayList<String>> pmArrayListMap = Util.getMapFromConfigForKey("class_to_preserved_methods_mapping", config);
 	    	classToPreservedMethodsMapping = Util.convertArrayListToSetMapping(pmArrayListMap);
-	    	Map<String, ArrayList<String>> rfArrayListMap = Util.getMapFromConfigForKey("class_to_remove_fields_mapping", config);
-	    	classToRemoveFieldsMapping = Util.convertArrayListToSetMapping(rfArrayListMap);
-	    	Map<String, ArrayList<String>> rmArrayListMap = Util.getMapFromConfigForKey("class_to_remove_methods_mapping", config);
-	    	classToRemoveMethodsMapping = Util.convertArrayListToSetMapping(rmArrayListMap);
+	    	Map<String, ArrayList<String>> rfArrayListMap = Util.getMapFromConfigForKey("remove_fields_mapping", config);
+	    	removeFieldsMapping = Util.convertArrayListToSetMapping(rfArrayListMap);
+	    	Map<String, ArrayList<String>> rmArrayListMap = Util.getMapFromConfigForKey("remove_methods_mapping", config);
+	    	removeMethodsMapping = Util.convertArrayListToSetMapping(rmArrayListMap);
 	        writePreprocessedCatrobatSource(testInputDir, testOutputDir);
 		} catch (IOException exception) {
 			exception.printStackTrace();

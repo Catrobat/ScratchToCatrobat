@@ -102,7 +102,10 @@ public class ConverterRelevantCatroidSource {
         astParser.setKind(ASTParser.K_COMPILATION_UNIT);
     }
 
-    private ConverterRelevantCatroidSource(File sourcePath, FilteringProject project, Boolean isSerializationClass,
+    private ConverterRelevantCatroidSource(
+    		File sourcePath,
+    		FilteringProject project,
+    		Boolean isSerializationClass,
             Set<String> fieldsToPreserve,
             Set<String> fieldsToRemove,
             Set<String> methodsToPreserve,
@@ -129,8 +132,8 @@ public class ConverterRelevantCatroidSource {
         this.isSerializationClass = isSerializationClass;
         initializeAst();
         // NOTE: Java class name convention expected
-        this.qualifiedClassName = sourceAst.getPackage().getName().getFullyQualifiedName() + "."
-                + Files.getNameWithoutExtension(sourcePath.getName());
+        this.qualifiedClassName = sourceAst.getPackage().getName().getFullyQualifiedName()
+        		+ "." + Files.getNameWithoutExtension(sourcePath.getName());
         this.project = project;
         project.addClass(this);
     }
@@ -165,11 +168,11 @@ public class ConverterRelevantCatroidSource {
         try {
             edits.apply(internalSource);
         } catch (MalformedTreeException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
+            System.exit(ExitCode.FAILURE);
         } catch (BadLocationException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
+            System.exit(ExitCode.FAILURE);
         }
         //        File targetFile = new File(outputProjectDir, sourcePath.getAbsolutePath().replace(project.projectInputDir.getAbsolutePath(), ""));
         File targetFile = project.toOutputPath(this.sourcePath);
@@ -209,8 +212,8 @@ public class ConverterRelevantCatroidSource {
         try {
             this.internalSource = new Document(FileUtils.readFileToString(sourcePath));
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
+            System.exit(ExitCode.FAILURE);
         }
         @SuppressWarnings("unchecked")
         Hashtable<String, String> options = JavaCore.getOptions();
@@ -231,22 +234,24 @@ public class ConverterRelevantCatroidSource {
         List<ConverterRelevantCatroidSource> relevantSources = new ArrayList<ConverterRelevantCatroidSource>();
         Set<String> serializationTargetClassNames = SourceCodeFilter.parseSerializationRelevantClassNames(catroidProjectDir);
         Set<String> serializationHelperClassNames = new HashSet<String>(Arrays.asList(SourceCodeFilter.ADDITIONAL_HELPER_CLASSES));
+        Set<String> removedClassNames = new HashSet<String>(Arrays.asList(SourceCodeFilter.REMOVED_CLASSES));
         List<String> existingSources = new ArrayList<String>();
         for (File sourcePath : FileUtils.listFiles(catroidProjectDir, new String[] { "java" }, true)) {
-            if (!(project.toOutputPath(sourcePath).exists())) {
+            if (! (project.toOutputPath(sourcePath).exists())) {
                 String className = Files.getNameWithoutExtension(sourcePath.getName());
                 boolean isSerializationSource = serializationTargetClassNames.contains(className);
                 boolean isHelperSource = serializationHelperClassNames.contains(className);
-                if (isSerializationSource || isHelperSource) {
+                boolean isRemovedClass = removedClassNames.contains(className);
+                if ((! isRemovedClass) && (isSerializationSource || isHelperSource)) {
                     ConverterRelevantCatroidSource catroidSource = new ConverterRelevantCatroidSource(
                         sourcePath,
                         project,
                         isSerializationSource,
                         // TODO: move into project class?
                         SourceCodeFilter.classToPreservedFieldsMapping.get(className),
-                        SourceCodeFilter.classToRemoveFieldsMapping.get(className),
+                        SourceCodeFilter.removeFieldsMapping.get(className),
                         SourceCodeFilter.classToPreservedMethodsMapping.get(className),
-                        SourceCodeFilter.classToRemoveMethodsMapping.get(className)
+                        SourceCodeFilter.removeMethodsMapping.get(className)
                     );
                     relevantSources.add(catroidSource);
                 }

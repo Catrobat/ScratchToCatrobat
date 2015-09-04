@@ -1,13 +1,19 @@
 # Main settings
-git_tag: 0.9.16
+git_tag: 0.9.18
 archive_extension: "zip"
 URL: "https://github.com/Catrobat/Catroid/archive/%{tag_name}.%{archive_extension}"
+xstream_download_URL: "http://repo.maven.apache.org/maven2/com/thoughtworks/xstream/xstream/1.4.7/xstream-1.4.7.jar"
 download_path: "./workspace/input"
 extraction_path: "./workspace/output/src"
 relative_code_source_path: "catroid/src"
 
-
 # Include/exclude settings
+removed_classes:
+    [LegoNXTSetting, LegoNxtMotorMoveBrick, LegoNxtMotorStopBrick,
+    LegoNxtMotorTurnAngleBrick, LegoNxtPlayToneBrick, PhiroMotorMoveBackwardBrick,
+    PhiroMotorMoveForwardBrick, PhiroMotorStopBrick, PhiroPlayToneBrick,
+    PhiroRGBLightBrick, PhiroIfLogicBeginBrick]
+
 additional_serialization_classes:
     - AllowedAfterDeadEndBrick
     - Brick
@@ -32,12 +38,8 @@ additional_serialization_classes:
     - UserVariableBrick
 
 preserved_interfaces:
-    - Brick
-    - BroadcastMessage
-    - Converter
-    - LoopBeginBrick
-    - MindstormsSensor
-    - MindstormsCommand
+    [Brick, BroadcastMessage, Converter, LoopBeginBrick, MindstormsSensor,
+    MindstormsCommand]
 
 additional_helper_classes:
     - BroadcastMessage
@@ -48,22 +50,14 @@ additional_helper_classes:
     - XStreamBrickConverter
     - XStreamConcurrentFormulaHashMapConverter
     - XStreamScriptConverter
-    - XStreamSettingConverter # introduced in v0.95
-    - LegoNXTSetting
-    - NXTPort
-    - NXTSensor
-    - NXTSensorType
-    - NXTSensorMode
-    - Command
-    - CommandType
-    - MindstormsReply
+    - XStreamSettingConverter
     - LOOKUP
-    - XStreamToSupportCatrobatLanguageVersion095AndBefore # introduced in v0.95
+    - XStreamToSupportCatrobatLanguageVersion096AndBefore # introduced in v0.96
+    # - XStreamToSupportCatrobatLanguageVersion095AndBefore # introduced in v0.95
     # - XStreamToSupportCatrobatLanguageVersion092AndBefore # removed in v0.95
     - XStreamUserVariableConverter
     # exception classes
     - ProjectException
-    - MindstormsException
     - CompatibilityProjectException
     - LoadingProjectException
     - OutdatedVersionProjectException
@@ -72,18 +66,8 @@ additional_helper_classes:
 class_to_preserved_fields_mapping:
     BroadcastReceiverBrick:
         - broadcastMessage
-    # Formula:
-    #    - internFormula
     FormulaElement:
         - parent
-    LegoNxtMotorMoveBrick:
-        - motorEnum
-    LegoNxtMotorStopBrick:
-        - motorEnum
-    LegoNxtMotorTurnAngleBrick:
-        - motorEnum
-    LegoNxtPlayToneBrick:
-        - motorEnum
     PlaySoundBrick:
         - oldSelectedSound
     PointToBrick:
@@ -118,24 +102,12 @@ class_to_preserved_fields_mapping:
         - brick
     UserScriptDefinitionBrickElements:
         - version
-    # introduced in v0.95 {
     UserList:
         - list
     UserBrickParameter:
         - parent
     SetVariableBrick:
         - defaultPrototypeToken
-    PhiroMotorMoveBackwardBrick:
-        - motorEnum
-    PhiroMotorMoveForwardBrick:
-        - motorEnum
-    PhiroMotorStopBrick:
-        - motorEnum
-    PhiroPlayToneBrick:
-        - toneEnum
-    PhiroRGBLightBrick:
-        - eyeEnum
-    # }
 
 class_to_preserved_methods_mapping:
     Functions:
@@ -151,6 +123,7 @@ class_to_preserved_methods_mapping:
         - getScriptBrick
     Project:
         - ifLandscapeSwitchWidthAndHeight
+        - ifPortraitSwitchWidthAndHeight
         - addSprite
         - setName
         - getName
@@ -161,7 +134,6 @@ class_to_preserved_methods_mapping:
     LookData:
         - setLookFilename
     FormulaElement:
-        # - getInternTokenList",
         - getRoot
         - replaceElement
         - replaceWithSubElement
@@ -176,12 +148,8 @@ class_to_preserved_methods_mapping:
         - setXstreamAliases
         - getXMLStringOfAProject
     ScriptBrick:
-        # - initScript
         - getScriptSafe
-    # Script:
-    #     - init
     Sprite:
-        # - init
         - getLookDataList
         - getScript
         - getScriptIndex
@@ -195,7 +163,6 @@ class_to_preserved_methods_mapping:
         - addAllowedBrickField
         - getFormulaWithBrickField
         - setFormulaWithBrickField
-    # introduced in v0.95 {
     DataContainer:
         - addUserBrickVariable
         - addUserBrickUserVariableToUserBrick
@@ -223,26 +190,13 @@ class_to_preserved_methods_mapping:
         - initializeBrickFields
     InsertItemIntoUserListBrick:
         - initializeBrickFields
-    LegoNxtMotorMoveBrick:
-        - initializeBrickFields
-    PhiroMotorMoveBackwardBrick:
-        - initializeBrickFields
-    PhiroMotorMoveForwardBrick:
-        - initializeBrickFields
-    PhiroPlayToneBrick:
-        - initializeBrickFields
-    PhiroRGBLightBrick:
-        - initializeBrickFields
     ReplaceItemInUserListBrick:
         - initializeBrickFields
     SetTransparencyBrick:
         - initializeBrickFields
-
     LoopBeginBrick:
         - getLoopEndBrick
         - setLoopEndBrick
-    # }
-
     DroneMoveBrick:
         - initializeBrickFields
     GlideToBrick:
@@ -264,12 +218,6 @@ class_to_preserved_methods_mapping:
     GoNStepsBackBrick:
         - initializeBrickFields
     IfLogicBeginBrick:
-        - initializeBrickFields
-    LegoNxtMotorActionBrick:
-        - initializeBrickFields
-    LegoNxtMotorTurnAngleBrick:
-        - initializeBrickFields
-    LegoNxtPlayToneBrick:
         - initializeBrickFields
     MoveNStepsBrick:
         - initializeBrickFields
@@ -305,6 +253,8 @@ class_to_preserved_methods_mapping:
         - initializeBrickFields
     WaitBrick:
         - initializeBrickFields
+    ShowTextBrick:
+        - initializeBrickFields
     UserBrick:
         - getUserScriptDefinitionBrickElements
         - copyFormulasMatchingNames
@@ -325,7 +275,7 @@ class_to_preserved_methods_mapping:
         - addScript
         - spriteExists
 
-class_to_remove_fields_mapping:
+remove_fields_mapping:
     Constants:
         [DEFAULT_ROOT, TMP_PATH, TMP_IMAGE_PATH, TEXT_TO_SPEECH_TMP_PATH]
     Look:
@@ -333,14 +283,14 @@ class_to_remove_fields_mapping:
     NXTSensor:
         - connection
 
-class_to_remove_methods_mapping:
+remove_methods_mapping:
     ProjectManager:
         [uploadProject, loadProject, cancelLoadProject, canLoadProject, saveProject,
         initializeDefaultProject, initializeDroneProject, initializeNewProject,
         deleteCurrentProject, deleteProject, renameProject, addSprite,
         addScript, spriteExists]
     Look:
-        [createBrightnessContrastShader, checkImageChanged, setWhenParallelAction]
+        [copyLookForSprite, createBrightnessContrastShader, checkImageChanged, setWhenParallelAction]
     NXTSensor:
         [resetScaledValue, getSensorReadings, getUpdateInterval,
         updateLastSensorValue, getLastSensorValue]

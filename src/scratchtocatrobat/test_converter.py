@@ -603,6 +603,42 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert isinstance(catr_brick, catbricks.PlaySoundBrick)
         assert catr_brick.sound.getTitle() == sound_name
 
+    # showVariable:
+    def test_can_convert_show_variable_block(self):
+        # create user variable
+        variable_name = "test_var"
+        project = self.block_converter._catrobat_project
+        catrobat.add_user_variable(project, variable_name, DUMMY_CATR_SPRITE, DUMMY_CATR_SPRITE.getName())
+        user_variable = project.getDataContainer().getUserVariable(variable_name, DUMMY_CATR_SPRITE)
+        assert user_variable is not None
+        assert user_variable.getName() == variable_name
+
+        # create and validate show variable brick
+        scratch_block = ["showVariable:", variable_name]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.ShowTextBrick)
+        assert catr_brick.userVariableName == variable_name
+        assert user_variable == catr_brick.userVariable
+        assert catr_brick.userVariable.getName() == variable_name
+
+    # hideVariable:
+    def test_can_convert_hide_variable_block(self):
+        # create user variable
+        variable_name = "test_var"
+        project = self.block_converter._catrobat_project
+        catrobat.add_user_variable(project, variable_name, DUMMY_CATR_SPRITE, DUMMY_CATR_SPRITE.getName())
+        user_variable = project.getDataContainer().getUserVariable(variable_name, DUMMY_CATR_SPRITE)
+        assert user_variable is not None
+        assert user_variable.getName() == variable_name
+
+        # create and validate show variable brick
+        scratch_block = ["hideVariable:", variable_name]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.HideTextBrick)
+        assert catr_brick.userVariableName == variable_name
+        assert user_variable == catr_brick.userVariable
+        assert catr_brick.userVariable.getName() == variable_name
+
     # append:toList:
     def test_can_convert_append_number_to_list_block(self):
         value = "1.23"

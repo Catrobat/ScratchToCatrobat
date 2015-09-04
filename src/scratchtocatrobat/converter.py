@@ -192,6 +192,8 @@ class _ScratchToCatrobat(object):
         "setVar:to:": lambda *args: _create_variable_brick(*itertools.chain(args, [catbricks.SetVariableBrick])),
         "changeVar:by:": lambda *args: _create_variable_brick(*itertools.chain(args, [catbricks.ChangeVariableBrick])),
         "readVariable": lambda variable_name: _variable_for(variable_name),
+        "showVariable:": catbricks.ShowTextBrick,
+        "hideVariable:": catbricks.HideTextBrick,
 
         # formula lists
         "append:toList:": catbricks.AddItemToUserListBrick,
@@ -878,7 +880,11 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
                     converted_element = getattr(self, handler_method_name)()
                 else:
                     converted_element = self._regular_block_conversion()
-            except:
+            except Exception as e:
+                log.warn("-" * 80)
+                log.warn("Replacing {0} with NoteBrick".format(block_name))
+                log.warn("Exception: {0}, ".format(e.message), exc_info=1)
+                log.warn("-" * 80)
                 converted_element = _placeholder_for_unmapped_bricks_to(block_name)
         elif isinstance(self.script_element, scratch.BlockValue):
             converted_element = [script_element.name]
@@ -1107,6 +1113,28 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             set_look_brick.setLook(look)
             return [set_look_brick]
 
+    @_register_handler(_block_name_to_handler_map, "showVariable:")
+    def _convert_show_variable_block(self):
+        [variable_name] = self.arguments
+        user_variable = self.project.getDataContainer().getUserVariable(variable_name, self.sprite)
+        assert user_variable is not None # the variable must exist at this stage!
+        assert user_variable.getName() == variable_name
+        show_variable_brick = self.CatrobatClass(0, 0)
+        show_variable_brick.userVariableName = variable_name
+        show_variable_brick.userVariable = user_variable
+        return show_variable_brick
+
+    @_register_handler(_block_name_to_handler_map, "hideVariable:")
+    def _convert_hide_variable_block(self):
+        [variable_name] = self.arguments
+        user_variable = self.project.getDataContainer().getUserVariable(variable_name, self.sprite)
+        assert user_variable is not None # the variable must exist at this stage!
+        assert user_variable.getName() == variable_name
+        hide_variable_brick = self.CatrobatClass()
+        hide_variable_brick.userVariableName = variable_name
+        hide_variable_brick.userVariable = user_variable
+        return hide_variable_brick
+
     @_register_handler(_block_name_to_handler_map, "append:toList:")
     def _convert_append_to_list_block(self):
         [value, list_name] = self.arguments
@@ -1191,12 +1219,12 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "playSound:", "doPlaySoundAndWait")
     def _convert_sound_block(self):
         [sound_name] = self.arguments
-        soundinfo_name_to_soundinfo_map = {lookdata.getTitle(): lookdata for lookdata in self.sprite.getSoundList()}
-        lookdata = soundinfo_name_to_soundinfo_map.get(sound_name)
-        if not lookdata:
+        soundinfo_name_to_soundinfo_map = {sound_data.getTitle(): sound_data for sound_data in self.sprite.getSoundList()}
+        sound_data = soundinfo_name_to_soundinfo_map.get(sound_name)
+        if not sound_data:
             raise ConversionError("Sprite does not contain sound with name={}".format(sound_name))
         play_sound_brick = self.CatrobatClass()
-        play_sound_brick.setSoundInfo(lookdata)
+        play_sound_brick.setSoundInfo(sound_data)
         converted_bricks = [play_sound_brick]
         if self.block_name == "doPlaySoundAndWait":
             sound_length_variable = _variable_for(_sound_length_variable_name_for(sound_name))

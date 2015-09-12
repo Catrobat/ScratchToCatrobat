@@ -1,8 +1,6 @@
 <img title="Scratch2Catrobat" src="https://cloud.githubusercontent.com/assets/3843968/9567706/5a084d76-4f35-11e5-9e3b-5a49256fde86.png" width=595 />
 
-[![Build Status](https://travis-ci.org/rsamer/ScratchToCatrobat.svg?branch=master)](https://travis-ci.org/rsamer/ScratchToCatrobat)
 [![Version](https://img.shields.io/badge/version-0.4a-blue.svg)](https://img.shields.io/badge/version-0.4a-blue.svg)
-[![Coverage Status](https://coveralls.io/repos/Catrobat/ScratchToCatrobat/badge.svg?branch=master&service=github)](https://coveralls.io/github/Catrobat/ScratchToCatrobat?branch=master)
 
 A tool for converting Scratch projects into Catrobat programs.
 

@@ -194,13 +194,13 @@ def _dummy_project():
 #             assert soundinfo.getSoundFileName() == expected_file_name
 
 
-def ConverterTestClass(class_):
-    class Wrapper:
-        def __init__(self, *args, **kwargs):
-            _dummy_project = catbase.Project(None, "__test_project__")
-            self.block_converter = converter._ScratchObjectConverter(_dummy_project, None)
-            class_(*args, **kwargs)
-    return Wrapper
+# def ConverterTestClass(class_):
+#     class Wrapper:
+#         def __init__(self, *args, **kwargs):
+#             _dummy_project = catbase.Project(None, "__test_project__")
+#             self.block_converter = converter._ScratchObjectConverter(_dummy_project, None)
+#             class_(*args, **kwargs)
+#     return Wrapper
 
 class TestConvertBlocks(common_testing.BaseTestCase):
 
@@ -220,6 +220,44 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         dummy_sprite = catbase.Sprite("TestDummy")
         dummy_sprite.getSoundList().add(dummy_sound)
         return dummy_sprite
+
+    ###############################################################################################################
+    #
+    # Script block tests
+    #
+    ###############################################################################################################
+
+    # whenIReceive
+    def test_can_convert_broadcast_script(self):
+        broadcast_message = "space"
+        scratch_script = scratch.Script([30, 355, [["whenIReceive", broadcast_message], ["changeGraphicEffect:by:", "color", 25]]])
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE)
+        self.assertTrue(isinstance(catr_script, catbase.BroadcastScript))
+        self.assertEqual(broadcast_message, catr_script.getBroadcastMessage())
+
+    # whenIReceive
+    def test_can_convert_broadcast_script_by_ignoring_case_sensitive_broadcast_message(self):
+        broadcast_message = "hElLo WOrLD" # mixed case letters...
+        scratch_script = scratch.Script([30, 355, [["whenIReceive", broadcast_message], ["changeGraphicEffect:by:", "color", 25]]])
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE)
+        self.assertTrue(isinstance(catr_script, catbase.BroadcastScript))
+        self.assertNotEqual(catr_script.getBroadcastMessage(), broadcast_message)
+        self.assertEqual(catr_script.getBroadcastMessage(), broadcast_message.lower())
+
+    # whenKeyPressed
+    def test_can_convert_keypressed_script(self):
+        scratch_script = scratch.Script([30, 355, [["whenKeyPressed", "space"], ["changeGraphicEffect:by:", "color", 25]]])
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE)
+        # KeyPressed-scripts are represented with broadcast-scripts with a special key-message
+        self.assertTrue(isinstance(catr_script, catbase.BroadcastScript))
+        self.assertEqual(converter._key_to_broadcast_message("space"), catr_script.getBroadcastMessage())
+
+    # whenClicked
+    def test_can_convert_whenclicked_script(self):
+        scratch_script = scratch.Script([30, 355, [["whenClicked"], ["changeGraphicEffect:by:", "color", 25]]])
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE)
+        self.assertTrue(isinstance(catr_script, catbase.WhenScript))
+        self.assertEqual('Tapped', catr_script.getAction())
 
     ###############################################################################################################
     #
@@ -577,6 +615,48 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert len(catr_do_loop) == 8
         expected_brick_classes = [catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.LoopEndBrick]
         assert [_.__class__ for _ in catr_do_loop] == expected_brick_classes
+
+    # broadcast:
+    def test_can_convert_broadcast_block(self):
+        broadcast_message = "hello world"
+        scratch_block = ["broadcast:", broadcast_message]
+        bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert len(bricks) == 1
+        broadcast_brick = bricks[0]
+        assert isinstance(broadcast_brick, catbricks.BroadcastBrick)
+        assert broadcast_brick.getBroadcastMessage() == broadcast_message
+
+    # broadcast:
+    def test_can_convert_broadcast_block_by_ignoring_case_sensitive_broadcast_message(self):
+        broadcast_message = "hElLo WOrLD" # mixed case letters...
+        scratch_block = ["broadcast:", broadcast_message]
+        bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert len(bricks) == 1
+        broadcast_brick = bricks[0]
+        assert isinstance(broadcast_brick, catbricks.BroadcastBrick)
+        assert broadcast_brick.getBroadcastMessage() != broadcast_message
+        assert broadcast_brick.getBroadcastMessage() == broadcast_message.lower()
+
+    # doBroadcastAndWait
+    def test_can_convert_doBroadcastAndWait_block(self):
+        broadcast_message = "hello world"
+        scratch_block = ["doBroadcastAndWait", broadcast_message]
+        bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert len(bricks) == 1
+        broadcast_wait_brick = bricks[0]
+        assert isinstance(broadcast_wait_brick, catbricks.BroadcastWaitBrick)
+        assert broadcast_wait_brick.getBroadcastMessage() == broadcast_message
+
+    # doBroadcastAndWait
+    def test_can_convert_doBroadcastAndWait_block_by_ignoring_case_sensitive_broadcast_message(self):
+        broadcast_message = "hElLo WOrLD" # mixed case letters...
+        scratch_block = ["doBroadcastAndWait", broadcast_message]
+        bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert len(bricks) == 1
+        broadcast_wait_brick = bricks[0]
+        assert isinstance(broadcast_wait_brick, catbricks.BroadcastWaitBrick)
+        assert broadcast_wait_brick.getBroadcastMessage() != broadcast_message
+        assert broadcast_wait_brick.getBroadcastMessage() == broadcast_message.lower()
 
     # wait:elapsed:from:
     def test_can_convert_waitelapsedfrom_block(self):
@@ -937,33 +1017,6 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert expected_msg, stub_scripts.get(0).getBroadcastMessage()
         assert isinstance(catr_script.getBrickList().get(0), catbricks.BroadcastBrick)
         assert expected_msg, catr_script.getBrickList().get(0).getBroadcastMessage()
-
-
-@ConverterTestClass
-class TestConvertScripts(unittest.TestCase):
-
-    # whenIReceive
-    def test_can_convert_broadcast_script(self):
-        scratch_script = scratch.Script([30, 355, [["whenIReceive", "space"], ["changeGraphicEffect:by:", "color", 25]]])
-        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE)
-        self.assertTrue(isinstance(catr_script, catbase.BroadcastScript))
-        self.assertEqual("space", catr_script.getBroadcastMessage())
-
-    # whenKeyPressed
-    def test_can_convert_keypressed_script(self):
-        scratch_script = scratch.Script([30, 355, [["whenKeyPressed", "space"], ["changeGraphicEffect:by:", "color", 25]]])
-        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE)
-        # KeyPressed-scripts are represented with broadcast-scripts with a special key-message
-        self.assertTrue(isinstance(catr_script, catbase.BroadcastScript))
-        self.assertEqual(converter._key_to_broadcast_message("space"), catr_script.getBroadcastMessage())
-
-    # whenClicked
-    def test_can_convert_whenclicked_script(self):
-        scratch_script = scratch.Script([30, 355, [["whenClicked"], ["changeGraphicEffect:by:", "color", 25]]])
-        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE)
-        self.assertTrue(isinstance(catr_script, catbase.WhenScript))
-        self.assertEqual('Tapped', catr_script.getAction())
-
 
 class TestConvertProjects(common_testing.ProjectTestCase):
 

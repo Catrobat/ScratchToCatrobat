@@ -152,7 +152,7 @@ class _ScratchToCatrobat(object):
         # Scripts
         #
         "whenGreenFlag": catbase.StartScript,
-        "whenIReceive": catbase.BroadcastScript,
+        "whenIReceive": lambda message: catbase.BroadcastScript(message.lower()), # lower case to prevent case-sensitivity issues in Catrobat...
         "whenKeyPressed": lambda key: catbase.BroadcastScript(_key_to_broadcast_message(key)),
         # TODO: "whenSensorGreaterThan"
         "whenSceneStarts": lambda look_name: catbase.BroadcastScript(_background_look_to_broadcast_message(look_name)),
@@ -161,8 +161,8 @@ class _ScratchToCatrobat(object):
         #
         # Bricks
         #
-        "broadcast:": catbricks.BroadcastBrick,
-        "doBroadcastAndWait": catbricks.BroadcastWaitBrick,
+        "broadcast:": lambda message: catbricks.BroadcastBrick(message.lower()), # lower case to prevent case-sensitivity issues in Catrobat...
+        "doBroadcastAndWait": lambda message: catbricks.BroadcastWaitBrick(message.lower()), # lower case to prevent case-sensitivity issues in Catrobat...
         # TODO: creation method for FormulaElement object
         "wait:elapsed:from:": lambda duration: catbricks.WaitBrick(catformula.Formula(duration)),
 

@@ -101,19 +101,23 @@ class ImageProcessingTest(common_testing.BaseTestCase):
             blue = rgb & int("0x000000FF", 16)
             assert red == 255 and green == 0 and blue == 0
         output_path = self.img_proc_pngfile_output_path("test.png")
-        img_proc.save_editable_image_as_png_to_disk(buffered_image, output_path, overwrite=True)
-        assert os.path.isfile(output_path)
-        assert imghdr.what(output_path) == 'png'
-        # Reload the image from disk now and check if left-outline of letter "H" is present!
-        new_buffered_image = img_proc.read_editable_image_from_disk(output_path)
-        assert isinstance(new_buffered_image, java.awt.image.BufferedImage)
-        for i in range(0, 8):
-            rgb = new_buffered_image.getRGB(11, i)
-            red = rgb >> 16 & int("0x000000FF", 16)
-            green = rgb >> 8 & int("0x000000FF", 16)
-            blue = rgb & int("0x000000FF", 16)
-            assert red == 255 and green == 0 and blue == 0
-        os.remove(output_path)
+        try:
+            img_proc.save_editable_image_as_png_to_disk(buffered_image, output_path, overwrite=True)
+            assert os.path.isfile(output_path)
+            assert imghdr.what(output_path) == 'png'
+            # Reload the image from disk now and check if left-outline of letter "H" is still present!
+            new_buffered_image = img_proc.read_editable_image_from_disk(output_path)
+            assert isinstance(new_buffered_image, java.awt.image.BufferedImage)
+            for i in range(0, 8):
+                rgb = new_buffered_image.getRGB(11, i)
+                red = rgb >> 16 & int("0x000000FF", 16)
+                green = rgb >> 8 & int("0x000000FF", 16)
+                blue = rgb & int("0x000000FF", 16)
+                assert red == 255 and green == 0 and blue == 0
+        except Exception, e:
+            raise e
+        finally:
+            os.remove(output_path) # finally remove the image
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']

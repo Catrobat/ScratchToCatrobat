@@ -26,7 +26,7 @@ from scratchtocatrobat.tools import image_processing as img_proc
 import java.awt.Font
 from java.awt import Color
 import java.awt.image.BufferedImage
-from scratchtocatrobat.tools import helpers
+import imghdr
 
 class ImageProcessingTest(common_testing.BaseTestCase):
 
@@ -37,55 +37,84 @@ class ImageProcessingTest(common_testing.BaseTestCase):
         return cls.get_test_resources_paths("img_proc_png")
 
     @classmethod
+    def img_proc_pngfile_output_path(cls, fileName):
+        return os.path.join(common_testing.get_test_resources_path(), "img_proc_png", fileName)
+
+    @classmethod
     def img_proc_jpgfile_paths(cls):
         return cls.get_test_resources_paths("img_proc_jpg")
 
     @classmethod
     def setUpClass(cls):
-        assert len(cls.img_proc_pngfile_paths()) == 1
+        #assert len(cls.img_proc_pngfile_paths()) == 1
         assert len(cls.img_proc_jpgfile_paths()) == 0
 
     def test_can_read_editable_image_from_disk(self):
         dummy_png = self.img_proc_pngfile_paths()[0]
-        try:
-            image = img_proc.read_editable_image_from_disk(dummy_png)
-            print(type(image))
-            assert isinstance(image, java.awt.image.BufferedImage)
-        except Exception, e:
-            self.fail(e)
+        buffered_image = img_proc.read_editable_image_from_disk(dummy_png)
+        assert isinstance(buffered_image, java.awt.image.BufferedImage)
 
     def test_can_create_font(self):
         for font_name in self._allowed_font_names:
-            try:
-                font = img_proc.create_font(font_name, 14.0, bold=False, italic=False)
-                assert isinstance(font, java.awt.Font)
-            except Exception, e:
-                self.fail(e)
+            font = img_proc.create_font(font_name, 14.0, bold=False, italic=False)
+            assert isinstance(font, java.awt.Font)
 
     def test_can_add_text_to_editable_image(self):
         dummy_png = self.img_proc_pngfile_paths()[0]
-        try:
-            image = img_proc.read_editable_image_from_disk(dummy_png)
-            font = img_proc.create_font(self._allowed_font_names[0], 14.0, bold=False, italic=False)
-            assert isinstance(image, java.awt.image.BufferedImage)
-            image = img_proc.add_text_to_image(image, "Hello world", font, Color.BLACK, 10.0, 10.0)
-            # TODO: add further assert-checks
-        except Exception, e:
-            self.fail(e)
+        buffered_image = img_proc.read_editable_image_from_disk(dummy_png)
+        assert isinstance(buffered_image, java.awt.image.BufferedImage)
+        font = img_proc.create_font(self._allowed_font_names[0], 14.0, bold=False, italic=False)
+        # check whether the left-outline of letter "H" in "Hello world" is NOT present in the image!
+        for i in range(0, 8):
+            rgb = buffered_image.getRGB(11, i)
+            red = rgb >> 16 & int("0x000000FF", 16)
+            green = rgb >> 8 & int("0x000000FF", 16)
+            blue = rgb & int("0x000000FF", 16)
+            assert red == 0 and green == 0 and blue == 0
+        buffered_image = img_proc.add_text_to_image(buffered_image, "Hello world!", font, Color.RED, 10.0, 10.0)
+        # the left-outline of letter "H" in "Hello world" must NOW appear in the image!
+        for i in range(0, 8):
+            rgb = buffered_image.getRGB(11, i)
+            red = rgb >> 16 & int("0x000000FF", 16)
+            green = rgb >> 8 & int("0x000000FF", 16)
+            blue = rgb & int("0x000000FF", 16)
+            assert red == 255 and green == 0 and blue == 0
 
     def test_can_save_editable_image_as_png_to_disk(self):
         dummy_png = self.img_proc_pngfile_paths()[0]
-        try:
-            image = img_proc.read_editable_image_from_disk(dummy_png)
-            font = img_proc.create_font(self._allowed_font_names[0], 14.0, bold=False, italic=False)
-            assert isinstance(image, java.awt.image.BufferedImage)
-            image = img_proc.add_text_to_image(image, "Hello world", font, Color.BLACK, 10.0, 10.0)
-            # TODO: add further assert-checks
-            img_proc.save_editable_image_as_png_to_disk(image, os.path.join(helpers.APP_PATH, "test.png"), overwrite=True)
-        except Exception, e:
-            self.fail(e)
+        buffered_image = img_proc.read_editable_image_from_disk(dummy_png)
+        assert isinstance(buffered_image, java.awt.image.BufferedImage)
+        font = img_proc.create_font(self._allowed_font_names[0], 14.0, bold=False, italic=False)
+        # check whether the left-outline of letter "H" in "Hello world" is NOT present in the image!
+        for i in range(0, 8):
+            rgb = buffered_image.getRGB(11, i)
+            red = rgb >> 16 & int("0x000000FF", 16)
+            green = rgb >> 8 & int("0x000000FF", 16)
+            blue = rgb & int("0x000000FF", 16)
+            assert red == 0 and green == 0 and blue == 0
+        buffered_image = img_proc.add_text_to_image(buffered_image, "Hello world!", font, Color.RED, 10.0, 10.0)
+        # the left-outline of letter "H" in "Hello world" must NOW appear in the image!
+        for i in range(0, 8):
+            rgb = buffered_image.getRGB(11, i)
+            red = rgb >> 16 & int("0x000000FF", 16)
+            green = rgb >> 8 & int("0x000000FF", 16)
+            blue = rgb & int("0x000000FF", 16)
+            assert red == 255 and green == 0 and blue == 0
+        output_path = self.img_proc_pngfile_output_path("test.png")
+        img_proc.save_editable_image_as_png_to_disk(buffered_image, output_path, overwrite=True)
+        assert os.path.isfile(output_path)
+        assert imghdr.what(output_path) == 'png'
+        # Reload the image from disk now and check if left-outline of letter "H" is present!
+        new_buffered_image = img_proc.read_editable_image_from_disk(output_path)
+        assert isinstance(new_buffered_image, java.awt.image.BufferedImage)
+        for i in range(0, 8):
+            rgb = new_buffered_image.getRGB(11, i)
+            red = rgb >> 16 & int("0x000000FF", 16)
+            green = rgb >> 8 & int("0x000000FF", 16)
+            blue = rgb & int("0x000000FF", 16)
+            assert red == 255 and green == 0 and blue == 0
+        os.remove(output_path)
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
-

@@ -78,7 +78,7 @@ sudo apt-get install python
 ```sh
 sudo apt-get install sox
 ```
-* Jython 2.7 requires java version 1.7 or later. To determine the currently installed java version run the following command on your shell:
+* Jython 2.7 requires java version 1.8 or later. To determine the currently installed java version run the following command on your shell:
 ```sh
 java -version
 ```

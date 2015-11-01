@@ -126,7 +126,7 @@ git clone https://github.com/Catrobat/ScratchToCatrobat.git
 ```sh
 cd ScratchToCatrobat
 ```
-* Open jython's registry file and change line:
+* Open jython's registry file and change the following line:
 ```sh
 python.security.respectJavaAccessibility = true
 ```

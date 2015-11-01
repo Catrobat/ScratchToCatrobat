@@ -86,7 +86,7 @@ java -version
 ```sh
 wget http://search.maven.org/remotecontent?filepath=org/python/jython-installer/2.7.0/jython-installer-2.7.0.jar
 ```
-* To install jython issue the following command:
+* To install jython issue the following command and fill in the parameters listed below:
 ```sh
 sudo java -jar jython-installer-2.7.0.jar --console
 [...]
@@ -126,6 +126,20 @@ git clone https://github.com/Catrobat/ScratchToCatrobat.git
 ```sh
 cd ScratchToCatrobat
 ```
+* Open jython's registry file and change line:
+```sh
+python.security.respectJavaAccessibility = true
+```
+to:
+```sh
+python.security.respectJavaAccessibility = false
+```
+
+* (This step is *optional*, but *highly recommended* for developers.) For your convenience, we'd recommend you to create a new (empty) local custom config file called "environment.ini" in the "config" directory. It automatically inherits from the original config file "default.ini" and is ignored by the ".gitignore" settings. Thus, every parameter you will later define in your "environment.ini" file will automatically overwrite the corresponding parameter coming from the "default.ini" file, i.e. *new parameters* *must be defined* in the "default.ini" file *at first* (due to compatibility reasons) and thereafter in your local "environment.ini" file. Keep in mind that it does not make sense to put in new parameters into the "environment.ini" that do not exist in the "default.ini", since your local "environment.ini" file is not part of the Git repository as already mentioned before.
+```sh
+touch ./config/environment.ini
+```
+
 * Make the converter script executable:
 ```sh
 chmod +x ./run

@@ -28,12 +28,8 @@ import sys
 sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "src"))
 from scratchtocatrobat.tools import helpers
 
-data_dirs = helpers.config.get("PATHS", ["data", "logging", "output", "web_output", "tmp"])
-helpers.make_dir_if_not_exists(data_dirs)
+helpers.make_dir_if_not_exists(helpers.config.get("PATHS", ["data", "logging", "output", "web_output", "tmp"]))
 [jython_home_dir, jython_exec_path, jython_path] = helpers.config.get("PATHS", ["jython_home", "jython_exec", "jython"])
-
-env = os.environ
-env['JYTHONPATH'] = jython_path
 
 if not os.path.isdir(jython_home_dir):
     error("Invalid jython home path given. No valid directory. Please update 'jython_home' in the config file.")
@@ -41,6 +37,9 @@ if not os.path.isfile(jython_exec_path):
     error("Jython script path '%s' must exist." % jython_exec_path.replace(".bat", "[.bat]"))
 
 helpers.inject_git_commmit_hook()
+
+env = os.environ
+env['JYTHONPATH'] = jython_path
 
 exec_args = [jython_exec_path, "-m", "scratchtocatrobat.main"] + sys.argv[1:]
 sys.exit(subprocess.call(exec_args, env=env))

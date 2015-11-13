@@ -41,7 +41,7 @@ if not os.path.isfile(jython_exec_path):
     error("Jython script path '%s' must exist." % jython_exec_path.replace(".bat", "[.bat]"))
 
 modules_under_test = []
-if sys.argv[1] == "all":
+if len(sys.argv) < 2 or sys.argv[1] == "all":
     normalized_src_path = os.path.normpath(helpers.SRC_PATH)
     for subdir, dirs, files in os.walk(helpers.SRC_PATH):
         for file in files:
@@ -53,8 +53,10 @@ if sys.argv[1] == "all":
                     relative_subdir_path = relative_subdir_path[:-1]
                 test_module_name = relative_subdir_path.replace(os.sep, ".") + "." + file[:-3]
                 modules_under_test.append(test_module_name)
+elif (isinstance(sys.argv[1], str) or isinstance(sys.argv[1], unicode)) and sys.argv[1].startswith("test_"):
+    modules_under_test.append("scratchtocatrobat." + sys.argv[1])
 else:
-    modules_under_test.append(sys.argv[1])
+    error("Invalid input given!")
 
 for module in modules_under_test:
     exec_args = [jython_exec_path, "-m", module]

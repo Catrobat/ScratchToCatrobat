@@ -40,7 +40,29 @@ if not os.path.isdir(jython_home_dir):
 if not os.path.isfile(jython_exec_path):
     error("Jython script path '%s' must exist." % jython_exec_path.replace(".bat", "[.bat]"))
 
-exec_args = [jython_exec_path, "-m", "scratchtocatrobat." + sys.argv[1]]
-if len(sys.argv) >= 3:
-    exec_args += [sys.argv[2]]
-sys.exit(subprocess.call(exec_args, env=env))
+modules_under_test = []
+if sys.argv[1] == "all":
+    normalized_src_path = os.path.normpath(helpers.SRC_PATH)
+    for subdir, dirs, files in os.walk(helpers.SRC_PATH):
+        for file in files:
+            if file.startswith("test_") and file.endswith(".py"):
+                relative_subdir_path = os.path.normpath(subdir).replace(normalized_src_path, "")
+                if relative_subdir_path.startswith(os.sep):
+                    relative_subdir_path = relative_subdir_path[1:]
+                if relative_subdir_path.endswith(os.sep):
+                    relative_subdir_path = relative_subdir_path[:-1]
+                test_module_name = relative_subdir_path.replace(os.sep, ".") + "." + file[:-3]
+                modules_under_test.append(test_module_name)
+else:
+    modules_under_test.append(sys.argv[1])
+
+for module in modules_under_test:
+    exec_args = [jython_exec_path, "-m", module]
+
+    if len(sys.argv) >= 3:
+        exec_args += [sys.argv[2]]
+    exit_code = subprocess.call(exec_args, env=env)
+    if exit_code != 0:
+        sys.exit(exit_code)
+
+sys.exit(helpers.ExitCode.SUCCESS)

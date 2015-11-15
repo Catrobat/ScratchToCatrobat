@@ -39,7 +39,6 @@ div.input-field {
 
 input.convert-button {
     width: 318px;
-    box-sizing: border-box;
     border: 0 none;
     border-radius: 4px;
     color: #FFFFFF;

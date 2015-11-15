@@ -108,6 +108,7 @@ def main():
     Usage:
       'main.py' <project-url-or-package-path> <output-dir> [--extracted] [--no-temp-rm]
       'main.py' <project-url-or-package-path> [--extracted] [--no-temp-rm]
+      'main.py' --web <cid> <project-url>
       'main.py' --version
       'main.py' --info
 
@@ -124,8 +125,12 @@ def main():
         kwargs['temp_rm'] = not arguments["--no-temp-rm"]
         kwargs['show_version_only'] = arguments["--version"]
         kwargs['show_info_only'] = arguments["--info"]
+        is_web_mode = arguments["--web"]
         output_dir = helpers.config.get("PATHS", "output")
         output_dir = arguments["<output-dir>"] if arguments["<output-dir>"] != None else output_dir
+        if is_web_mode:
+            output_dir = helpers.config.get("PATHS", "web_output")
+            arguments["<project-url-or-package-path>"] = arguments["<project-url>"]
         project_url_or_package_path = ""
         if arguments["<project-url-or-package-path>"]:
             project_url_or_package_path = arguments["<project-url-or-package-path>"].replace("https://", "http://")

@@ -32,9 +32,9 @@ helpers.make_dir_if_not_exists(helpers.config.get("PATHS", ["data", "logging", "
 [jython_home_dir, jython_exec_path, jython_path] = helpers.config.get("PATHS", ["jython_home", "jython_exec", "jython"])
 
 if not os.path.isdir(jython_home_dir):
-    error("Invalid jython home path given. No valid directory. Please update 'jython_home' in the config file.")
+    helpers.error("Invalid jython home path given. No valid directory. Please update 'jython_home' in the config file.")
 if not os.path.isfile(jython_exec_path):
-    error("Jython script path '%s' must exist." % jython_exec_path.replace(".bat", "[.bat]"))
+    helpers.error("Jython script path '%s' must exist." % jython_exec_path.replace(".bat", "[.bat]"))
 
 helpers.inject_git_commmit_hook()
 

@@ -22,8 +22,8 @@ $fileOrURL = isset($_POST['url']) ? $_POST['url'] : $_FILES["filename"]["tmp_nam
 
 if (isset($_POST['url'])
 && strpos($fileOrURL, 'http://scratch.mit.edu/projects/') === false
-&& strpos($fileOrURL, 'https://scratch.mit.edu/projects/') === false)
-{
+&& strpos($fileOrURL, 'https://scratch.mit.edu/projects/') === false
+) {
 	die("Invalid URL given!");
 }
 
@@ -34,15 +34,27 @@ if (isset($_POST['url'])
 
 ignore_user_abort(true);
 
-$outputDir = '../data/web_output/';
-$outputFiles = glob($outputDir.DIRECTORY_SEPARATOR."*.catrobat");
-foreach ($outputFiles as $oldOutputFile) { // iterate files
-    if (is_file($oldOutputFile)) {
-        unlink($oldOutputFile); // delete file
-	}
+$t = microtime(true);
+$micro = sprintf("%06d",($t - floor($t)) * 1000000);
+$d = new DateTime(date('Y-m-d H:i:s.'.$micro, $t));
+$outputDir = '../data/web_output/'.$d->format("Y-m-d_H.i.s.u").'/';
+
+if (! file_exists('path/to/directory')) {
+    if (@mkdir($outputDir, 0777, true) === false) {
+        die("Conversion failed! No permissions.");
+    }
+} else {
+    die("Conversion failed! Resource already exists.");
 }
 
-$cmd = '../run ' . escapeshellcmd($fileOrURL) . ' ' . $outputDir;
+// $outputFiles = glob($outputDir.DIRECTORY_SEPARATOR."*.catrobat");
+// foreach ($outputFiles as $oldOutputFile) { // iterate files
+//     if (is_file($oldOutputFile)) {
+//         unlink($oldOutputFile); // delete file
+// 	}
+// }
+
+$cmd = '../run '.escapeshellcmd($fileOrURL).' '.$outputDir;
 $sysRV = exec($cmd);
 
 $outputFiles = glob($outputDir.DIRECTORY_SEPARATOR."*.catrobat");
@@ -63,14 +75,3 @@ header("Content-Type: application/catrobat+zip");
 header("Content-Disposition: attachment; filename=$fileName");
 header("Content-Length: " . filesize($zipFile));
 readfile($zipFile);
-
-if (connection_aborted()) {
-    $temp_files = glob($outputDir . '/{,.}*', GLOB_BRACE);
-    error_log("temp_files to delete: " . print_r($temp_files, true));
-
-    foreach ($temp_files as $file) { // iterate files
-        if (is_file($file)) {
-            unlink($file); // delete file
-		}
-	}
-}

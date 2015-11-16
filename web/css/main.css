@@ -8,6 +8,7 @@ body {
   font-family: 'Roboto', Arial, sans-serif;
   height: 100%;
   color:#CCCCCC;
+  margin-left: 3em;
 }
 
 img {
@@ -34,7 +35,24 @@ h2, .h2 {
 }
 
 div.input-field {
-	margin-top:0.5em;
+	margin-top: 0.5em;
+}
+
+.modal-header {
+  background-color: #EEE;
+  color: #000;
+}
+
+.modal-header h4 {
+  font-weight: bold;
+}
+
+.modal-body, .modal-body h2 {
+  color: #666;
+}
+
+.close {
+  font-size: 50px;
 }
 
 input.convert-button {
@@ -315,13 +333,14 @@ header nav #searchbar {
 
 /* ----------- Ribbon ----------- */
 .ribbon {
-  background-color: #a00;
+  background-color: #ed782a;/*#a00;*/
   overflow: hidden;
   white-space: nowrap;
+  width:180px;
   /* top left corner */
   position: absolute;
-  left: -60px;
-  top: 30px;
+  left: -50px;
+  top: 10px;
   /* 45 deg ccw rotation */
   -webkit-transform: rotate(-45deg);
      -moz-transform: rotate(-45deg);
@@ -338,6 +357,7 @@ header nav #searchbar {
   color: #fff;
   display: block;
   font: bold 160% 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  text-transform: uppercase;
   margin: 1px 0;
   padding: 10px 50px;
   text-align: center;

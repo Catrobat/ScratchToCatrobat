@@ -26,117 +26,39 @@ $buildNumber = valueForConfigKey('build_number:', $rawConfigContent);
   <script type="text/javascript" src="./js/qrcode.min.js"></script>
   <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
   <script type="text/javascript" src="./js/spin.min.js"></script>
+  <script type="text/javascript" src="./js/main.js"></script>
   <script>
-    // var opts = {
-    //   lines: 13, // The number of lines to draw
-    //   length: 28, // The length of each line
-    //   width: 14, // The line thickness
-    //   radius: 42, // The radius of the inner circle
-    //   scale: 1, // Scales overall size of the spinner
-    //   corners: 1, // Corner roundness (0..1)
-    //   color: '#000', // #rgb or #rrggbb or array of colors
-    //   opacity: 0.25, // Opacity of the lines
-    //   rotate: 0, // The rotation offset
-    //   direction: 1, // 1: clockwise, -1: counterclockwise
-    //   speed: 1, // Rounds per second
-    //   trail: 60, // Afterglow percentage
-    //   fps: 20, // Frames per second when using setTimeout() as a fallback for CSS
-    //   zIndex: 2e9, // The z-index (defaults to 2000000000)
-    //   className: 'spinner', // The CSS class to assign to the spinner
-    //   top: '50%', // Top position relative to parent
-    //   left: '50%', // Left position relative to parent
-    //   shadow: false, // Whether to render a shadow
-    //   hwaccel: false, // Whether to use hardware acceleration
-    //   position: 'absolute' // Element positioning
-    // };
-    // var target = document.getElementById('foo');
-    // var spinner = new Spinner(opts).spin(target);
-
-    function getProjectIDFromURL(projectURL) {
-        if (projectURL == null) {
-          return null;
-        }
-        if (projectURL.indexOf("http://scratch.mit.edu/projects/") == -1 && projectURL.indexOf("https://scratch.mit.edu/projects/") == -1) {
-          return null;
-        }
-        var urlParts = projectURL.split("/");
-        if (urlParts.length < 5) {
-          return null;
-        }
-        var projectID = urlParts[urlParts.length - 1];
-        if (projectID == "") {
-          projectID = urlParts[urlParts.length - 2];
-        }
-        return projectID;
-    }
-    function enableSubmitButton() {
-      $("#btn-convert").removeClass("deactivate-button").removeClass("activate-button").addClass("activate-button");
-    }
-    function disableSubmitButton() {
-      $("#btn-convert").removeClass("deactivate-button").removeClass("activate-button").addClass("deactivate-button");
-    }
-    function showErrorMessage(msg) {
-      $("#field-url").css("border-color", "#FF0000");
-      $("#field-url-validation-result").append($("<div></div>").text(msg).css("color", "#FF0000").css("font-weight", "bold"));
-    }
-    function showSuccessMessage(msg) {
-      $("#field-url").css("border-color", "#006400");
-      $("#field-url-validation-result").append($("<div></div>").html(msg).css("color", "#006400").css("font-weight", "bold"));
-    }
-    function updateAndShowProjectDetails(projectID) {
-      $("#field-url-validation-result").html("");
-      if (projectID == null) {
-        showErrorMessage("Invalid URL given!");
-        disableSubmitButton();
-        $(this).focus();
-        return;
-      }
-      var projectMetadataURL = "https://scratch.mit.edu/api/v1/project/" + projectID + "/?format=json";
-      $.getJSON(projectMetadataURL, function(data) {
-        var div = $("<div></div>").html("<b>Project:</b> " + data["title"]);
-        var projectMetadataDiv = $("<div></div>").append(div);
-        showSuccessMessage(projectMetadataDiv);
-      }).error(function(event, jqxhr, exception) {
-        showErrorMessage("Invalid project?? No metadata available!");
-        disableSubmitButton();
-        $(this).focus();
-      });
-      enableSubmitButton();
-    }
-    function init() {
-    }
-
     jQuery(document).ready(function($) {
   		$("#btn-convert").removeClass("deactivate-button").addClass("activate-button");
       init();
   		$("#version-link").click(function() {
-  			alert("Build: <?php echo $buildName; ?>, <?php echo $buildNumber; ?>");
+  			alert("Version: <?php echo $versionNumber; ?>\nBuild: <?php echo $buildName; ?> (<?php echo $buildNumber; ?>)");
   			return false;
   		});
   		$("#field-url").on("blur", function () {
         updateAndShowProjectDetails(getProjectIDFromURL($(this).val()));
       }).on("keydown", function(e) {
-        if (e.keyCode == 13) {
+        // if (e.keyCode == 13) {
           updateAndShowProjectDetails(getProjectIDFromURL($(this).val()));
-        }
+        // }
   		});
-  		$("#converter_form").submit(function(event) {
-        var projectConversionURL = "/api/v1/start_conversion.php?id={0}";
-        var projectID = getProjectIDFromURL($("#field-url").val());
-        $("#field-url-validation-result").html("");
-        if (projectID == null) {
-          showErrorMessage("Invalid URL given!");
-          disableSubmitButton();
-          $(this).focus();
-          event.preventDefault();
-          return false;
-        }
-        $.getJSON(projectConversionURL.replace("{0}", projectID), function(data) {
+      // $("#converter_form").submit(function(event) {
+      //   var projectConversionURL = "/api/v1/start_conversion.php?id={0}";
+      //   var projectID = getProjectIDFromURL($("#field-url").val());
+      //   $("#field-url-validation-result").html("");
+      //   if (projectID == null) {
+      //     showErrorMessage("Invalid URL given!");
+      //     disableSubmitButton();
+      //     $(this).focus();
+      //     event.preventDefault();
+      //     return false;
+      //   }
+      //   $.getJSON(projectConversionURL.replace("{0}", projectID), function(data) {
 
-        });
-        event.preventDefault();
-        return false;
-      });
+      //   });
+      //   event.preventDefault();
+      //   return false;
+      // });
       $("#select_form").submit(function(event) {
         event.preventDefault();
         return false;
@@ -145,37 +67,22 @@ $buildNumber = valueForConfigKey('build_number:', $rawConfigContent);
         updateAndShowProjectDetails(getProjectIDFromURL($("#field-url").val()));
         $("#web-convert-modal").modal();
         $("#field-url").focus();
-        $("#qrcode").children().remove();
-        var qrcode = new QRCode(document.getElementById("qrcode"), {
-          width : 200,
-          height : 200
-        });
-        qrcode.makeCode($("#field-url").val());
+        // $("#qrcode").children().remove();
+        // var qrcode = new QRCode(document.getElementById("qrcode"), {
+        //   width : 200,
+        //   height : 200
+        // });
+        // qrcode.makeCode($("#field-url").val());
       });
       $("#btn-show-upload-input").click(function() {
         $("#upload-convert-modal").modal();
       });
     });
   </script>
-  <style type="text/css">
-  .modal-header {
-    background-color: #EEE;
-    color: #000;
-  }
-  .modal-header h4 {
-    font-weight: bold;
-  }
-  .modal-body, .modal-body h2 {
-    color: #666;
-  }
-  .close {
-    font-size: 50px;
-  }
-  </style>
 </head>
 <body>
   <div class="ribbon">
-    <a href="#" id="version-link">version <?php echo $versionNumber; ?></a>
+    <a href="#" id="version-link">beta</a>
   </div>
   <div id="wrapper">
     <header>
@@ -208,73 +115,82 @@ $buildNumber = valueForConfigKey('build_number:', $rawConfigContent);
           </form>
         </div>
       </div>
-      <div id="web-convert-modal" class="modal fade" role="dialog">
-        <div class="modal-dialog modal-lg">
-          <div class="modal-content">
-            <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal">&times;</button>
-              <h4 class="modal-title">Convert Scratch projects to Catrobat</h4>
-              <div>Quickly turn your Scratch desktop projects into full-fledged mobile Catrobat projects</div>
-            </div>
-            <div class="modal-body">
-              <div>
-                <form id="converter_form" action="convert.php" method="post" enctype="multipart/form-data">
-                  <p style="font-size:18px;">Enter a Scratch project URL ...</p>
-                  <div class="input-field">
-                    <input type="text" id="field-url" name="url" value="http://scratch.mit.edu/projects/10205819/" class="clearable" />
-                  </div>
-                  <div id="field-url-validation-result"></div>
-                  <div id="qrcode" style="width:200px;height:200px;margin-top:15px;"></div>
-                  <input type="submit" name="submit" id="btn-convert" value="Convert" class="convert-button deactivate-button" />
-                </form>
-              </div>
-              <div class="separator-line"></div>
-              <div>
-                <h2>How it works</h2>
-                <div>
-                  <ul>
-                    <li>Enter the project URL in the input field above and hit the "Convert" button.</li>
-                    <li>After the conversion has finished a QR-Code will be shown.</li>
-                    <li>Install and open the PocketCode app on your <a href="https://play.google.com/store/apps/details?id=org.catrobat.catroid" target="_blank">Android</a> or iOS device (coming soon).</li>
-                    <li>Now hold your device over the QR Code so that it's clearly visible within your smartphone's screen.</li>
-                    <li>Your project should subsequently open on your mobile device.</li>
-                    <li>That's it. :)</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="upload-convert-modal" class="modal fade" role="dialog">
-        <div class="modal-dialog modal-lg">
-          <div class="modal-content">
-            <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal">&times;</button>
-              <h4>Convert Scratch projects to Catrobat</h4>
-              <div>Please select your locally stored Scratch project (.sb2 file) and hit the <i>Convert</i> button</div>
-            </div>
-            <div class="modal-body">
-              <form id="converter_form" action="convert.php" method="post" enctype="multipart/form-data">
-                <div class="input-field">
-                  <input type="file" id="field-filename" name="filename" class="size-large input-search" />
-                </div>
-                <input type="submit" name="submit" id="btn-convert" value="Convert" class="convert-button activate-button" />
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
     </article>
+    <aside id="modal-pages">
+      <section id="web-convert-modal-section">
+        <div id="web-convert-modal" class="modal fade" role="dialog">
+          <div class="modal-dialog modal-lg" style="min-width:350px;max-width:700px;">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Convert Scratch projects to Catrobat</h4>
+                <div>Quickly turn your Scratch desktop projects into full-fledged mobile Catrobat projects</div>
+              </div>
+              <div class="modal-body">
+                <div style="text-align:center;">
+                  <form id="converter_form" action="convert.php" method="post" enctype="multipart/form-data">
+                    <p style="font-size:18px;">Enter a Scratch project URL ...</p>
+                    <div class="input-field">
+                      <input type="text" id="field-url" name="url" value="http://scratch.mit.edu/projects/10205819/" class="clearable" />
+                    </div>
+                    <div id="field-url-validation-result"></div>
+                    <!-- <div id="qrcode" style="width:200px;height:200px;margin-top:15px;"></div> -->
+                    <input type="submit" name="submit" id="btn-convert" value="Convert" class="convert-button deactivate-button" />
+                  </form>
+                </div>
+                <div class="separator-line"></div>
+                <div>
+                  <h2>How it works</h2>
+                  <div>
+                    <ol>
+                      <li>Enter the project URL in the input field above and hit the "Convert" button.</li>
+                      <li>After the conversion has finished a QR-Code will be shown.</li>
+                      <li>Install and open the PocketCode app on your <a href="https://play.google.com/store/apps/details?id=org.catrobat.catroid" target="_blank">Android</a> or iOS device (coming soon).</li>
+                      <li>Now hold your device over the QR Code so that it's clearly visible within your smartphone's screen.</li>
+                      <li>Your project should subsequently open on your mobile device.</li>
+                      <li>That's it. :)</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section id="upload-convert-modal-section">
+        <div id="upload-convert-modal" class="modal fade" role="dialog">
+          <div class="modal-dialog modal-lg" style="min-width:350px;max-width:700px;">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4>Convert Scratch projects to Catrobat</h4>
+                <div>Please select your locally stored Scratch project (.sb2 file) and hit the <i>Convert</i> button</div>
+              </div>
+              <div class="modal-body">
+                <div style="text-align:center;">
+                  <form id="converter_form" action="convert.php" method="post" enctype="multipart/form-data">
+                    <div class="input-field" style="margin-left:auto;margin-right:auto;width:200px;">
+                      <input type="file" id="field-filename" name="filename" class="size-large input-search" />
+                    </div>
+                    <input type="submit" name="submit" id="btn-convert" value="Convert" class="convert-button activate-button" />
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </aside>
   </div>
-  <p>&nbsp;</p>
-<!--   <footer>
+<!--
+  <footer>
+    <p>&nbsp;</p>
     <div id="footer-menu" class="footer-padding">
       <div>&copy; Copyright 2014 - 2015 Catrobat Team</div>
     </div>
+    <p>&nbsp;</p>
+    <p>&nbsp;</p>
   </footer>
- -->  <p>&nbsp;</p>
-  <p>&nbsp;</p>
+ -->
 </body>
 </html>

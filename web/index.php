@@ -104,8 +104,8 @@ $buildNumber = valueForConfigKey('build_number:', $rawConfigContent);
     <article>
       <div id="select-page" style="text-align:center;">
         <p>&nbsp;</p>
-        <h2>Convert Scratch projects to Catrobat</h2>
-        <p>Quickly turn your Scratch desktop projects into full-fledged mobile Catrobat projects</p>
+        <h2>Convert Scratch projects to Pocket Code programs</h2>
+        <p>Quickly turn your Scratch desktop projects into full-fledged mobile Pocket Code programs</p>
         <p>&nbsp;</p>
         <div>
           <form id="select_form" action="#">

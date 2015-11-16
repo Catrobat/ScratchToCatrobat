@@ -15,7 +15,7 @@ $buildNumber = valueForConfigKey('build_number:', $rawConfigContent);
 ?><!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Scratch to Catrobat Converter</title>
+  <title>Scratch to Pocket Code Converter</title>
   <meta charset="utf-8">
   <meta name="robots" content="noindex,nofollow"/>
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -123,8 +123,8 @@ $buildNumber = valueForConfigKey('build_number:', $rawConfigContent);
             <div class="modal-content">
               <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
-                <h4 class="modal-title">Convert Scratch projects to Catrobat</h4>
-                <div>Quickly turn your Scratch desktop projects into full-fledged mobile Catrobat projects</div>
+                <h4 class="modal-title">Convert Scratch projects to Pocket Code programs</h4>
+                <div>Quickly turn your Scratch desktop projects into full-fledged mobile Pocket Code programs</div>
               </div>
               <div class="modal-body">
                 <div style="text-align:center;">
@@ -140,7 +140,7 @@ $buildNumber = valueForConfigKey('build_number:', $rawConfigContent);
                 </div>
                 <div class="separator-line"></div>
                 <div>
-                  <h2>How it works</h2>
+                  <h2>How To</h2>
                   <div>
                     <ol>
                       <li>Enter the project URL in the input field above and hit the "Convert" button.</li>
@@ -163,7 +163,7 @@ $buildNumber = valueForConfigKey('build_number:', $rawConfigContent);
             <div class="modal-content">
               <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
-                <h4>Convert Scratch projects to Catrobat</h4>
+                <h4>Convert Scratch projects to Pocket Code programs</h4>
                 <div>Please select your locally stored Scratch project (.sb2 file) and hit the <i>Convert</i> button</div>
               </div>
               <div class="modal-body">
@@ -174,6 +174,20 @@ $buildNumber = valueForConfigKey('build_number:', $rawConfigContent);
                     </div>
                     <input type="submit" name="submit" id="btn-convert" value="Convert" class="convert-button activate-button" />
                   </form>
+                </div>
+                <div class="separator-line"></div>
+                <div>
+                  <h2>How To</h2>
+                  <div>
+                    <ol>
+                      <li>Select your locally stored Scratch project and hit the "Convert" button in order to upload and convert it to a Pocket Code program.</li>
+                      <li>After the conversion has finished a QR-Code will be shown.</li>
+                      <li>Install and open the PocketCode app on your <a href="https://play.google.com/store/apps/details?id=org.catrobat.catroid" target="_blank">Android</a> or iOS device (coming soon).</li>
+                      <li>Now hold your device over the QR Code so that it's clearly visible within your smartphone's screen.</li>
+                      <li>Your project should subsequently open on your mobile device.</li>
+                      <li>That's it. :)</li>
+                    </ol>
+                  </div>
                 </div>
               </div>
             </div>

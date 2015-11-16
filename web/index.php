@@ -107,6 +107,7 @@ $buildNumber = valueForConfigKey('build_number:', $rawConfigContent);
         <h2>Convert Scratch projects to Pocket Code programs</h2>
         <p>Quickly turn your Scratch desktop projects into full-fledged mobile Pocket Code programs</p>
         <p>&nbsp;</p>
+        <p><img src="/images/banner.jpg" width="420" heigth="172" alt="Quickly turn your Scratch desktop projects into full-fledged mobile Pocket Code programs" /></p>
         <div>
           <form id="select_form" action="#">
             <div><input type="submit" name="btn-show-url-input" id="btn-show-url-input" value="Enter URL" class="convert-button activate-button" /></div>

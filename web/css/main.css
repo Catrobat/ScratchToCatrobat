@@ -9,8 +9,6 @@ body {
   height: 100%;
   color:#CCCCCC;
   margin-left: 3em;
-  overflow: hidden;
-  overflow: -moz-scrollbars-vertical;
 }
 
 img {
@@ -54,7 +52,7 @@ div.input-field {
 }
 
 body.modal-open {
-    overflow: hidden;
+  -webkit-overflow-scrolling: auto;
 }
 
 .close {

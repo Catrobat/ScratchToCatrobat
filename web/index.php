@@ -144,13 +144,15 @@ $buildNumber = valueForConfigKey('build_number:', $rawConfigContent);
                   <h2>How To</h2>
                   <div>
                     <ol>
-                      <li>Enter the project URL in the input field above and hit the "Convert" button.</li>
-                      <li>After the conversion has finished a QR-Code will be shown.</li>
+                      <li>Install the PocketCode app on your <a href="https://play.google.com/store/apps/details?id=org.catrobat.catroid" target="_blank">Android</a> or iOS device (coming soon).</li>
+                      <li>Now enter the project URL in the input field above and hit the "Convert" button.</li>
+                      <li>Please wait a while until the download starts.</li>
+                      <li>After the download is completed, open the downloaded .catrobat file. The PocketCode app should automatically open and show the converted project.</li>
+<!--                       <li>After the conversion has finished a QR-Code will be shown.</li>
                       <li>Install and open the PocketCode app on your <a href="https://play.google.com/store/apps/details?id=org.catrobat.catroid" target="_blank">Android</a> or iOS device (coming soon).</li>
                       <li>Now hold your device over the QR Code so that it's clearly visible within your smartphone's screen.</li>
                       <li>Your project should subsequently open on your mobile device.</li>
-                      <li>That's it. :)</li>
-                    </ol>
+ -->                    </ol>
                   </div>
                 </div>
               </div>
@@ -181,13 +183,16 @@ $buildNumber = valueForConfigKey('build_number:', $rawConfigContent);
                   <h2>How To</h2>
                   <div>
                     <ol>
-                      <li>Select your locally stored Scratch project and hit the "Convert" button in order to upload and convert it to a Pocket Code program.</li>
+                      <li>Install the PocketCode app on your <a href="https://play.google.com/store/apps/details?id=org.catrobat.catroid" target="_blank">Android</a> or iOS device (coming soon).</li>
+                      <li>Now select your locally stored Scratch project and hit the "Convert" button.</li>
+                      <li>Please wait a while until the download starts.</li>
+                      <li>After the download is completed, open the downloaded .catrobat file. The PocketCode app should automatically open and show the converted project.</li>
+<!--                       <li>Select your locally stored Scratch project and hit the "Convert" button.</li>
                       <li>After the conversion has finished a QR-Code will be shown.</li>
                       <li>Install and open the PocketCode app on your <a href="https://play.google.com/store/apps/details?id=org.catrobat.catroid" target="_blank">Android</a> or iOS device (coming soon).</li>
                       <li>Now hold your device over the QR Code so that it's clearly visible within your smartphone's screen.</li>
                       <li>Your project should subsequently open on your mobile device.</li>
-                      <li>That's it. :)</li>
-                    </ol>
+ -->                    </ol>
                   </div>
                 </div>
               </div>

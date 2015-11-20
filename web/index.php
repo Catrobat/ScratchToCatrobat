@@ -124,12 +124,11 @@ $buildNumber = valueForConfigKey('build_number:', $rawConfigContent);
             <div class="modal-content">
               <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
-                <h4 class="modal-title">Convert Scratch projects to Pocket Code programs</h4>
+                <h4 class="modal-title">Enter a Scratch project URL:</h4>
               </div>
               <div class="modal-body">
                 <div style="text-align:center;">
                   <form id="converter_form" action="convert.php" method="post" enctype="multipart/form-data">
-                    <p style="font-size:18px;">Enter a Scratch project URL ...</p>
                     <div class="input-field">
                       <input type="text" id="field-url" name="url" value="http://scratch.mit.edu/projects/10205819/" class="clearable" />
                     </div>
@@ -165,7 +164,7 @@ $buildNumber = valueForConfigKey('build_number:', $rawConfigContent);
             <div class="modal-content">
               <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
-                <h4>Convert Scratch projects to Pocket Code programs</h4>
+                <h4>Select your locally stored Scratch project:</h4>
               </div>
               <div class="modal-body">
                 <div style="text-align:center;">

@@ -9,7 +9,7 @@ body {
   height: 100%;
   color:#CCCCCC;
   margin-left: 3em;
-  overflow-y: hidden;
+  overflow: hidden;
   overflow: -moz-scrollbars-vertical;
 }
 

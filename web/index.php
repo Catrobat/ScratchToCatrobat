@@ -18,7 +18,7 @@ $buildNumber = valueForConfigKey('build_number:', $rawConfigContent);
   <title>Scratch to Pocket Code Converter</title>
   <meta charset="utf-8">
   <meta name="robots" content="noindex,nofollow"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
   <link rel="shortcut icon" href="./images/logo/favicon.png" />
   <link rel="stylesheet" href="./css/main.css" media="screen"/>

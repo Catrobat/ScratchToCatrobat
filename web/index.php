@@ -93,7 +93,7 @@ $buildNumber = valueForConfigKey('build_number:', $rawConfigContent);
         </div>
         <div id="header-left">
           <div id="logo">
-            <a href="/pocketcode/">
+            <a href="#">
               <img src="/images/logo/logo_text.png" alt="Pocket Code Logo" />
             </a>
           </div>

@@ -125,7 +125,6 @@ $buildNumber = valueForConfigKey('build_number:', $rawConfigContent);
               <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
                 <h4 class="modal-title">Convert Scratch projects to Pocket Code programs</h4>
-                <div>Quickly turn your Scratch desktop projects into full-fledged mobile Pocket Code programs</div>
               </div>
               <div class="modal-body">
                 <div style="text-align:center;">
@@ -144,7 +143,7 @@ $buildNumber = valueForConfigKey('build_number:', $rawConfigContent);
                   <h2>How To</h2>
                   <div>
                     <ol>
-                      <li>Install the PocketCode app on your <a href="https://play.google.com/store/apps/details?id=org.catrobat.catroid" target="_blank">Android</a> or iOS device (coming soon).</li>
+                      <li>Install the Pocket Code app on your <a href="https://play.google.com/store/apps/details?id=org.catrobat.catroid" target="_blank">Android</a> or iOS device (coming soon).</li>
                       <li>Now enter the project URL in the input field above and hit the "Convert" button.</li>
                       <li>Please wait a while until the download starts.</li>
                       <li>After the download is completed, open the downloaded .catrobat file. The PocketCode app should automatically open and show the converted project.</li>
@@ -167,7 +166,6 @@ $buildNumber = valueForConfigKey('build_number:', $rawConfigContent);
               <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
                 <h4>Convert Scratch projects to Pocket Code programs</h4>
-                <div>Please select your locally stored Scratch project (.sb2 file) and hit the <i>Convert</i> button</div>
               </div>
               <div class="modal-body">
                 <div style="text-align:center;">
@@ -183,8 +181,8 @@ $buildNumber = valueForConfigKey('build_number:', $rawConfigContent);
                   <h2>How To</h2>
                   <div>
                     <ol>
-                      <li>Install the PocketCode app on your <a href="https://play.google.com/store/apps/details?id=org.catrobat.catroid" target="_blank">Android</a> or iOS device (coming soon).</li>
-                      <li>Now select your locally stored Scratch project and hit the "Convert" button.</li>
+                      <li>Install the Pocket Code app on your <a href="https://play.google.com/store/apps/details?id=org.catrobat.catroid" target="_blank">Android</a> or iOS device (coming soon).</li>
+                      <li>Now select your locally stored Scratch project (.sb2 file) and hit the "Convert" button.</li>
                       <li>Please wait a while until the download starts.</li>
                       <li>After the download is completed, open the downloaded .catrobat file. The PocketCode app should automatically open and show the converted project.</li>
 <!--                       <li>Select your locally stored Scratch project and hit the "Convert" button.</li>

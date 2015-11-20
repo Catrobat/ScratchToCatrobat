@@ -9,6 +9,8 @@ body {
   height: 100%;
   color:#CCCCCC;
   margin-left: 3em;
+  overflow-y: hidden;
+  overflow: -moz-scrollbars-vertical;
 }
 
 img {
@@ -262,7 +264,7 @@ header nav #searchbar {
   #logo img {
     width: 280px !important;
   }
-  body { margin: 1em; overflow: hidden; }
+  body { margin: 1em; }
   #header-top { display: none; }
   h1 {
     font-size: 24px !important;
@@ -288,7 +290,7 @@ header nav #searchbar {
   #logo img {
     width: 260px !important;
   }
-  body { margin: 1em; overflow: hidden; }
+  body { margin: 1em; }
   #header-top { display: none; }
   h1 {
     font-size: 24px !important;
@@ -314,7 +316,7 @@ header nav #searchbar {
   #logo img {
     width: 240px !important;
   }
-  body { margin: 1em; overflow: hidden; }
+  body { margin: 1em; }
   #header-top { display: none; }
   h1 {
     font-size: 24px !important;

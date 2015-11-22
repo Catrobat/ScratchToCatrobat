@@ -113,9 +113,9 @@ footer {
   color: #fff;
   font-size: 13px;
   padding: 10px;
-  padding-top:15px;
+  padding-top:10px;
   text-align: center;
-  border-top: 1px #FFF solid;
+  border-top: 1px #333 solid;
   display: none;
 }
 footer a {

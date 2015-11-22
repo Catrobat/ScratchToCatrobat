@@ -82,18 +82,19 @@ $buildNumber = valueForConfigKey('build_number:', $rawConfigContent);
 </head>
 <body>
   <div class="ribbon">
-    <a href="#" id="version-link">beta</a>
+    <a href="#" target="_blank" id="version-link">pre-alpha</a>
   </div>
   <div id="wrapper">
     <header>
       <nav>
         <div id="header-top">
-          <div><a href="https://share.catrob.at/pocketcode/help">Tutorials</a></div>
-          <div><a href="http://www.catrobat.org">About</a></div>
+          <div><a href="http://play.google.com/store/apps/details?id=org.catrobat.catroid" target="_blank">Google Play</a></div>
+          <div><a href="https://share.catrob.at/pocketcode/help" target="_blank">Tutorials</a></div>
+          <div><a href="http://www.catrobat.org" target="_blank">About Pocket Code</a></div>
         </div>
         <div id="header-left">
           <div id="logo">
-            <a href="#">
+            <a href="https://share.catrob.at/pocketcode/">
               <img src="/images/logo/logo_text.png" alt="Pocket Code Logo" />
             </a>
           </div>
@@ -104,8 +105,8 @@ $buildNumber = valueForConfigKey('build_number:', $rawConfigContent);
     <article>
       <div id="select-page" style="text-align:center;">
         <p>&nbsp;</p>
-        <h2>Convert Scratch projects to Pocket Code programs</h2>
-        <p>Quickly turn your Scratch desktop projects into full-fledged mobile Pocket Code programs</p>
+        <h2>Prepare Scratch projects for remixing as Pocket Code Programs</h2>
+        <p>Quickly convert your Scratch desktop projects into mobile Pocket Code programs (features that are not yet supported will be rendered as comments). This is a pre-alpha version. Please report problems and issues via <a href="http://catrob.at/s2cissues" target="_blank">http://catrob.at/s2cissues</a></p>
         <p>&nbsp;</p>
         <!-- <p><img src="/images/banner.jpg" width="420" heigth="172" alt="Quickly turn your Scratch desktop projects into full-fledged mobile Pocket Code programs" /></p> -->
         <div>
@@ -199,15 +200,14 @@ $buildNumber = valueForConfigKey('build_number:', $rawConfigContent);
       </section>
     </aside>
   </div>
-<!--
   <footer>
-    <p>&nbsp;</p>
     <div id="footer-menu" class="footer-padding">
-      <div>&copy; Copyright 2014 - 2015 Catrobat Team</div>
+      <div>
+        <a href="http://www.catrobat.org" target="_blank">About Pocket Code</a>
+        <a href="https://share.catrob.at/pocketcode/help" target="_blank">Tutorials</a>
+        <a href="http://play.google.com/store/apps/details?id=org.catrobat.catroid" target="_blank">Google Play</a>
+      </div>
     </div>
-    <p>&nbsp;</p>
-    <p>&nbsp;</p>
   </footer>
- -->
 </body>
 </html>

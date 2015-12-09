@@ -19,12 +19,12 @@ $buildNumber = valueForConfigKey('build_number:', $rawConfigContent);
   <meta charset="utf-8">
   <meta name="robots" content="noindex,nofollow"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
-  <link rel="shortcut icon" href="./images/logo/favicon.png" />
+  <link rel="stylesheet" href="./css/bootstrap.min.css">
   <link rel="stylesheet" href="./css/main.css" media="screen"/>
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+  <link rel="shortcut icon" href="./images/logo/favicon.png" />
+  <script type="text/javascript" src="./js/jquery.min.js"></script>
+  <script type="text/javascript" src="./js/bootstrap.min.js"></script>
   <script type="text/javascript" src="./js/qrcode.min.js"></script>
-  <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
   <script type="text/javascript" src="./js/spin.min.js"></script>
   <script type="text/javascript" src="./js/main.js"></script>
   <script>

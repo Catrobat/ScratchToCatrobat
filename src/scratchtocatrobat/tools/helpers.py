@@ -133,7 +133,6 @@ def latest_catroid_repository_release_data():
 
         # check if cached file still (!) exists
         if not os.path.isfile(cached_file_path):
-            print("        ------->>>>>> NEW REQUEST <<<<<<<<<<<----------")
             response = urllib2.urlopen(url);
             json_data = response.read()
 
@@ -210,7 +209,7 @@ def _setup_configuration():
 
 def inject_git_commmit_hook():
     git_dir = os.path.join(APP_PATH, ".git")
-    if not os.path.isdir(git_dir): # abort, might not be a git repository...
+    if not os.path.isdir(git_dir): # abort, this seems to be no valid git repository...
         return
 
     hook_dir_path = os.path.join(git_dir, "hooks")

@@ -17,6 +17,7 @@ local.properties
 .jline-jython.history
 
 *.pyc
+*.key
 /pyenv
 /test-reports
 /testresult

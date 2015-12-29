@@ -639,7 +639,7 @@ class ConvertedProject(object):
     def _converted_output_path(output_dir, project_name):
         return os.path.join(output_dir, catrobat.encoded_project_name(project_name) + catrobat.PACKAGED_PROGRAM_FILE_EXTENSION)
 
-    def save_as_catrobat_package_to(self, output_dir):
+    def save_as_catrobat_package_to(self, output_dir, archive_name=None):
 
         def iter_dir(path):
             for root, _, files in os.walk(path):
@@ -650,7 +650,8 @@ class ConvertedProject(object):
         with common.TemporaryDirectory() as catrobat_program_dir:
             self.save_as_catrobat_directory_structure_to(catrobat_program_dir)
             common.makedirs(output_dir)
-            catrobat_zip_file_path = self._converted_output_path(output_dir, self.name)
+            archive_name = self.name if archive_name == None else archive_name
+            catrobat_zip_file_path = self._converted_output_path(output_dir, archive_name)
             log.info("  save packaged Scratch project to '%s'", catrobat_zip_file_path)
             if os.path.exists(catrobat_zip_file_path):
                 os.remove(catrobat_zip_file_path)

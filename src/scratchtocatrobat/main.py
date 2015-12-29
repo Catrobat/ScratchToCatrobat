@@ -31,7 +31,10 @@ logger.setup_logging()
 log = logging.getLogger("scratchtocatrobat.main")
 __version__ = helpers.application_info("name")
 
-def run_converter(scratch_project_file_or_url, output_dir, extract_resulting_catrobat=False, temp_rm=True, show_version_only=False, show_info_only=False):
+def run_converter(scratch_project_file_or_url, output_dir,
+                  extract_resulting_catrobat=False, temp_rm=True,
+                  show_version_only=False, show_info_only=False,
+                  archive_name=None):
     def check_base_environment():
         if "java" not in sys.platform:
             raise EnvironmentError("Must be called with Jython interpreter.")
@@ -84,7 +87,7 @@ def run_converter(scratch_project_file_or_url, output_dir, extract_resulting_cat
             project = scratch.Project(scratch_project_dir)
             log.info("Converting scratch project '%s' into output folder: %s", project.name, output_dir)
             converted_project = converter.converted(project)
-            catrobat_program_path = converted_project.save_as_catrobat_package_to(output_dir)
+            catrobat_program_path = converted_project.save_as_catrobat_package_to(output_dir, archive_name)
             if extract_resulting_catrobat:
                 extraction_path = os.path.join(output_dir, os.path.splitext(os.path.basename(catrobat_program_path))[0])
                 common.rm_dir(extraction_path)
@@ -106,9 +109,9 @@ def main():
     usage = '''Scratch to Catrobat converter
 
     Usage:
+      'main.py' <project-url-or-package-path> <output-dir> <archive-name> [--extracted] [--no-temp-rm]
       'main.py' <project-url-or-package-path> <output-dir> [--extracted] [--no-temp-rm]
       'main.py' <project-url-or-package-path> [--extracted] [--no-temp-rm]
-      'main.py' --web <cid> <project-url>
       'main.py' --version
       'main.py' --info
 
@@ -125,12 +128,9 @@ def main():
         kwargs['temp_rm'] = not arguments["--no-temp-rm"]
         kwargs['show_version_only'] = arguments["--version"]
         kwargs['show_info_only'] = arguments["--info"]
-        is_web_mode = arguments["--web"]
+        kwargs['archive_name'] = arguments["<archive-name>"]
         output_dir = helpers.config.get("PATHS", "output")
         output_dir = arguments["<output-dir>"] if arguments["<output-dir>"] != None else output_dir
-        if is_web_mode:
-            output_dir = helpers.config.get("PATHS", "web_output")
-            arguments["<project-url-or-package-path>"] = arguments["<project-url>"]
         project_url_or_package_path = ""
         if arguments["<project-url-or-package-path>"]:
             project_url_or_package_path = arguments["<project-url-or-package-path>"].replace("https://", "http://")

@@ -49,11 +49,15 @@ import os.path
 import signal
 import time
 
-sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "..", "src"))
+CURRENT_DIR_PATH = os.path.realpath(os.path.dirname(__file__))
+sys.path.append(os.path.join(CURRENT_DIR_PATH, "..", "src"))
 from scratchtocatrobat.tools import helpers
 
 define("port", default=8888, help="run on the given port", type=int)
 MAX_WAIT_SECONDS_BEFORE_SHUTDOWN = 3
+CERTIFICATE_PATH = os.path.join(CURRENT_DIR_PATH, "certificates", "server.crt")
+CERTIFICATE_KEY_PATH = os.path.join(CURRENT_DIR_PATH, "certificates", "server.key")
+
 _logger = logging.getLogger(__name__)
 
 def sig_handler(sig, frame):
@@ -86,6 +90,13 @@ def main():
         format='%(asctime)s: %(levelname)7s: [%(name)s]: %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S',
     )
+    if not os.path.isfile(CERTIFICATE_PATH):
+        _logger.error("Cannot find server certificate: %s", CERTIFICATE_PATH)
+        return
+    if not os.path.isfile(CERTIFICATE_KEY_PATH):
+        _logger.error("Cannot find server certificate key: %s", CERTIFICATE_KEY_PATH)
+        return
+
     try:
         # TODO: refactor this... simplify/pythonize mapping...
         app_data = helpers.application_info(["version", "build_name", "build_number"])
@@ -118,8 +129,7 @@ def main():
         data_dir = helpers.config.get("PATHS", "data")
         import ssl
         ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-        ssl_ctx.load_cert_chain(certfile=os.path.join(data_dir, "certificates", "server.crt"),
-                                keyfile=os.path.join(data_dir, "certificates", "server.key"))
+        ssl_ctx.load_cert_chain(certfile=CERTIFICATE_PATH, keyfile=CERTIFICATE_KEY_PATH)
         tcp_server = jobmonitortcpserver.JobMonitorTCPServer(ssl_options=ssl_ctx)
         tcp_server.listen(20000)
 

@@ -74,6 +74,28 @@ class CatrobatConfigParser(object):
     def items(self, section):
         items = self.section_items[section]
         return [(option, self._populate_placeholders_of_entry(entry, section, option)) for (option, entry) in items.iteritems()]
+    def items_as_dict(self, section):
+        items = self.section_items[section]
+        result = {}
+        for (option, entry) in items.iteritems():
+            keys = option.split(".")
+            if len(keys) == 3 and keys[1].isdigit():
+                if keys[0] not in result:
+                    result[keys[0]] = {}
+                if keys[1] not in result[keys[0]]:
+                    result[keys[0]][keys[1]] = {}
+                result[keys[0]][keys[1]][keys[2]] = entry
+            else:
+                result[option] = entry
+        new_result = {}
+        for (option, entry) in result.iteritems():
+            if isinstance(entry, dict):
+                new_result[option] = []
+                for (index, element) in entry.iteritems():
+                    new_result[option].append(element)
+            else:
+                new_result[option] = entry
+        return new_result
     def get(self, section, option):
         options = [option] if type(option) is not list else option
         result = []

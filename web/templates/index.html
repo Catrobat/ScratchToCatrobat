@@ -18,8 +18,8 @@
       init();
       $("#version-link").click(function() {
         var version = "{{ data["version"] }}";
-        var buildName = "{{ data["buildName"] }}";
-        var buildNumber = "{{ data["buildNumber"] }}";
+        var buildName = "{{ data["build_name"] }}";
+        var buildNumber = "{{ data["build_number"] }}";
         alert("Version: " + version + "\nBuild: " + buildName + " (" + buildNumber + ")");
         return false;
       });

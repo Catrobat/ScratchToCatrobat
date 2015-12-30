@@ -123,10 +123,10 @@ class RawProject(Object):
 
     @staticmethod
     def raw_project_code_from_project_folder_path(project_folder_path):
-        dict_path = os.path.join(project_folder_path, _PROJECT_FILE_NAME)
-        if not os.path.exists(dict_path):
-            raise EnvironmentError("Project file not found: {!r}. Please create.".format(dict_path))
-        with open(dict_path) as fp:
+        json_file_path = os.path.join(project_folder_path, _PROJECT_FILE_NAME)
+        if not os.path.exists(json_file_path):
+            raise EnvironmentError("Project file not found: {!r}. Please create.".format(json_file_path))
+        with open(json_file_path) as fp:
             return json.load(fp)
 
     @classmethod

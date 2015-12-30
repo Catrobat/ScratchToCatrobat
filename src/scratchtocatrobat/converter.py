@@ -424,7 +424,7 @@ class Converter(object):
         xml_header.mediaLicense = helpers.catrobat_info("media_license_url")
         xml_header.programLicense = helpers.catrobat_info("program_license_url")
         assert scratch_project_id is not None
-        xml_header.remixOf = helpers.config.get("SCRATCH_API", "project_url_prefix") + scratch_project_id
+        xml_header.remixOf = helpers.config.get("SCRATCH_API", "project_base_url") + scratch_project_id
         description = scratch_project_description
         if len(description) > 0:
             description += "\n\n"

@@ -74,7 +74,7 @@ def run_converter(scratch_project_file_or_url, output_dir,
             raise EnvironmentError("Output folder must be a directory, but is %s" % output_dir)
 
         with common.TemporaryDirectory(remove_on_exit=temp_rm) as scratch_project_dir:
-            if scratch_project_file_or_url.startswith("http://"):
+            if scratch_project_file_or_url.startswith("https://"):
                 log.info("Downloading project from URL: '{}' to temp dir {} ...".format(scratch_project_file_or_url, scratch_project_dir))
                 scratchwebapi.download_project(scratch_project_file_or_url, scratch_project_dir)
             elif os.path.isfile(scratch_project_file_or_url):
@@ -133,10 +133,10 @@ def main():
         output_dir = arguments["<output-dir>"] if arguments["<output-dir>"] != None else output_dir
         project_url_or_package_path = ""
         if arguments["<project-url-or-package-path>"]:
-            project_url_or_package_path = arguments["<project-url-or-package-path>"].replace("https://", "http://")
-            scratch_url_prefix = helpers.config.get("SCRATCH_API", "project_url_prefix")
-            if project_url_or_package_path.startswith("http://") and not project_url_or_package_path.startswith(scratch_url_prefix):
-                log.error("No valid scratch URL given {0}[ID]".format(scratch_url_prefix))
+            project_url_or_package_path = arguments["<project-url-or-package-path>"].replace("http://", "https://")
+            scratch_base_url = helpers.config.get("SCRATCH_API", "project_base_url")
+            if project_url_or_package_path.startswith("https://") and not project_url_or_package_path.startswith(scratch_base_url):
+                log.error("No valid scratch URL given {0}[ID]".format(scratch_base_url))
                 sys.exit(helpers.ExitCode.FAILURE)
         sys.exit(run_converter(project_url_or_package_path, output_dir, **kwargs))
     except Exception as e:

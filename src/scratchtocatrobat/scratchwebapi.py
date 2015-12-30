@@ -47,10 +47,10 @@ def request_project_code(project_id):
 def download_project(project_url, target_dir):
     import scratch
     # TODO: fix circular reference
-    scratch_url_prefix = helpers.config.get("SCRATCH_API", "project_url_prefix")
-    _HTTP_PROJECT_URL_PATTERN = scratch_url_prefix + r'\d+/?'
+    scratch_base_url = helpers.config.get("SCRATCH_API", "project_base_url")
+    _HTTP_PROJECT_URL_PATTERN = scratch_base_url + r'\d+/?'
     if not re.match(_HTTP_PROJECT_URL_PATTERN, project_url):
-        raise common.ScratchtobatError("Project URL must be matching '{}'. Given: {}".format(scratch_url_prefix + '<project id>', project_url))
+        raise common.ScratchtobatError("Project URL must be matching '{}'. Given: {}".format(scratch_base_url + '<project id>', project_url))
     assert len(os.listdir(target_dir)) == 0
 
     def request_resource_data(md5_file_name):

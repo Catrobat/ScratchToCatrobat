@@ -48,15 +48,16 @@ import sys
 import os.path
 import signal
 import time
+import ssl
 
-CURRENT_DIR_PATH = os.path.realpath(os.path.dirname(__file__))
-sys.path.append(os.path.join(CURRENT_DIR_PATH, "..", "src"))
+sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "..", "src"))
 from scratchtocatrobat.tools import helpers
 
-define("port", default=8888, help="run on the given port", type=int)
-MAX_WAIT_SECONDS_BEFORE_SHUTDOWN = 3
-CERTIFICATE_PATH = os.path.join(CURRENT_DIR_PATH, "certificates", "server.crt")
-CERTIFICATE_KEY_PATH = os.path.join(CURRENT_DIR_PATH, "certificates", "server.key")
+MAX_WAIT_SECONDS_BEFORE_SHUTDOWN = int(helpers.config.get("WEBSERVER", "max_wait_seconds_before_shutdown"))
+CERTIFICATE_PATH = helpers.config.get("JOBMONITOR_SERVER", "certificate_path")
+CERTIFICATE_KEY_PATH = helpers.config.get("JOBMONITOR_SERVER", "certificate_key_path")
+WEBSERVER_PORT = helpers.config.get("WEBSERVER", "port")
+JOBMONITORSERVER_PORT = helpers.config.get("JOBMONITOR_SERVER", "port")
 
 _logger = logging.getLogger(__name__)
 
@@ -98,40 +99,39 @@ def main():
         return
 
     try:
-        # TODO: refactor this... simplify/pythonize mapping...
-        app_data = helpers.application_info(["version", "build_name", "build_number"])
-        converterwebapp._MainHandler.app_data["version"] = app_data[0]
-        converterwebapp._MainHandler.app_data["buildName"] = app_data[1]
-        converterwebapp._MainHandler.app_data["buildNumber"] = app_data[2]
+        converterwebapp._MainHandler.app_data = helpers.config.items_as_dict("APPLICATION")
     except:
         _logger.error("Error fetching application data", exc_info=True)
         sys.exit(helpers.ExitCode.FAILURE)
 
     try:
-        # TODO: parse command line...
         tornado.options.parse_command_line()
         # set up converter server
         _logger.info('Starting Converter Web Server...')
+        jobmonitorserver_settings = helpers.config.items_as_dict("JOBMONITOR_SERVER")
+        temp = jobmonitorserver_settings.copy()
+        del temp["allowed_auth_keys"] # not needed for webserver
         settings = dict(
+            debug=False,
             cookie_secret="__TODO:_GENERATE_YOUR_OWN_RANDOM_VALUE_HERE__",
             template_path=os.path.join(os.path.dirname(__file__), "templates"),
             static_path=os.path.join(os.path.dirname(__file__), "static"),
             xsrf_cookies=True,
+            jobmonitorserver=temp
         )
         webapp = converterwebapp.ConverterWebApp(**settings)
         global web_server
         web_server = converterhttpserver.ConverterHTTPServer(webapp)
-        web_server.listen(options.port)
+        web_server.listen(WEBSERVER_PORT)
 
         # set up job monitor server
         _logger.info('Starting Job Monitor Server...')
         global tcp_server
-        data_dir = helpers.config.get("PATHS", "data")
-        import ssl
         ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         ssl_ctx.load_cert_chain(certfile=CERTIFICATE_PATH, keyfile=CERTIFICATE_KEY_PATH)
-        tcp_server = jobmonitortcpserver.JobMonitorTCPServer(ssl_options=ssl_ctx)
-        tcp_server.listen(20000)
+        tcp_server = jobmonitortcpserver.JobMonitorTCPServer(
+                         settings=jobmonitorserver_settings, ssl_options=ssl_ctx)
+        tcp_server.listen(JOBMONITORSERVER_PORT)
 
         # set up signal handler
         signal.signal(signal.SIGTERM, sig_handler)

@@ -30,22 +30,19 @@
           updateAndShowProjectDetails(getProjectIDFromURL($(this).val()));
         // }
       });
-      // $("#converter_form").submit(function(event) {
-      //   var projectConversionURL = "/api/v1/start_conversion.php?id={0}";
-      //   var projectID = getProjectIDFromURL($("#field-url").val());
-      //   $("#field-url-validation-result").html("");
-      //   if (projectID == null) {
-      //     showErrorMessage("Invalid URL given!");
-      //     disableSubmitButton();
-      //     $(this).focus();
-      //     event.preventDefault();
-      //     return false;
-      //   }
-      //   $.getJSON(projectConversionURL.replace("{0}", projectID), function(data) {
-      //   });
-      //   event.preventDefault();
-      //   return false;
-      // });
+      $("#converter_form").submit(function(event) {
+		 var projectURL = $("#field-url").val();
+		 $("#field-url-validation-result").html("");
+		 if (getProjectIDFromURL(projectURL) != null) { /* check if project URL is valid! */
+			startConversion(projectURL);
+		 } else {
+            showErrorMessage("Invalid URL given!");
+            disableSubmitButton();
+            $(this).focus();
+            event.preventDefault();
+		 }
+		 return false;
+      });
       $("#select_form").submit(function(event) {
         event.preventDefault();
         return false;

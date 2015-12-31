@@ -57,29 +57,27 @@ CATROBAT_FILE_EXT = helpers.config.get("CATROBAT", "file_extension")
 
 class ConverterJobHandler(jobhandler.JobHandler):
 
-    def _exec_job(self, args):
-        exec_args = ["/usr/bin/env", "python", CONVERTER_RUN_SCRIPT_PATH,
-                     args["url"], args["outputDir"], args["archiveName"]]
-        return subprocess.Popen(exec_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-
     @gen.coroutine
     def run_job(self, args):
-        process = self._exec_job(args)
-        yield self.send_job_started_notification()
+        exec_args = ["/usr/bin/env", "python", CONVERTER_RUN_SCRIPT_PATH,
+                     args["url"], args["outputDir"], args["archiveName"]]
+        process = subprocess.Popen(exec_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        job_ID = str(args["projectID"])
+        yield self.send_job_started_notification(job_ID)
 
         while True:
             line = process.stdout.readline()
             if line != '':
                 line = line.rstrip()
                 _logger.debug("[%s]: %s" % (CLIENT, line))
-                yield self.send_job_progress_notification(0.0, line)
+                yield self.send_job_progress_notification(job_ID, 0.0, line)
             else:
                 break
         exit_code = process.wait() # XXX: work around this when experiencing errors...
         _logger.info("[%s]: Exit code is: %d" % (CLIENT, exit_code))
 
         # NOTE: exit code is evaluated on the server
-        yield self.send_job_finished_notification(exit_code)
+        yield self.send_job_finished_notification(job_ID, exit_code)
 
     @gen.coroutine
     def post_processing(self, args):
@@ -88,7 +86,8 @@ class ConverterJobHandler(jobhandler.JobHandler):
         with open(file_path, 'rb') as file:
             file_hash = hashlib.sha256(file.read()).hexdigest()
             args = {
-                Request.ARGS_FILE_NAME: os.path.basename(file_path),
+                Request.ARGS_JOB_ID: str(args["projectID"]),
+                Request.ARGS_FILE_NAME: str(args["projectID"]) + CATROBAT_FILE_EXT,
                 Request.ARGS_FILE_SIZE: file_size,
                 Request.ARGS_FILE_HASH: file_hash
             }
@@ -111,6 +110,7 @@ class ConverterJobHandler(jobhandler.JobHandler):
                 yield self._connection.send_message(buffer, logging_enabled=False)
                 buffer = file.read(BUFFER_SIZE)
             _logger.info("[%s]: Done Sending..." % CLIENT)
+
             # File transfer finished (reply)
             data = json.loads((yield self._connection.read_message()).rstrip())
             if not Reply.is_valid(data):

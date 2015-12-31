@@ -74,9 +74,10 @@ class JobHandler(object):
         _logger.info('[%s]: "%s"' % (SERVER, reply.msg))
 
     @gen.coroutine
-    def send_job_started_notification(self):
+    def send_job_started_notification(self, job_ID):
         _logger.debug('[CLIENT]: Sending job started notification')
-        request = Request(Request.Command.JOB_STARTED_NOTIFICATION, { Request.ARGS_MSG: "Job started" })
+        args = { Request.ARGS_JOB_ID: job_ID, Request.ARGS_MSG: "Job started" }
+        request = Request(Request.Command.JOB_STARTED_NOTIFICATION, args)
         yield self._connection.send_message(request)
         # Job started (reply)
         data = json.loads((yield self._connection.read_message()).rstrip())
@@ -89,10 +90,10 @@ class JobHandler(object):
         _logger.info('[%s]: "%s"' % (SERVER, reply.msg))
 
     @gen.coroutine
-    def send_job_progress_notification(self, progress, message):
+    def send_job_progress_notification(self, job_ID, progress, message):
         # Job progress (request)
         _logger.debug('[CLIENT]: (%d%%) Sending job progress notification' % progress)
-        args = { Request.ARGS_PROGRESS: progress, Request.ARGS_MSG: message }
+        args = { Request.ARGS_JOB_ID: job_ID, Request.ARGS_PROGRESS: progress, Request.ARGS_MSG: message }
         yield self._connection.send_message(Request(Request.Command.JOB_PROGRESS_NOTIFICATION, args))
 
         # Job progress (reply)
@@ -106,10 +107,10 @@ class JobHandler(object):
         _logger.info('[%s]: "%s"' % (SERVER, reply.msg))
 
     @gen.coroutine
-    def send_job_finished_notification(self, exit_code):
+    def send_job_finished_notification(self, job_ID, exit_code):
         # Job finished (request)
         _logger.debug('[CLIENT]: Sending job finished notification')
-        args = { Request.ARGS_RESULT: exit_code, Request.ARGS_MSG: "Job finished" }
+        args = { Request.ARGS_JOB_ID: job_ID, Request.ARGS_RESULT: exit_code, Request.ARGS_MSG: "Job finished" }
         yield self._connection.send_message(Request(Request.Command.JOB_FINISHED_NOTIFICATION, args))
         # Job progress (reply)
         data = json.loads((yield self._connection.read_message()).rstrip())

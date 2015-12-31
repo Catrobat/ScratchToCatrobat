@@ -78,6 +78,7 @@ class CatrobatConfigParser(object):
         items = self.section_items[section]
         result = {}
         for (option, entry) in items.iteritems():
+            entry = self._populate_placeholders_of_entry(entry, section, option)
             keys = option.split(".")
             if len(keys) == 3 and keys[1].isdigit():
                 if keys[0] not in result:

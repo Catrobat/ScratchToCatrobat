@@ -44,14 +44,21 @@ import tornado.ioloop
 from tornado.tcpserver import TCPServer
 from tornado import gen
 from jobmonitorprotocol import Request, Reply, TCPConnection, SERVER, CLIENT
+from converterwebapp import ConverterWebSocketHandler, NotificationType
 import json
 from threading import Timer
 import time
 import hashlib
+import os
 
 _logger = logging.getLogger(__name__)
 
-class TCPConnectionHandler():
+class TCPConnectionException(Exception):
+    def __init__(self, message, context):
+        super(TCPConnectionException, self).__init__(message)
+        self.context = context
+
+class TCPConnectionHandler(object):
     def __init__(self, server, connection):
         self.server = server
         self.connection = connection
@@ -79,7 +86,7 @@ class TCPConnectionHandler():
     def handle_authentication(self):
         data = json.loads((yield self.read_message()).rstrip())
         if not Request.is_valid(data, Request.Command.AUTH):
-            raise Exception("Invalid data given!")
+            raise TCPConnectionException("Invalid data given!")
         request = Request.request_from_data(data)
         address = self.connection.address
         host = address[0] if isinstance(address, tuple) else address
@@ -90,9 +97,9 @@ class TCPConnectionHandler():
                          % address)
             # TODO: block him...
             # Don't tell the client that this hostname is forbidden
-            raise Exception("Invalid AUTH_KEY given.")
+            raise TCPConnectionException("Invalid AUTH_KEY given.")
         if request.args[Request.ARGS_AUTH_KEY] not in allowed_auth_keys_for_host:
-            raise Exception("Invalid AUTH_KEY given.")
+            raise TCPConnectionException("Invalid AUTH_KEY given.")
 
         _logger.info("[%s]: Reply: Authentication successful!" % SERVER)
         yield self.send_message(Reply(result=True, msg="Authentication successful!"))
@@ -101,19 +108,19 @@ class TCPConnectionHandler():
     def handle_job_started_notification(self):
         data = json.loads((yield self.read_message()).rstrip())
         if not Request.is_valid(data, Request.Command.JOB_STARTED_NOTIFICATION):
-            raise Exception("Invalid data given!")
+            raise TCPConnectionException("Invalid data given!")
         request = Request.request_from_data(data)
         _logger.info("[%s]: Received job start notification" % SERVER)
         _logger.info("[%s]: %s " % (CLIENT, request.args[Request.ARGS_MSG]))
 
         _logger.debug("[%s]: Reply: Accepted!" % SERVER)
         yield self.send_message(Reply(result=True, msg="ACK"))
-        #TODO: notify websocket
+        ConverterWebSocketHandler.notify(NotificationType.JOB_STARTED, request.args)
 
     @gen.coroutine
     def handle_job_progress_notification(self, data):
         if not Request.is_valid(data, Request.Command.JOB_PROGRESS_NOTIFICATION):
-            raise Exception("Invalid data given!")
+            raise TCPConnectionException("Invalid data given!")
         request = Request.request_from_data(data)
         _logger.info("[%s]: Received job progress notification" % SERVER)
         _logger.info("[%s]: (%s%%) %s " % (CLIENT, request.args[Request.ARGS_PROGRESS],
@@ -121,68 +128,77 @@ class TCPConnectionHandler():
 
         _logger.debug("[%s]: Reply: Accepted!" % SERVER)
         yield self.send_message(Reply(result=True, msg="ACK"))
-        #TODO: notify websocket
+        ConverterWebSocketHandler.notify(NotificationType.JOB_PROGRESS, request.args)
 
     @gen.coroutine
     def handle_job_finished_notification(self, data):
         if data == None or not Request.is_valid(data, Request.Command.JOB_FINISHED_NOTIFICATION):
-            raise Exception("Invalid data given!")
+            raise TCPConnectionException("Invalid data given!")
         request = Request.request_from_data(data)
         _logger.info("[%s]: Received job finished notification" % SERVER)
         _logger.info("[%s]: %s " % (CLIENT, request.args[Request.ARGS_MSG]))
         exit_code = int(request.args[Request.ARGS_RESULT])
         _logger.info("[%s]: Job finished with exit code: %d" % (SERVER, exit_code))
         if exit_code != 0:
-            raise Exception("Job failed with exit code: %d", exit_code)
+            raise TCPConnectionException("Job failed with exit code: %d" % exit_code, context=request.args)
 
         _logger.debug("[%s]: Reply: Accepted!" % SERVER)
         yield self.send_message(Reply(result=True, msg="ACK"))
-        #TODO: notify websocket
+        ConverterWebSocketHandler.notify(NotificationType.JOB_FINISHED, request.args)
 
     @gen.coroutine
     def handle_file_transfer(self):
         data = json.loads((yield self.read_message()).rstrip())
         if not Request.is_valid(data, Request.Command.FILE_TRANSFER):
-            raise Exception("Invalid data given!")
+            raise TCPConnectionException("Invalid data given!")
         request = Request.request_from_data(data)
         _logger.info("[%s]: Received file transfer notification" % SERVER)
 
         file_name = request.args[Request.ARGS_FILE_NAME]
         file_size = int(request.args[Request.ARGS_FILE_SIZE])
         file_hash = request.args[Request.ARGS_FILE_HASH]
-        _logger.info("[%s]: File: %s, File size: %d, SHA256: %s"
+        _logger.info("[%s]: File name: %s, File size: %d, SHA256: %s"
                      % (CLIENT, file_name, file_size, file_hash))
 
         if file_size == 0:
-            raise Exception("Cannot transfer empty file...")
+            raise TCPConnectionException("Cannot transfer empty file...", context=request.args)
 
         _logger.debug("[%s]: Reply: Accepted!" % SERVER)
         yield self.send_message(Reply(result=True, msg="Ready for file transfer!"))
 
-        file_path = "./result_%s" % file_name
-        max_buffer_size = self.server.settings["max_buffer_size"]
+        download_dir = self.server.settings["download_dir"]
+        file_path = os.path.join(download_dir, file_name)
+        max_input_buffer_size = int(self.server.settings["max_input_buffer_size"])
         with open(file_path, 'wb+', 0) as f:
-            if file_size <= max_buffer_size:
+            if file_size <= max_input_buffer_size:
                 f.write((yield self.read_bytes(file_size)))
             else:
                 transfered_bytes = 0
                 while transfered_bytes < file_size:
-                    buffer_size = min((file_size - transfered_bytes), max_buffer_size)
+                    buffer_size = min((file_size - transfered_bytes), max_input_buffer_size)
                     f.write((yield self.read_bytes(buffer_size)))
                     transfered_bytes += buffer_size
             f.seek(0, 0)
             computed_file_hash = hashlib.sha256(f.read()).hexdigest()
             if computed_file_hash != file_hash:
-                raise Exception("Given hash value is not equal to computed hash value.")
+                raise TCPConnectionException("Given hash value is not equal to computed hash value.", context=request.args)
 
         _logger.debug("[%s]: Reply: Accepted!" % SERVER)
-        yield self.send_message(Reply(result=True, msg="Finished file transfer!"))
-        #TODO: notify websocket
+        _logger.info("OK! Hash is equal to computed hash value. Finished file transfer!")
+        yield self.send_message(Reply(result=True, msg="OK! Hash is equal to computed " \
+                                      "hash value. Finished file transfer!"))
+        ConverterWebSocketHandler.notify(NotificationType.FILE_TRANSFER_FINISHED, request.args)
 
     @gen.coroutine
-    def handle_exception(self, msg):
+    def handle_exception(self, exception, msg):
         _logger.exception("{}!".format(msg))
         yield self.send_message(Reply(result=False, msg="{}! Closing connection.".format(msg)))
+        if isinstance(exception, TCPConnectionException) and exception.context == None:
+            args = exception.context
+            args["msg"] = msg
+            ConverterWebSocketHandler.notify(NotificationType.JOB_FAILED, args)
+        else:
+            ConverterWebSocketHandler.notify(NotificationType.JOB_FAILED, { "msg": msg })
         self.connection.print_error_and_close_stream()
 
     @gen.coroutine
@@ -230,8 +246,8 @@ class TCPConnectionHandler():
         # (V) Expecting file transfer
         try:
             yield self.handle_file_transfer()
-        except:
-            self.handle_exception("File transfer failed")
+        except e:
+            self.handle_exception(e, "File transfer failed")
             return
 
         _logger.info("Finished! Closing stream.")
@@ -272,9 +288,9 @@ class JobMonitorTCPServer(TCPServer):
         self.streams = {}
         self.timer = _RepeatedTimer(float(settings["check_zombie_interval"]), self.close_streams_after_timeout)
         # self.io_loop.add_timeout(datetime.timedelta(seconds=5), self.write_to_all_stream)
-        max_buffer_size = int(settings["max_buffer_size"]) if "max_buffer_size" in settings else None
+        max_stream_buffer_size = int(settings["max_stream_buffer_size"]) if "max_stream_buffer_size" in settings else None
         read_chunk_size = int(settings["read_chunk_size"]) if "read_chunk_size" in settings else None
-        super(JobMonitorTCPServer, self).__init__(io_loop, ssl_options, max_buffer_size, read_chunk_size)
+        super(JobMonitorTCPServer, self).__init__(io_loop, ssl_options, max_stream_buffer_size, read_chunk_size)
 
     def stop(self):
         self.timer.stop()

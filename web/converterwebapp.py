@@ -114,10 +114,40 @@ class _MainHandler(tornado.web.RequestHandler):
     def get(self):
         self.render("index.html", data=_MainHandler.app_data)
 
+class _DownloadHandler(tornado.web.RequestHandler):
+    def get(self):
+        file_name = self.get_query_argument("file", default=None)
+        if file_name == None:
+            raise HTTPError(404)
+        download_dir = self.application.settings["jobmonitorserver"]["download_dir"]
+        #------------------------
+        # FIXME: VALIDATE if file_name...
+        #------------------------
+        _file_dir = download_dir
+        _file_path = "%s/%s" % (_file_dir, file_name)
+        if not file_name or not os.path.exists(_file_path):
+            raise HTTPError(404)
+        self.set_header('Content-Type', 'application/force-download')
+        self.set_header('Content-Disposition', 'attachment; filename=%s' % file_name)
+        with open(_file_path, "rb") as f:
+            try:
+                while True:
+                    _buffer = f.read(4096)
+                    if _buffer:
+                        self.write(_buffer)
+                    else:
+                        f.close()
+                        self.finish()
+                        return
+            except:
+                raise HTTPError(404)
+        raise HTTPError(500)
+
 class ConverterWebApp(tornado.web.Application):
     def __init__(self, **settings):
         handlers = [
             (r"/", _MainHandler),
+            (r"/downloads", _DownloadHandler),
             (r"/convertersocket", _ConverterWebSocketHandler),
         ]
         tornado.web.Application.__init__(self, handlers, **settings)

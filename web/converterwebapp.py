@@ -73,18 +73,32 @@ class _JsonKeys(object):
         TYPE = "type"
         MSG = "msg"
 
-class _ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
-    handlers_of_open_sockets = set()
+class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
+
+    client_ID_open_sockets_map = {}
 
     def get_compression_options(self):
-        # Non-None enables compression with default options.
-        return {}
+        return {} # Non-None enables compression with default options.
 
     def open(self):
         self.__class__.handlers_of_open_sockets.add(self)
 
+    def set_client_ID(self, client_ID):
+        cls = self.__class__
+        if client_ID not in cls.client_ID_open_sockets_map:
+            cls.client_ID_open_sockets_map[client_ID] = []
+        cls.client_ID_open_sockets_map[client_ID].append(self)
+
     def on_close(self):
-        self.__class__.handlers_of_open_sockets.remove(self)
+        cls = self.__class__
+        for (client_ID, open_sockets) in cls.client_ID_open_sockets_map.iteritems():
+            if self in open_sockets:
+                open_sockets.remove(self)
+                if len(open_sockets) == 0:
+                    del cls.client_ID_open_sockets_map[client_ID]
+                else:
+                    cls.client_ID_open_sockets_map[client_ID] = open_sockets
+                return # skip loop => maximal 1 socket/clientID possible
 
     def send_message(self, data):
         _logger.debug("Sending message %r to %d", data, id(self))
@@ -148,6 +162,6 @@ class ConverterWebApp(tornado.web.Application):
         handlers = [
             (r"/", _MainHandler),
             (r"/downloads", _DownloadHandler),
-            (r"/convertersocket", _ConverterWebSocketHandler),
+            (r"/convertersocket", ConverterWebSocketHandler),
         ]
         tornado.web.Application.__init__(self, handlers, **settings)

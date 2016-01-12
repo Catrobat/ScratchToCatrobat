@@ -44,9 +44,27 @@ import tornado.escape
 import tornado.web
 import tornado.websocket
 import os.path
-from command import get_command, InvalidCommand
+import redis
+from command import get_command, InvalidCommand, Job
+import jobmonitorprotocol as jobmonprot
+from tornado.web import HTTPError
+import ast
+import sys
+
+sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "..", "src"))
+from scratchtocatrobat.tools import helpers
 
 _logger = logging.getLogger(__name__)
+
+CATROBAT_FILE_EXT = helpers.config.get("CATROBAT", "file_extension")
+# TODO: check if redis is available => error!
+_redis_conn = redis.Redis() #'127.0.0.1', 6789) #, password='secret')
+
+class Context(object):
+    def __init__(self, handler, redis_connection, jobmonitorserver_settings):
+        self.handler = handler
+        self.redis_connection = redis_connection
+        self.jobmonitorserver_settings = jobmonitorserver_settings
 
 class _JsonKeys(object):
     class Request(object):
@@ -116,11 +134,11 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
             args = _JsonKeys.Request.extract_allowed_args(data[_JsonKeys.Request.ARGS])
         else:
             command = InvalidCommand()
-
-        args["host"] = "localhost"
-        args["port"] = 20000
-        result = command.execute(args)
-        message = { _JsonKeys.Reply.TYPE: result.type, _JsonKeys.Reply.MSG: result.message }
+        # TODO: sanity check... when client ID is given => check if it belongs to socket handler!
+        redis_conn = _redis_conn
+        ctxt = Context(self, redis_conn, self.application.settings["jobmonitorserver"])
+        result = command.execute(ctxt, args)
+        message = { _JsonKeys.Reply.STATUS: result.status, _JsonKeys.Reply.DATA: result.data }
         self.send_message(message)
 
 class _MainHandler(tornado.web.RequestHandler):

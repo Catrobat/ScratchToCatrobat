@@ -88,8 +88,16 @@ class _JsonKeys(object):
             return filtered_args
 
     class Reply(object):
-        TYPE = "type"
-        MSG = "msg"
+        #TYPE = "type"
+        STATUS = "status"
+        DATA = "data"
+
+class NotificationType():
+    JOB_STARTED = 0
+    JOB_PROGRESS = 1
+    JOB_FINISHED = 2
+    FILE_TRANSFER_FINISHED = 3
+    JOB_FAILED = 4
 
 class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
 
@@ -98,14 +106,67 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
     def get_compression_options(self):
         return {} # Non-None enables compression with default options.
 
-    def open(self):
-        self.__class__.handlers_of_open_sockets.add(self)
-
     def set_client_ID(self, client_ID):
         cls = self.__class__
         if client_ID not in cls.client_ID_open_sockets_map:
             cls.client_ID_open_sockets_map[client_ID] = []
         cls.client_ID_open_sockets_map[client_ID].append(self)
+
+    @classmethod
+    def notify(cls, type, args):
+        # jobID is scratch project ID in this case
+        scratch_project_ID = args[jobmonprot.Request.ARGS_JOB_ID]
+        REDIS_CLIENT_PROJECT_KEY = "clientsOfProject#{}".format(scratch_project_ID)
+        REDIS_PROJECT_KEY = "project#{}".format(scratch_project_ID)
+
+        REDIS_PROJECT_KEY = "project#{}".format(scratch_project_ID)
+        job = Job.from_redis(_redis_conn, REDIS_PROJECT_KEY)
+        if job == None:
+            _logger.error("Cannot find job #{}".format(scratch_project_ID))
+            return
+        if type == NotificationType.JOB_STARTED:
+            job.status = Job.Status.RUNNING
+        elif type == NotificationType.JOB_FAILED:
+            _logger.info("Job failed!")
+            job.status = Job.Status.FAILED
+        elif type == NotificationType.FILE_TRANSFER_FINISHED:
+            job.status = Job.Status.FINISHED
+        elif type == NotificationType.JOB_FINISHED:
+            _logger.info("Job #{} finished, waiting for file transfer".format(scratch_project_ID))
+
+        if not job.save_to_redis(_redis_conn, REDIS_PROJECT_KEY):
+            _logger.info("Unable to update job status!")
+            return
+
+        # find listening clients
+        # TODO: cache this...
+        clients_of_project = _redis_conn.get(REDIS_CLIENT_PROJECT_KEY)
+        if clients_of_project == None:
+            _logger.warn("WTH?! No listening clients stored!")
+            return
+        clients_of_project = ast.literal_eval(clients_of_project)
+        _logger.debug("There are %d registered clients." % len(clients_of_project))
+        listening_clients = [cls.client_ID_open_sockets_map[int(client_ID)] for client_ID in clients_of_project if int(client_ID) in cls.client_ID_open_sockets_map]
+        _logger.info("There are %d active clients listening on this job." % len(listening_clients))
+
+        for socket_handlers in listening_clients:
+            #if type == NotificationType.JOB_STARTED:
+            #    message = { _JsonKeys.Reply.STATUS: True, _JsonKeys.Reply.DATA: { "msg": "JOB STARTED!" } }
+            #elif type == NotificationType.JOB_PROGRESS:
+            #    message = { _JsonKeys.Reply.STATUS: True, _JsonKeys.Reply.DATA: { "msg": args[jobmonprot.Request.ARGS_MSG] } }
+            #elif type == NotificationType.JOB_FINISHED:
+            #    message = { _JsonKeys.Reply.STATUS: True, _JsonKeys.Reply.DATA: { "msg": args[jobmonprot.Request.ARGS_MSG] } }
+            if type == NotificationType.FILE_TRANSFER_FINISHED:
+                # send download link!
+                download_url = "/downloads?file=" + scratch_project_ID + CATROBAT_FILE_EXT
+                message = { _JsonKeys.Reply.STATUS: True, _JsonKeys.Reply.DATA: { "msg": "File transfer successful!", "url": download_url } }
+            elif type == NotificationType.JOB_FAILED:
+                message = { _JsonKeys.Reply.STATUS: True, _JsonKeys.Reply.DATA: { "msg": "Job failed!" } }
+            else:
+                print(">>> UNKNOWN MESSAGE")
+                return
+            for handler in socket_handlers:
+                handler.send_message(message)
 
     def on_close(self):
         cls = self.__class__
@@ -177,6 +238,7 @@ class _DownloadHandler(tornado.web.RequestHandler):
 
 class ConverterWebApp(tornado.web.Application):
     def __init__(self, **settings):
+        self.settings = settings
         handlers = [
             (r"/", _MainHandler),
             (r"/downloads", _DownloadHandler),

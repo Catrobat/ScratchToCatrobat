@@ -158,7 +158,7 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
             #    message = { _JsonKeys.Reply.STATUS: True, _JsonKeys.Reply.DATA: { "msg": args[jobmonprot.Request.ARGS_MSG] } }
             if type == NotificationType.FILE_TRANSFER_FINISHED:
                 # send download link!
-                download_url = "/downloads?file=" + scratch_project_ID + CATROBAT_FILE_EXT
+                download_url = "/download?id=" + scratch_project_ID
                 message = { _JsonKeys.Reply.STATUS: True, _JsonKeys.Reply.DATA: { "msg": "File transfer successful!", "url": download_url } }
             elif type == NotificationType.JOB_FAILED:
                 message = { _JsonKeys.Reply.STATUS: True, _JsonKeys.Reply.DATA: { "msg": "Job failed!" } }
@@ -209,20 +209,18 @@ class _MainHandler(tornado.web.RequestHandler):
 
 class _DownloadHandler(tornado.web.RequestHandler):
     def get(self):
-        file_name = self.get_query_argument("file", default=None)
-        if file_name == None:
+        scratch_project_id_string = self.get_query_argument("id", default=None)
+        if scratch_project_id_string == None or not scratch_project_id_string.isdigit():
             raise HTTPError(404)
         download_dir = self.application.settings["jobmonitorserver"]["download_dir"]
-        #------------------------
-        # FIXME: VALIDATE if file_name...
-        #------------------------
-        _file_dir = download_dir
-        _file_path = "%s/%s" % (_file_dir, file_name)
-        if not file_name or not os.path.exists(_file_path):
+        file_dir = download_dir
+        file_name = scratch_project_id_string + CATROBAT_FILE_EXT
+        file_path = "%s/%s" % (file_dir, file_name)
+        if not file_name or not os.path.exists(file_path):
             raise HTTPError(404)
         self.set_header('Content-Type', 'application/force-download')
         self.set_header('Content-Disposition', 'attachment; filename=%s' % file_name)
-        with open(_file_path, "rb") as f:
+        with open(file_path, "rb") as f:
             try:
                 while True:
                     _buffer = f.read(4096)
@@ -241,7 +239,7 @@ class ConverterWebApp(tornado.web.Application):
         self.settings = settings
         handlers = [
             (r"/", _MainHandler),
-            (r"/downloads", _DownloadHandler),
+            (r"/download", _DownloadHandler),
             (r"/convertersocket", ConverterWebSocketHandler),
         ]
         tornado.web.Application.__init__(self, handlers, **settings)

@@ -33,7 +33,6 @@ from scratchtocatrobat.tools import helpers
 
 SCRATCH_PROJECT_BASE_URL = "https://scratch.mit.edu/projects/"
 JOB_TIMEOUT = int(helpers.config.get("CONVERTER_JOB", "timeout"))
-CATROBAT_FILE_EXT = helpers.config.get("CATROBAT", "file_extension")
 
 class Result:
     class Status:
@@ -141,7 +140,7 @@ class StartCommand(Command):
                 # TODO: lock.release()
                 return Result(Result.Status.SUCCESS, { "msg": "Job already scheduled!" })
             elif job.status == Job.Status.FINISHED:
-                download_url = "/downloads?file=" + str(scratch_project_ID) + CATROBAT_FILE_EXT
+                download_url = "/download?id=" + str(scratch_project_ID)
                 # TODO: lock.release()
                 return Result(Result.Status.SUCCESS, { "url": download_url })
 

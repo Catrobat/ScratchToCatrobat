@@ -177,18 +177,21 @@ class Project(RawProject):
             self.project_id = id_
         else:
             self.project_id = self.get_info().get("projectID")
+
         if not self.project_id:
             self.project_id = "0"
             name = "Testproject"
             #raise ProjectError("No project id specified in project file. Please provide project id with constructor.")
+            self.description = ""
+        else:
+            self.description = scratchwebapi.request_project_description_for(self.project_id)
+
         if name is not None:
             self.name = name
-            self.description = ""
         else:
             # FIXME: for some projects no project info available
             try:
                 self.name = scratchwebapi.request_project_name_for(self.project_id)
-                self.description = scratchwebapi.request_project_description_for(self.project_id)
             except urllib2.HTTPError:
                 self.name = str(self.project_id)
                 self.description = ""

@@ -114,8 +114,9 @@ def request_project_description_for(project_id):
     from org.jsoup import Jsoup
     doc = Jsoup.connect(scratch_project_url).get()
     element = doc.select("div#instructions > div.viewport > div.overview").first()
-    assert element is not None
-    description = element.text().strip()
+    description = ""
+    if element is not None:
+        description += element.text().strip()
 
     ######################################################################################
     # TODO: do the same in order to parse the "Notes and Credits"
@@ -124,5 +125,4 @@ def request_project_description_for(project_id):
     # ... Code goes here ...
     description += "" # TODO: append "Notes and Credits" string instead of empty string
     ######################################################################################
-    print(description)
     return description # finally return the description

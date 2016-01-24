@@ -22,4 +22,4 @@ import sys
 
 from scratchtocatrobat import main
 
-sys.exit(main.scratchtocatrobat_main(sys.argv[1:]))
+sys.exit(main.main(sys.argv[1:]))

@@ -23,14 +23,13 @@ from __future__ import unicode_literals
 import glob
 import os
 import shutil
-import subprocess
 import tempfile
 import unittest
 import urllib2
 import zipfile
 from codecs import open
 from java.io import BufferedReader, InputStreamReader
-from java.lang import ProcessBuilder, Runtime, String, StringBuilder, System
+from java.lang import ProcessBuilder, StringBuilder, System
 from xml.etree import ElementTree
 
 import org.catrobat.catroid.common as catcommon

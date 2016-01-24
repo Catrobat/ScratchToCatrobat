@@ -92,7 +92,7 @@ class CatrobatConfigParser(object):
         for (option, entry) in result.iteritems():
             if isinstance(entry, dict):
                 new_result[option] = []
-                for (index, element) in entry.iteritems():
+                for (_, element) in entry.iteritems():
                     new_result[option].append(element)
             else:
                 new_result[option] = entry

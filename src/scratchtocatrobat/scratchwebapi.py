@@ -114,15 +114,18 @@ def request_project_description_for(project_id):
     from org.jsoup import Jsoup
     doc = Jsoup.connect(scratch_project_url).get()
     element = doc.select("div#instructions > div.viewport > div.overview").first()
-    description = ""
+    description = "\n"
     if element is not None:
-        description += element.text().strip()
+        description += "-" * 40 + "\n"
+        description += "Instructions:\n"
+        description += element.text().strip() + "\n"
+        description += "-" * 40 + "\n\n"
+    
+    element = doc.select("div#description > div.viewport > div.overview").first()
+    if element is not None:
+        description += "-" * 40 + "\n"
+        description += "Description:\n"
+        description += element.text().strip() + "\n"
+        description += "-" * 40 + "\n\n"
 
-    ######################################################################################
-    # TODO: do the same in order to parse the "Notes and Credits"
-    #       and append the parsed string to the description string
-    #-------------------------------------------------------------------------------------
-    # ... Code goes here ...
-    description += "" # TODO: append "Notes and Credits" string instead of empty string
-    ######################################################################################
-    return description # finally return the description
+    return description 

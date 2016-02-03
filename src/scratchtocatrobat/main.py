@@ -81,6 +81,7 @@ def run_converter(scratch_project_file_or_url, output_dir,
                 log.info("Extracting project from path: '{}' ...".format(scratch_project_file_or_url))
                 common.extract(scratch_project_file_or_url, scratch_project_dir)
             else:
+                assert os.path.isdir(scratch_project_file_or_url)
                 log.info("Loading project from path: '{}' ...".format(scratch_project_file_or_url))
                 scratch_project_dir = scratch_project_file_or_url
 

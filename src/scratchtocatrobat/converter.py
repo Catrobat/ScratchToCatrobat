@@ -596,6 +596,7 @@ class _ScratchObjectConverter(object):
             wait_and_note_brick = _placeholder_for_unmapped_bricks_to("UNSUPPORTED SCRIPT", scratch_script.type)
             for brick in wait_and_note_brick:
                 cat_script.addBrick(brick)
+
         converted_bricks = cls._catrobat_bricks_from(scratch_script.script_element, sprite)
         assert isinstance(converted_bricks, list) and len(converted_bricks) == 1
         [converted_bricks] = converted_bricks
@@ -620,11 +621,11 @@ class _ScratchObjectConverter(object):
         return cat_script
 
     @classmethod
-    def _catrobat_bricks_from(cls, scratch_block, catrobat_sprite):
-        if not isinstance(scratch_block, scratch.ScriptElement):
-            scratch_block = scratch.ScriptElement.from_raw_block(scratch_block)
+    def _catrobat_bricks_from(cls, scratch_blocks, catrobat_sprite):
+        if not isinstance(scratch_blocks, scratch.ScriptElement):
+            scratch_blocks = scratch.ScriptElement.from_raw_block(scratch_blocks)
         traverser = _BlocksConversionTraverser(catrobat_sprite, cls._catrobat_project)
-        traverser.traverse(scratch_block)
+        traverser.traverse(scratch_blocks)
         return traverser.converted_bricks
 
 

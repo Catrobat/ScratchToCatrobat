@@ -1,4 +1,4 @@
-hj<img title="Scratch2Catrobat" src="https://cloud.githubusercontent.com/assets/3843968/9567706/5a084d76-4f35-11e5-9e3b-5a49256fde86.png" width=595 />
+<img title="Scratch2Catrobat" src="https://cloud.githubusercontent.com/assets/3843968/9567706/5a084d76-4f35-11e5-9e3b-5a49256fde86.png" width=595 />
 
 [![Version](https://img.shields.io/badge/version-0.4a-blue.svg)](https://img.shields.io/badge/version-0.4a-blue.svg)
 

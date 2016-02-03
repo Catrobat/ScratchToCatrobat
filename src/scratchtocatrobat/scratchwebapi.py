@@ -44,13 +44,17 @@ def request_project_code(project_id):
     except None as e:
         raise common.ScratchtobatError("Error with {}: '{}'".format(request_url, e))
 
+def is_valid_project_url(project_url):
+    scratch_base_url = helpers.config.get("SCRATCH_API", "project_base_url")
+    _HTTP_PROJECT_URL_PATTERN = scratch_base_url + r'\d+/?'
+    return re.match(_HTTP_PROJECT_URL_PATTERN, project_url)
+
 def download_project(project_url, target_dir):
     import scratch
     # TODO: fix circular reference
-    scratch_url_prefix = helpers.config.get("SCRATCH_API", "project_url_prefix")
-    _HTTP_PROJECT_URL_PATTERN = scratch_url_prefix + r'\d+/?'
-    if not re.match(_HTTP_PROJECT_URL_PATTERN, project_url):
-        raise common.ScratchtobatError("Project URL must be matching '{}'. Given: {}".format(scratch_url_prefix + '<project id>', project_url))
+    scratch_base_url = helpers.config.get("SCRATCH_API", "project_base_url")
+    if not is_valid_project_url(project_url):
+        raise common.ScratchtobatError("Project URL must be matching '{}'. Given: {}".format(scratch_base_url + '<project id>', project_url))
     assert len(os.listdir(target_dir)) == 0
 
     def request_resource_data(md5_file_name):
@@ -102,4 +106,23 @@ def request_project_name_for(project_id):
     return _request_project_info(project_id)[ProjectInfoKeys.PROJECT_NAME]
 
 def request_project_description_for(project_id):
-    return _request_project_info(project_id)[ProjectInfoKeys.PROJECT_DESCRIPTION]
+    scratch_base_url = helpers.config.get("SCRATCH_API", "project_base_url")
+    scratch_project_url = scratch_base_url + str(project_id)
+    if not is_valid_project_url(scratch_project_url):
+        raise common.ScratchtobatError("Project URL must be matching '{}'. Given: {}".format(scratch_base_url + '<project id>', scratch_project_url))
+
+    from org.jsoup import Jsoup
+    doc = Jsoup.connect(scratch_project_url).get()
+    element = doc.select("div#instructions > div.viewport > div.overview").first()
+    description = ""
+    if element is not None:
+        description += element.text().strip()
+
+    ######################################################################################
+    # TODO: do the same in order to parse the "Notes and Credits"
+    #       and append the parsed string to the description string
+    #-------------------------------------------------------------------------------------
+    # ... Code goes here ...
+    description += "" # TODO: append "Notes and Credits" string instead of empty string
+    ######################################################################################
+    return description # finally return the description

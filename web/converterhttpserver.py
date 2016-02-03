@@ -1,6 +1,6 @@
 #  ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
 #  Copyright (C) 2013-2015 The Catrobat Team
-#  (http://developer.catrobat.org/credits)
+#  (<http://developer.catrobat.org/credits>)
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU Affero General Public License as
@@ -17,9 +17,24 @@
 #  GNU Affero General Public License for more details.
 #
 #  You should have received a copy of the GNU Affero General Public License
-#  along with this program.  If not, see http://www.gnu.org/licenses/.
-import sys
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#  ---------------------------------------------------------------------------------------
+#  NOTE:
+#  ---------------------------------------------------------------------------------------
+#  This module is a simple http server based on the Tornado http server, which is
+#  licensed under the Apache License, Version 2.0.
+#  For more information about the Apache License please visit:
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
 
-from scratchtocatrobat import main
+import logging
+import tornado.httpserver
 
-sys.exit(main.main(sys.argv[1:]))
+_logger = logging.getLogger(__name__)
+
+class ConverterHTTPServer(tornado.httpserver.HTTPServer):
+    def __init__(self, app):
+        super(ConverterHTTPServer, self).__init__(app)
+        _logger.info("Converter HTTP Server started")

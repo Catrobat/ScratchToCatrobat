@@ -33,7 +33,7 @@ helpers.make_dir_if_not_exists(data_dirs)
 [jython_home_dir, jython_exec_path, jython_path] = helpers.config.get("PATHS", ["jython_home", "jython_exec", "jython"])
 
 env = os.environ
-env['JYTHONPATH'] = jython_path
+env['JYTHONPATH'] = jython_path if sys.platform != 'win32' else jython_path.replace(":", ";")
 
 if not os.path.isdir(jython_home_dir):
     error("Invalid jython home path given. No valid directory. Please update 'jython_home' in the config file.")

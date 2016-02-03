@@ -82,3 +82,78 @@ function updateAndShowProjectDetails(projectID) {
 
 function init() {
 }
+
+function startConversion(url) {
+    socketHandler.projectURL = url;
+    socketHandler.start();
+}
+
+var socketHandler = {
+    projectURL: null,
+    socket: null,
+    clientID: null,
+
+    start: function() {
+        var url = "ws://" + location.host + "/convertersocket";
+        socketHandler.socket = new WebSocket(url);
+        socketHandler.socket.onopen = function() {
+          var data = {
+            "cmd": "retrieve_client_ID",
+            "args": {}
+          };
+          var reply = confirm("Do you really want to start the conversion process?");
+          if (reply == true) {
+            if (typeof(Storage) !== "undefined") {
+              socketHandler.clientID = localStorage.getItem("clientID");
+              if (socketHandler.clientID != null) {
+                alert("Your old client ID is " + socketHandler.clientID);
+                var data = {
+                  "cmd": "start",
+                  "args": {
+                    "clientID": socketHandler.clientID,
+                    "url": socketHandler.projectURL
+                  }
+                };
+              }
+            } else {
+              alert("NOT IMPLEMENTED!! Handle this...");
+              return;
+            }
+            socketHandler.socket.send(JSON.stringify(data));
+          } else {
+            alert("User canceled request! Closing websocket!");
+            socketHandler.socket.close();
+          }
+        };
+        socketHandler.socket.onmessage = function(event) {
+            var result = JSON.parse(event.data);
+            if ("url" in result.data) {
+              var download_url = location.protocol + "//" + location.host + result.data["url"];
+              window.location = download_url;
+              return;
+            }
+
+            if ("clientID" in result.data) {
+              socketHandler.clientID = result.data.clientID;
+              if (typeof(Storage) !== "undefined") {
+                localStorage.setItem("clientID", socketHandler.clientID);
+              }
+              alert("Your new client ID is " + socketHandler.clientID);
+              var data = {
+                "cmd": "start",
+                "args": {
+                  "clientID": socketHandler.clientID,
+                  "url": socketHandler.projectURL
+                }
+              };
+              socketHandler.socket.send(JSON.stringify(data));
+            } else if ("msg" in result.data) {
+              alert(result.data.msg);
+            }
+        };
+    },
+
+    showMessage: function(message) {
+        alert(message.msg);
+    }
+};

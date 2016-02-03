@@ -123,10 +123,10 @@ class RawProject(Object):
 
     @staticmethod
     def raw_project_code_from_project_folder_path(project_folder_path):
-        dict_path = os.path.join(project_folder_path, _PROJECT_FILE_NAME)
-        if not os.path.exists(dict_path):
-            raise EnvironmentError("Project file not found: {!r}. Please create.".format(dict_path))
-        with open(dict_path) as fp:
+        json_file_path = os.path.join(project_folder_path, _PROJECT_FILE_NAME)
+        if not os.path.exists(json_file_path):
+            raise EnvironmentError("Project file not found: {!r}. Please create.".format(json_file_path))
+        with open(json_file_path) as fp:
             return json.load(fp)
 
     @classmethod
@@ -177,18 +177,21 @@ class Project(RawProject):
             self.project_id = id_
         else:
             self.project_id = self.get_info().get("projectID")
+
         if not self.project_id:
             self.project_id = "0"
             name = "Testproject"
             #raise ProjectError("No project id specified in project file. Please provide project id with constructor.")
+            self.description = ""
+        else:
+            self.description = scratchwebapi.request_project_description_for(self.project_id)
+
         if name is not None:
             self.name = name
-            self.description = ""
         else:
             # FIXME: for some projects no project info available
             try:
                 self.name = scratchwebapi.request_project_name_for(self.project_id)
-                self.description = scratchwebapi.request_project_description_for(self.project_id)
             except urllib2.HTTPError:
                 self.name = str(self.project_id)
                 self.description = ""

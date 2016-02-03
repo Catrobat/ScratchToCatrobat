@@ -17,13 +17,15 @@ local.properties
 .jline-jython.history
 
 *.pyc
+*.key
+/web/downloads
 /pyenv
 /test-reports
 /testresult
 *.log
 /.project
 /.pydevproject
-data
-environment.ini
-sample_projects
-sourcecodefilter/workspace
+/data
+/config/environment.ini
+/sample_projects
+/sourcecodefilter/workspace

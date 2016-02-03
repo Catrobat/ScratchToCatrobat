@@ -74,6 +74,29 @@ class CatrobatConfigParser(object):
     def items(self, section):
         items = self.section_items[section]
         return [(option, self._populate_placeholders_of_entry(entry, section, option)) for (option, entry) in items.iteritems()]
+    def items_as_dict(self, section):
+        items = self.section_items[section]
+        result = {}
+        for (option, entry) in items.iteritems():
+            entry = self._populate_placeholders_of_entry(entry, section, option)
+            keys = option.split(".")
+            if len(keys) == 3 and keys[1].isdigit():
+                if keys[0] not in result:
+                    result[keys[0]] = {}
+                if keys[1] not in result[keys[0]]:
+                    result[keys[0]][keys[1]] = {}
+                result[keys[0]][keys[1]][keys[2]] = entry
+            else:
+                result[option] = entry
+        new_result = {}
+        for (option, entry) in result.iteritems():
+            if isinstance(entry, dict):
+                new_result[option] = []
+                for (_, element) in entry.iteritems():
+                    new_result[option].append(element)
+            else:
+                new_result[option] = entry
+        return new_result
     def get(self, section, option):
         options = [option] if type(option) is not list else option
         result = []
@@ -133,7 +156,6 @@ def latest_catroid_repository_release_data():
 
         # check if cached file still (!) exists
         if not os.path.isfile(cached_file_path):
-            print("        ------->>>>>> NEW REQUEST <<<<<<<<<<<----------")
             response = urllib2.urlopen(url);
             json_data = response.read()
 
@@ -210,7 +232,7 @@ def _setup_configuration():
 
 def inject_git_commmit_hook():
     git_dir = os.path.join(APP_PATH, ".git")
-    if not os.path.isdir(git_dir): # abort, might not be a git repository...
+    if not os.path.isdir(git_dir): # abort, this seems to be no valid git repository...
         return
 
     hook_dir_path = os.path.join(git_dir, "hooks")

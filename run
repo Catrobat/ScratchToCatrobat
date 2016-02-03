@@ -39,7 +39,7 @@ if not os.path.isfile(jython_exec_path):
 helpers.inject_git_commmit_hook()
 
 env = os.environ
-env['JYTHONPATH'] = jython_path
+env['JYTHONPATH'] = jython_path if sys.platform != 'win32' else jython_path.replace(":", ";")
 
 exec_args = [jython_exec_path, "-m", "scratchtocatrobat.main"] + sys.argv[1:]
 sys.exit(subprocess.call(exec_args, env=env))

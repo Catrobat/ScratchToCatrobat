@@ -242,15 +242,17 @@ def fields_of(java_class):
 
 def url_response_data(url, retries=None, hook=None, timeout=None, log=log):
     def retry_hook(exc, tries, delay):
-        log.warning("  retrying after %s:'%s' in %f secs (remaining trys: %d)", type(exc).__name__, exc, delay, tries)
+        log.warning("  Exception: {}\nRetrying after {}:'{}' in {} secs (remaining trys: {})".format(sys.exc_info()[0], type(exc).__name__, exc, delay, tries))
     if hook is None:
         hook = retry_hook
     log.info("Requesting web api url: {}".format(url))
 
-    retries = retries if retries != None else helpers.config.get("SCRATCH_API", "http_retries")
-    timeout = timeout if timeout != None else helpers.config.get("SCRATCH_API", "http_timeout") / 1000
+    retries = retries if retries != None else int(helpers.config.get("SCRATCH_API", "http_retries"))
+    timeout = timeout if timeout != None else int(helpers.config.get("SCRATCH_API", "http_timeout")) / 1000
+
 #     @retry((urllib2.URLError, socket.timeout), tries=retries, hook=hook)
-    @retry((socket.timeout), tries=retries, hook=hook)
+#    @retry((socket.timeout), tries=retries, hook=hook)
+    @retry((urllib2.URLError, socket.timeout, IOError), delay=2, backoff=2, tries=retries, hook=hook)
     def request():
         return urllib2.urlopen(url, timeout=timeout).read()
 

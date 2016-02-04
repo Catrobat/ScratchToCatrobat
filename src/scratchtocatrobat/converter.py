@@ -425,10 +425,13 @@ class Converter(object):
         xml_header.programLicense = helpers.catrobat_info("program_license_url")
         assert scratch_project_id is not None
         xml_header.remixOf = helpers.config.get("SCRATCH_API", "project_base_url") + scratch_project_id
-        description = scratch_project_description
-        if len(description) > 0:
-            description += "\n\n"
-        xml_header.setDescription(description + "Made with {} version {}.\nOriginal Scratch project => {}".format(helpers.application_info("name"), helpers.application_info("version"), xml_header.remixOf))
+        description = "\n" + scratch_project_description if scratch_project_description is not None else ""
+        if len(description) > 0: description += "\n\n"
+        description += "Made with {} version {}.\nOriginal Scratch project => {}".format( \
+                         helpers.application_info("name"), \
+                         helpers.application_info("version"), \
+                         xml_header.remixOf)
+        xml_header.setDescription(description)
 
 class _ScratchObjectConverter(object):
     _catrobat_project = None

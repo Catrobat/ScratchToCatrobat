@@ -36,6 +36,7 @@ import java
 from javax.sound.sampled import AudioSystem
 from org.python.core import PyReflectedField  # pydev: @UnresolvedImport
 from scratchtocatrobat import logger
+from scratchtocatrobat.tools import helpers
 
 log = logger.log
 
@@ -209,7 +210,7 @@ class TemporaryDirectory(object):
 
 
 # based on: http://www.saltycrane.com/blog/2009/11/trying-out-retry-decorator-python/
-def retry(ExceptionToCheck, tries=4, delay=1, backoff=1, hook=None):
+def retry(ExceptionsToCheck, tries=4, delay=2, backoff=2, hook=None):
     """Retry calling the decorated function using an exponential backoff.
 
     http://www.saltycrane.com/blog/2009/11/trying-out-retry-decorator-python/
@@ -223,7 +224,7 @@ def retry(ExceptionToCheck, tries=4, delay=1, backoff=1, hook=None):
             while True:
                 try:
                     return f(*args, **kwargs)
-                except ExceptionToCheck, e:
+                except ExceptionsToCheck as e:
                     if mtries > 0:
                         if hook:
                             hook(e, mtries, mdelay)
@@ -232,22 +233,22 @@ def retry(ExceptionToCheck, tries=4, delay=1, backoff=1, hook=None):
                         mdelay *= backoff
                     else:
                         raise e
-
         return f_retry  # true decorator
-
     return deco_retry
 
 def fields_of(java_class):
     assert isinstance(java_class, java.lang.Class)
     return [name for name, type_ in vars(java_class).iteritems() if isinstance(type_, PyReflectedField)]
 
-def url_response_data(url, retries=4, hook=None, timeout=4, log=log):
+def url_response_data(url, retries=None, hook=None, timeout=None, log=log):
     def retry_hook(exc, tries, delay):
         log.warning("  retrying after %s:'%s' in %f secs (remaining trys: %d)", type(exc).__name__, exc, delay, tries)
     if hook is None:
         hook = retry_hook
     log.info("Requesting web api url: {}".format(url))
 
+    retries = retries if retries != None else helpers.config.get("SCRATCH_API", "http_retries")
+    timeout = timeout if timeout != None else helpers.config.get("SCRATCH_API", "http_timeout") / 1000
 #     @retry((urllib2.URLError, socket.timeout), tries=retries, hook=hook)
     @retry((socket.timeout), tries=retries, hook=hook)
     def request():

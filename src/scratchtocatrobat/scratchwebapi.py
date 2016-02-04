@@ -19,13 +19,13 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see http://www.gnu.org/licenses/.
 import hashlib
-import json
-import os
-import re
+import sys, os, re, json
 import urllib2
 from urlparse import urlparse
 from scratchtocatrobat import common
 from tools import helpers
+from org.jsoup import Jsoup, HttpStatusException, UnsupportedMimeTypeException
+from java.net import SocketTimeoutException
 
 _log = common.log
 
@@ -107,25 +107,45 @@ def request_project_name_for(project_id):
 
 def request_project_description_for(project_id):
     scratch_base_url = helpers.config.get("SCRATCH_API", "project_base_url")
+    retries = int(helpers.config.get("SCRATCH_API", "http_retries"))
+    timeout = int(helpers.config.get("SCRATCH_API", "http_timeout"))
     scratch_project_url = scratch_base_url + str(project_id)
     if not is_valid_project_url(scratch_project_url):
         raise common.ScratchtobatError("Project URL must be matching '{}'. Given: {}".format(scratch_base_url + '<project id>', scratch_project_url))
 
-    from org.jsoup import Jsoup
-    doc = Jsoup.connect(scratch_project_url).get()
+    def retry_hook(exc, tries, delay):
+        _log.warning("  Exception: {}\nRetrying after {}:'{}' in {} secs (remaining trys: {})".format(sys.exc_info()[0], type(exc).__name__, exc, delay, tries))
+
+    @common.retry((HttpStatusException, UnsupportedMimeTypeException, SocketTimeoutException), delay=2, backoff=2, tries=retries, hook=retry_hook)
+    def request_doc():
+        connection = Jsoup.connect(scratch_project_url)
+        connection.timeout(timeout)
+        return connection.get()
+
+    try:
+        doc = request_doc()
+    except SocketTimeoutException:
+        _log.error("Retry limit exceeded: {}".format(sys.exc_info()[0]))
+        return None
+    except:
+        print(sys.exc_info())
+        _log.error("Unexpected error for URL: {}, {}".format(scratch_project_url, sys.exc_info()[0]))
+        return None
+
+    description = ""
     element = doc.select("div#instructions > div.viewport > div.overview").first()
-    description = "\n"
     if element is not None:
         description += "-" * 40 + "\n"
         description += "Instructions:\n"
         description += element.text().strip() + "\n"
-        description += "-" * 40 + "\n\n"
-    
+        description += "-" * 40
+
     element = doc.select("div#description > div.viewport > div.overview").first()
     if element is not None:
         description += "-" * 40 + "\n"
         description += "Description:\n"
         description += element.text().strip() + "\n"
-        description += "-" * 40 + "\n\n"
+        description += "-" * 40
 
-    return description 
+    print(description)
+    return description

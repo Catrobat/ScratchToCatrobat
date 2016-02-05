@@ -35,6 +35,7 @@ from itertools import islice
 import java
 from javax.sound.sampled import AudioSystem
 from org.python.core import PyReflectedField  # pydev: @UnresolvedImport
+from httplib import BadStatusLine
 from scratchtocatrobat import logger
 from scratchtocatrobat.tools import helpers
 
@@ -240,19 +241,19 @@ def fields_of(java_class):
     assert isinstance(java_class, java.lang.Class)
     return [name for name, type_ in vars(java_class).iteritems() if isinstance(type_, PyReflectedField)]
 
-def url_response_data(url, retries=None, hook=None, timeout=None, log=log):
+def url_response_data(url, retries=None, backoff=None, delay=None, timeout=None, hook=None, log=log):
     def retry_hook(exc, tries, delay):
-        log.warning("  Exception: {}\nRetrying after {}:'{}' in {} secs (remaining trys: {})".format(sys.exc_info()[0], type(exc).__name__, exc, delay, tries))
+        log.warning("  Exception: {}\nRetrying {} after {}:'{}' in {} secs (remaining trys: {})".format(sys.exc_info()[0], url, type(exc).__name__, exc, delay, tries))
     if hook is None:
         hook = retry_hook
     log.info("Requesting web api url: {}".format(url))
 
     retries = retries if retries != None else int(helpers.config.get("SCRATCH_API", "http_retries"))
+    backoff = backoff if backoff != None else int(helpers.config.get("SCRATCH_API", "http_backoff"))
+    delay = delay if delay != None else int(helpers.config.get("SCRATCH_API", "http_delay"))
     timeout = timeout if timeout != None else int(helpers.config.get("SCRATCH_API", "http_timeout")) / 1000
 
-#     @retry((urllib2.URLError, socket.timeout), tries=retries, hook=hook)
-#    @retry((socket.timeout), tries=retries, hook=hook)
-    @retry((urllib2.URLError, socket.timeout, IOError), delay=2, backoff=2, tries=retries, hook=hook)
+    @retry((urllib2.URLError, socket.timeout, IOError, BadStatusLine), delay=delay, backoff=backoff, tries=retries, hook=hook)
     def request():
         return urllib2.urlopen(url, timeout=timeout).read()
 

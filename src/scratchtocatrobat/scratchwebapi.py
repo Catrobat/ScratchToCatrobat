@@ -26,6 +26,8 @@ from scratchtocatrobat import common
 from tools import helpers
 from org.jsoup import Jsoup, HttpStatusException
 from java.net import SocketTimeoutException
+from socket import timeout
+from httplib import BadStatusLine
 
 _log = common.log
 
@@ -57,17 +59,6 @@ def download_project(project_url, target_dir):
         raise common.ScratchtobatError("Project URL must be matching '{}'. Given: {}".format(scratch_base_url + '<project id>', project_url))
     assert len(os.listdir(target_dir)) == 0
 
-    def request_resource_data(md5_file_name):
-        request_url = project_resource_request_url(md5_file_name)
-        try:
-            response_data = common.url_response_data(request_url)
-            # FIXME: fails for some projects...
-            verify_hash = hashlib.md5(response_data).hexdigest()
-            assert verify_hash == os.path.splitext(md5_file_name)[0], "MD5 hash of response data not matching"
-            return response_data
-        except urllib2.HTTPError as e:
-            raise common.ScratchtobatError("Error with {}: '{}'".format(request_url, e))
-
     def project_resource_request_url(md5_file_name):
         return helpers.config.get("SCRATCH_API", "asset_url_template").format(md5_file_name)
 
@@ -89,9 +80,48 @@ def download_project(project_url, target_dir):
     write_to(request_project_code(project_id), project_file_path)
 
     project = scratch.RawProject.from_project_folder_path(target_dir)
-    for md5_file_name in project.resource_names:
-        resource_file_path = os.path.join(target_dir, md5_file_name)
-        write_to(request_resource_data(md5_file_name), resource_file_path)
+
+    from threading import Thread
+    class ResourceDownloadThread(Thread):
+        def request_resource_data(self, request_url):
+            try:
+                return common.url_response_data(request_url)
+            except (timeout, urllib2.HTTPError, IOError, BadStatusLine) as e:
+                raise common.ScratchtobatError("Error with {}: '{}'".format(request_url, e))
+
+        def run(self):
+            request_url = project_resource_request_url(self._kwargs["md5_file_name"])
+            target_dir = self._kwargs["target_dir"]
+            md5_file_name = self._kwargs["md5_file_name"]
+            resource_file_path = os.path.join(target_dir, md5_file_name)
+            response_data = self.request_resource_data(request_url)
+            # FIXME: fails for some projects...
+            verify_hash = hashlib.md5(response_data).hexdigest()
+            assert verify_hash == os.path.splitext(md5_file_name)[0], "MD5 hash of response data not matching"
+            write_to(response_data, resource_file_path)
+
+    # schedule parallel downloads
+    resource_names = [resource_name for resource_name in project.resource_names]
+    max_concurrent_downloads = int(helpers.config.get("SCRATCH_API", "http_max_concurrent_downloads"))
+    resource_index = 0
+    num_total_resources = len(resource_names)
+    reference_index = 0
+    while resource_index < num_total_resources:
+        num_next_resources = min(max_concurrent_downloads, (num_total_resources - resource_index))
+        next_resources_end_index = resource_index + num_next_resources
+        threads = []
+        for index in range(resource_index, next_resources_end_index):
+            assert index == reference_index
+            reference_index += 1
+            md5_file_name = resource_names[index]
+            kwargs = { "md5_file_name": md5_file_name, "target_dir": target_dir }
+            threads.append(ResourceDownloadThread(kwargs=kwargs))
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+        resource_index = next_resources_end_index
+    assert reference_index == resource_index and reference_index == num_total_resources
 
 def _project_info_request_url(project_id):
     return helpers.config.get("SCRATCH_API", "project_info_url_template").format(project_id)

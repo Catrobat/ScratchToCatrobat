@@ -51,7 +51,7 @@ def is_android_compatible_wav(file_path):
 
 
 def convert_to_android_compatible_wav(input_path, output_path):
-    _log.info("      converting '%s' to android compatible wav '%s'", input_path, output_path)
+    _log.info("      converting '%s' to Pocket Code compatible wav '%s'", input_path, output_path)
     # '-R' option ensures deterministic output
     subprocess.check_call([_checked_sox_path(), input_path, "-R", "-t", "wavpcm", "-e", "unsigned-integer", output_path])
 

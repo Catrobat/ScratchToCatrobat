@@ -1146,6 +1146,8 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         if_else_brick = catbricks.IfLogicElseBrick(if_begin_brick)
         if_end_brick = catbricks.IfLogicEndBrick(if_else_brick, if_begin_brick)
         if_bricks, [else_bricks] = self.arguments[1], self.arguments[2:] or [[]]
+        if_bricks = if_bricks if if_bricks != None else []
+        else_bricks = else_bricks if else_bricks != None else []
         return [if_begin_brick] + if_bricks + [if_else_brick] + else_bricks + [if_end_brick]
 
     @_register_handler(_block_name_to_handler_map, "lookLike:")

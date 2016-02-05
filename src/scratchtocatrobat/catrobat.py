@@ -218,13 +218,24 @@ def encoded_project_name(project_name):
 
 # TODO: extend for all further, default cases
 def formula_element_for(catrobat_enum, arguments=[]):
+    # TODO: fetch from unary operators map
+    unary_operators = [catformula.Operators.LOGICAL_NOT]
     package_name = catrobat_enum.getClass().__name__.lower()
     formula_element = None
     if package_name in {"functions", "operators", "sensors"}:
         # pad arguments
         arguments = (arguments + [None, None])[:2]
+
+        element_type = catformula.FormulaElement.ElementType.valueOf(package_name[:-1].upper())
+        enum_name = catrobat_enum.name()
         formula_parent = None
-        formula_element = catformula.FormulaElement(catformula.FormulaElement.ElementType.valueOf(package_name[:-1].upper()), catrobat_enum.name(), formula_parent, *arguments)  # @UndefinedVariable (valueOf)
+
+        # check if unary operator -> add formula to rightChild instead of leftChild (i.e. set leftChild to None)
+        if element_type == catformula.FormulaElement.ElementType.OPERATOR and catrobat_enum in unary_operators:
+            assert len(arguments) == 2 and arguments[0] != None and arguments[1] == None
+            arguments[0], arguments[1] = arguments[1], arguments[0] # swap leftChild and rightChild
+
+        formula_element = catformula.FormulaElement(element_type, enum_name, formula_parent, *arguments)  # @UndefinedVariable (valueOf)
         for formula_child in arguments:
             if formula_child is not None:
                 formula_child.parent = formula_element

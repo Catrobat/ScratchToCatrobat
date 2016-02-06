@@ -83,8 +83,9 @@ function updateAndShowProjectDetails(projectID) {
 function init() {
 }
 
-function startConversion(url) {
+function startConversion(url, finishedConversionCallback) {
     socketHandler.projectURL = url;
+    socketHandler.finishedConversionCallback = finishedConversionCallback;
     socketHandler.start();
 }
 
@@ -92,6 +93,7 @@ var socketHandler = {
     projectURL: null,
     socket: null,
     clientID: null,
+    finishedConversionCallback: null,
 
     start: function() {
         var url = "ws://" + location.host + "/convertersocket";
@@ -129,7 +131,9 @@ var socketHandler = {
             var result = JSON.parse(event.data);
             if ("url" in result.data) {
               var download_url = location.protocol + "//" + location.host + result.data["url"];
-              window.location = download_url;
+              if (socketHandler.finishedConversionCallback != null) {
+                socketHandler.finishedConversionCallback(download_url);
+              }
               return;
             }
 

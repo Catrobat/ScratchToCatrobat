@@ -63,12 +63,33 @@
       });
       $("#converter_form").submit(function(event) {
 		 var projectURL = $("#field-url").val();
+		 $("#field-url").val(""); /* clear field */
 		 $("#field-url-validation-result").html("");
+         disableSubmitButton();
+         disableDownloadButton();
+         $("#loading-animation").show();
+         var spinner = new Spinner(spinnerOptions).spin(document.getElementById("loading-animation"));
 		 if (getProjectIDFromURL(projectURL) != null) { /* check if project URL is valid! */
-			startConversion(projectURL);
+		    /* TODO: error handler as another callback! */
+         	$(this).hide();
+			startConversion(projectURL, function(downloadURL) {
+				enableSubmitButton();
+				showSuccessMessage("Conversion finished!");
+				$("#qrcode").children().remove();
+                $("#qrcode").show();
+                $("#download-url").val(downloadURL);
+                $("#btn-download").show();
+                $("#loading-animation").html("").hide();
+				var qrcode = new QRCode(document.getElementById("qrcode"), {
+					width: 200,
+					height: 200
+				});
+				qrcode.makeCode(downloadURL);
+         		enableDownloadButton();
+    		});
 		 } else {
+            $("#loading-animation").html("").hide();
             showErrorMessage("Invalid URL given!");
-            disableSubmitButton();
             $(this).focus();
             event.preventDefault();
 		 }

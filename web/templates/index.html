@@ -30,6 +30,11 @@
           updateAndShowProjectDetails(getProjectIDFromURL($(this).val()));
         // }
       });
+      $("#download_form").submit(function(event) {
+      	window.location = $("#download-url").val();
+        event.preventDefault();
+        return false;
+      });
       $("#converter_form").submit(function(event) {
 		 var projectURL = $("#field-url").val();
 		 $("#field-url-validation-result").html("");

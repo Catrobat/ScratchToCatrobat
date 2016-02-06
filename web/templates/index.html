@@ -48,15 +48,11 @@
         return false;
       });
       $("#btn-show-url-input").click(function() {
-        updateAndShowProjectDetails(getProjectIDFromURL($("#field-url").val()));
+        var defaultProjectURL = "http://scratch.mit.edu/projects/10205819/";
+        $("#field-url").val(defaultProjectURL);
+        updateAndShowProjectDetails(getProjectIDFromURL(defaultProjectURL));
         $("#web-convert-modal").modal();
         $("#field-url").focus();
-        // $("#qrcode").children().remove();
-        // var qrcode = new QRCode(document.getElementById("qrcode"), {
-        //   width : 200,
-        //   height : 200
-        // });
-        // qrcode.makeCode($("#field-url").val());
       });
       $("#btn-show-upload-input").click(function() {
         $("#upload-convert-modal").modal();

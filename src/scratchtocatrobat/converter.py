@@ -288,8 +288,8 @@ def copy_media_file(scratch_project, original_to_converted_catrobat_resource_fil
             original_resource_file_name = catrobat_resource_file_name
             converted_scratch_md5_name = resource_name_for(src_path)
             catrobat_resource_file_name = _catrobat_resource_file_name_for(converted_scratch_md5_name, scratch_resource_name)
-            assert catrobat_resource_file_name != original_resource_file_name # check if renamed!
             original_to_converted_catrobat_resource_file_name[original_resource_file_name] = catrobat_resource_file_name
+            assert catrobat_resource_file_name != original_resource_file_name # check if renamed!
         shutil.copyfile(src_path, os.path.join(target_dir, catrobat_resource_file_name))
     if is_converted_file:
         os.remove(src_path)
@@ -724,7 +724,7 @@ class ConvertedProject(object):
 
                 # TODO: refactor to a MediaConverter class
                 file_ext = os.path.splitext(scratch_md5_name)[1].lower()
-                resource_info = { "md5_file_name": scratch_md5_name, "src_path": src_path, "is_converted_file": False }
+                resource_info = { "scratch_md5_name": scratch_md5_name, "src_path": src_path, "is_converted_file": False }
                 if file_ext in {".png", ".svg", ".jpg", ".gif"}:
                     resource_info["dest_path"] = images_path
                     if file_ext == ".svg":
@@ -747,13 +747,15 @@ class ConvertedProject(object):
             from threading import Thread
             class SVGResourceConverterThread(Thread):
                 def run(self):
-                    src_path = self._kwargs["src_path"]
+                    old_src_path = self._kwargs["src_path"]
+                    new_svg_src_paths = self._kwargs["new_svg_src_paths"]
                     # converting svg to png -> new md5 and filename
-                    src_path = svgtopng.convert(src_path)
-                    if not os.path.exists(src_path):
-                        assert False, "Not existing: {}. Available files in directory: {}".format(src_path, os.listdir(os.path.dirname(src_path)))
+                    new_src_path = svgtopng.convert(old_src_path)
+                    new_svg_src_paths[old_src_path] = new_src_path
+                    assert os.path.exists(new_src_path), "Not existing: {}. Available files in directory: {}".format(new_src_path, os.listdir(os.path.dirname(new_src_path)))
 
             # schedule parallel downloads
+            new_svg_src_paths = {}
             max_concurrent_conversions = 30 #int(helpers.config.get("SCRATCH_API", "http_max_concurrent_downloads"))
             resource_index = 0
             num_total_resources = len(svg_resources)
@@ -766,7 +768,7 @@ class ConvertedProject(object):
                     assert index == reference_index
                     reference_index += 1
                     src_path = svg_resources[index]["src_path"]
-                    threads.append(SVGResourceConverterThread(kwargs={"src_path": src_path}))
+                    threads.append(SVGResourceConverterThread(kwargs={"src_path": src_path, "new_svg_src_paths": new_svg_src_paths}))
                 for thread in threads:
                     thread.start()
                 for thread in threads:
@@ -775,8 +777,9 @@ class ConvertedProject(object):
             assert reference_index == resource_index and reference_index == num_total_resources
 
             for resource_info in all_resources:
-                scratch_md5_name = resource_info["md5_file_name"]
+                scratch_md5_name = resource_info["scratch_md5_name"]
                 src_path = resource_info["src_path"]
+                src_path = new_svg_src_paths[src_path] if src_path in new_svg_src_paths else src_path # check if path changed after conversion
                 dest_path = resource_info["dest_path"]
                 is_converted_file = resource_info["is_converted_file"]
                 copy_media_file(self.scratch_project, original_to_converted_catrobat_resource_file_name, scratch_md5_name, src_path, dest_path, is_converted_file)

@@ -27,6 +27,7 @@ import shutil
 import types
 import zipfile
 import re
+import unicodedata
 from codecs import open
 
 import org.catrobat.catroid.common as catcommon
@@ -268,6 +269,30 @@ def _create_variable_brick(value, user_variable, Class):
 def _variable_for(variable_name):
     return catformula.FormulaElement(catElementType.USER_VARIABLE, variable_name, None)  # @UndefinedVariable
 
+def _catrobat_resource_file_name_for(scratch_md5_name, scratch_resource_name):
+    assert os.path.basename(scratch_md5_name) == scratch_md5_name and len(os.path.splitext(scratch_md5_name)[0]) == 32, "Must be MD5 hash with file ext: " + scratch_md5_name
+    # remove unsupported unicode characters from filename
+    if isinstance(scratch_resource_name, unicode):
+        scratch_resource_name = unicodedata.normalize('NFKD', scratch_resource_name).encode('ascii','ignore')
+    resource_ext = os.path.splitext(scratch_md5_name)[1]
+    return scratch_md5_name.replace(resource_ext, "_" + scratch_resource_name + resource_ext)
+
+def resource_name_for(file_path):
+    return common.md5_hash(file_path) + os.path.splitext(file_path)[1]
+
+def copy_media_file(scratch_project, original_to_converted_catrobat_resource_file_name, scratch_md5_name, src_path, target_dir, is_converted_file=False):
+    # for Catrobat separate file is needed for resources which are used multiple times but with different names
+    for scratch_resource_name in scratch_project.find_all_resource_names_for(scratch_md5_name):
+        catrobat_resource_file_name = _catrobat_resource_file_name_for(scratch_md5_name, scratch_resource_name)
+        if is_converted_file:
+            original_resource_file_name = catrobat_resource_file_name
+            converted_scratch_md5_name = resource_name_for(src_path)
+            catrobat_resource_file_name = _catrobat_resource_file_name_for(converted_scratch_md5_name, scratch_resource_name)
+            assert catrobat_resource_file_name != original_resource_file_name # check if renamed!
+            original_to_converted_catrobat_resource_file_name[original_resource_file_name] = catrobat_resource_file_name
+        shutil.copyfile(src_path, os.path.join(target_dir, catrobat_resource_file_name))
+    if is_converted_file:
+        os.remove(src_path)
 
 # TODO: refactor _key_* functions to be used just once
 def _key_image_path_for(key):
@@ -504,9 +529,9 @@ class _ScratchObjectConverter(object):
         look.setLookName(costume_name)
 
         assert scratchkeys.COSTUME_MD5 in scratch_costume
-        costume_filename = scratch_costume[scratchkeys.COSTUME_MD5]
-        costume_filename_ext = os.path.splitext(costume_filename)[1]
-        look.setLookFilename(costume_filename.replace(costume_filename_ext, "_" + costume_name + costume_filename_ext))
+        costume_md5_filename = scratch_costume[scratchkeys.COSTUME_MD5]
+        costume_resource_name = scratch_costume[scratchkeys.COSTUME_NAME]
+        look.setLookFilename(_catrobat_resource_file_name_for(costume_md5_filename, costume_resource_name))
         return look
 
     @staticmethod
@@ -675,14 +700,7 @@ class ConvertedProject(object):
     def _sounds_dir_of_project(temp_dir):
         return os.path.join(temp_dir, "sounds")
 
-    @staticmethod
-    def _catrobat_resource_file_name_for(scratch_md5_name, scratch_resource_name):
-        assert os.path.basename(scratch_md5_name) == scratch_md5_name and len(os.path.splitext(scratch_md5_name)[0]) == 32, "Must be MD5 hash with file ext: " + scratch_md5_name
-        resource_ext = os.path.splitext(scratch_md5_name)[1]
-        return scratch_md5_name.replace(resource_ext, "_" + scratch_resource_name + resource_ext)
-
     def save_as_catrobat_directory_structure_to(self, temp_path):
-
         def create_directory_structure():
             sounds_path = self._sounds_dir_of_project(temp_path)
             os.mkdir(sounds_path)
@@ -697,71 +715,43 @@ class ConvertedProject(object):
 
         # FIXME: media file conversion not explicit
         def write_mediafiles(original_to_converted_catrobat_resource_file_name):
-            def resource_name_for(file_path):
-                return common.md5_hash(file_path) + os.path.splitext(file_path)[1]
-
+            all_resources = []
             svg_resources = []
             for scratch_md5_name, src_path in self.scratch_project.md5_to_resource_path_map.iteritems():
                 if scratch_md5_name in self.scratch_project.unused_resource_names:
                     log.info("Ignoring unused resource file: %s", src_path)
                     continue
 
-                file_ext = os.path.splitext(scratch_md5_name)[1].lower()
-                converted_file = False
-
                 # TODO: refactor to a MediaConverter class
+                file_ext = os.path.splitext(scratch_md5_name)[1].lower()
+                resource_info = { "md5_file_name": scratch_md5_name, "src_path": src_path, "is_converted_file": False }
                 if file_ext in {".png", ".svg", ".jpg", ".gif"}:
-                    target_dir = images_path
+                    resource_info["dest_path"] = images_path
                     if file_ext == ".svg":
-                        svg_resources.append({"md5_file_name": scratch_md5_name, "src_path": src_path})
-                        continue
+                        resource_info["is_converted_file"] = True
+                        svg_resources.append(resource_info)
                 elif file_ext in {".wav", ".mp3"}:
-                    target_dir = sounds_path
+                    resource_info["dest_path"] = sounds_path
                     if file_ext == ".wav":
                         if not wavconverter.is_android_compatible_wav(src_path):
                             temp_path = src_path.replace(".wav", "converted.wav")
                             wavconverter.convert_to_android_compatible_wav(src_path, temp_path)
                             src_path = temp_path
-                            converted_file = True
+                            resource_info["is_converted_file"] = True
                 else:
                     assert file_ext in {".json"}, "Unknown media file extension: %s" % src_path
                     continue
+                all_resources.append(resource_info)
                 assert os.path.exists(src_path), "Not existing: {}. Available files in directory: {}".format(src_path, os.listdir(os.path.dirname(src_path)))
-
-                # for Catrobat separate file is needed for resources which are used multiple times but with different names
-                for scratch_resource_name in self.scratch_project.find_all_resource_names_for(scratch_md5_name):
-                    catrobat_resource_file_name = self._catrobat_resource_file_name_for(scratch_md5_name, scratch_resource_name)
-                    if converted_file:
-                        original_resource_file_name = catrobat_resource_file_name
-                        converted_scratch_md5_name = resource_name_for(src_path)
-                        converted_resource_file_name = self._catrobat_resource_file_name_for(converted_scratch_md5_name, scratch_resource_name)
-                        catrobat_resource_file_name = original_to_converted_catrobat_resource_file_name[original_resource_file_name] = converted_resource_file_name
-                        assert catrobat_resource_file_name != original_resource_file_name
-                    shutil.copyfile(src_path, os.path.join(target_dir, catrobat_resource_file_name))
-                if converted_file:
-                    os.remove(src_path)
 
             from threading import Thread
             class SVGResourceConverterThread(Thread):
                 def run(self):
                     src_path = self._kwargs["src_path"]
-                    scratch_md5_name = self._kwargs["md5_file_name"]
-                    scratch_project = self._kwargs["scratch_project"]
                     # converting svg to png -> new md5 and filename
                     src_path = svgtopng.convert(src_path)
                     if not os.path.exists(src_path):
                         assert False, "Not existing: {}. Available files in directory: {}".format(src_path, os.listdir(os.path.dirname(src_path)))
-
-                    # for Catrobat separate file is needed for resources which are used multiple times but with different names
-                    for scratch_resource_name in scratch_project.find_all_resource_names_for(scratch_md5_name):
-                        catrobat_resource_file_name = ConvertedProject._catrobat_resource_file_name_for(scratch_md5_name, scratch_resource_name)
-                        original_resource_file_name = catrobat_resource_file_name
-                        converted_scratch_md5_name = resource_name_for(src_path)
-                        converted_resource_file_name = ConvertedProject._catrobat_resource_file_name_for(converted_scratch_md5_name, scratch_resource_name)
-                        catrobat_resource_file_name = original_to_converted_catrobat_resource_file_name[original_resource_file_name] = converted_resource_file_name
-                        assert catrobat_resource_file_name != original_resource_file_name
-                        shutil.copyfile(src_path, os.path.join(target_dir, catrobat_resource_file_name))
-                    os.remove(src_path)
 
             # schedule parallel downloads
             max_concurrent_conversions = 30 #int(helpers.config.get("SCRATCH_API", "http_max_concurrent_downloads"))
@@ -775,20 +765,21 @@ class ConvertedProject(object):
                 for index in range(resource_index, next_resources_end_index):
                     assert index == reference_index
                     reference_index += 1
-                    md5_file_name = svg_resources[index]["md5_file_name"]
                     src_path = svg_resources[index]["src_path"]
-                    kwargs = {
-                        "md5_file_name": md5_file_name,
-                        "src_path": src_path,
-                        "scratch_project": self.scratch_project
-                    }
-                    threads.append(SVGResourceConverterThread(kwargs=kwargs))
+                    threads.append(SVGResourceConverterThread(kwargs={"src_path": src_path}))
                 for thread in threads:
                     thread.start()
                 for thread in threads:
                     thread.join()
                 resource_index = next_resources_end_index
             assert reference_index == resource_index and reference_index == num_total_resources
+
+            for resource_info in all_resources:
+                scratch_md5_name = resource_info["md5_file_name"]
+                src_path = resource_info["src_path"]
+                dest_path = resource_info["dest_path"]
+                is_converted_file = resource_info["is_converted_file"]
+                copy_media_file(self.scratch_project, original_to_converted_catrobat_resource_file_name, scratch_md5_name, src_path, dest_path, is_converted_file)
 
         def rename_resource_file_names_in(catrobat_program, rename_map):
             number_of_converted = 0

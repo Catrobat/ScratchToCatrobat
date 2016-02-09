@@ -581,6 +581,8 @@ class _ScratchObjectConverter(object):
         # object's currentCostumeIndex determines active costume at startup
         sprite_startup_look_idx = scratch_object.get_currentCostumeIndex()
         if sprite_startup_look_idx is not None:
+            if isinstance(sprite_startup_look_idx, float):
+                sprite_startup_look_idx = int(round(sprite_startup_look_idx))
             spriteStartupLook = sprite.getLookDataList()[sprite_startup_look_idx]
             set_look_brick = catbricks.SetLookBrick()
             set_look_brick.setLook(spriteStartupLook)

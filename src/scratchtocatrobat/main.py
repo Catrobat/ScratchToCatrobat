@@ -29,7 +29,7 @@ from scratchtocatrobat.tools import helpers
 
 logger.setup_logging()
 log = logging.getLogger("scratchtocatrobat.main")
-__version__ = helpers.application_info("name")
+__version__ = helpers.application_info("version")
 
 def run_converter(scratch_project_file_or_url, output_dir,
                   extract_resulting_catrobat=False, temp_rm=True,

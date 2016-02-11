@@ -40,7 +40,7 @@ import org.catrobat.catroid.io as catio
 from scratchtocatrobat import catrobat
 from scratchtocatrobat import common
 from scratchtocatrobat import scratch
-from scratchtocatrobat.scratch import JsonKeys as scratchkeys
+from scratchtocatrobat.scratch import JsonKeys as scratchkeys, RawProject
 from scratchtocatrobat.tools import svgtopng
 from scratchtocatrobat.tools import wavconverter
 from scratchtocatrobat.tools import helpers
@@ -324,8 +324,8 @@ def _is_generated(variable_name):
     return variable_name.startswith(_GENERATED_VARIABLE_PREFIX)
 
 
-def converted(scratch_project):
-    return Converter.converted_project_for(scratch_project)
+def converted(scratch_project, progress_bar=None):
+    return Converter.converted_project_for(scratch_project, progress_bar)
 
 
 def _preprocess_scratch_object(object_):
@@ -362,15 +362,15 @@ class Converter(object):
         self.scratch_project = scratch_project
 
     @classmethod
-    def converted_project_for(cls, scratch_project):
+    def converted_project_for(cls, scratch_project, progress_bar=None):
         converter = Converter(scratch_project)
-        catrobat_project = converter._converted_catrobat_program()
+        catrobat_project = converter._converted_catrobat_program(progress_bar)
         assert catrobat.is_background_sprite(catrobat_project.getSpriteList().get(0))
         return ConvertedProject(catrobat_project, scratch_project)
 
-    def _converted_catrobat_program(self):
+    def _converted_catrobat_program(self, progress_bar=None):
         _catr_project = catbase.Project(None, self.scratch_project.name)
-        self._scratch_object_converter = _ScratchObjectConverter(_catr_project, self.scratch_project)
+        self._scratch_object_converter = _ScratchObjectConverter(_catr_project, self.scratch_project, progress_bar)
         self._add_global_user_lists_to(_catr_project)
         self._add_converted_sprites_to(_catr_project)
         self._add_key_sprites_to(_catr_project, self.scratch_project.listened_keys)
@@ -462,9 +462,10 @@ class _ScratchObjectConverter(object):
     _catrobat_project = None
     _scratch_project = None
 
-    def __init__(self, catrobat_project, scratch_project):
+    def __init__(self, catrobat_project, scratch_project, progress_bar=None):
         _ScratchObjectConverter._catrobat_project = catrobat_project
         _ScratchObjectConverter._scratch_project = scratch_project
+        self._progress_bar = progress_bar
 
     def __call__(self, scratch_object):
         return self._catrobat_sprite_from(scratch_object)
@@ -508,6 +509,7 @@ class _ScratchObjectConverter(object):
 
         for scratch_script in scratch_object.scripts:
             sprite.addScript(self._catrobat_script_from(scratch_script, sprite))
+            if self._progress_bar != None: self._progress_bar.update()
 
         self._add_default_behaviour_to(sprite, self._catrobat_project, scratch_object, self._scratch_project, costume_resolution)
 
@@ -670,7 +672,7 @@ class ConvertedProject(object):
     def _converted_output_path(output_dir, project_name):
         return os.path.join(output_dir, catrobat.encoded_project_name(project_name) + catrobat.PACKAGED_PROGRAM_FILE_EXTENSION)
 
-    def save_as_catrobat_package_to(self, output_dir, archive_name=None):
+    def save_as_catrobat_package_to(self, output_dir, archive_name=None, progress_bar=None):
 
         def iter_dir(path):
             for root, _, files in os.walk(path):
@@ -679,7 +681,7 @@ class ConvertedProject(object):
         log.info("convert Scratch project to '%s'", output_dir)
 
         with common.TemporaryDirectory() as catrobat_program_dir:
-            self.save_as_catrobat_directory_structure_to(catrobat_program_dir)
+            self.save_as_catrobat_directory_structure_to(catrobat_program_dir, progress_bar)
             common.makedirs(output_dir)
             archive_name = self.name if archive_name == None else archive_name
             catrobat_zip_file_path = self._converted_output_path(output_dir, archive_name)
@@ -702,7 +704,7 @@ class ConvertedProject(object):
     def _sounds_dir_of_project(temp_dir):
         return os.path.join(temp_dir, "sounds")
 
-    def save_as_catrobat_directory_structure_to(self, temp_path):
+    def save_as_catrobat_directory_structure_to(self, temp_path, progress_bar=None):
         def create_directory_structure():
             sounds_path = self._sounds_dir_of_project(temp_path)
             os.mkdir(sounds_path)
@@ -716,7 +718,7 @@ class ConvertedProject(object):
             return sounds_path, images_path
 
         # TODO: refactor to a MediaConverter class
-        def write_mediafiles(original_to_converted_catrobat_resource_file_name):
+        def write_mediafiles(original_to_converted_catrobat_resource_file_name, progress_bar):
             all_resources = []
             class MediaType(object):
                 IMAGE = 1
@@ -728,6 +730,7 @@ class ConvertedProject(object):
                 assert os.path.exists(src_path), "Not existing: {}. Available files in directory: {}".format(src_path, os.listdir(os.path.dirname(src_path)))
                 if scratch_md5_name in self.scratch_project.unused_resource_names:
                     log.info("Ignoring unused resource file: %s", src_path)
+                    if progress_bar != None: progress_bar.update()
                     continue
 
                 file_ext = os.path.splitext(scratch_md5_name)[1].lower()
@@ -762,15 +765,19 @@ class ConvertedProject(object):
                     else:
                         assert False, "Unsupported Media Type! Cannot convert media file: %s" % old_src_path
                     self._kwargs["new_svg_src_paths"][old_src_path] = new_src_path
+                    progress_bar = self._kwargs["progress_bar"]
+                    if progress_bar != None: progress_bar.update()
                     assert os.path.exists(new_src_path), "Not existing: {}. Available files in directory: {}".format(new_src_path, os.listdir(os.path.dirname(new_src_path)))
 
             # schedule parallel conversions (one conversion per thread)
             unconverted_types = { MediaType.UNCONVERTED_SVG, MediaType.UNCONVERTED_WAV }
-            media_resources = [res for res in all_resources if res["status"] in unconverted_types]
+            unconverted_media_resources = [res for res in all_resources if res["status"] in unconverted_types]
+            # update progress bar for all those media files that don't have to be converted
+            if progress_bar != None: [progress_bar.update() for res in all_resources if res["status"] not in unconverted_types]
             new_svg_src_paths = {}
             max_concurrent_threads = int(helpers.config.get("MEDIA_CONVERTER", "max_concurrent_threads"))
             resource_index = 0
-            num_total_resources = len(media_resources)
+            num_total_resources = len(unconverted_media_resources)
             reference_index = 0
             while resource_index < num_total_resources:
                 num_next_resources = min(max_concurrent_threads, (num_total_resources - resource_index))
@@ -779,8 +786,11 @@ class ConvertedProject(object):
                 for index in range(resource_index, next_resources_end_index):
                     assert index == reference_index
                     reference_index += 1
-                    info = media_resources[index]
-                    threads.append(MediaResourceConverterThread(kwargs={"info": info, "new_svg_src_paths": new_svg_src_paths}))
+                    info = unconverted_media_resources[index]
+                    kwargs = { "info": info,
+                               "new_svg_src_paths": new_svg_src_paths,
+                               "progress_bar": progress_bar }
+                    threads.append(MediaResourceConverterThread(kwargs=kwargs))
                 for thread in threads:
                     thread.start()
                 for thread in threads:
@@ -837,11 +847,11 @@ class ConvertedProject(object):
         sounds_path, images_path = create_directory_structure()
         log.info("  Saving media files")
         original_to_converted_catrobat_resource_file_name = {}
-        write_mediafiles(original_to_converted_catrobat_resource_file_name)
+        write_mediafiles(original_to_converted_catrobat_resource_file_name, progress_bar)
         rename_resource_file_names_in(self.catrobat_program, original_to_converted_catrobat_resource_file_name)
         log.info("  Saving project XML file")
         write_program_source(self.catrobat_program)
-
+        if progress_bar != None: progress_bar.update(progress_bar.saving_xml_progress_weight)
 
 # TODO: could be done with just user_variables instead of project object
 def _add_new_user_variable_with_initialization_value(project, variable_name, variable_value, sprite, sprite_name=None):

@@ -349,3 +349,44 @@ def retry(ExceptionsToCheck, tries=4, delay=2, backoff=2, hook=None):
         return f_retry  # true decorator
     return deco_retry
 
+def isfloat(string):
+    try:
+        number = float(string) # @UnusedVariable
+    except ValueError:
+        return False
+    else:
+        return True
+
+class ProgressBar(object):
+
+    SAVING_XML_PROGRESS_WEIGHT_PERCENTAGE = 3
+    START_PROGRESS_INDICATOR = "#__("
+    END_PROGRESS_INDICATOR = "%)__"
+
+    def __init__(self, num_of_iterations, output_stream=sys.stdout):
+        self._iterations_counter = 0
+        self.num_of_iterations = num_of_iterations
+        self._output_stream = output_stream
+        self.lock = threading.RLock()
+        self.saving_xml_progress_weight = 0
+
+    def is_full(self):
+        self.lock.acquire()
+        return self._iterations_counter == self.num_of_iterations
+        self.lock.release()
+
+    def update(self, increment=1):
+        with self.lock:
+            if self.num_of_iterations == None:
+                self._output_stream.write("[WARNING] Number of iterations not set!")
+                return
+
+            if self._iterations_counter >= self.num_of_iterations:
+                self._output_stream.write("[WARNING] Progress counter overflow!")
+                return
+
+            self._iterations_counter = self._iterations_counter + increment
+            percentage = float(self._iterations_counter)/float(self.num_of_iterations)*100.0
+            self._output_stream.write("{}{}{}\n".format(ProgressBar.START_PROGRESS_INDICATOR, \
+                                                      round(percentage, 2), \
+                                                      ProgressBar.END_PROGRESS_INDICATOR))

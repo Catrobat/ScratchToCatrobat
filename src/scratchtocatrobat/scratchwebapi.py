@@ -51,7 +51,7 @@ def is_valid_project_url(project_url):
     _HTTP_PROJECT_URL_PATTERN = scratch_base_url + r'\d+/?'
     return re.match(_HTTP_PROJECT_URL_PATTERN, project_url)
 
-def download_project(project_url, target_dir):
+def download_project(project_url, target_dir, progress_bar=None):
     import scratch
     # TODO: fix circular reference
     scratch_base_url = helpers.config.get("SCRATCH_API", "project_base_url")
@@ -80,6 +80,9 @@ def download_project(project_url, target_dir):
     write_to(request_project_code(project_id), project_file_path)
 
     project = scratch.RawProject.from_project_folder_path(target_dir)
+    if progress_bar != None:
+        progress_bar.num_of_iterations = project.num_of_iterations_of_downloaded_project(progress_bar)
+        progress_bar.update() # update since project.json already downloaded!
 
     from threading import Thread
     class ResourceDownloadThread(Thread):
@@ -93,18 +96,20 @@ def download_project(project_url, target_dir):
             request_url = project_resource_request_url(self._kwargs["md5_file_name"])
             target_dir = self._kwargs["target_dir"]
             md5_file_name = self._kwargs["md5_file_name"]
+            progress_bar = self._kwargs["progress_bar"]
             resource_file_path = os.path.join(target_dir, md5_file_name)
             response_data = self.request_resource_data(request_url)
             # FIXME: fails for some projects...
             verify_hash = hashlib.md5(response_data).hexdigest()
             assert verify_hash == os.path.splitext(md5_file_name)[0], "MD5 hash of response data not matching"
             write_to(response_data, resource_file_path)
+            if progress_bar != None: progress_bar.update()
 
     # schedule parallel downloads
-    resource_names = [resource_name for resource_name in project.resource_names]
+    unique_resource_names = project.unique_resource_names
     max_concurrent_downloads = int(helpers.config.get("SCRATCH_API", "http_max_concurrent_downloads"))
     resource_index = 0
-    num_total_resources = len(resource_names)
+    num_total_resources = len(unique_resource_names)
     reference_index = 0
     while resource_index < num_total_resources:
         num_next_resources = min(max_concurrent_downloads, (num_total_resources - resource_index))
@@ -113,8 +118,10 @@ def download_project(project_url, target_dir):
         for index in range(resource_index, next_resources_end_index):
             assert index == reference_index
             reference_index += 1
-            md5_file_name = resource_names[index]
-            kwargs = { "md5_file_name": md5_file_name, "target_dir": target_dir }
+            md5_file_name = unique_resource_names[index]
+            kwargs = { "md5_file_name": md5_file_name,
+                       "target_dir": target_dir,
+                       "progress_bar": progress_bar }
             threads.append(ResourceDownloadThread(kwargs=kwargs))
         for thread in threads:
             thread.start()

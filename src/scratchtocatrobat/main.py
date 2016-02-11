@@ -73,10 +73,13 @@ def run_converter(scratch_project_file_or_url, output_dir,
         if not os.path.isdir(output_dir):
             raise EnvironmentError("Output folder must be a directory, but is %s" % output_dir)
 
+        progress_bar = helpers.ProgressBar(None, sys.stdout)
         with common.TemporaryDirectory(remove_on_exit=temp_rm) as scratch_project_dir:
+            is_local_project = True
             if scratch_project_file_or_url.startswith("https://"):
+                is_local_project = False
                 log.info("Downloading project from URL: '{}' to temp dir {} ...".format(scratch_project_file_or_url, scratch_project_dir))
-                scratchwebapi.download_project(scratch_project_file_or_url, scratch_project_dir)
+                scratchwebapi.download_project(scratch_project_file_or_url, scratch_project_dir, progress_bar)
             elif os.path.isfile(scratch_project_file_or_url):
                 log.info("Extracting project from path: '{}' ...".format(scratch_project_file_or_url))
                 common.extract(scratch_project_file_or_url, scratch_project_dir)
@@ -85,10 +88,14 @@ def run_converter(scratch_project_file_or_url, output_dir,
                 log.info("Loading project from path: '{}' ...".format(scratch_project_file_or_url))
                 scratch_project_dir = scratch_project_file_or_url
 
-            project = scratch.Project(scratch_project_dir)
+            if is_local_project and progress_bar != None:
+                project = scratch.RawProject.from_project_folder_path(scratch_project_dir)
+                progress_bar.num_of_iterations = project.num_of_iterations_of_local_project(progress_bar)
+
+            project = scratch.Project(scratch_project_dir, progress_bar=progress_bar)
             log.info("Converting scratch project '%s' into output folder: %s", project.name, output_dir)
-            converted_project = converter.converted(project)
-            catrobat_program_path = converted_project.save_as_catrobat_package_to(output_dir, archive_name)
+            converted_project = converter.converted(project, progress_bar)
+            catrobat_program_path = converted_project.save_as_catrobat_package_to(output_dir, archive_name, progress_bar)
             if extract_resulting_catrobat:
                 extraction_path = os.path.join(output_dir, os.path.splitext(os.path.basename(catrobat_program_path))[0])
                 common.rm_dir(extraction_path)
@@ -97,6 +104,7 @@ def run_converter(scratch_project_file_or_url, output_dir,
                 common.copy_dir(scratch_project_dir, scratch_output_path, overwrite=True)
                 common.extract(catrobat_program_path, extraction_path)
 
+        assert progress_bar == None or progress_bar.is_full()
     except (common.ScratchtobatError, EnvironmentError, IOError) as e:
         log.error(e)
         return helpers.ExitCode.FAILURE

@@ -45,11 +45,13 @@ import tornado.web
 import tornado.websocket
 import os.path
 import redis
-from command import get_command, InvalidCommand, Job
+from command import get_command, InvalidCommand, Job, update_jobs_info_on_listening_clients
 import jobmonitorprotocol as jobmonprot
 from tornado.web import HTTPError
 import ast
 import sys
+import converterwebsocketprotocol as protocol
+from jobmonitorprotocol import NotificationType
 
 sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "..", "src"))
 from scratchtocatrobat.tools import helpers
@@ -66,39 +68,6 @@ class Context(object):
         self.redis_connection = redis_connection
         self.jobmonitorserver_settings = jobmonitorserver_settings
 
-class _JsonKeys(object):
-    class Request(object):
-        CMD = "cmd"
-        ARGS = "args"
-
-        ARGS_CLIENT_ID = "clientID"
-        ARGS_URL = "url"
-        allowed_arg_keys = [ARGS_CLIENT_ID, ARGS_URL]
-
-        @classmethod
-        def is_valid(cls, data):
-            return (data is not None) and (cls.CMD in data) and (cls.ARGS in data)
-
-        @classmethod
-        def extract_allowed_args(cls, args):
-            filtered_args = {}
-            for key in cls.allowed_arg_keys:
-                if key in args:
-                    filtered_args[key] = args[key]
-            return filtered_args
-
-    class Reply(object):
-        #TYPE = "type"
-        STATUS = "status"
-        DATA = "data"
-
-class NotificationType():
-    JOB_STARTED = 0
-    JOB_PROGRESS = 1
-    JOB_FINISHED = 2
-    FILE_TRANSFER_FINISHED = 3
-    JOB_FAILED = 4
-
 class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
 
     client_ID_open_sockets_map = {}
@@ -113,30 +82,39 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
         cls.client_ID_open_sockets_map[client_ID].append(self)
 
     @classmethod
-    def notify(cls, type, args):
+    def notify(cls, msg_type, args):
         # jobID is scratch project ID in this case
         scratch_project_ID = args[jobmonprot.Request.ARGS_JOB_ID]
         REDIS_CLIENT_PROJECT_KEY = "clientsOfProject#{}".format(scratch_project_ID)
         REDIS_PROJECT_KEY = "project#{}".format(scratch_project_ID)
-
-        REDIS_PROJECT_KEY = "project#{}".format(scratch_project_ID)
         job = Job.from_redis(_redis_conn, REDIS_PROJECT_KEY)
+        old_status = job.status
         if job == None:
             _logger.error("Cannot find job #{}".format(scratch_project_ID))
             return
-        if type == NotificationType.JOB_STARTED:
+        if msg_type == NotificationType.JOB_STARTED:
+            job.title = args[jobmonprot.Request.ARGS_TITLE]
             job.status = Job.Status.RUNNING
-        elif type == NotificationType.JOB_FAILED:
-            _logger.info("Job failed!")
+        elif msg_type == NotificationType.JOB_FAILED:
+            _logger.warn("Job failed! Exception Args: %s", args)
             job.status = Job.Status.FAILED
-        elif type == NotificationType.FILE_TRANSFER_FINISHED:
-            job.status = Job.Status.FINISHED
-        elif type == NotificationType.JOB_FINISHED:
+        elif msg_type == NotificationType.JOB_OUTPUT:
+            if job.output == None: job.output = ""
+            job.output += args[jobmonprot.Request.ARGS_MSG]
+        elif msg_type == NotificationType.JOB_PROGRESS:
+            job.progress = args[jobmonprot.Request.ARGS_PROGRESS]
+        elif msg_type == NotificationType.JOB_FINISHED:
             _logger.info("Job #{} finished, waiting for file transfer".format(scratch_project_ID))
-
+        elif msg_type == NotificationType.FILE_TRANSFER_FINISHED:
+            job.progress = 100.0
+            job.status = Job.Status.FINISHED
         if not job.save_to_redis(_redis_conn, REDIS_PROJECT_KEY):
             _logger.info("Unable to update job status!")
             return
+
+        # inform all clients if status or progress changed
+        if old_status != job.status or msg_type == NotificationType.JOB_PROGRESS:
+            update_jobs_info_on_listening_clients(Context(None, _redis_conn, None))
 
         # find listening clients
         # TODO: cache this...
@@ -144,32 +122,38 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
         if clients_of_project == None:
             _logger.warn("WTH?! No listening clients stored!")
             return
+
         clients_of_project = ast.literal_eval(clients_of_project)
-        _logger.debug("There are %d registered clients." % len(clients_of_project))
+        num_clients_of_project = len(clients_of_project)
+        _logger.debug("There %s %d registered client%s." % \
+                      ("is" if num_clients_of_project == 1 else "are", \
+                       num_clients_of_project, "s" if num_clients_of_project != 1 else ""))
         listening_clients = [cls.client_ID_open_sockets_map[int(client_ID)] for client_ID in clients_of_project if int(client_ID) in cls.client_ID_open_sockets_map]
         _logger.info("There are %d active clients listening on this job." % len(listening_clients))
 
         for socket_handlers in listening_clients:
-            #if type == NotificationType.JOB_STARTED:
-            #    message = { _JsonKeys.Reply.STATUS: True, _JsonKeys.Reply.DATA: { "msg": "JOB STARTED!" } }
-            #elif type == NotificationType.JOB_PROGRESS:
-            #    message = { _JsonKeys.Reply.STATUS: True, _JsonKeys.Reply.DATA: { "msg": args[jobmonprot.Request.ARGS_MSG] } }
-            #elif type == NotificationType.JOB_FINISHED:
-            #    message = { _JsonKeys.Reply.STATUS: True, _JsonKeys.Reply.DATA: { "msg": args[jobmonprot.Request.ARGS_MSG] } }
-            if type == NotificationType.FILE_TRANSFER_FINISHED:
-                # send download link!
+            if msg_type == NotificationType.JOB_STARTED:
+                message = protocol.JobRunningMessage(scratch_project_ID)
+            elif msg_type == NotificationType.JOB_OUTPUT:
+                message = protocol.JobOutputMessage(scratch_project_ID, args[jobmonprot.Request.ARGS_MSG])
+            elif msg_type == NotificationType.JOB_PROGRESS:
+                message = protocol.JobProgressMessage(scratch_project_ID, args[jobmonprot.Request.ARGS_PROGRESS])
+            elif msg_type == NotificationType.JOB_FINISHED:
+                message = protocol.JobFinishedMessage(scratch_project_ID)
+            elif msg_type == NotificationType.FILE_TRANSFER_FINISHED:
                 download_url = "/download?id=" + scratch_project_ID
-                message = { _JsonKeys.Reply.STATUS: True, _JsonKeys.Reply.DATA: { "msg": "File transfer successful!", "url": download_url } }
-            elif type == NotificationType.JOB_FAILED:
-                message = { _JsonKeys.Reply.STATUS: True, _JsonKeys.Reply.DATA: { "msg": "Job failed!" } }
+                message = protocol.JobDownloadMessage(scratch_project_ID, download_url)
+            elif msg_type == NotificationType.JOB_FAILED:
+                message = protocol.JobFailedMessage(scratch_project_ID)
             else:
-                print(">>> UNKNOWN MESSAGE")
+                _logger.warn("IGNORING UNKNOWN MESSAGE")
                 return
             for handler in socket_handlers:
                 handler.send_message(message)
 
     def on_close(self):
         cls = self.__class__
+        _logger.info("Closing websocket")
         for (client_ID, open_sockets) in cls.client_ID_open_sockets_map.iteritems():
             if self in open_sockets:
                 open_sockets.remove(self)
@@ -177,12 +161,15 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
                     del cls.client_ID_open_sockets_map[client_ID]
                 else:
                     cls.client_ID_open_sockets_map[client_ID] = open_sockets
+                _logger.info("Found websocket and closed it")
                 return # skip loop => maximal 1 socket/clientID possible
 
-    def send_message(self, data):
-        _logger.debug("Sending message %r to %d", data, id(self))
+    def send_message(self, message):
+        assert isinstance(message, protocol.Message)
+        _logger.debug("Sending %s %r to %d", message.__class__.__name__,
+                      message.as_dict(), id(self))
         try:
-            self.write_message(tornado.escape.json_encode(data))
+            self.write_message(tornado.escape.json_encode(message.as_dict()))
         except:
             _logger.error("Error sending message", exc_info=True)
 
@@ -190,17 +177,15 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
         _logger.debug("Received message %r", message)
         data = tornado.escape.json_decode(message)
         args = {}
-        if _JsonKeys.Request.is_valid(data):
-            command = get_command(data[_JsonKeys.Request.CMD])
-            args = _JsonKeys.Request.extract_allowed_args(data[_JsonKeys.Request.ARGS])
+        if protocol.JsonKeys.Request.is_valid(data):
+            command = get_command(data[protocol.JsonKeys.Request.CMD])
+            args = protocol.JsonKeys.Request.extract_allowed_args(data[protocol.JsonKeys.Request.ARGS])
         else:
             command = InvalidCommand()
-        # TODO: sanity check... when client ID is given => check if it belongs to socket handler!
+        # TODO: when client ID is given => check if it belongs to socket handler!
         redis_conn = _redis_conn
         ctxt = Context(self, redis_conn, self.application.settings["jobmonitorserver"])
-        result = command.execute(ctxt, args)
-        message = { _JsonKeys.Reply.STATUS: result.status, _JsonKeys.Reply.DATA: result.data }
-        self.send_message(message)
+        self.send_message(command.execute(ctxt, args))
 
 class _MainHandler(tornado.web.RequestHandler):
     app_data = {}

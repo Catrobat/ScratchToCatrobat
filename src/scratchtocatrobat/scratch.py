@@ -100,10 +100,14 @@ class RawProject(Object):
         self.dict_ = dict_
         self.raw_objects = [child for child in self.get_children() if "objName" in child]
         self.objects = [Object(raw_object) for raw_object in [dict_] + self.raw_objects]
-        self.resource_names = {self._resource_name_from(raw_resource) for raw_resource in self._raw_resources()}
+        self.resource_names = [self._resource_name_from(raw_resource) for raw_resource in self._raw_resources()]
+        self.unique_resource_names = list(set(self.resource_names))
 
     def __iter__(self):
         return iter(self.objects)
+
+    def number_of_resources(self):
+        return len(self.resource_names)
 
     def _verify_scratch_dictionary(self, dict_, data_origin):
         if self.contains_info():
@@ -121,13 +125,58 @@ class RawProject(Object):
         md5_file_name = raw_resource[JsonKeys.SOUND_MD5] if JsonKeys.SOUND_NAME in raw_resource else raw_resource[JsonKeys.COSTUME_MD5]
         return md5_file_name
 
+    ''' Compute total number of iterations for progress bar
+        (assuming the resources have to be downloaded via Scratch's WebAPI) '''
+    def num_of_iterations_of_downloaded_project(self, progress_bar):
+        unique_resource_names = self.unique_resource_names
+        num_total_resources = len(unique_resource_names)
+        num_of_additional_downloads = num_total_resources + 1 # includes project.json download
+
+        # update progress weight
+        result = self.num_of_iterations_of_local_project(progress_bar) - progress_bar.saving_xml_progress_weight
+        result += num_of_additional_downloads
+        percentage = float(progress_bar.SAVING_XML_PROGRESS_WEIGHT_PERCENTAGE)/100.0
+        # progress_bar.saving_xml_progress_weight = (percentage*result)/(1-percentage)
+        progress_bar.saving_xml_progress_weight = int(round((percentage * float(result))/(1.0-percentage)))
+        return (result + progress_bar.saving_xml_progress_weight)
+
+    ''' Compute total number of iterations for progress bar
+        (assuming all resources already exist locally in a directory) '''
+    def num_of_iterations_of_local_project(self, progress_bar):
+        unique_resource_names = self.unique_resource_names
+        num_total_unique_resources = len(unique_resource_names)
+        num_of_downloads = 2 # for fetching title and description (2 different requests!)
+        objects_scripts = [obj.scripts for obj in self.objects]
+        all_scripts = reduce(lambda obj1_scripts, obj2_scripts: obj1_scripts + obj2_scripts, objects_scripts)
+        num_of_scripts = len(all_scripts)
+        num_of_resource_file_conversions = num_total_unique_resources
+        result = num_of_downloads + num_of_scripts + num_of_resource_file_conversions
+        percentage = float(progress_bar.SAVING_XML_PROGRESS_WEIGHT_PERCENTAGE)/100.0
+        # progress_bar.saving_xml_progress_weight = (percentage*result)/(1-percentage)
+        progress_bar.saving_xml_progress_weight = int(round((percentage * float(result))/(1.0-percentage)))
+        return (result + progress_bar.saving_xml_progress_weight)
+
     @staticmethod
     def raw_project_code_from_project_folder_path(project_folder_path):
         json_file_path = os.path.join(project_folder_path, _PROJECT_FILE_NAME)
         if not os.path.exists(json_file_path):
             raise EnvironmentError("Project file not found: {!r}. Please create.".format(json_file_path))
         with open(json_file_path) as fp:
-            return json.load(fp)
+            try:
+                return json.load(fp)
+            except:
+                # guess if binary file, since Scratch 1.x stores data in binary instead of JSON
+                textchars = bytearray({7,8,9,10,12,13,27} | set(range(0x20, 0x100)) - {0x7f})
+                is_binary_string = lambda bytesdata: bool(bytesdata.translate(None, textchars))
+                fp.seek(0, 0) # set file pointer back to the beginning of the file
+                if is_binary_string(fp.read(1024)): # check first 1024 bytes
+                    raise EnvironmentError("Invalid JSON file. The project's code-file "\
+                            "seems to be a binary file. Project might be very old "\
+                            "Scratch project. Scratch projects lower than 2.0 are "\
+                            "not supported!")
+                else:
+                    raise EnvironmentError("Invalid JSON file. But the project's "\
+                                           "code-file seems to be no binary file...")
 
     @classmethod
     def from_project_folder_path(cls, project_folder_path):
@@ -148,7 +197,7 @@ class Project(RawProject):
     Represents a complete Scratch project including all resource files.
     """
 
-    def __init__(self, project_base_path, name=None, id_=None):
+    def __init__(self, project_base_path, name=None, id_=None, progress_bar=None):
         def read_md5_to_resource_path_mapping():
             md5_to_resource_path_map = {}
             # TODO: clarify that only files with extension are covered
@@ -185,6 +234,7 @@ class Project(RawProject):
             self.description = None
         else:
             self.description = scratchwebapi.request_project_description_for(self.project_id)
+            if progress_bar != None: progress_bar.update()
 
         if name is not None:
             self.name = name
@@ -192,6 +242,7 @@ class Project(RawProject):
             # FIXME: for some projects no project info available
             try:
                 self.name = scratchwebapi.request_project_name_for(self.project_id)
+                if progress_bar != None: progress_bar.update()
             except urllib2.HTTPError:
                 self.name = str(self.project_id)
                 self.description = None

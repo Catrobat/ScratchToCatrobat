@@ -43,13 +43,14 @@ import logging
 import tornado.ioloop
 from tornado.tcpserver import TCPServer
 from tornado import gen
-from jobmonitorprotocol import Request, Reply, TCPConnection, SERVER, CLIENT
-from converterwebapp import ConverterWebSocketHandler, NotificationType
+from jobmonitorprotocol import Request, Reply, TCPConnection, SERVER, CLIENT, NotificationType
+from converterwebapp import ConverterWebSocketHandler
 import json
 from threading import Timer
 import time
 import hashlib
 import os
+import sys
 
 _logger = logging.getLogger(__name__)
 
@@ -118,13 +119,26 @@ class TCPConnectionHandler(object):
         ConverterWebSocketHandler.notify(NotificationType.JOB_STARTED, request.args)
 
     @gen.coroutine
+    def handle_job_output_notification(self, data):
+        if not Request.is_valid(data, Request.Command.JOB_OUTPUT_NOTIFICATION):
+            raise TCPConnectionException("Invalid data given!")
+        request = Request.request_from_data(data)
+        _logger.info("[%s]: Received job output notification" % SERVER)
+        _logger.info("[%s]: %s" % (CLIENT, request.args[Request.ARGS_MSG]))
+
+        _logger.debug("[%s]: Reply: Accepted!" % SERVER)
+        yield self.send_message(Reply(result=True, msg="ACK"))
+        ConverterWebSocketHandler.notify(NotificationType.JOB_OUTPUT, request.args)
+
+    @gen.coroutine
     def handle_job_progress_notification(self, data):
         if not Request.is_valid(data, Request.Command.JOB_PROGRESS_NOTIFICATION):
             raise TCPConnectionException("Invalid data given!")
         request = Request.request_from_data(data)
+        if not isinstance(request.args[Request.ARGS_PROGRESS], float):
+            raise TCPConnectionException("Progress parameter must be of type float!")
         _logger.info("[%s]: Received job progress notification" % SERVER)
-        _logger.info("[%s]: (%s%%) %s " % (CLIENT, request.args[Request.ARGS_PROGRESS],
-                                           request.args[Request.ARGS_MSG]))
+        _logger.info("[%s]: %f%% " % (CLIENT, request.args[Request.ARGS_PROGRESS]))
 
         _logger.debug("[%s]: Reply: Accepted!" % SERVER)
         yield self.send_message(Reply(result=True, msg="ACK"))
@@ -150,6 +164,11 @@ class TCPConnectionHandler(object):
     def handle_file_transfer(self):
         data = json.loads((yield self.read_message()).rstrip())
         if not Request.is_valid(data, Request.Command.FILE_TRANSFER):
+            if Request.is_valid(data, Request.Command.JOB_FAILED):
+                _logger.warn("[%s] Job failed!" % CLIENT)
+                request = Request.request_from_data(data)
+                ConverterWebSocketHandler.notify(NotificationType.JOB_FAILED, request.args)
+                return
             raise TCPConnectionException("Invalid data given!")
         request = Request.request_from_data(data)
         _logger.info("[%s]: Received file transfer notification" % SERVER)
@@ -191,9 +210,10 @@ class TCPConnectionHandler(object):
 
     @gen.coroutine
     def handle_exception(self, exception, msg):
-        _logger.exception("{}!".format(msg))
+        _logger.error("{}!".format(msg))
+        _logger.exception(exception)
         yield self.send_message(Reply(result=False, msg="{}! Closing connection.".format(msg)))
-        if isinstance(exception, TCPConnectionException) and exception.context == None:
+        if isinstance(exception, TCPConnectionException) and exception.context != None:
             args = exception.context
             args["msg"] = msg
             ConverterWebSocketHandler.notify(NotificationType.JOB_FAILED, args)
@@ -206,48 +226,71 @@ class TCPConnectionHandler(object):
         # (I) Send greeting
         try:
             yield self.send_message(Reply(result=True, msg="Hello Client, please authenticate!"))
+        except Exception as e:
+            self.handle_exception(e, "Greeting failed")
+            return
         except:
-            self.handle_exception("Greeting failed")
+            self.handle_exception(sys.exc_info()[0], "Greeting failed")
             return
 
         # (II) Expecting authentication via AuthKey
         try:
             yield self.handle_authentication()
+        except Exception as e:
+            self.handle_exception(e, "Authentication failed")
+            return
         except:
-            self.handle_exception("Authentication failed")
+            self.handle_exception(sys.exc_info()[0], "Authentication failed")
             return
 
         # (III) Expecting job started notification
         try:
             yield self.handle_job_started_notification()
+        except Exception as e:
+            self.handle_exception(e, "Processing job started notification failed")
+            return
         except:
-            self.handle_exception("Processing job started notification failed")
+            self.handle_exception(sys.exc_info()[0], "Processing job started notification failed")
             return
 
-        # (IV) Expecting progress notifications or job finished notification
+        # (IV) Expecting output and/or progress notifications or job finished notification
         data = None
         try:
             while True:
                 data = json.loads((yield self.read_message()).rstrip())
                 if Request.is_valid(data, Request.Command.JOB_FINISHED_NOTIFICATION):
                     break
-                yield self.handle_job_progress_notification(data)
+                elif Request.is_valid(data, Request.Command.JOB_OUTPUT_NOTIFICATION):
+                    yield self.handle_job_output_notification(data)
+                elif Request.is_valid(data, Request.Command.JOB_PROGRESS_NOTIFICATION):
+                    yield self.handle_job_progress_notification(data)
+                else:
+                    raise TCPConnectionException("Invalid data given!")
+        except Exception as e:
+            self.handle_exception(e, "Processing job progress notification failed")
+            return
         except:
-            self.handle_exception("Processing job progress notification failed")
+            self.handle_exception(sys.exc_info()[0], "Processing job progress notification failed")
             return
 
         # (V) Expecting job finished notification
         try:
             yield self.handle_job_finished_notification(data)
+        except Exception as e:
+            self.handle_exception(e, "Processing job finished notification failed")
+            return
         except:
-            self.handle_exception("Processing job finished notification failed")
+            self.handle_exception(sys.exc_info()[0], "Processing job finished notification failed")
             return
 
         # (V) Expecting file transfer
         try:
             yield self.handle_file_transfer()
-        except e:
+        except Exception as e:
             self.handle_exception(e, "File transfer failed")
+            return
+        except:
+            self.handle_exception(sys.exc_info()[0], "File transfer failed")
             return
 
         _logger.info("Finished! Closing stream.")

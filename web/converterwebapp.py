@@ -208,9 +208,9 @@ class _DownloadHandler(tornado.web.RequestHandler):
         with open(file_path, "rb") as f:
             try:
                 while True:
-                    _buffer = f.read(4096)
-                    if _buffer:
-                        self.write(_buffer)
+                    buffer = f.read(4096)
+                    if buffer:
+                        self.write(buffer)
                     else:
                         f.close()
                         self.finish()

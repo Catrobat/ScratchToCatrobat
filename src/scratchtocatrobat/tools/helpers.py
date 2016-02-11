@@ -323,3 +323,29 @@ def inject_git_commmit_hook():
 config = _setup_configuration()
 
 JYTHON_RESPECT_JAVA_ACCESSIBILITY_PROPERTY = "python.security.respectJavaAccessibility"
+
+# based on: http://www.saltycrane.com/blog/2009/11/trying-out-retry-decorator-python/
+def retry(ExceptionsToCheck, tries=4, delay=2, backoff=2, hook=None):
+    """Retry calling the decorated function using an exponential backoff.
+    http://www.saltycrane.com/blog/2009/11/trying-out-retry-decorator-python/
+    original from: http://wiki.python.org/moin/PythonDecoratorLibrary#Retry
+    """
+    def deco_retry(f):
+        @wraps(f)
+        def f_retry(*args, **kwargs):
+            mtries, mdelay = tries, delay
+            while True:
+                try:
+                    return f(*args, **kwargs)
+                except ExceptionsToCheck as e:
+                    if mtries > 0:
+                        if hook:
+                            hook(e, mtries, mdelay)
+                        time.sleep(mdelay)
+                        mtries -= 1
+                        mdelay *= backoff
+                    else:
+                        raise e
+        return f_retry  # true decorator
+    return deco_retry
+

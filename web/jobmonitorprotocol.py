@@ -27,6 +27,15 @@ SERVER = "SERVER"
 
 _logger = logging.getLogger(__name__)
 
+# used to communicate between JobMonitorTCPServer and Websocket Handler
+class NotificationType():
+    JOB_STARTED = 0
+    JOB_OUTPUT = 1
+    JOB_PROGRESS = 2
+    JOB_FINISHED = 3
+    FILE_TRANSFER_FINISHED = 4
+    JOB_FAILED = 5
+
 class Request(object):
     class Command(object):
         AUTH = "AUTH"

@@ -445,7 +445,7 @@ class Converter(object):
         xml_header.setDeviceName(helpers.scratch_info("device_name"))
         xml_header.setPlatform(helpers.scratch_info("platform"))
         xml_header.setPlatformVersion(float(helpers.scratch_info("platform_version")))
-        xml_header.setScreenMode(catcommon.ScreenModes.MAXIMIZE)
+        xml_header.setScreenMode(catcommon.ScreenModes.STRETCH)
         xml_header.mediaLicense = helpers.catrobat_info("media_license_url")
         xml_header.programLicense = helpers.catrobat_info("program_license_url")
         assert scratch_project_id is not None

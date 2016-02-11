@@ -57,6 +57,10 @@ MAX_WAIT_SECONDS_BEFORE_SHUTDOWN = int(helpers.config.get("WEBSERVER", "max_wait
 CERTIFICATE_PATH = helpers.config.get("JOBMONITOR_SERVER", "certificate_path")
 CERTIFICATE_KEY_PATH = helpers.config.get("JOBMONITOR_SERVER", "certificate_key_path")
 WEBSERVER_PORT = helpers.config.get("WEBSERVER", "port")
+WEBSERVER_DEBUG_MODE_ENABLED = str(helpers.config.get("WEBSERVER", "debug")) in {"True", "1"}
+WEBSERVER_COOKIE_SECRET = str(helpers.config.get("WEBSERVER", "cookie_secret"))
+WEBSERVER_XSRF_COOKIES_ENABLED = str(helpers.config.get("WEBSERVER", "xsrf_cookies")) in {"True", "1"}
+
 JOBMONITORSERVER_PORT = helpers.config.get("JOBMONITOR_SERVER", "port")
 
 _logger = logging.getLogger(__name__)
@@ -112,13 +116,18 @@ def main():
         temp = jobmonitorserver_settings.copy()
         del temp["allowed_auth_keys"] # not needed for webserver
         settings = dict(
-            debug=False,
-            cookie_secret="__TODO:_GENERATE_YOUR_OWN_RANDOM_VALUE_HERE__",
+            debug=WEBSERVER_DEBUG_MODE_ENABLED,
+            cookie_secret=WEBSERVER_COOKIE_SECRET,
             template_path=os.path.join(os.path.dirname(__file__), "templates"),
             static_path=os.path.join(os.path.dirname(__file__), "static"),
-            xsrf_cookies=True,
+            xsrf_cookies=WEBSERVER_XSRF_COOKIES_ENABLED,
             jobmonitorserver=temp
         )
+        if WEBSERVER_DEBUG_MODE_ENABLED:
+            _logger.warn("-"*80)
+            _logger.warn(" "*10 + "!!! DEBUG MODE ENABLED !!!")
+            _logger.warn("-"*80)
+
         webapp = converterwebapp.ConverterWebApp(**settings)
         global web_server
         web_server = converterhttpserver.ConverterHTTPServer(webapp)

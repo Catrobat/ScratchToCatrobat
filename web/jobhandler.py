@@ -74,9 +74,9 @@ class JobHandler(object):
         _logger.info('[%s]: "%s"' % (SERVER, reply.msg))
 
     @gen.coroutine
-    def send_job_started_notification(self, job_ID):
-        _logger.debug('[CLIENT]: Sending job started notification')
-        args = { Request.ARGS_JOB_ID: job_ID, Request.ARGS_MSG: "Job started" }
+    def send_job_started_notification(self, job_ID, title):
+        _logger.debug('[%s]: Sending job started notification' % CLIENT)
+        args = { Request.ARGS_JOB_ID: job_ID, Request.ARGS_TITLE: title, Request.ARGS_MSG: "Job started" }
         request = Request(Request.Command.JOB_STARTED_NOTIFICATION, args)
         yield self._connection.send_message(request)
         # Job started (reply)
@@ -90,10 +90,15 @@ class JobHandler(object):
         _logger.info('[%s]: "%s"' % (SERVER, reply.msg))
 
     @gen.coroutine
-    def send_job_progress_notification(self, job_ID, progress, message):
+    def send_job_progress_notification(self, job_ID, progress):
         # Job progress (request)
-        _logger.debug('[CLIENT]: (%d%%) Sending job progress notification' % progress)
-        args = { Request.ARGS_JOB_ID: job_ID, Request.ARGS_PROGRESS: progress, Request.ARGS_MSG: message }
+        if not isinstance(progress, float):
+            _logger.warn("[%s]: Cannot send progress notification! Given progress is "\
+                         "no valid float: '%s'" % (CLIENT, progress))
+            return
+
+        _logger.debug('[%s]: (%d%%) Sending job progress notification' % (CLIENT, progress))
+        args = { Request.ARGS_JOB_ID: job_ID, Request.ARGS_PROGRESS: progress }
         yield self._connection.send_message(Request(Request.Command.JOB_PROGRESS_NOTIFICATION, args))
 
         # Job progress (reply)
@@ -107,12 +112,30 @@ class JobHandler(object):
         _logger.info('[%s]: "%s"' % (SERVER, reply.msg))
 
     @gen.coroutine
+    def send_job_output_notification(self, job_ID, message):
+        # Job output (request)
+        _logger.debug('[%s]: Sending job output notification: %s' % (CLIENT, message))
+        args = { Request.ARGS_JOB_ID: job_ID, Request.ARGS_MSG: message }
+        yield self._connection.send_message(Request(Request.Command.JOB_OUTPUT_NOTIFICATION, args))
+
+        # Job output (reply)
+        data = json.loads((yield self._connection.read_message()).rstrip())
+        if not Reply.is_valid(data):
+            raise Exception("Invalid reply!")
+        reply = Reply(data[Reply.KEY_RESULT], data[Reply.KEY_MSG])
+        if not reply.result:
+            _logger.error("[%s]: %s" % (SERVER, reply.msg))
+            raise Exception("Job output notification failed!")
+        _logger.info('[%s]: "%s"' % (SERVER, reply.msg))
+
+    @gen.coroutine
     def send_job_finished_notification(self, job_ID, exit_code):
         # Job finished (request)
-        _logger.debug('[CLIENT]: Sending job finished notification')
+        _logger.debug('[%s]: Sending job finished notification' % CLIENT)
         args = { Request.ARGS_JOB_ID: job_ID, Request.ARGS_RESULT: exit_code, Request.ARGS_MSG: "Job finished" }
         yield self._connection.send_message(Request(Request.Command.JOB_FINISHED_NOTIFICATION, args))
-        # Job progress (reply)
+
+        # Job finished (reply)
         data = json.loads((yield self._connection.read_message()).rstrip())
         if not Reply.is_valid(data):
             raise Exception("Invalid reply!")
@@ -128,7 +151,7 @@ class JobHandler(object):
 
     @gen.coroutine
     def run_job(self, args):
-        raise Exception("FAILED!!! You MUST implement this method in subclass.")
+        raise Exception("FAILED!!! You MUST implement this method in the subclass.")
 
     @gen.coroutine
     def post_processing(self, args):

@@ -229,9 +229,9 @@ class Project(RawProject):
 
         if not self.project_id:
             self.project_id = "0"
-            name = "Testproject"
-            #raise ProjectError("No project id specified in project file. Please provide project id with constructor.")
+            name = "Untitled"
             self.description = None
+            #raise ProjectError("No project id specified in project file. Please provide project id with constructor.")
         else:
             self.description = scratchwebapi.request_project_description_for(self.project_id)
             if progress_bar != None: progress_bar.update()

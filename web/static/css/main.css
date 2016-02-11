@@ -37,6 +37,42 @@ div.input-field {
 	margin-top: 0.5em;
 }
 
+div#console-container {
+  display: none;
+  text-align: left;
+  overflow: scroll;
+  width: 100%;
+  height: 400px;
+  background-color: #000000;
+  padding: 6px;
+}
+
+div.console-message {
+  font-size: 12px;
+  font-family: "Courier New";
+  color: #FFFFFF;
+}
+
+div#jobs_info_layer {
+  margin-top: 6em;
+  width: 100%;
+}
+
+div#jobs_info_layer h2 {
+  text-align: center;
+}
+
+table#jobs_info_table {
+  width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+table#jobs_info_table th, table#jobs_info_table td {
+  border: 1px #CCCCCC solid;
+  padding: 2px;
+}
+
 .modal-header {
   background-color: #EEE;
   color: #000;
@@ -56,6 +92,12 @@ body.modal-open {
 
 .close {
   font-size: 50px;
+}
+
+#loading-animation-content {
+    text-align: middle;
+    height: 100px;
+    position: relative;
 }
 
 input.convert-button {

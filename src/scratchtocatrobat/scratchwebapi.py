@@ -146,7 +146,7 @@ def request_project_description_for(project_id):
     def retry_hook(exc, tries, delay):
         _log.warning("  Exception: {}\nRetrying after {}:'{}' in {} secs (remaining trys: {})".format(sys.exc_info()[0], type(exc).__name__, exc, delay, tries))
 
-    @common.retry((HttpStatusException, SocketTimeoutException), delay=2, backoff=2, tries=retries, hook=retry_hook)
+    @helpers.retry((HttpStatusException, SocketTimeoutException), delay=2, backoff=2, tries=retries, hook=retry_hook)
     def request_doc():
         connection = Jsoup.connect(scratch_project_url)
         connection.timeout(timeout)

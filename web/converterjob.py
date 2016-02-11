@@ -152,11 +152,34 @@ def convert_scratch_project(scratch_project_ID, host, port):
         _logger.error("Cannot find server certificate: %s", CERTIFICATE_PATH)
         return
 
+    # preprocessing: get project title via web API
+    retries = int(helpers.config.get("SCRATCH_API", "http_retries"))
+    backoff = int(helpers.config.get("SCRATCH_API", "http_backoff"))
+    delay = int(helpers.config.get("SCRATCH_API", "http_delay"))
+    timeout = int(helpers.config.get("SCRATCH_API", "http_timeout")) / 1000
+    url = PROJECT_INFO_URL_TEMPLATE.format(scratch_project_ID)
+
+    def retry_hook(exc, tries, delay):
+        _logger.warning("  Exception: {}\nRetrying after {}:'{}' in {} secs (remaining trys: {})".format(sys.exc_info()[0], type(exc).__name__, exc, delay, tries))
+
+    @helpers.retry((urllib2.URLError, socket.timeout, IOError, BadStatusLine), delay=delay, backoff=backoff, tries=retries, hook=retry_hook)
+    def request():
+        return urllib2.urlopen(url, timeout=timeout).read()
+
+    title = None
+    try:
+        response = request()
+        info = json.loads(response)
+        title = info["title"]
+    except:
+        pass # do not update title...
+
     # reconstruct URL
     scratch_project_url = "%s%d" % (SCRATCH_PROJECT_BASE_URL, scratch_project_ID)
     args = {
         "url": scratch_project_url,
         "projectID": scratch_project_ID,
+        "title": title,
         "outputDir": helpers.config.get("PATHS", "web_output"),
         "archiveName": str(scratch_project_ID)
     }

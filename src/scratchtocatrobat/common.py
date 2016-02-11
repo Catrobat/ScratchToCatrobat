@@ -24,11 +24,9 @@ import os
 import socket
 import sys
 import tempfile
-import time
 import urllib2
 import zipfile
 import shutil
-from functools import wraps
 from itertools import chain
 from itertools import repeat
 from itertools import islice
@@ -209,34 +207,6 @@ class TemporaryDirectory(object):
         if self._path_exists(path):
             log.warning("could not be deleted from temporary directory: %s", path)
 
-
-# based on: http://www.saltycrane.com/blog/2009/11/trying-out-retry-decorator-python/
-def retry(ExceptionsToCheck, tries=4, delay=2, backoff=2, hook=None):
-    """Retry calling the decorated function using an exponential backoff.
-
-    http://www.saltycrane.com/blog/2009/11/trying-out-retry-decorator-python/
-    original from: http://wiki.python.org/moin/PythonDecoratorLibrary#Retry
-    """
-    def deco_retry(f):
-
-        @wraps(f)
-        def f_retry(*args, **kwargs):
-            mtries, mdelay = tries, delay
-            while True:
-                try:
-                    return f(*args, **kwargs)
-                except ExceptionsToCheck as e:
-                    if mtries > 0:
-                        if hook:
-                            hook(e, mtries, mdelay)
-                        time.sleep(mdelay)
-                        mtries -= 1
-                        mdelay *= backoff
-                    else:
-                        raise e
-        return f_retry  # true decorator
-    return deco_retry
-
 def fields_of(java_class):
     assert isinstance(java_class, java.lang.Class)
     return [name for name, type_ in vars(java_class).iteritems() if isinstance(type_, PyReflectedField)]
@@ -253,7 +223,7 @@ def url_response_data(url, retries=None, backoff=None, delay=None, timeout=None,
     delay = delay if delay != None else int(helpers.config.get("SCRATCH_API", "http_delay"))
     timeout = timeout if timeout != None else int(helpers.config.get("SCRATCH_API", "http_timeout")) / 1000
 
-    @retry((urllib2.URLError, socket.timeout, IOError, BadStatusLine), delay=delay, backoff=backoff, tries=retries, hook=hook)
+    @helpers.retry((urllib2.URLError, socket.timeout, IOError, BadStatusLine), delay=delay, backoff=backoff, tries=retries, hook=hook)
     def request():
         return urllib2.urlopen(url, timeout=timeout).read()
 

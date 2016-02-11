@@ -36,6 +36,9 @@ import subprocess
 import os
 import hashlib
 import json
+import socket
+import urllib2
+from httplib import BadStatusLine
 
 from tornado.ioloop import IOLoop
 from tornado import gen
@@ -54,6 +57,7 @@ MAX_WAIT_SECONDS_BEFORE_SHUTDOWN = int(helpers.config.get("CONVERTER_JOB", "max_
 BUFFER_SIZE = int(helpers.config.get("CONVERTER_JOB", "buffer_size"))
 CERTIFICATE_PATH = helpers.config.get("JOBMONITOR_SERVER", "certificate_path")
 CATROBAT_FILE_EXT = helpers.config.get("CATROBAT", "file_extension")
+PROJECT_INFO_URL_TEMPLATE = helpers.config.get("SCRATCH_API", "project_info_url_template")
 
 class ConverterJobHandler(jobhandler.JobHandler):
 
@@ -63,16 +67,31 @@ class ConverterJobHandler(jobhandler.JobHandler):
                      args["url"], args["outputDir"], args["archiveName"]]
         process = subprocess.Popen(exec_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         job_ID = str(args["projectID"])
-        yield self.send_job_started_notification(job_ID)
+        title = args["title"] if isinstance(args["title"], (str, unicode)) else str(args["title"])
+        yield self.send_job_started_notification(job_ID, title)
 
+        start_progr_indicator = helpers.ProgressBar.START_PROGRESS_INDICATOR
+        end_progr_indicator = helpers.ProgressBar.END_PROGRESS_INDICATOR
         while True:
             line = process.stdout.readline()
-            if line != '':
-                line = line.rstrip()
-                _logger.debug("[%s]: %s" % (CLIENT, line))
-                yield self.send_job_progress_notification(job_ID, 0.0, line)
-            else:
-                break
+            if line == '': break
+            line = line.rstrip()
+
+            # case: check if progress update
+            if line.startswith(start_progr_indicator) and line.endswith(end_progr_indicator):
+                progress = line.split(start_progr_indicator)[1].split(end_progr_indicator)[0]
+                if not helpers.isfloat(progress):
+                    _logger.warn("[%s]: Ignoring line! Parsed progress is no valid float: '%s'" % (CLIENT, progress))
+                    continue
+                progress = float(progress)
+                yield self.send_job_progress_notification(job_ID, progress)
+                _logger.debug("[%s]: %d" % (CLIENT, progress))
+                continue
+
+            # case: console output
+            _logger.debug("[%s]: %s" % (CLIENT, line))
+            yield self.send_job_output_notification(job_ID, line)
+
         exit_code = process.wait() # XXX: work around this when experiencing errors...
         _logger.info("[%s]: Exit code is: %d" % (CLIENT, exit_code))
 
@@ -82,7 +101,14 @@ class ConverterJobHandler(jobhandler.JobHandler):
     @gen.coroutine
     def post_processing(self, args):
         file_path = os.path.join(args["outputDir"], args["archiveName"] + CATROBAT_FILE_EXT)
+        if not os.path.isfile(file_path):
+            yield self._connection.send_message(Request(Request.Command.JOB_FAILED, {
+                Request.ARGS_JOB_ID: str(args["projectID"]),
+                Request.ARGS_MSG: "Cannot transfer file! File does not exist!"
+            }))
+            return
         file_size = os.path.getsize(file_path)
+
         with open(file_path, 'rb') as file:
             file_hash = hashlib.sha256(file.read()).hexdigest()
             args = {

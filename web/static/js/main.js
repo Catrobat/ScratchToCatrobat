@@ -1,171 +1,108 @@
-// var opts = {
-//   lines: 13, // The number of lines to draw
-//   length: 28, // The length of each line
-//   width: 14, // The line thickness
-//   radius: 42, // The radius of the inner circle
-//   scale: 1, // Scales overall size of the spinner
-//   corners: 1, // Corner roundness (0..1)
-//   color: '#000', // #rgb or #rrggbb or array of colors
-//   opacity: 0.25, // Opacity of the lines
-//   rotate: 0, // The rotation offset
-//   direction: 1, // 1: clockwise, -1: counterclockwise
-//   speed: 1, // Rounds per second
-//   trail: 60, // Afterglow percentage
-//   fps: 20, // Frames per second when using setTimeout() as a fallback for CSS
-//   zIndex: 2e9, // The z-index (defaults to 2000000000)
-//   className: 'spinner', // The CSS class to assign to the spinner
-//   top: '50%', // Top position relative to parent
-//   left: '50%', // Left position relative to parent
-//   shadow: false, // Whether to render a shadow
-//   hwaccel: false, // Whether to use hardware acceleration
-//   position: 'absolute' // Element positioning
-// };
-// var target = document.getElementById('foo');
-// var spinner = new Spinner(opts).spin(target);
+var spinnerOptions = {
+    lines: 17, // The number of lines to draw
+    length: 26, // The length of each line
+    width: 12, // The line thickness
+    radius: 3, // The radius of the inner circle
+    corners: 1, // Corner roundness (0..1)
+    rotate: 0, // The rotation offset
+    direction: 1, // 1: clockwise, -1: counterclockwise
+    color: '#000', // #rgb or #rrggbb or array of colors
+    speed: 1.2, // Rounds per second
+    trail: 74, // Afterglow percentage
+    shadow: true, // Whether to render a shadow
+    hwaccel: false, // Whether to use hardware acceleration
+    className: 'spinner', // The CSS class to assign to the spinner
+    zIndex: 2e9, // The z-index (defaults to 2000000000)
+    top: '50%', // Top position relative to parent in px
+    left: '50%' // Left position relative to parent in px
+};
 
-function getProjectIDFromURL(projectURL) {
-    if (projectURL == null) {
-      return null;
-    }
-    if (projectURL.indexOf("http://scratch.mit.edu/projects/") == -1 && projectURL.indexOf("https://scratch.mit.edu/projects/") == -1) {
-      return null;
-    }
-    var urlParts = projectURL.split("/");
-    if (urlParts.length < 5) {
-      return null;
-    }
-    var projectID = urlParts[urlParts.length - 1];
-    if (projectID == "") {
-      projectID = urlParts[urlParts.length - 2];
-    }
-    return projectID;
-}
-
-function enableSubmitButton() {
-  $("#btn-convert").removeAttr("disabled").removeClass("deactivate-button").removeClass("activate-button").addClass("activate-button");
-}
-
-function disableSubmitButton() {
-  $("#btn-convert").attr("disabled", true).removeClass("deactivate-button").removeClass("activate-button").addClass("deactivate-button");
-}
-
-function enableDownloadButton() {
-  $("#btn-download").removeAttr("disabled").removeClass("deactivate-button").removeClass("activate-button").addClass("activate-button");
-}
-
-function disableDownloadButton() {
-  $("#btn-download").attr("disabled", true).removeClass("deactivate-button").removeClass("activate-button").addClass("deactivate-button");
-}
-
-function showErrorMessage(msg) {
-  $("#field-url").css("border-color", "#FF0000");
-  $("#field-url-validation-result").append($("<div></div>").text(msg).css("color", "#FF0000").css("font-weight", "bold"));
-}
-
-function showSuccessMessage(msg) {
-  $("#field-url").css("border-color", "#006400");
-  $("#field-url-validation-result").append($("<div></div>").html(msg).css("color", "#006400").css("font-weight", "bold"));
-}
-
-function updateAndShowProjectDetails(projectID) {
-  $("#field-url-validation-result").html("");
-  if (projectID == null) {
-    showErrorMessage("Invalid URL given!");
-    disableSubmitButton();
-    $(this).focus();
-    return;
-  }
-  var projectMetadataURL = "https://scratch.mit.edu/api/v1/project/" + projectID + "/?format=json";
-  $.getJSON(projectMetadataURL, function(data) {
-    var div = $("<div></div>").html("<b>Project:</b> " + data["title"]);
-    var projectMetadataDiv = $("<div></div>").append(div);
-    showSuccessMessage(projectMetadataDiv);
-  }).error(function(event, jqxhr, exception) {
-    showErrorMessage("Invalid project?? No metadata available!");
-    disableSubmitButton();
-    $(this).focus();
-  });
-  enableSubmitButton();
-}
+var baseProjectURL = "https://scratch.mit.edu/projects/";
+var defaultProjectURL = baseProjectURL + "10205819/";
 
 function init() {
+  setupUIEventHandlers();
+  fetchJobsInfo();
 }
 
-function startConversion(url, finishedConversionCallback) {
-    socketHandler.projectURL = url;
-    socketHandler.finishedConversionCallback = finishedConversionCallback;
-    socketHandler.start();
-}
+jQuery(document).ready(function($) { init(); });
 
-var socketHandler = {
-    projectURL: null,
-    socket: null,
-    clientID: null,
-    finishedConversionCallback: null,
-
-    start: function() {
-        var url = "ws://" + location.host + "/convertersocket";
-        socketHandler.socket = new WebSocket(url);
-        socketHandler.socket.onopen = function() {
-          var data = {
-            "cmd": "retrieve_client_ID",
-            "args": {}
-          };
-          var reply = confirm("Do you really want to start the conversion process?");
-          if (reply == true) {
-            if (typeof(Storage) !== "undefined") {
-              socketHandler.clientID = localStorage.getItem("clientID");
-              if (socketHandler.clientID != null) {
-                alert("Your old client ID is " + socketHandler.clientID);
-                var data = {
-                  "cmd": "start",
-                  "args": {
-                    "clientID": socketHandler.clientID,
-                    "url": socketHandler.projectURL
-                  }
-                };
-              }
-            } else {
-              alert("NOT IMPLEMENTED!! Handle this...");
-              return;
-            }
-            socketHandler.socket.send(JSON.stringify(data));
-          } else {
-            alert("User canceled request! Closing websocket!");
-            socketHandler.socket.close();
-          }
-        };
-        socketHandler.socket.onmessage = function(event) {
-            var result = JSON.parse(event.data);
-            if ("url" in result.data) {
-              var download_url = location.protocol + "//" + location.host + result.data["url"];
-              if (socketHandler.finishedConversionCallback != null) {
-                socketHandler.finishedConversionCallback(download_url);
-              }
-              return;
-            }
-
-            if ("clientID" in result.data) {
-              socketHandler.clientID = result.data.clientID;
-              if (typeof(Storage) !== "undefined") {
-                localStorage.setItem("clientID", socketHandler.clientID);
-              }
-              alert("Your new client ID is " + socketHandler.clientID);
-              var data = {
-                "cmd": "start",
-                "args": {
-                  "clientID": socketHandler.clientID,
-                  "url": socketHandler.projectURL
-                }
-              };
-              socketHandler.socket.send(JSON.stringify(data));
-            } else if ("msg" in result.data) {
-              alert(result.data.msg);
-            }
-        };
-    },
-
-    showMessage: function(message) {
-        alert(message.msg);
+function setupUIEventHandlers() {
+  $("#field-url").on("blur", function () {
+      updateAndShowProjectDetails(getProjectIDFromURL($(this).val()));
+  }).on("keydown", function(e) {
+    // if (e.keyCode == 13) {
+      updateAndShowProjectDetails(getProjectIDFromURL($(this).val()));
+    // }
+  });
+  $("#download_form").submit(function(event) {
+    window.location = $("#download-url").val();
+    event.preventDefault();
+    return false;
+  });
+  $("#converter_form").submit(function(event) {
+    var projectURL = $("#field-url").val();
+    $("#field-url").val(""); /* clear field */
+    $("#field-url-validation-result").html("");
+    disableSubmitButton();
+    disableDownloadButton();
+    var consoleLayer = $("#console-container")
+    consoleLayer.hide();
+    $("#qrcode").hide();
+    $("#btn-download").hide();
+    $("#download-url").val("");
+    $("#progress-bar").attr("aria-valuenow", "0").css("width", "0%");
+    $("#progress").text("0%");
+    $("#status").text("Sending request...");
+    $("#loading-animation").show();
+    var projectID = getProjectIDFromURL(projectURL);
+    if (projectID != null) { /* check if project URL is valid! */
+      $("#loading-animation-content").html("");
+      var spinner = new Spinner(spinnerOptions).spin(document.getElementById("loading-animation-content"));
+      consoleLayer.children().each(function () { $(this).hide(); }); /* hide all consoles */
+      $(this).hide();
+      /* TODO: error handler as another callback! */
+      startConversion(projectURL, function(downloadURL) {
+        enableSubmitButton();
+        showSuccessMessage("Conversion finished!");
+        consoleLayer.hide();
+        $("#download-url").val(downloadURL);
+        $("#btn-download").show();
+        $("#loading-animation-content").html("");
+        $("#loading-animation").hide();
+        $("#qrcode").children().remove();
+        $("#qrcode").show();
+        var qrcode = new QRCode(document.getElementById("qrcode"), { width: 200, height: 200 });
+        qrcode.makeCode(downloadURL);
+        enableDownloadButton();
+      });
+    } else {
+      $("#loading-animation").hide();
+      showErrorMessage("Invalid URL given!");
+      $(this).focus();
+      event.preventDefault();
     }
-};
+    return false;
+  });
+  $("#select_form").submit(function(event) {
+    event.preventDefault();
+    return false;
+  });
+  $("#btn-show-url-input").click(function() {
+    $("#field-url").val(defaultProjectURL);
+    updateAndShowProjectDetails(getProjectIDFromURL(defaultProjectURL));
+    $("#web-convert-modal").modal();
+    enableSubmitButton();
+    disableDownloadButton();
+    $("#console-container").hide();
+    $("#qrcode").hide();
+    $("#btn-download").hide();
+    $("#loading-animation").hide();
+    $("#converter_form").show();
+    $("#field-url").focus();
+  });
+  $("#btn-show-upload-input").click(function() {
+    $("#upload-convert-modal").modal();
+  });
+}
+  

@@ -22,6 +22,12 @@
 from __future__ import print_function
 import os
 import sys
+import time
+import threading
+import ConfigParser
+import re
+import urllib2, json
+from functools import wraps
 
 ################################################################################
 # IMMUTABLE PATHS
@@ -50,7 +56,6 @@ class cli_colors:
 
 class CatrobatConfigParser(object):
     def __init__(self):
-        import ConfigParser
         self.config_parser = ConfigParser.ConfigParser()
     def read(self, filenames):
         result = self.config_parser.read(filenames)
@@ -62,7 +67,6 @@ class CatrobatConfigParser(object):
             self.section_items[section] = items
         return result
     def _populate_placeholders_of_entry(self, entry, section, option):
-        import re
         entry = entry.replace("${APP_PATH}", APP_PATH)
         entry = entry.replace("${LIB_PATH}", LIB_PATH)
         entry = entry.replace("${SRC_PATH}", SRC_PATH)
@@ -140,7 +144,6 @@ def tag_name_of_used_catroid_hierarchy():
     return config.get("CATROID", "tag_name_of_used_hierarchy")
 
 def latest_catroid_repository_release_data():
-    import urllib2, json, time
     cached_file_path = os.path.join(config.get("PATHS", "tmp"), "cache_catroid_latest_release.dat")
     url = config.get("CATROID", "repository_api_show_tags_url")
     try:

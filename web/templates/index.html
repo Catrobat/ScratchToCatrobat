@@ -11,37 +11,12 @@
   <script type="text/javascript" src="{{ static_url("js/jquery.min.js") }}"></script>
   <script type="text/javascript" src="{{ static_url("js/bootstrap.min.js") }}"></script>
   <script type="text/javascript" src="{{ static_url("js/qrcode.min.js") }}"></script>
-  <script type="text/javascript" src="{{ static_url("js/main.js") }}"></script>
   <script type="text/javascript" src="{{ static_url("js/spin.min.js") }}"></script>
+  <script type="text/javascript" src="{{ static_url("js/helpers.js") }}"></script>
+  <script type="text/javascript" src="{{ static_url("js/main.js") }}"></script>
+  <script type="text/javascript" src="{{ static_url("js/sockethandler.js") }}"></script>
   <script>
-    var spinnerOptions = {
-		  lines: 13 // The number of lines to draw
-		, length: 28 // The length of each line
-		, width: 14 // The line thickness
-		, radius: 42 // The radius of the inner circle
-		, scale: 1 // Scales overall size of the spinner
-		, corners: 1 // Corner roundness (0..1)
-		, color: '#000' // #rgb or #rrggbb or array of colors
-		, opacity: 0.25 // Opacity of the lines
-		, rotate: 0 // The rotation offset
-		, direction: 1 // 1: clockwise, -1: counterclockwise
-		, speed: 1 // Rounds per second
-		, trail: 60 // Afterglow percentage
-		, fps: 20 // Frames per second when using setTimeout() as a fallback for CSS
-		, zIndex: 2e9 // The z-index (defaults to 2000000000)
-		, className: 'spinner' // The CSS class to assign to the spinner
-		, top: '50%' // Top position relative to parent
-		, left: '50%' // Left position relative to parent
-		, shadow: false // Whether to render a shadow
-		, hwaccel: false // Whether to use hardware acceleration
-		, position: 'absolute' // Element positioning
-		}
     jQuery(document).ready(function($) {
-      $("#btn-convert").removeClass("deactivate-button").addClass("activate-button");
-      init();
-	  $("#qrcode").hide();
-	  $("#btn-download").hide();
-	  $("#loading-animation").hide();
       $("#version-link").click(function() {
         var version = "{{ data["version"] }}";
         var buildName = "{{ data["build_name"] }}";
@@ -49,73 +24,11 @@
         alert("Version: " + version + "\nBuild: " + buildName + " (" + buildNumber + ")");
         return false;
       });
-      $("#field-url").on("blur", function () {
-          updateAndShowProjectDetails(getProjectIDFromURL($(this).val()));
-      }).on("keydown", function(e) {
-        // if (e.keyCode == 13) {
-          updateAndShowProjectDetails(getProjectIDFromURL($(this).val()));
-        // }
-      });
-      $("#download_form").submit(function(event) {
-      	window.location = $("#download-url").val();
-        event.preventDefault();
-        return false;
-      });
-      $("#converter_form").submit(function(event) {
-		 var projectURL = $("#field-url").val();
-		 $("#field-url").val(""); /* clear field */
-		 $("#field-url-validation-result").html("");
-         disableSubmitButton();
-         disableDownloadButton();
-         $("#loading-animation").show();
-         var spinner = new Spinner(spinnerOptions).spin(document.getElementById("loading-animation"));
-		 if (getProjectIDFromURL(projectURL) != null) { /* check if project URL is valid! */
-		    /* TODO: error handler as another callback! */
-         	$(this).hide();
-			startConversion(projectURL, function(downloadURL) {
-				enableSubmitButton();
-				showSuccessMessage("Conversion finished!");
-				$("#qrcode").children().remove();
-                $("#qrcode").show();
-                $("#download-url").val(downloadURL);
-                $("#btn-download").show();
-                $("#loading-animation").html("").hide();
-				var qrcode = new QRCode(document.getElementById("qrcode"), {
-					width: 200,
-					height: 200
-				});
-				qrcode.makeCode(downloadURL);
-         		enableDownloadButton();
-    		});
-		 } else {
-            $("#loading-animation").html("").hide();
-            showErrorMessage("Invalid URL given!");
-            $(this).focus();
-            event.preventDefault();
-		 }
-		 return false;
-      });
-      $("#select_form").submit(function(event) {
-        event.preventDefault();
-        return false;
-      });
-      $("#btn-show-url-input").click(function() {
-        var defaultProjectURL = "http://scratch.mit.edu/projects/10205819/";
-        $("#field-url").val(defaultProjectURL);
-        updateAndShowProjectDetails(getProjectIDFromURL(defaultProjectURL));
-        $("#web-convert-modal").modal();
-        $("#field-url").focus();
-      });
-      $("#btn-show-upload-input").click(function() {
-        $("#upload-convert-modal").modal();
-      });
     });
   </script>
 </head>
 <body>
-  <div class="ribbon">
-    <a href="#" target="_blank" id="version-link">pre-alpha</a>
-  </div>
+  <div class="ribbon"><a href="#" target="_blank" id="version-link">pre-alpha</a></div>
   <div id="wrapper">
     <header>
       <nav>
@@ -150,10 +63,11 @@
         </div>
       </div>
     </article>
+
     <aside id="modal-pages">
       <section id="web-convert-modal-section">
         <div id="web-convert-modal" class="modal fade" role="dialog">
-          <div class="modal-dialog modal-lg" style="min-width:350px;max-width:700px;">
+          <div class="modal-dialog modal-lg" style="min-width:350px;max-width:1200px;">
             <div class="modal-content">
               <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
@@ -161,80 +75,66 @@
               </div>
               <div class="modal-body">
                 <div style="text-align:center;">
-                  <form id="converter_form" action="convert.php" method="post" enctype="multipart/form-data">
+                  <form id="converter_form" action="#" method="post">
                     <div class="input-field">
                       <input type="text" id="field-url" name="url" value="http://scratch.mit.edu/projects/10205819/" class="clearable" />
                     </div>
                     <div id="field-url-validation-result"></div>
                     <input type="submit" name="btn-convert" id="btn-convert" value="Convert" class="convert-button deactivate-button" />
                   </form>
-                  <div id="loading-animation"></div>
+                  <div id="console-container"></div>
+                  <div id="loading-animation">
+					<div class="progress">
+						<div id="progress-bar" class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+					</div>
+                  	<div id="loading-animation-content"></div>
+					<div id="progress"></div>
+					<div id="status"></div>
+                  </div>
                   <form id="download_form" action="#" method="post">
                     <input type="hidden" id="download-url" name="download-url" value="" />
                     <div id="qrcode" style="width:200px;height:200px;margin-top:15px;margin-left:auto;margin-right:auto;"></div>
                     <input type="submit" name="btn-download" id="btn-download" value="Download" class="convert-button" />
                   </form>
                 </div>
-                <div class="separator-line"></div>
                 <div>
-                  <h2>How To</h2>
-                  <div>
-                    <ol>
-                      <li>Install the Pocket Code app on your <a href="https://play.google.com/store/apps/details?id=org.catrobat.catroid" target="_blank">Android</a> or iOS device (coming soon).</li>
-                      <li>Now enter the project URL in the input field above and hit the "Convert" button.</li>
-                      <li>Please wait a while until the download starts.</li>
-                      <li>After the download is completed, open the downloaded .catrobat file. The PocketCode app should automatically open and show the converted project.</li>
-<!--                       <li>After the conversion has finished a QR-Code will be shown.</li>
-                      <li>Install and open the PocketCode app on your <a href="https://play.google.com/store/apps/details?id=org.catrobat.catroid" target="_blank">Android</a> or iOS device (coming soon).</li>
-                      <li>Now hold your device over the QR Code so that it's clearly visible within your smartphone's screen.</li>
-                      <li>Your project should subsequently open on your mobile device.</li>
- -->                    </ol>
-                  </div>
+	                <div class="separator-line"></div>
+	                <div>
+	                  <h2>How To</h2>
+	                  <div>
+	                    <ol>
+	                      <li>Install the Pocket Code app on your <a href="https://play.google.com/store/apps/details?id=org.catrobat.catroid" target="_blank">Android</a> or iOS device.</li>
+	                      <li>Now enter the project URL in the input field above and hit the "Convert" button.</li>
+	                      <li>Please wait a while until the download starts.</li>
+	                      <li>After the conversion has finished a QR-Code will be shown.</li>
+	                      <li>Open the PocketCode app on your <a href="https://play.google.com/store/apps/details?id=org.catrobat.catroid" target="_blank">Android</a> or iOS device.</li>
+	                      <li>Tap on the "Explore" button of the main menu. Now a "QR Code" icon should appear on the upper right corner.</li>
+	                      <li>Tap on the "QR Code" icon.</li>
+	                      <li>Now hold your device over the QR Code so that it's clearly visible within your smartphone's screen.</li>
+	                      <li>Your project should subsequently transfer to and open on your mobile device.</li>
+	                    </ol>
+	                  </div>
+	                </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </section>
-      <section id="upload-convert-modal-section">
-        <div id="upload-convert-modal" class="modal fade" role="dialog">
-          <div class="modal-dialog modal-lg" style="min-width:350px;max-width:700px;">
-            <div class="modal-content">
-              <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal">&times;</button>
-                <h4>Select your locally stored Scratch project:</h4>
-              </div>
-              <div class="modal-body">
-                <div style="text-align:center;">
-                  <form id="converter_form" action="convert.php" method="post" enctype="multipart/form-data">
-                    <div class="input-field" style="margin-left:auto;margin-right:auto;width:200px;">
-                      <input type="file" id="field-filename" name="filename" class="size-large input-search" />
-                    </div>
-                    <input type="submit" name="submit" id="btn-convert" value="Convert" class="convert-button activate-button" />
-                  </form>
-                </div>
-                <div class="separator-line"></div>
-                <div>
-                  <h2>How To</h2>
-                  <div>
-                    <ol>
-                      <li>Install the Pocket Code app on your <a href="https://play.google.com/store/apps/details?id=org.catrobat.catroid" target="_blank">Android</a> or iOS device (coming soon).</li>
-                      <li>Now select your locally stored Scratch project (.sb2 file) and hit the "Convert" button.</li>
-                      <li>Please wait a while until the download starts.</li>
-                      <li>After the download is completed, open the downloaded .catrobat file. The PocketCode app should automatically open and show the converted project.</li>
-<!--                       <li>Select your locally stored Scratch project and hit the "Convert" button.</li>
-                      <li>After the conversion has finished a QR-Code will be shown.</li>
-                      <li>Install and open the PocketCode app on your <a href="https://play.google.com/store/apps/details?id=org.catrobat.catroid" target="_blank">Android</a> or iOS device (coming soon).</li>
-                      <li>Now hold your device over the QR Code so that it's clearly visible within your smartphone's screen.</li>
-                      <li>Your project should subsequently open on your mobile device.</li>
- -->                    </ol>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+    </aside>
+    <aside>
+      <div id="jobs_info_layer">
+        <h2>Your converted programs</h2>
+        <table id="jobs_info_table">
+          <tbody>
+            <tr>
+              <th>Status</th>
+              <th>Scratch Project</th>
+              <th>Progress</th>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </aside>
   </div>
   <footer>

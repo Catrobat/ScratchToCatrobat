@@ -37,19 +37,15 @@
 #
 
 import logging
-import tornado.ioloop
-from tornado.options import define, options
-
+import tornado.ioloop #@UnresolvedImport
 import converterhttpserver
 import converterwebapp
 import jobmonitortcpserver
-
 import sys
 import os.path
 import signal
 import time
 import ssl
-
 sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "..", "src"))
 from scratchtocatrobat.tools import helpers
 
@@ -60,9 +56,7 @@ WEBSERVER_PORT = helpers.config.get("WEBSERVER", "port")
 WEBSERVER_DEBUG_MODE_ENABLED = str(helpers.config.get("WEBSERVER", "debug")) in {"True", "1"}
 WEBSERVER_COOKIE_SECRET = str(helpers.config.get("WEBSERVER", "cookie_secret"))
 WEBSERVER_XSRF_COOKIES_ENABLED = str(helpers.config.get("WEBSERVER", "xsrf_cookies")) in {"True", "1"}
-
 JOBMONITORSERVER_PORT = helpers.config.get("JOBMONITOR_SERVER", "port")
-
 _logger = logging.getLogger(__name__)
 
 def sig_handler(sig, frame):

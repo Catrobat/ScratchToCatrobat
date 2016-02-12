@@ -40,7 +40,7 @@ import org.catrobat.catroid.io as catio
 from scratchtocatrobat import catrobat
 from scratchtocatrobat import common
 from scratchtocatrobat import scratch
-from scratchtocatrobat.scratch import JsonKeys as scratchkeys, RawProject
+from scratchtocatrobat.scratch import JsonKeys as scratchkeys
 from scratchtocatrobat.tools import svgtopng
 from scratchtocatrobat.tools import wavconverter
 from scratchtocatrobat.tools import helpers

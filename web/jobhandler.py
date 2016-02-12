@@ -19,12 +19,11 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import tornado.tcpclient #@UnresolvedImport
+from tornado import gen #@UnresolvedImport
+from jobmonitorprotocol import Request, Reply, TCPConnection, SERVER, CLIENT
 import logging
 import json
-
-import tornado.tcpclient
-from tornado import gen
-from jobmonitorprotocol import Request, Reply, TCPConnection, SERVER, CLIENT
 
 _logger = logging.getLogger(__name__)
 

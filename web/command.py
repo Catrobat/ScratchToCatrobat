@@ -19,14 +19,13 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import string
 import logging
 import ast
 import sys
 import os
 import converterwebapp
 
-from rq import Queue, use_connection
+from rq import Queue, use_connection #@UnresolvedImport
 from converterjob import convert_scratch_project
 
 sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "..", "src"))

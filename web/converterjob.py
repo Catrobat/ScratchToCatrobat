@@ -29,7 +29,6 @@
 
 import logging
 import sys
-import signal
 import ssl
 import time
 import subprocess
@@ -40,8 +39,8 @@ import socket
 import urllib2
 from httplib import BadStatusLine
 
-from tornado.ioloop import IOLoop
-from tornado import gen
+from tornado.ioloop import IOLoop #@UnresolvedImport
+from tornado import gen #@UnresolvedImport
 import jobhandler
 from jobmonitorprotocol import Request, Reply, SERVER, CLIENT
 
@@ -169,6 +168,10 @@ def convert_scratch_project(scratch_project_ID, host, port):
         datefmt='%Y-%m-%d %H:%M:%S'
     )
 
+#     job = get_current_job()
+#     job.meta['handled_by'] = socket.gethostname()
+#     job.save()
+
     # validate URL
     if scratch_project_ID == None or not isinstance(scratch_project_ID, int):
         _logger.error("No or invalid Scratch project ID given: {}".format(scratch_project_ID))
@@ -211,8 +214,8 @@ def convert_scratch_project(scratch_project_ID, host, port):
     }
 
     # set up signal handler
-    signal.signal(signal.SIGTERM, sig_handler)
-    signal.signal(signal.SIGINT, sig_handler)
+    #signal.signal(signal.SIGTERM, sig_handler)
+    #signal.signal(signal.SIGINT, sig_handler)
 
     ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
     ssl_ctx.verify_mode = ssl.CERT_REQUIRED
@@ -224,6 +227,6 @@ def convert_scratch_project(scratch_project_ID, host, port):
     handler.run(args)
     IOLoop.instance().start()
 
-def sig_handler(sig, frame):
-    _logger.warning('Caught signal: %s', sig)
-    IOLoop.instance().add_callback_from_signal(shutdown)
+# def sig_handler(sig, frame):
+#     _logger.warning('Caught signal: %s', sig)
+#     IOLoop.instance().add_callback_from_signal(shutdown)

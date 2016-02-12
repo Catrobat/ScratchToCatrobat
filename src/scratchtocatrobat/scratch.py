@@ -234,7 +234,7 @@ class Project(RawProject):
             #raise ProjectError("No project id specified in project file. Please provide project id with constructor.")
         else:
             self.description = scratchwebapi.request_project_description_for(self.project_id)
-            if progress_bar != None: progress_bar.update()
+        if progress_bar != None: progress_bar.update() # description step passed
 
         if name is not None:
             self.name = name
@@ -242,10 +242,10 @@ class Project(RawProject):
             # FIXME: for some projects no project info available
             try:
                 self.name = scratchwebapi.request_project_name_for(self.project_id)
-                if progress_bar != None: progress_bar.update()
             except urllib2.HTTPError:
                 self.name = str(self.project_id)
                 self.description = None
+        if progress_bar != None: progress_bar.update() # name step passed
         self.name = self.name.strip()
         self.md5_to_resource_path_map = read_md5_to_resource_path_mapping()
         assert self['penLayerMD5'] not in self.md5_to_resource_path_map

@@ -373,7 +373,6 @@ class ProgressBar(object):
         self.saving_xml_progress_weight = 0
         self.web_mode = web_mode
         self.finished = False
-        print("NEW INSTANCE!!!!!!!!!!!!!!!")
         widgets = [progressbar.Percentage(), ' ', progressbar.Bar(), ' ', progressbar.ETA()]
         if not self.web_mode:
             self.pbar = progressbar.ProgressBar(widgets=widgets, maxval=100)

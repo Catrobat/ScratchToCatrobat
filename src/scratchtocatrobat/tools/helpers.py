@@ -28,7 +28,6 @@ import ConfigParser
 import re
 import urllib2, json
 from functools import wraps
-from compiler.future import is_future
 
 ################################################################################
 # IMMUTABLE PATHS

@@ -64,7 +64,7 @@ class ConverterJobHandler(jobhandler.JobHandler):
     @gen.coroutine
     def run_job(self, args):
         exec_args = ["/usr/bin/env", "python", CONVERTER_RUN_SCRIPT_PATH,
-                     args["url"], args["outputDir"], args["archiveName"]]
+                     args["url"], args["outputDir"], args["archiveName"], "--web-mode"]
         process = subprocess.Popen(exec_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         job_ID = str(args["projectID"])
         title = args["title"] if isinstance(args["title"], (str, unicode)) else str(args["title"])

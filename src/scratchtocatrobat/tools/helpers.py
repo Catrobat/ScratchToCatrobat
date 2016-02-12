@@ -28,6 +28,7 @@ import ConfigParser
 import re
 import urllib2, json
 from functools import wraps
+from compiler.future import is_future
 
 ################################################################################
 # IMMUTABLE PATHS
@@ -357,36 +358,63 @@ def isfloat(string):
     else:
         return True
 
+import progressbar #import Bar, ETA, Percentage, ProgressBar # @UnresolvedImport
+
 class ProgressBar(object):
 
     SAVING_XML_PROGRESS_WEIGHT_PERCENTAGE = 3
     START_PROGRESS_INDICATOR = "#__("
     END_PROGRESS_INDICATOR = "%)__"
 
-    def __init__(self, num_of_iterations, output_stream=sys.stdout):
+    def __init__(self, num_of_iterations, web_mode=False, output_stream=sys.stdout):
         self._iterations_counter = 0
         self.num_of_iterations = num_of_iterations
         self._output_stream = output_stream
         self.lock = threading.RLock()
         self.saving_xml_progress_weight = 0
+        self.web_mode = web_mode
+        self.finished = False
+        print("NEW INSTANCE!!!!!!!!!!!!!!!")
+        widgets = [progressbar.Percentage(), ' ', progressbar.Bar(), ' ', progressbar.ETA()]
+        if not self.web_mode:
+            self.pbar = progressbar.ProgressBar(widgets=widgets, maxval=100)
+            self.pbar.start()
+
+    def finish(self):
+        with self.lock:
+            if self.finished:
+                return
+            self.finished = True
+            if not self.web_mode:
+                self.pbar.finish()
+            assert self.is_full() # Note: reentrant lock! no deadlock can happen here!
 
     def is_full(self):
-        self.lock.acquire()
-        return self._iterations_counter == self.num_of_iterations
-        self.lock.release()
+        with self.lock:
+            return (self._iterations_counter == self.num_of_iterations)
 
     def update(self, increment=1):
         with self.lock:
             if self.num_of_iterations == None:
-                self._output_stream.write("[WARNING] Number of iterations not set!")
+                if self._output_stream != None:
+                    self._output_stream.write("[WARNING] Number of iterations not set!")
                 return
 
-            if self._iterations_counter >= self.num_of_iterations:
-                self._output_stream.write("[WARNING] Progress counter overflow!")
+            if self._iterations_counter + increment > self.num_of_iterations:
+                if self._output_stream != None:
+                    self._output_stream.write("[WARNING] Progress counter overflow!")
                 return
 
             self._iterations_counter = self._iterations_counter + increment
             percentage = float(self._iterations_counter)/float(self.num_of_iterations)*100.0
+
+            if not self.web_mode:
+                self.pbar.update(int(round(percentage)))
+                return
+
+            if self._output_stream == None:
+                return
+
             self._output_stream.write("{}{}{}\n".format(ProgressBar.START_PROGRESS_INDICATOR, \
                                                       round(percentage, 2), \
                                                       ProgressBar.END_PROGRESS_INDICATOR))

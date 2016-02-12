@@ -34,7 +34,8 @@ __version__ = helpers.application_info("version")
 def run_converter(scratch_project_file_or_url, output_dir,
                   extract_resulting_catrobat=False, temp_rm=True,
                   show_version_only=False, show_info_only=False,
-                  archive_name=None):
+                  archive_name=None,
+                  web_mode=False):
     def check_base_environment():
         if "java" not in sys.platform:
             raise EnvironmentError("Must be called with Jython interpreter.")
@@ -73,7 +74,7 @@ def run_converter(scratch_project_file_or_url, output_dir,
         if not os.path.isdir(output_dir):
             raise EnvironmentError("Output folder must be a directory, but is %s" % output_dir)
 
-        progress_bar = helpers.ProgressBar(None, sys.stdout)
+        progress_bar = helpers.ProgressBar(None, web_mode, sys.stdout)
         with common.TemporaryDirectory(remove_on_exit=temp_rm) as scratch_project_dir:
             is_local_project = True
             if scratch_project_file_or_url.startswith("https://"):
@@ -88,7 +89,7 @@ def run_converter(scratch_project_file_or_url, output_dir,
                 log.info("Loading project from path: '{}' ...".format(scratch_project_file_or_url))
                 scratch_project_dir = scratch_project_file_or_url
 
-            if is_local_project and progress_bar != None:
+            if is_local_project:
                 project = scratch.RawProject.from_project_folder_path(scratch_project_dir)
                 progress_bar.num_of_iterations = project.num_of_iterations_of_local_project(progress_bar)
 
@@ -104,7 +105,7 @@ def run_converter(scratch_project_file_or_url, output_dir,
                 common.copy_dir(scratch_project_dir, scratch_output_path, overwrite=True)
                 common.extract(catrobat_program_path, extraction_path)
 
-        assert progress_bar == None or progress_bar.is_full()
+        progress_bar.finish()
     except (common.ScratchtobatError, EnvironmentError, IOError) as e:
         log.error(e)
         return helpers.ExitCode.FAILURE
@@ -118,7 +119,7 @@ def main():
     usage = '''Scratch to Catrobat converter
 
     Usage:
-      'main.py' <project-url-or-package-path> <output-dir> <archive-name> [--extracted] [--no-temp-rm]
+      'main.py' <project-url-or-package-path> <output-dir> <archive-name> [--extracted] [--no-temp-rm] [--web-mode]
       'main.py' <project-url-or-package-path> <output-dir> [--extracted] [--no-temp-rm]
       'main.py' <project-url-or-package-path> [--extracted] [--no-temp-rm]
       'main.py' --version
@@ -135,6 +136,7 @@ def main():
         kwargs = {}
         kwargs['extract_resulting_catrobat'] = arguments["--extracted"]
         kwargs['temp_rm'] = not arguments["--no-temp-rm"]
+        kwargs['web_mode'] = arguments["--web-mode"]
         kwargs['show_version_only'] = arguments["--version"]
         kwargs['show_info_only'] = arguments["--info"]
         kwargs['archive_name'] = arguments["<archive-name>"]

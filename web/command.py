@@ -87,19 +87,23 @@ class Command(object):
         parts = [int(s) for s in scratch_project_url.split("/") if s.isdigit()]
         return scratch_project_url.startswith(SCRATCH_PROJECT_BASE_URL) and (len(parts) == 1)
 
-class RetrieveClientIDCommand(Command):
-    def execute(self, ctxt, args):
+    def retrieve_new_client_ID(self, ctxt):
         redis_conn = ctxt.redis_connection
-        last_client_ID = redis_conn.get("lastClientID")
-        if last_client_ID == None: redis_conn.set("lastClientID", 0)
+        # check if this is the first client -> then set lastClientID in database to 0
+        if redis_conn.get("lastClientID") == None:
+            redis_conn.set("lastClientID", 0)
         new_client_ID = redis_conn.incr("lastClientID")
         ctxt.handler.set_client_ID(new_client_ID) # map client ID to web socket handler
-        return protocol.ClientIDMessage(new_client_ID)
+        return new_client_ID
+
+class RetrieveClientIDCommand(Command):
+    def execute(self, ctxt, args):
+        return protocol.ClientIDMessage(self.retrieve_new_client_ID(ctxt))
 
 class SetClientIDCommand(Command):
     def execute(self, ctxt, args):
         if not self.is_valid_client_id(ctxt.redis_connection, args["clientID"]):
-            return protocol.ErrorMessage("Invalid client ID!")
+            return protocol.RenewClientIDMessage(self.retrieve_new_client_ID(ctxt))
         client_ID = int(args["clientID"])
         ctxt.handler.set_client_ID(client_ID) # map client ID to web socket handler
         update_jobs_info_on_listening_clients(ctxt)

@@ -63,7 +63,8 @@ var socketHandler = {
         "JOB_FINISHED": 7,
         "JOB_DOWNLOAD": 8,
         "JOBS_INFO": 9,
-        "CLIENT_ID": 10
+        "CLIENT_ID": 10,
+        "RENEW_CLIENT_ID": 11
       };
 
       // ERROR: { "msg" }
@@ -239,9 +240,19 @@ var socketHandler = {
         }
       }
 
-    },
+      // RENEW_CLIENT_ID: { "clientID" }
+      // (set_client_id, if given clientID is not valid any more)
+      if (result.type == notificationTypes["RENEW_CLIENT_ID"]) {
+        if (socketHandler.clientID == null || socketHandler.clientID == result.data["clientID"]) {
+          alert("Server sent renew-clientID-request with same client ID back. This should never happen!");
+          return;
+        }
+        socketHandler.clientID = result.data["clientID"];
+        if (typeof(Storage) !== "undefined") {
+          localStorage.setItem("clientID", socketHandler.clientID);
+        }
+      }
 
-    showMessage: function(message) {
-        alert(message.msg);
     }
+
 };

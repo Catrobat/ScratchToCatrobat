@@ -53,6 +53,7 @@ class Message(object):
         JOB_DOWNLOAD = 8
         JOBS_INFO = 9
         CLIENT_ID = 10
+        RENEW_CLIENT_ID = 11
 
     def __init__(self, message_type, data):
         self.type = message_type
@@ -117,3 +118,7 @@ class JobsInfoMessage(Message):
 class ClientIDMessage(Message):
     def __init__(self, client_ID):
         super(ClientIDMessage, self).__init__(Message.Type.CLIENT_ID, { "clientID": client_ID })
+
+class RenewClientIDMessage(Message):
+    def __init__(self, client_ID):
+        super(RenewClientIDMessage, self).__init__(Message.Type.ERROR, { "clientID": client_ID })

@@ -145,8 +145,11 @@ def request_project_name_for(project_id):
         return None
     title = ""
     element = doc.select("html > head > title").first()
+    appended_title_text = "on Scratch"
     if element is not None:
         title = element.text().strip()
+        if title.endswith(appended_title_text):
+            title = title.split(appended_title_text)[0].strip()
     return title
 
 def request_project_description_for(project_id):

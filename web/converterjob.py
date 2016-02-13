@@ -200,6 +200,7 @@ def convert_scratch_project(scratch_project_ID, host, port):
 
     title = None
     scratch_project_url = scratch_base_url + str(scratch_project_ID)
+    appended_title_text = "on Scratch"
     try:
         html_content = read_content_of_url(scratch_project_url)
         if html_content == None or not isinstance(html_content, str):
@@ -212,6 +213,8 @@ def convert_scratch_project(scratch_project_ID, host, port):
         and isinstance(result[0].contents, list) and len(result[0].contents) > 0 \
         and result[0].contents[0] != None:
             title = unicode(result[0].contents[0]).strip()
+            if title.endswith(appended_title_text):
+                title = title.split(appended_title_text)[0].strip()
 
         if title == None:
             raise Warning("Unable to set title of project from the project's website!" \

@@ -132,6 +132,9 @@ def main():
       -e --extracted    Extract resulting Catrobat program in output-dir.
     '''
     arguments = docopt(usage)
+
+    # TODO: setup signal handler!
+
     try:
         kwargs = {}
         kwargs['extract_resulting_catrobat'] = arguments["--extracted"]

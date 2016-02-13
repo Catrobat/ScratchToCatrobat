@@ -21,19 +21,18 @@
 import copy
 import hashlib
 import os
-import socket
 import sys
 import tempfile
-import urllib2
 import zipfile
 import shutil
+import java
+from javax.sound.sampled import AudioSystem
+from java.net import SocketTimeoutException, SocketException
+from java.io import IOException
+from org.python.core import PyReflectedField  #@UnresolvedImport
 from itertools import chain
 from itertools import repeat
 from itertools import islice
-import java
-from javax.sound.sampled import AudioSystem
-from org.python.core import PyReflectedField  # pydev: @UnresolvedImport
-from httplib import BadStatusLine
 from scratchtocatrobat import logger
 from scratchtocatrobat.tools import helpers
 
@@ -211,9 +210,12 @@ def fields_of(java_class):
     assert isinstance(java_class, java.lang.Class)
     return [name for name, type_ in vars(java_class).iteritems() if isinstance(type_, PyReflectedField)]
 
-def url_response_data(url, retries=None, backoff=None, delay=None, timeout=None, hook=None, log=log):
+def download_file(url, file_path, referer_url=None, retries=None, backoff=None, \
+                  delay=None, timeout=None, hook=None, log=log):
+
     def retry_hook(exc, tries, delay):
         log.warning("  Exception: {}\nRetrying {} after {}:'{}' in {} secs (remaining trys: {})".format(sys.exc_info()[0], url, type(exc).__name__, exc, delay, tries))
+
     if hook is None:
         hook = retry_hook
     log.info("Requesting web api url: {}".format(url))
@@ -221,17 +223,70 @@ def url_response_data(url, retries=None, backoff=None, delay=None, timeout=None,
     retries = retries if retries != None else int(helpers.config.get("SCRATCH_API", "http_retries"))
     backoff = backoff if backoff != None else int(helpers.config.get("SCRATCH_API", "http_backoff"))
     delay = delay if delay != None else int(helpers.config.get("SCRATCH_API", "http_delay"))
-    timeout = timeout if timeout != None else int(helpers.config.get("SCRATCH_API", "http_timeout")) / 1000
+    timeout = timeout if timeout != None else int(helpers.config.get("SCRATCH_API", "http_timeout"))
+    user_agent = helpers.config.get("SCRATCH_API", "user_agent")
 
-    @helpers.retry((urllib2.URLError, socket.timeout, IOError, BadStatusLine), delay=delay, backoff=backoff, tries=retries, hook=hook)
-    def request():
-        return urllib2.urlopen(url, timeout=timeout).read()
+    @helpers.retry((SocketTimeoutException, SocketException, IOException), \
+                   delay=delay, backoff=backoff, tries=retries, hook=hook)
+    def download_request(url, file_path, user_agent, referer_url, timeout, log):
+        import jarray
+        from java.net import URL, HttpURLConnection
+        from java.io import FileOutputStream
+        try:
+            input_stream = None
+            file_output_stream = FileOutputStream(file_path)
+            HttpURLConnection.setFollowRedirects(True)
+            first_request = True
+            is_redirect = False
+            cookies = None
+            while is_redirect or first_request:
+                http_url_connection = URL(url).openConnection()
+                http_url_connection.setFollowRedirects(True)
+                http_url_connection.setInstanceFollowRedirects(True)
+                http_url_connection.setRequestProperty("Accept-Language", "en-US,en;q=0.8")
+                http_url_connection.setConnectTimeout(timeout)
+                http_url_connection.setReadTimeout(timeout)
+                http_url_connection.setRequestMethod("GET")
+                http_url_connection.setRequestProperty("User-Agent", user_agent)
+                http_url_connection.setRequestProperty("Accept-Language", "en-US,en;q=0.8")
+                if cookies != None and len(cookies) > 0:
+                    http_url_connection.setRequestProperty("Cookie", cookies)
+                if referer_url != None:
+                    # Note: Referer not Referrer! (see: Wikipedia)
+                    #           ^           ^^
+                    http_url_connection.setRequestProperty("Referer", referer_url);
+                http_url_connection.connect()
+                first_request = False
 
-    try:
-        return request()
-    except socket.timeout:
-        # WORKAROUND: little more descriptive
-        raise IOError("socket.timeout")
+                # check for redirect
+                is_redirect = False
+                status_code = http_url_connection.getResponseCode()
+                if status_code != HttpURLConnection.HTTP_OK:
+                    if status_code == HttpURLConnection.HTTP_MOVED_TEMP \
+                    or status_code == HttpURLConnection.HTTP_MOVED_PERM \
+                    or status_code == HttpURLConnection.HTTP_SEE_OTHER:
+                        is_redirect = True
+                        referer_url = url
+                        # set redirect URL from "location" header field as new URL
+                        url = http_url_connection.getHeaderField("Location")
+                        cookies = http_url_connection.getHeaderField("Set-Cookie")
+                        log.debug("Redirecting to URL: {}".format(url))
+
+            input_stream = http_url_connection.getInputStream()
+            byte_buffer = jarray.zeros(4096, "b")
+            length = input_stream.read(byte_buffer)
+            while length > 0:
+                file_output_stream.write(byte_buffer, 0, length)
+                length = input_stream.read(byte_buffer)
+        finally:
+            try:
+                if input_stream != None:
+                    input_stream.close()
+            except:
+                if file_output_stream != None:
+                    file_output_stream.close()
+
+    download_request(url, file_path, user_agent, referer_url, timeout, log)
 
 def content_of(path):
     with open(path) as f:

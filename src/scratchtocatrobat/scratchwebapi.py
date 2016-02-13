@@ -18,7 +18,7 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see http://www.gnu.org/licenses/.
-import sys, os, re, json
+import sys, os, re
 from urlparse import urlparse
 from scratchtocatrobat import common
 from tools import helpers

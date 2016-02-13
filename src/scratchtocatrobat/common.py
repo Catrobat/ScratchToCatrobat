@@ -214,8 +214,9 @@ def download_file(url, file_path, referer_url=None, retries=None, backoff=None, 
                   delay=None, timeout=None, hook=None, log=log):
 
     def retry_hook(exc, tries, delay):
-        log.warning("  Exception: {}\nRetrying {} after {}:'{}' in {} secs (remaining trys: {})".format(sys.exc_info()[0], url, type(exc).__name__, exc, delay, tries))
-
+        log.warning("  Exception: {}\nRetrying {} after {}:'{}' in {} secs (remaining " \
+                    "trys: {})".format(sys.exc_info()[0], url, type(exc).__name__, exc, \
+                                       delay, tries))
     if hook is None:
         hook = retry_hook
     log.info("Requesting web api url: {}".format(url))
@@ -224,11 +225,12 @@ def download_file(url, file_path, referer_url=None, retries=None, backoff=None, 
     backoff = backoff if backoff != None else int(helpers.config.get("SCRATCH_API", "http_backoff"))
     delay = delay if delay != None else int(helpers.config.get("SCRATCH_API", "http_delay"))
     timeout = timeout if timeout != None else int(helpers.config.get("SCRATCH_API", "http_timeout"))
+    max_redirects = int(helpers.config.get("SCRATCH_API", "http_max_redirects"))
     user_agent = helpers.config.get("SCRATCH_API", "user_agent")
 
     @helpers.retry((SocketTimeoutException, SocketException, IOException), \
                    delay=delay, backoff=backoff, tries=retries, hook=hook)
-    def download_request(url, file_path, user_agent, referer_url, timeout, log):
+    def download_request(url, file_path, user_agent, referer_url, timeout, max_redirects, log):
         import jarray
         from java.net import URL, HttpURLConnection
         from java.io import FileOutputStream
@@ -239,6 +241,7 @@ def download_file(url, file_path, referer_url=None, retries=None, backoff=None, 
             first_request = True
             is_redirect = False
             cookies = None
+            redirect_counter = 0
             while is_redirect or first_request:
                 http_url_connection = URL(url).openConnection()
                 http_url_connection.setFollowRedirects(True)
@@ -265,6 +268,12 @@ def download_file(url, file_path, referer_url=None, retries=None, backoff=None, 
                     if status_code == HttpURLConnection.HTTP_MOVED_TEMP \
                     or status_code == HttpURLConnection.HTTP_MOVED_PERM \
                     or status_code == HttpURLConnection.HTTP_SEE_OTHER:
+
+                        redirect_counter += 1
+                        if redirect_counter > max_redirects:
+                            raise ScratchtobatError("Maximum number of HTTP redirects " \
+                                                    "{} reached!".format(max_redirects))
+
                         is_redirect = True
                         referer_url = url
                         # set redirect URL from "location" header field as new URL
@@ -286,7 +295,7 @@ def download_file(url, file_path, referer_url=None, retries=None, backoff=None, 
                 if file_output_stream != None:
                     file_output_stream.close()
 
-    download_request(url, file_path, user_agent, referer_url, timeout, log)
+    download_request(url, file_path, user_agent, referer_url, timeout, max_redirects, log)
 
 def content_of(path):
     with open(path) as f:

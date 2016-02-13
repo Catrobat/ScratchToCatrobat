@@ -22,10 +22,10 @@ from __future__ import unicode_literals
 
 import glob
 import os
+import sys
 import shutil
 import tempfile
 import unittest
-import urllib2
 import zipfile
 from codecs import open
 from java.io import BufferedReader, InputStreamReader
@@ -138,9 +138,12 @@ class ProjectTestCase(BaseTestCase):
                     assert xml_node.text == catcommon.ScreenModes.MAXIMIZE.toString()  # @UndefinedVariable
                 elif header_tag == "remixOf":
                     try:
-                        assert common.url_response_data(xml_node.text) is not None
-                    except urllib2.HTTPError, e:
-                        self.fail("Expection '{}' with url '{}'".format(e, xml_node.text))
+                        with tempfile.NamedTemporaryFile() as temp:
+                            common.download_file(xml_node.text, temp.name)
+                            with open(temp.name, "r") as f:
+                                assert f.read() is not None
+                    except:
+                        self.fail("Expection '{}' with url '{}'".format(sys.exc_info()[0], xml_node.text))
 
     def assertValidCatrobatProgramStructure(self, project_path, project_name):
         project_xml_path = os.path.join(project_path, catrobat.PROGRAM_SOURCE_FILE_NAME)

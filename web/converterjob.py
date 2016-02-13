@@ -37,15 +37,14 @@ import hashlib
 import json
 import socket
 import urllib2
-from httplib import BadStatusLine
-
-from tornado.ioloop import IOLoop #@UnresolvedImport
-from tornado import gen #@UnresolvedImport
 import jobhandler
+from httplib import BadStatusLine
 from jobmonitorprotocol import Request, Reply, SERVER, CLIENT
-
 sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "..", "src"))
 from scratchtocatrobat.tools import helpers
+from bs4 import BeautifulSoup #@UnresolvedImport
+from tornado.ioloop import IOLoop #@UnresolvedImport
+from tornado import gen #@UnresolvedImport
 
 _logger = logging.getLogger(__name__)
 
@@ -108,8 +107,8 @@ class ConverterJobHandler(jobhandler.JobHandler):
             return
         file_size = os.path.getsize(file_path)
 
-        with open(file_path, 'rb') as file:
-            file_hash = hashlib.sha256(file.read()).hexdigest()
+        with open(file_path, 'rb') as fp:
+            file_hash = hashlib.sha256(fp.read()).hexdigest()
             args = {
                 Request.ARGS_JOB_ID: str(args["projectID"]),
                 Request.ARGS_FILE_NAME: str(args["projectID"]) + CATROBAT_FILE_EXT,
@@ -128,12 +127,12 @@ class ConverterJobHandler(jobhandler.JobHandler):
                 raise Exception("File transfer failed!")
             _logger.info('[%s]: "%s"' % (SERVER, reply.msg))
 
-            file.seek(0, 0)
+            fp.seek(0, 0)
             _logger.info("[%s]: Sending..." % CLIENT)
-            buffer = file.read(BUFFER_SIZE)
-            while buffer:
-                yield self._connection.send_message(buffer, logging_enabled=False)
-                buffer = file.read(BUFFER_SIZE)
+            byte_buffer = fp.read(BUFFER_SIZE)
+            while byte_buffer:
+                yield self._connection.send_message(byte_buffer, logging_enabled=False)
+                byte_buffer = fp.read(BUFFER_SIZE)
             _logger.info("[%s]: Done Sending..." % CLIENT)
 
             # File transfer finished (reply)
@@ -181,27 +180,46 @@ def convert_scratch_project(scratch_project_ID, host, port):
         _logger.error("Cannot find server certificate: %s", CERTIFICATE_PATH)
         return
 
-    # preprocessing: get project title via web API
+    scratch_base_url = helpers.config.get("SCRATCH_API", "project_base_url")
     retries = int(helpers.config.get("SCRATCH_API", "http_retries"))
+    timeout_in_secs = int(helpers.config.get("SCRATCH_API", "http_timeout")) / 1000
     backoff = int(helpers.config.get("SCRATCH_API", "http_backoff"))
     delay = int(helpers.config.get("SCRATCH_API", "http_delay"))
-    timeout = int(helpers.config.get("SCRATCH_API", "http_timeout")) / 1000
-    url = PROJECT_INFO_URL_TEMPLATE.format(scratch_project_ID)
+    user_agent = helpers.config.get("SCRATCH_API", "user_agent")
 
+    # preprocessing: get project title via web API
     def retry_hook(exc, tries, delay):
         _logger.warning("  Exception: {}\nRetrying after {}:'{}' in {} secs (remaining trys: {})".format(sys.exc_info()[0], type(exc).__name__, exc, delay, tries))
 
+
     @helpers.retry((urllib2.URLError, socket.timeout, IOError, BadStatusLine), delay=delay, backoff=backoff, tries=retries, hook=retry_hook)
-    def request():
-        return urllib2.urlopen(url, timeout=timeout).read()
+    def read_content_of_url(url):
+        _logger.info("Fetching project title from: {}".format(scratch_project_url))
+        req = urllib2.Request(url, headers={ "User-Agent": user_agent })
+        return urllib2.urlopen(req, timeout=timeout_in_secs).read()
 
     title = None
+    scratch_project_url = scratch_base_url + str(scratch_project_ID)
     try:
-        response = request()
-        info = json.loads(response)
-        title = info["title"]
+        html_content = read_content_of_url(scratch_project_url)
+        if html_content == None or not isinstance(html_content, str):
+            raise Warning("Unable to set title of project from the project's " \
+                          "website! Reason: Invalid or empty html content!")
+        soup = BeautifulSoup(html_content, "html.parser")
+        result = soup.select("html head title")
+
+        if result != None and isinstance(result, list) and len(result) > 0 \
+        and isinstance(result[0].contents, list) and len(result[0].contents) > 0 \
+        and result[0].contents[0] != None:
+            title = unicode(result[0].contents[0]).strip()
+
+        if title == None:
+            raise Warning("Unable to set title of project from the project's website!" \
+                          " Reason: Cannot parse title from returned html content!")
     except:
-        pass # do not update title...
+        # log error and continue without updating title!
+        _logger.error("Unexpected error for URL: {}, {}".format(scratch_project_url, \
+                                                                sys.exc_info()[0]))
 
     # reconstruct URL
     scratch_project_url = "%s%d" % (SCRATCH_PROJECT_BASE_URL, scratch_project_ID)
@@ -217,7 +235,7 @@ def convert_scratch_project(scratch_project_ID, host, port):
     #signal.signal(signal.SIGTERM, sig_handler)
     #signal.signal(signal.SIGINT, sig_handler)
 
-    ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+    ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2) #@UndefinedVariable
     ssl_ctx.verify_mode = ssl.CERT_REQUIRED
     # check only hostnames of non-local servers
     ssl_ctx.check_hostname = (host != "localhost")

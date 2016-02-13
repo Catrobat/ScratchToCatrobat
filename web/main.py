@@ -38,6 +38,7 @@
 
 import logging
 import tornado.ioloop #@UnresolvedImport
+from tornado.options import define, options
 import converterhttpserver
 import converterwebapp
 import jobmonitortcpserver
@@ -101,12 +102,13 @@ def main():
     except:
         _logger.error("Error fetching application data", exc_info=True)
         sys.exit(helpers.ExitCode.FAILURE)
+    jobmonitorserver_settings = helpers.config.items_as_dict("JOBMONITOR_SERVER")
+    helpers.make_dir_if_not_exists(jobmonitorserver_settings["download_dir"])
 
     try:
         tornado.options.parse_command_line()
         # set up converter server
         _logger.info('Starting Converter Web Server...')
-        jobmonitorserver_settings = helpers.config.items_as_dict("JOBMONITOR_SERVER")
         temp = jobmonitorserver_settings.copy()
         del temp["allowed_auth_keys"] # not needed for webserver
         settings = dict(

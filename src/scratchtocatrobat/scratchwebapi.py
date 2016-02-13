@@ -18,33 +18,16 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see http://www.gnu.org/licenses/.
-import hashlib
 import sys, os, re, json
-import urllib2
 from urlparse import urlparse
 from scratchtocatrobat import common
 from tools import helpers
 from org.jsoup import Jsoup, HttpStatusException
-from java.net import SocketTimeoutException
-from socket import timeout
-from httplib import BadStatusLine
+from java.net import SocketTimeoutException, SocketException
+from java.io import IOException
+import scratch
 
 _log = common.log
-
-class ProjectInfoKeys(object):
-    PROJECT_DESCRIPTION = 'description'
-    PROJECT_NAME = 'title'
-
-def request_project_code(project_id):
-    def project_json_request_url(project_id):
-        return helpers.config.get("SCRATCH_API", "project_url_template").format(project_id)
-
-    try:
-        request_url = project_json_request_url(project_id)
-        return common.url_response_data(request_url)
-#     except urllib2.HTTPError as e:
-    except None as e:
-        raise common.ScratchtobatError("Error with {}: '{}'".format(request_url, e))
 
 def is_valid_project_url(project_url):
     scratch_base_url = helpers.config.get("SCRATCH_API", "project_base_url")
@@ -52,32 +35,22 @@ def is_valid_project_url(project_url):
     return re.match(_HTTP_PROJECT_URL_PATTERN, project_url)
 
 def download_project(project_url, target_dir, progress_bar=None):
-    import scratch
-    # TODO: fix circular reference
-    scratch_base_url = helpers.config.get("SCRATCH_API", "project_base_url")
-    if not is_valid_project_url(project_url):
-        raise common.ScratchtobatError("Project URL must be matching '{}'. Given: {}".format(scratch_base_url + '<project id>', project_url))
-    assert len(os.listdir(target_dir)) == 0
-
-    def project_resource_request_url(md5_file_name):
-        return helpers.config.get("SCRATCH_API", "asset_url_template").format(md5_file_name)
-
     def project_id_from_url(project_url):
         normalized_url = project_url.strip("/")
         project_id = os.path.basename(urlparse(normalized_url).path)
         return project_id
 
-    def write_to(data, file_path):
-        with open(file_path, "wb") as fp:
-            fp.write(data)
-
-    def project_code_path(target_dir):
-        return os.path.join(target_dir, scratch._PROJECT_FILE_NAME)
+    # TODO: fix circular reference
+    if not is_valid_project_url(project_url):
+        scratch_base_url = helpers.config.get("SCRATCH_API", "project_base_url")
+        raise common.ScratchtobatError("Project URL must be matching '{}'. Given: {}".format(scratch_base_url + '<project id>', project_url))
+    assert len(os.listdir(target_dir)) == 0
 
     # TODO: consolidate with classes from scratch module
     project_id = project_id_from_url(project_url)
-    project_file_path = project_code_path(target_dir)
-    write_to(request_project_code(project_id), project_file_path)
+    project_code_url = helpers.config.get("SCRATCH_API", "project_url_template").format(project_id)
+    project_file_path = os.path.join(target_dir, scratch._PROJECT_FILE_NAME)
+    common.download_file(project_code_url, project_file_path)
 
     project = scratch.RawProject.from_project_folder_path(target_dir)
     if progress_bar != None:
@@ -86,27 +59,23 @@ def download_project(project_url, target_dir, progress_bar=None):
 
     from threading import Thread
     class ResourceDownloadThread(Thread):
-        def request_resource_data(self, request_url):
-            try:
-                return common.url_response_data(request_url)
-            except (timeout, urllib2.HTTPError, IOError, BadStatusLine) as e:
-                raise common.ScratchtobatError("Error with {}: '{}'".format(request_url, e))
-
         def run(self):
-            request_url = project_resource_request_url(self._kwargs["md5_file_name"])
+            resource_url = self._kwargs["resource_url"]
             target_dir = self._kwargs["target_dir"]
             md5_file_name = self._kwargs["md5_file_name"]
             progress_bar = self._kwargs["progress_bar"]
             resource_file_path = os.path.join(target_dir, md5_file_name)
-            response_data = self.request_resource_data(request_url)
-            # FIXME: fails for some projects...
-            verify_hash = hashlib.md5(response_data).hexdigest()
+            try:
+                common.download_file(resource_url, resource_file_path)
+            except (SocketTimeoutException, SocketException, IOException) as e:
+                raise common.ScratchtobatError("Error with {}: '{}'".format(resource_url, e))
+            verify_hash = helpers.md5_of_file(resource_file_path)
             assert verify_hash == os.path.splitext(md5_file_name)[0], "MD5 hash of response data not matching"
-            write_to(response_data, resource_file_path)
             if progress_bar != None: progress_bar.update()
 
     # schedule parallel downloads
     unique_resource_names = project.unique_resource_names
+    resource_url_template = helpers.config.get("SCRATCH_API", "asset_url_template")
     max_concurrent_downloads = int(helpers.config.get("SCRATCH_API", "http_max_concurrent_downloads"))
     resource_index = 0
     num_total_resources = len(unique_resource_names)
@@ -120,6 +89,7 @@ def download_project(project_url, target_dir, progress_bar=None):
             reference_index += 1
             md5_file_name = unique_resource_names[index]
             kwargs = { "md5_file_name": md5_file_name,
+                       "resource_url": resource_url_template.format(md5_file_name),
                        "target_dir": target_dir,
                        "progress_bar": progress_bar }
             threads.append(ResourceDownloadThread(kwargs=kwargs))
@@ -130,22 +100,19 @@ def download_project(project_url, target_dir, progress_bar=None):
         resource_index = next_resources_end_index
     assert reference_index == resource_index and reference_index == num_total_resources
 
-def _project_info_request_url(project_id):
-    return helpers.config.get("SCRATCH_API", "project_info_url_template").format(project_id)
+_cached_jsoup_doc = None
+def request_project_page_DOM_tree_as_jsoup_document_for(project_id):
+    global _cached_jsoup_doc
+    if _cached_jsoup_doc != None:
+        _log.debug("Cache hit: Jsoup document!")
+        return _cached_jsoup_doc
 
-def _request_project_info(project_id):
-    # TODO: cache this request...
-    response_data = common.url_response_data(_project_info_request_url(project_id))
-    return json.loads(response_data)
-
-# TODO: class instead of request functions
-def request_project_name_for(project_id):
-    return _request_project_info(project_id)[ProjectInfoKeys.PROJECT_NAME]
-
-def request_project_description_for(project_id):
     scratch_base_url = helpers.config.get("SCRATCH_API", "project_base_url")
     retries = int(helpers.config.get("SCRATCH_API", "http_retries"))
     timeout = int(helpers.config.get("SCRATCH_API", "http_timeout"))
+    backoff = int(helpers.config.get("SCRATCH_API", "http_backoff"))
+    delay = int(helpers.config.get("SCRATCH_API", "http_delay"))
+    user_agent = helpers.config.get("SCRATCH_API", "user_agent")
     scratch_project_url = scratch_base_url + str(project_id)
     if not is_valid_project_url(scratch_project_url):
         raise common.ScratchtobatError("Project URL must be matching '{}'. Given: {}".format(scratch_base_url + '<project id>', scratch_project_url))
@@ -153,19 +120,38 @@ def request_project_description_for(project_id):
     def retry_hook(exc, tries, delay):
         _log.warning("  Exception: {}\nRetrying after {}:'{}' in {} secs (remaining trys: {})".format(sys.exc_info()[0], type(exc).__name__, exc, delay, tries))
 
-    @helpers.retry((HttpStatusException, SocketTimeoutException), delay=2, backoff=2, tries=retries, hook=retry_hook)
-    def request_doc():
+    @helpers.retry((HttpStatusException, SocketTimeoutException), delay=delay, backoff=backoff, tries=retries, hook=retry_hook)
+    def request_doc(scratch_project_url, timeout, user_agent):
         connection = Jsoup.connect(scratch_project_url)
+        connection.userAgent(user_agent)
         connection.timeout(timeout)
         return connection.get()
 
     try:
-        doc = request_doc()
+        jsoup_doc = request_doc(scratch_project_url, timeout, user_agent)
+        _cached_jsoup_doc = jsoup_doc
+        return jsoup_doc
     except SocketTimeoutException:
         _log.error("Retry limit exceeded: {}".format(sys.exc_info()[0]))
         return None
     except:
         _log.error("Unexpected error for URL: {}, {}".format(scratch_project_url, sys.exc_info()[0]))
+        return None
+
+# TODO: class instead of request functions
+def request_project_name_for(project_id):
+    doc = request_project_page_DOM_tree_as_jsoup_document_for(project_id)
+    if doc == None:
+        return None
+    title = ""
+    element = doc.select("html > head > title").first()
+    if element is not None:
+        title = element.text().strip()
+    return title
+
+def request_project_description_for(project_id):
+    doc = request_project_page_DOM_tree_as_jsoup_document_for(project_id)
+    if doc == None:
         return None
 
     description = ""

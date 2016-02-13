@@ -48,6 +48,7 @@ from converterwebapp import ConverterWebSocketHandler
 import json
 from threading import Timer
 import time
+import datetime
 import hashlib
 import os
 import sys
@@ -296,31 +297,6 @@ class TCPConnectionHandler(object):
         _logger.info("Finished! Closing stream.")
         self.connection.stream.close()
 
-class _RepeatedTimer(object):
-    def __init__(self, interval, function, *args, **kwargs):
-        self._timer     = None
-        self.interval   = interval
-        self.function   = function
-        self.args       = args
-        self.kwargs     = kwargs
-        self.is_running = False
-        self.start()
-
-    def _run(self):
-        self.is_running = False
-        self.start()
-        self.function(*self.args, **self.kwargs)
-
-    def start(self):
-        if not self.is_running:
-            self._timer = Timer(self.interval, self._run)
-            self._timer.start()
-            self.is_running = True
-
-    def stop(self):
-        self._timer.cancel()
-        self.is_running = False
-
 class JobMonitorTCPServer(TCPServer):
     def __init__(self, settings, io_loop=None, ssl_options=None):
         _logger.debug('Job Monitor Server started')
@@ -329,20 +305,21 @@ class JobMonitorTCPServer(TCPServer):
         self.settings = settings
         self.io_loop = io_loop
         self.streams = {}
-        self.timer = _RepeatedTimer(float(settings["check_zombie_interval"]), self.close_streams_after_timeout)
-        # self.io_loop.add_timeout(datetime.timedelta(seconds=5), self.write_to_all_stream)
+        check_zombie_interval = int(settings["check_zombie_interval"])
+        self.io_loop.add_timeout(datetime.timedelta(seconds=check_zombie_interval), self.close_streams_after_timeout)
         max_stream_buffer_size = int(settings["max_stream_buffer_size"]) if "max_stream_buffer_size" in settings else None
         read_chunk_size = int(settings["read_chunk_size"]) if "read_chunk_size" in settings else None
         super(JobMonitorTCPServer, self).__init__(io_loop, ssl_options, max_stream_buffer_size, read_chunk_size)
 
     def stop(self):
-        self.timer.stop()
         super(JobMonitorTCPServer, self).stop()
 
     def close_streams_after_timeout(self):
         connection_timeout = float(self.settings["connection_timeout"])
-        _logger.debug("Zombie watcher is looking for inactive streams " \
-                     "(connection timeout = %d)", connection_timeout)
+        check_zombie_interval = int(self.settings["check_zombie_interval"])
+        _logger.info("Zombie watcher is looking for inactive streams " \
+                     "(connection timeout = %d, check interval = %d)", \
+                     connection_timeout, check_zombie_interval)
         streams_to_be_removed = []
         for stream, last_update in self.streams.iteritems():
             if stream.closed():
@@ -359,6 +336,7 @@ class JobMonitorTCPServer(TCPServer):
                          % len(streams_to_be_removed))
         else:
             _logger.debug("No inactive streams found.")
+        self.io_loop.add_timeout(datetime.timedelta(seconds=check_zombie_interval), self.close_streams_after_timeout)
 
     @gen.coroutine
     def handle_stream(self,stream,address):

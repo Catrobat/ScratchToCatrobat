@@ -66,7 +66,6 @@ def sig_handler(sig, frame):
 
 def shutdown():
     _logger.info('Stopping TCP server')
-    tcp_server.timer.stop()
     tcp_server.stop()
     _logger.info('Stopping HTTP server')
     web_server.stop()

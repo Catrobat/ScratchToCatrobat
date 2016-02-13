@@ -126,7 +126,9 @@ class RetrieveJobsInfoCommand(Command):
             if job == None:
                 _logger.warn("Ignoring missing job for scratch project ID {}".format(scratch_project_ID))
                 continue
-            jobs_info += [job.__dict__]
+            info = job.__dict__
+            del info["output"]
+            jobs_info += [info]
         return protocol.JobsInfoMessage(jobs_info)
 
 # TODO: create new packet for this and only send updates...

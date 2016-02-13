@@ -75,6 +75,35 @@ class Object(common.DictAccessWrapper):
         number_of_ignored_scripts = len(self.get_scripts()) - len(self.scripts)
         if number_of_ignored_scripts > 0:
             _log.debug("Ignored %s scripts", number_of_ignored_scripts)
+        self._preprocess_object()
+
+    def _preprocess_object(self):
+        from scratchtocatrobat import converter
+        preprocessed_scripts = []
+        additional_scripts = []
+        for script_number, script in enumerate(self.scripts):
+            preprocessed_blocks = []
+            blocks_iterator = iter(script.blocks)
+            for block_number, block in enumerate(blocks_iterator):
+                block_name, block_parameters = block[0], block[1:]
+                # WORKAROUND: as long there are no equivalent Catrobat bricks
+                if block_name in {"doUntil", "doWaitUntil"}:
+                    do_until_condition, [do_until_blocks] = block_parameters[0], block_parameters[1:] if block_name == "doUntil" else [["wait:elapsed:from:", 0.0001]]
+                    loop_done_variable = converter.generated_variable_name("_".join([self['objName'], block_name, str(script_number), str(block_number)]))
+                    broadcast_msg = loop_done_variable + "_msg"
+                    loop_blocks = [["doIfElse", ["not", do_until_condition], do_until_blocks, [["broadcast:", broadcast_msg], ["setVar:to:", loop_done_variable, 1]]]]
+                    loop_guard = ["doIf", ["not", ["=", ["readVariable", loop_done_variable], 1]], loop_blocks]
+                    replacement_blocks = [["setVar:to:", loop_done_variable, 0], ["doForever", [loop_guard]]]
+                    preprocessed_blocks += replacement_blocks
+                    after_loop_raw_script = [0, 0, [["whenIReceive", broadcast_msg]] + [block for block in blocks_iterator]]
+                    additional_scripts += [Script(after_loop_raw_script)]
+                else:
+                    preprocessed_blocks += [block]
+            # TODO: improve
+            script.raw_script[1:] = preprocessed_blocks
+            script = Script([0, 0, script.raw_script])
+            preprocessed_scripts += [script]
+        self.scripts = preprocessed_scripts + additional_scripts
 
     @classmethod
     def is_valid_class_input(cls, object_data):
@@ -136,7 +165,6 @@ class RawProject(Object):
         result = self.num_of_iterations_of_local_project(progress_bar) - progress_bar.saving_xml_progress_weight
         result += num_of_additional_downloads
         percentage = float(progress_bar.SAVING_XML_PROGRESS_WEIGHT_PERCENTAGE)/100.0
-        # progress_bar.saving_xml_progress_weight = (percentage*result)/(1-percentage)
         progress_bar.saving_xml_progress_weight = int(round((percentage * float(result))/(1.0-percentage)))
         return (result + progress_bar.saving_xml_progress_weight)
 
@@ -152,7 +180,6 @@ class RawProject(Object):
         num_of_resource_file_conversions = num_total_unique_resources
         result = num_of_downloads + num_of_scripts + num_of_resource_file_conversions
         percentage = float(progress_bar.SAVING_XML_PROGRESS_WEIGHT_PERCENTAGE)/100.0
-        # progress_bar.saving_xml_progress_weight = (percentage*result)/(1-percentage)
         progress_bar.saving_xml_progress_weight = int(round((percentage * float(result))/(1.0-percentage)))
         return (result + progress_bar.saving_xml_progress_weight)
 

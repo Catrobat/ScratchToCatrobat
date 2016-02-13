@@ -243,7 +243,7 @@ var socketHandler = {
       // RENEW_CLIENT_ID: { "clientID" }
       // (set_client_id, if given clientID is not valid any more)
       if (result.type == notificationTypes["RENEW_CLIENT_ID"]) {
-        if (socketHandler.clientID == null || socketHandler.clientID == result.data["clientID"]) {
+        if (socketHandler.clientID == null) {
           alert("Server sent renew-clientID-request with same client ID back. This should never happen!");
           return;
         }

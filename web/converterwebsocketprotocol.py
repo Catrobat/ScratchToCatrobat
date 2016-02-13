@@ -121,4 +121,4 @@ class ClientIDMessage(Message):
 
 class RenewClientIDMessage(Message):
     def __init__(self, client_ID):
-        super(RenewClientIDMessage, self).__init__(Message.Type.ERROR, { "clientID": client_ID })
+        super(RenewClientIDMessage, self).__init__(Message.Type.RENEW_CLIENT_ID, { "clientID": client_ID })

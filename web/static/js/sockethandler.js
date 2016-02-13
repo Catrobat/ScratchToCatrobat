@@ -44,8 +44,12 @@ var socketHandler = {
           socketHandler.openedSockedCallback();
           return;
         }
-        var url = "ws://" + location.host + "/convertersocket";
-        socketHandler.socket = new WebSocket(url);
+        var websocketProtocol = "ws://";
+        if (window.location.protocol == "https:") {
+          websocketProtocol = "wss://";
+        }
+        var websocketURL = websocketProtocol + location.host + "/convertersocket";
+        socketHandler.socket = new WebSocket(websocketURL);
         socketHandler.socket.onopen = function() { socketHandler.openedSockedCallback(); };
         socketHandler.socket.onmessage = function(event) { socketHandler.receiveMessageHandler(event); }
     },

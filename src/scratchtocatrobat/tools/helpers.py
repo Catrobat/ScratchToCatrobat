@@ -27,6 +27,8 @@ import threading
 import ConfigParser
 import re
 import urllib2, json
+import progressbar
+import hashlib
 from functools import wraps
 
 ################################################################################
@@ -357,7 +359,12 @@ def isfloat(string):
     else:
         return True
 
-import progressbar #import Bar, ETA, Percentage, ProgressBar # @UnresolvedImport
+def md5_of_file(file_path):
+    file_hash = hashlib.md5()
+    with open(file_path, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            file_hash.update(chunk)
+    return file_hash.hexdigest()
 
 class ProgressBar(object):
 

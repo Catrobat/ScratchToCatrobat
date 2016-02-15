@@ -272,8 +272,10 @@ def _variable_for(variable_name):
 def _catrobat_resource_file_name_for(scratch_md5_name, scratch_resource_name):
     assert os.path.basename(scratch_md5_name) == scratch_md5_name and len(os.path.splitext(scratch_md5_name)[0]) == 32, "Must be MD5 hash with file ext: " + scratch_md5_name
     # remove unsupported unicode characters from filename
-    if isinstance(scratch_resource_name, unicode):
-        scratch_resource_name = unicodedata.normalize('NFKD', scratch_resource_name).encode('ascii','ignore')
+#     if isinstance(scratch_resource_name, unicode):
+#         scratch_resource_name = unicodedata.normalize('NFKD', scratch_resource_name).encode('ascii','ignore')
+#         if (scratch_resource_name == None) or (len(scratch_resource_name) == 0):
+#             scratch_resource_name = "unicode_replaced"
     resource_ext = os.path.splitext(scratch_md5_name)[1]
     return scratch_md5_name.replace(resource_ext, "_" + scratch_resource_name + resource_ext)
 
@@ -516,9 +518,9 @@ class _ScratchObjectConverter(object):
         soundinfo.setTitle(sound_name)
 
         assert scratchkeys.SOUND_MD5 in scratch_sound
-        sound_filename = scratch_sound[scratchkeys.SOUND_MD5]
-        sound_filename_ext = os.path.splitext(sound_filename)[1]
-        soundinfo.setSoundFileName(sound_filename.replace(sound_filename_ext, "_" + sound_name + sound_filename_ext))
+        sound_md5_filename = scratch_sound[scratchkeys.SOUND_MD5]
+        sound_resource_name = scratch_sound[scratchkeys.SOUND_NAME]
+        soundinfo.setSoundFileName(_catrobat_resource_file_name_for(sound_md5_filename, sound_resource_name))
         return soundinfo
 
     @staticmethod

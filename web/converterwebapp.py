@@ -40,14 +40,14 @@
 """
 
 import logging
-import tornado.escape
-import tornado.web
-import tornado.websocket
+import tornado.escape #@UnresolvedImport
+import tornado.web #@UnresolvedImport
+import tornado.websocket #@UnresolvedImport
 import os.path
-import redis
+import redis #@UnresolvedImport
 from command import get_command, InvalidCommand, Job, update_jobs_info_on_listening_clients
 import jobmonitorprotocol as jobmonprot
-from tornado.web import HTTPError
+from tornado.web import HTTPError #@UnresolvedImport
 import ast
 import sys
 import converterwebsocketprotocol as protocol
@@ -208,9 +208,9 @@ class _DownloadHandler(tornado.web.RequestHandler):
         with open(file_path, "rb") as f:
             try:
                 while True:
-                    buffer = f.read(4096)
-                    if buffer:
-                        self.write(buffer)
+                    write_buffer = f.read(4096)
+                    if write_buffer:
+                        self.write(write_buffer)
                     else:
                         f.close()
                         self.finish()

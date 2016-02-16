@@ -46,7 +46,6 @@ from tornado import gen #@UnresolvedImport
 from jobmonitorprotocol import Request, Reply, TCPConnection, SERVER, CLIENT, NotificationType
 from converterwebapp import ConverterWebSocketHandler
 import json
-from threading import Timer
 import time
 import datetime
 import hashlib

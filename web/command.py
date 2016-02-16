@@ -174,6 +174,11 @@ class ScheduleJobCommand(Command):
         if not self.is_valid_scratch_project_url(args["url"]):
             return protocol.ErrorMessage("Invalid URL given!")
 
+        force = False
+        if "force" in args:
+            force_param = str(args["force"]).lower()
+            force = force_param == "true" or force_param == "1"
+
         # parameters
         client_ID_string = str(args["clientID"])
         scratch_project_url = args["url"].replace("http://", "https://")
@@ -184,7 +189,7 @@ class ScheduleJobCommand(Command):
 
         # schedule this job
         redis_conn = ctxt.redis_connection
-        # TODO: lock.acquire() => use "with" and file lock!
+        # TODO: lock.acquire() => use context-handler (i.e. "with"-keyword) and file lock!
         map_client_to_project(redis_conn, client_ID_string, scratch_project_ID)
         map_project_to_client(redis_conn, scratch_project_ID, client_ID_string)
         project_key = REDIS_PROJECT_KEY.format(scratch_project_ID)
@@ -195,7 +200,7 @@ class ScheduleJobCommand(Command):
                 # TODO: lock.release()
                 update_jobs_info_on_listening_clients(ctxt)
                 return protocol.JobAlreadyRunningMessage(scratch_project_ID)
-            elif job.status == Job.Status.FINISHED:
+            elif job.status == Job.Status.FINISHED and not force:
                 download_dir = ctxt.jobmonitorserver_settings["download_dir"]
                 file_name = str(scratch_project_ID) + CATROBAT_FILE_EXT
                 file_path = "%s/%s" % (download_dir, file_name)
@@ -205,7 +210,7 @@ class ScheduleJobCommand(Command):
                     update_jobs_info_on_listening_clients(ctxt)
                     return protocol.JobDownloadMessage(scratch_project_ID, download_url)
             else:
-                assert job.status == Job.Status.FAILED
+                assert job.status == Job.Status.FAILED or force
 
         job = Job(scratch_project_ID, "-", Job.Status.READY, scratch_project_url, 0.0)
         if not job.save_to_redis(redis_conn, project_key):

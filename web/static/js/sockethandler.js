@@ -14,14 +14,15 @@ function fetchJobsInfo() {
   socketHandler.start();
 }
 
-function startConversion(url, finishedConversionCallback) {
+function startConversion(url, force, finishedConversionCallback) {
   socketHandler.projectID = getProjectIDFromURL(url);
   socketHandler.finishedConversionCallback = finishedConversionCallback;
   var data = {
     "cmd": "schedule_job",
     "args": {
       "clientID": socketHandler.clientID,
-      "url": url
+      "url": url,
+      "force": force
     }
   };
   socketHandler.socket.send(JSON.stringify(data));

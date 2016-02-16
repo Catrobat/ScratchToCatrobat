@@ -64,6 +64,14 @@ function disableDownloadButton() {
   $("#btn-download").attr("disabled", true).removeClass("deactivate-button").removeClass("activate-button").addClass("deactivate-button");
 }
 
+function enableReconvertButton() {
+  $("#btn-reconvert").removeAttr("disabled").removeClass("deactivate-button").removeClass("activate-button").addClass("activate-button");
+}
+
+function disableReconvertButton() {
+  $("#btn-reconvert").attr("disabled", true).removeClass("deactivate-button").removeClass("activate-button").addClass("deactivate-button");
+}
+
 function showErrorMessage(msg) {
   $("#field-url").css("border-color", "#FF0000");
   $("#field-url-validation-result").append($("<div></div>").text(msg).css("color", "#FF0000").css("font-weight", "bold"));

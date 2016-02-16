@@ -26,7 +26,8 @@ class JsonKeys(object):
 
         ARGS_CLIENT_ID = "clientID"
         ARGS_URL = "url"
-        allowed_arg_keys = [ARGS_CLIENT_ID, ARGS_URL]
+        ARGS_FORCE = "force"
+        allowed_arg_keys = [ARGS_CLIENT_ID, ARGS_URL, ARGS_FORCE]
 
         @classmethod
         def is_valid(cls, data):

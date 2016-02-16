@@ -79,6 +79,7 @@
                     <div class="input-field">
                       <input type="text" id="field-url" name="url" value="http://scratch.mit.edu/projects/10205819/" class="clearable" />
                     </div>
+                  	<div><input type="hidden" id="force" name="force" value="0" /></div>
                     <div id="field-url-validation-result"></div>
                     <input type="submit" name="btn-convert" id="btn-convert" value="Convert" class="convert-button deactivate-button" />
                   </form>
@@ -92,9 +93,14 @@
 					<div id="status"></div>
                   </div>
                   <form id="download_form" action="#" method="post">
-                    <input type="hidden" id="download-url" name="download-url" value="" />
+                  	<div><input type="hidden" id="download-url" name="download-url" value="" /></div>
                     <div id="qrcode" style="width:200px;height:200px;margin-top:15px;margin-left:auto;margin-right:auto;"></div>
-                    <input type="submit" name="btn-download" id="btn-download" value="Download" class="convert-button" />
+                    <div>
+    	                <input type="submit" name="btn-download" id="btn-download" value="Download" class="convert-button" />
+                    </div>
+                    <div>
+	                    <input type="submit" name="btn-reconvert" id="btn-reconvert" value="Restart conversion" class="convert-button" />
+                    </div>
                   </form>
                 </div>
                 <div>

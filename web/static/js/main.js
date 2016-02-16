@@ -40,16 +40,34 @@ function setupUIEventHandlers() {
     event.preventDefault();
     return false;
   });
+  $("#btn-reconvert").on("click", function () {
+    var jobID = $("#download-url").val().split("=")[1]; /* extract job ID */
+    /* assume jobID == scratchProjectID */
+    var scratchProjectID = jobID;
+    var projectURL = baseProjectURL + scratchProjectID + "/";
+    $("#field-url").val(projectURL);
+    updateAndShowProjectDetails(scratchProjectID);
+    $("#cli-messages").hide();
+    $("#web-convert-modal").modal();
+    $("#force").val("1");
+    $("#converter_form").submit();
+    event.preventDefault();
+    return false;
+  });
   $("#converter_form").submit(function(event) {
     var projectURL = $("#field-url").val();
     $("#field-url").val(""); /* clear field */
+    var force = ($("#force").val() == "1");
+    $("#force").val("0"); /* reset force field */
     $("#field-url-validation-result").html("");
     disableSubmitButton();
     disableDownloadButton();
+    $("#btn-download").hide();
+    disableReconvertButton();
+    $("#btn-reconvert").hide();
     var consoleLayer = $("#console-container")
     consoleLayer.hide();
     $("#qrcode").hide();
-    $("#btn-download").hide();
     $("#download-url").val("");
     $("#progress-bar").attr("aria-valuenow", "0").css("width", "0%");
     $("#progress").text("0%");
@@ -62,12 +80,13 @@ function setupUIEventHandlers() {
       consoleLayer.children().each(function () { $(this).hide(); }); /* hide all consoles */
       $(this).hide();
       /* TODO: error handler as another callback! */
-      startConversion(projectURL, function(downloadURL) {
+      startConversion(projectURL, force, function(downloadURL) {
         enableSubmitButton();
         showSuccessMessage("Conversion finished!");
         consoleLayer.hide();
         $("#download-url").val(downloadURL);
         $("#btn-download").show();
+        $("#btn-reconvert").show();
         $("#loading-animation-content").html("");
         $("#loading-animation").hide();
         $("#qrcode").children().remove();
@@ -75,6 +94,7 @@ function setupUIEventHandlers() {
         var qrcode = new QRCode(document.getElementById("qrcode"), { width: 200, height: 200 });
         qrcode.makeCode(downloadURL);
         enableDownloadButton();
+        enableReconvertButton();
       });
     } else {
       $("#loading-animation").hide();
@@ -94,15 +114,17 @@ function setupUIEventHandlers() {
     $("#web-convert-modal").modal();
     enableSubmitButton();
     disableDownloadButton();
+    disableReconvertButton();
     $("#console-container").hide();
     $("#qrcode").hide();
     $("#btn-download").hide();
+    $("#btn-reconvert").hide();
     $("#loading-animation").hide();
     $("#converter_form").show();
     $("#field-url").focus();
   });
   $("#btn-show-upload-input").click(function() {
-    $("#upload-convert-modal").modal();
+    alert("This feature is coming soon!");
+    /*$("#upload-convert-modal").modal();*/
   });
 }
-  

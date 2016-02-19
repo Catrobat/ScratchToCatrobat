@@ -162,7 +162,7 @@ var socketHandler = {
           var timeElapsedInMS = (now - socketHandler.progressStart);
           var lastSpeed = (progress - socketHandler.lastProgress) / timeIntervalInMS;
           // based on: http://stackoverflow.com/a/3841706
-          var SMOOTHING_FACTOR = 0.005;
+          var SMOOTHING_FACTOR = 0.10;
           if (socketHandler.averageProgressSpeed != null) {
             socketHandler.averageProgressSpeed = SMOOTHING_FACTOR * lastSpeed + (1-SMOOTHING_FACTOR) * socketHandler.averageProgressSpeed;
           } else {

@@ -947,7 +947,8 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
                     elif try_number == 4:
                         converted_args = self.arguments
                     elif try_number == 2:
-                        converted_args = [catformula.Formula(arg) for arg in self.arguments]
+                        args = [arg if arg != None else "" for arg in self.arguments]
+                        converted_args = [catformula.Formula(arg) for arg in args]
                     elif try_number == 3:
                         parameters = {
                             "brightness",

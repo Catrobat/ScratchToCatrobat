@@ -74,12 +74,15 @@ def shutdown():
     deadline = time.time() + MAX_WAIT_SECONDS_BEFORE_SHUTDOWN
 
     def stop_io_loop():
+        global tcp_io_loop
         now = time.time()
         if now < deadline and (io_loop._callbacks or io_loop._timeouts):
             io_loop.add_timeout(now + 1, stop_io_loop)
         else:
             io_loop.stop()
-            _logger.info('Shutdown')
+            tcp_io_loop.stop()
+            _logger.info('Shutdown IO Loops')
+
     stop_io_loop()
 
 def main():
@@ -106,36 +109,49 @@ def main():
 
     try:
         tornado.options.parse_command_line()
-        # set up converter server
-        _logger.info('Starting Converter Web Server...')
-        temp = jobmonitorserver_settings.copy()
-        del temp["allowed_auth_keys"] # not needed for webserver
-        settings = dict(
-            debug=WEBSERVER_DEBUG_MODE_ENABLED,
-            cookie_secret=WEBSERVER_COOKIE_SECRET,
-            template_path=os.path.join(os.path.dirname(__file__), "templates"),
-            static_path=os.path.join(os.path.dirname(__file__), "static"),
-            xsrf_cookies=WEBSERVER_XSRF_COOKIES_ENABLED,
-            jobmonitorserver=temp
-        )
-        if WEBSERVER_DEBUG_MODE_ENABLED:
-            _logger.warn("-"*80)
-            _logger.warn(" "*10 + "!!! DEBUG MODE ENABLED !!!")
-            _logger.warn("-"*80)
 
-        webapp = converterwebapp.ConverterWebApp(**settings)
-        global web_server
-        web_server = converterhttpserver.ConverterHTTPServer(webapp)
-        web_server.listen(WEBSERVER_PORT)
+        # set up converter server
+        def start_http_server():
+            _logger.info('Starting Converter Web Server...')
+            temp = jobmonitorserver_settings.copy()
+            del temp["allowed_auth_keys"] # not needed for webserver
+            settings = dict(
+                debug=WEBSERVER_DEBUG_MODE_ENABLED,
+                cookie_secret=WEBSERVER_COOKIE_SECRET,
+                template_path=os.path.join(os.path.dirname(__file__), "templates"),
+                static_path=os.path.join(os.path.dirname(__file__), "static"),
+                xsrf_cookies=WEBSERVER_XSRF_COOKIES_ENABLED,
+                jobmonitorserver=temp
+            )
+            if WEBSERVER_DEBUG_MODE_ENABLED:
+                _logger.warn("-"*80)
+                _logger.warn(" "*10 + "!!! DEBUG MODE ENABLED !!!")
+                _logger.warn("-"*80)
+
+            webapp = converterwebapp.ConverterWebApp(**settings)
+            global web_server
+            web_server = converterhttpserver.ConverterHTTPServer(webapp)
+            web_server.listen(WEBSERVER_PORT)
 
         # set up job monitor server
-        _logger.info('Starting Job Monitor Server...')
-        global tcp_server
-        ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-        ssl_ctx.load_cert_chain(certfile=CERTIFICATE_PATH, keyfile=CERTIFICATE_KEY_PATH)
-        tcp_server = jobmonitortcpserver.JobMonitorTCPServer(
-                         settings=jobmonitorserver_settings, ssl_options=ssl_ctx)
-        tcp_server.listen(JOBMONITORSERVER_PORT)
+        def start_tcp_server():
+            _logger.info('Starting Job Monitor Server...')
+            global tcp_server
+            global tcp_io_loop
+            ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+            ssl_ctx.load_cert_chain(certfile=CERTIFICATE_PATH, keyfile=CERTIFICATE_KEY_PATH)
+            tcp_io_loop = tornado.ioloop.IOLoop()
+            tcp_io_loop.make_current()
+            tcp_server = jobmonitortcpserver.JobMonitorTCPServer(
+                             settings=jobmonitorserver_settings,
+                             io_loop=tcp_io_loop,
+                             ssl_options=ssl_ctx)
+            tcp_server.listen(JOBMONITORSERVER_PORT)
+            tcp_io_loop.start()
+
+        from thread import start_new_thread
+        start_new_thread(start_http_server,())
+        start_new_thread(start_tcp_server,())
 
         # set up signal handler
         signal.signal(signal.SIGTERM, sig_handler)

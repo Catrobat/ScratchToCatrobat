@@ -273,7 +273,7 @@ class Project(RawProject):
                 self.name = str(self.project_id)
                 self.description = None
         if progress_bar != None: progress_bar.update() # name step passed
-        self.name = self.name.strip()
+        self.name = self.name.strip() if self.name != None else "Unknown Project"
         self.md5_to_resource_path_map = read_md5_to_resource_path_mapping()
         assert self['penLayerMD5'] not in self.md5_to_resource_path_map
         for scratch_object in self.objects:

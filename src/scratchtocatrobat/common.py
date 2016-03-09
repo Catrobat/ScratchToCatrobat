@@ -27,7 +27,7 @@ import zipfile
 import shutil
 import java
 from javax.sound.sampled import AudioSystem
-from java.net import SocketTimeoutException, SocketException
+from java.net import SocketTimeoutException, SocketException, UnknownHostException
 from java.io import IOException
 from org.python.core import PyReflectedField  #@UnresolvedImport
 from itertools import chain
@@ -228,7 +228,7 @@ def download_file(url, file_path, referer_url=None, retries=None, backoff=None, 
     max_redirects = int(helpers.config.get("SCRATCH_API", "http_max_redirects"))
     user_agent = helpers.config.get("SCRATCH_API", "user_agent")
 
-    @helpers.retry((SocketTimeoutException, SocketException, IOException), \
+    @helpers.retry((SocketTimeoutException, SocketException, UnknownHostException, IOException), \
                    delay=delay, backoff=backoff, tries=retries, hook=hook)
     def download_request(url, file_path, user_agent, referer_url, timeout, max_redirects, log):
         import jarray

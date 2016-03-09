@@ -23,7 +23,7 @@ from urlparse import urlparse
 from scratchtocatrobat import common
 from tools import helpers
 from org.jsoup import Jsoup, HttpStatusException
-from java.net import SocketTimeoutException, SocketException
+from java.net import SocketTimeoutException, SocketException, UnknownHostException
 from java.io import IOException
 import scratch
 
@@ -67,7 +67,7 @@ def download_project(project_url, target_dir, progress_bar=None):
             resource_file_path = os.path.join(target_dir, md5_file_name)
             try:
                 common.download_file(resource_url, resource_file_path)
-            except (SocketTimeoutException, SocketException, IOException) as e:
+            except (SocketTimeoutException, SocketException, UnknownHostException, IOException) as e:
                 raise common.ScratchtobatError("Error with {}: '{}'".format(resource_url, e))
             verify_hash = helpers.md5_of_file(resource_file_path)
             assert verify_hash == os.path.splitext(md5_file_name)[0], "MD5 hash of response data not matching"
@@ -120,7 +120,7 @@ def request_project_page_DOM_tree_as_jsoup_document_for(project_id):
     def retry_hook(exc, tries, delay):
         _log.warning("  Exception: {}\nRetrying after {}:'{}' in {} secs (remaining trys: {})".format(sys.exc_info()[0], type(exc).__name__, exc, delay, tries))
 
-    @helpers.retry((HttpStatusException, SocketTimeoutException), delay=delay, backoff=backoff, tries=retries, hook=retry_hook)
+    @helpers.retry((HttpStatusException, SocketTimeoutException, UnknownHostException), delay=delay, backoff=backoff, tries=retries, hook=retry_hook)
     def request_doc(scratch_project_url, timeout, user_agent):
         connection = Jsoup.connect(scratch_project_url)
         connection.userAgent(user_agent)

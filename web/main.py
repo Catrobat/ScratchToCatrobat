@@ -114,7 +114,7 @@ def main():
         def start_http_server():
             _logger.info('Starting Converter Web Server...')
             temp = jobmonitorserver_settings.copy()
-            del temp["allowed_auth_keys"] # not needed for webserver
+            del temp["allowed_auth_keys"] # not used by web server
             settings = dict(
                 debug=WEBSERVER_DEBUG_MODE_ENABLED,
                 cookie_secret=WEBSERVER_COOKIE_SECRET,
@@ -138,7 +138,7 @@ def main():
             _logger.info('Starting Job Monitor Server...')
             global tcp_server
             global tcp_io_loop
-            ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+            ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH) #@UndefinedVariable
             ssl_ctx.load_cert_chain(certfile=CERTIFICATE_PATH, keyfile=CERTIFICATE_KEY_PATH)
             tcp_io_loop = tornado.ioloop.IOLoop()
             tcp_io_loop.make_current()
@@ -154,8 +154,8 @@ def main():
         start_new_thread(start_tcp_server,())
 
         # set up signal handler
-        signal.signal(signal.SIGTERM, sig_handler)
-        signal.signal(signal.SIGINT, sig_handler)
+        signal.signal(signal.SIGTERM, sig_handler) #@UndefinedVariable
+        signal.signal(signal.SIGINT, sig_handler) #@UndefinedVariable
 
         # start IOLoop
         tornado.ioloop.IOLoop.instance().start()

@@ -22,9 +22,9 @@
 """
   This module implements a simple job that is run by a worker process and calls the
   converter in a child process.
-  Here, the Job Handler is used to notify the scheduling webserver (via a TCP connection).
-  The scheduling webserver maintains all websocket connections to the users and can
-  further notify the users about the progress of the currently running jobs.
+  Here, the Job Handler is used to notify the scheduling-webserver (via a TCP connection).
+  The scheduling-webserver maintains all websocket connections to the users and can
+  further notify the users about the progress of the currently running job.
 """
 
 import logging
@@ -56,6 +56,7 @@ BUFFER_SIZE = int(helpers.config.get("CONVERTER_JOB", "buffer_size"))
 CERTIFICATE_PATH = helpers.config.get("JOBMONITOR_SERVER", "certificate_path")
 CATROBAT_FILE_EXT = helpers.config.get("CATROBAT", "file_extension")
 PROJECT_INFO_URL_TEMPLATE = helpers.config.get("SCRATCH_API", "project_info_url_template")
+LINE_BUFFER_SIZE = 3
 
 class ConverterJobHandler(jobhandler.JobHandler):
 
@@ -70,12 +71,13 @@ class ConverterJobHandler(jobhandler.JobHandler):
 
         start_progr_indicator = helpers.ProgressBar.START_PROGRESS_INDICATOR
         end_progr_indicator = helpers.ProgressBar.END_PROGRESS_INDICATOR
+        line_buffer = []
         while True:
             line = process.stdout.readline()
             if line == '': break
             line = line.rstrip()
 
-            # case: check if progress update
+            # case: progress update
             if line.startswith(start_progr_indicator) and line.endswith(end_progr_indicator):
                 progress = line.split(start_progr_indicator)[1].split(end_progr_indicator)[0]
                 if not helpers.isfloat(progress):
@@ -88,12 +90,18 @@ class ConverterJobHandler(jobhandler.JobHandler):
 
             # case: console output
             _logger.debug("[%s]: %s" % (CLIENT, line))
-            yield self.send_job_output_notification(job_ID, line)
+            line_buffer += [line]
+            if len(line_buffer) >= LINE_BUFFER_SIZE:
+                yield self.send_job_output_notification(job_ID, line_buffer)
+                line_buffer = []
+
+        if len(line_buffer):
+            yield self.send_job_output_notification(job_ID, line_buffer)
 
         exit_code = process.wait() # XXX: work around this when experiencing errors...
         _logger.info("[%s]: Exit code is: %d" % (CLIENT, exit_code))
 
-        # NOTE: exit code is evaluated on the server
+        # NOTE: exit-code is evaluated by TCP server
         yield self.send_job_finished_notification(job_ID, exit_code)
 
     @gen.coroutine
@@ -240,7 +248,7 @@ def convert_scratch_project(scratch_project_ID, host, port):
 
     ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2) #@UndefinedVariable
     ssl_ctx.verify_mode = ssl.CERT_REQUIRED
-    # check only hostnames of non-local servers
+    # check only hostnames for non-local servers
     ssl_ctx.check_hostname = (host != "localhost")
     ssl_ctx.load_verify_locations(cafile=CERTIFICATE_PATH)
 

@@ -100,7 +100,8 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
             job.status = Job.Status.FAILED
         elif msg_type == NotificationType.JOB_OUTPUT:
             if job.output == None: job.output = ""
-            job.output += args[jobmonprot.Request.ARGS_MSG]
+            for line in args[jobmonprot.Request.ARGS_LINES]:
+                job.output += line
         elif msg_type == NotificationType.JOB_PROGRESS:
             job.progress = args[jobmonprot.Request.ARGS_PROGRESS]
         elif msg_type == NotificationType.JOB_FINISHED:
@@ -135,7 +136,7 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
             if msg_type == NotificationType.JOB_STARTED:
                 message = protocol.JobRunningMessage(scratch_project_ID)
             elif msg_type == NotificationType.JOB_OUTPUT:
-                message = protocol.JobOutputMessage(scratch_project_ID, args[jobmonprot.Request.ARGS_MSG])
+                message = protocol.JobOutputMessage(scratch_project_ID, args[jobmonprot.Request.ARGS_LINES])
             elif msg_type == NotificationType.JOB_PROGRESS:
                 message = protocol.JobProgressMessage(scratch_project_ID, args[jobmonprot.Request.ARGS_PROGRESS])
             elif msg_type == NotificationType.JOB_FINISHED:

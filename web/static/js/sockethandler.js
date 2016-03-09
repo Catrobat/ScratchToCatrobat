@@ -139,9 +139,12 @@ var socketHandler = {
           }
           consoleForMessage.hide();
         }
-        var progressMsgLine = $("<div></div>").addClass("console-message");
-        progressMsgLine.text(result.data["line"]);
-        consoleForMessage.append(progressMsgLine);
+        var lines = result.data["lines"];
+        for (var i = 0; i < lines.length; ++i) {
+          var progressMsgLine = $("<div></div>").addClass("console-message");
+          progressMsgLine.text(lines[i]);
+          consoleForMessage.append(progressMsgLine);
+        }
         var height = consoleLayer[0].scrollHeight;
         consoleLayer.scrollTop(height);
         return;

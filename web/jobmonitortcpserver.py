@@ -124,8 +124,8 @@ class TCPConnectionHandler(object):
             raise TCPConnectionException("Invalid data given!")
         request = Request.request_from_data(data)
         _logger.info("[%s]: Received job output notification" % SERVER)
-        _logger.info("[%s]: %s" % (CLIENT, request.args[Request.ARGS_MSG]))
-
+        for line in request.args[Request.ARGS_LINES]:
+            _logger.debug("[%s]: %s" % (CLIENT, line))
         _logger.debug("[%s]: Reply: Accepted!" % SERVER)
         yield self.send_message(Reply(result=True, msg="ACK"))
         ConverterWebSocketHandler.notify(NotificationType.JOB_OUTPUT, request.args)
@@ -137,8 +137,7 @@ class TCPConnectionHandler(object):
         request = Request.request_from_data(data)
         if not isinstance(request.args[Request.ARGS_PROGRESS], float):
             raise TCPConnectionException("Progress parameter must be of type float!")
-        _logger.info("[%s]: Received job progress notification" % SERVER)
-        _logger.info("[%s]: %f%% " % (CLIENT, request.args[Request.ARGS_PROGRESS]))
+        _logger.info("[%s]: Received job progress notification (Progress: %f%%)" % (SERVER, request.args[Request.ARGS_PROGRESS]))
 
         _logger.debug("[%s]: Reply: Accepted!" % SERVER)
         yield self.send_message(Reply(result=True, msg="ACK"))

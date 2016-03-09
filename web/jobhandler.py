@@ -111,10 +111,11 @@ class JobHandler(object):
         _logger.info('[%s]: "%s"' % (SERVER, reply.msg))
 
     @gen.coroutine
-    def send_job_output_notification(self, job_ID, message):
+    def send_job_output_notification(self, job_ID, messages):
         # Job output (request)
-        _logger.debug('[%s]: Sending job output notification: %s' % (CLIENT, message))
-        args = { Request.ARGS_JOB_ID: job_ID, Request.ARGS_MSG: message }
+        assert isinstance(messages, list)
+        _logger.debug('[%s]: Sending job output notification: %s' % (CLIENT, "\n".join(messages)))
+        args = { Request.ARGS_JOB_ID: job_ID, Request.ARGS_LINES: messages }
         yield self._connection.send_message(Request(Request.Command.JOB_OUTPUT_NOTIFICATION, args))
 
         # Job output (reply)

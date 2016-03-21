@@ -43,6 +43,7 @@ import logging
 import tornado.escape #@UnresolvedImport
 import tornado.web #@UnresolvedImport
 import tornado.websocket #@UnresolvedImport
+from tornado import httputil #@UnresolvedImport
 import os.path
 import redis #@UnresolvedImport
 from command import get_command, InvalidCommand, Job, update_jobs_info_on_listening_clients
@@ -130,7 +131,7 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
                       ("is" if num_clients_of_project == 1 else "are", \
                        num_clients_of_project, "s" if num_clients_of_project != 1 else ""))
         listening_clients = [cls.client_ID_open_sockets_map[int(client_ID)] for client_ID in clients_of_project if int(client_ID) in cls.client_ID_open_sockets_map]
-        _logger.info("There are %d active clients listening on this job." % len(listening_clients))
+        _logger.debug("There are %d active clients listening on this job." % len(listening_clients))
 
         for socket_handlers in listening_clients:
             if msg_type == NotificationType.JOB_STARTED:
@@ -163,7 +164,7 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
                 else:
                     cls.client_ID_open_sockets_map[client_ID] = open_sockets
                 _logger.info("Found websocket and closed it")
-                return # skip loop => maximal 1 socket/clientID possible
+                return # break out of loop => limit is 1 socket/clientID
 
     def send_message(self, message):
         assert isinstance(message, protocol.Message)
@@ -195,25 +196,40 @@ class _MainHandler(tornado.web.RequestHandler):
 
 class _DownloadHandler(tornado.web.RequestHandler):
     def get(self):
+        # TODO: support head request!
         scratch_project_id_string = self.get_query_argument("id", default=None)
         if scratch_project_id_string == None or not scratch_project_id_string.isdigit():
             raise HTTPError(404)
-        download_dir = self.application.settings["jobmonitorserver"]["download_dir"]
-        file_dir = download_dir
+        file_dir = self.application.settings["jobmonitorserver"]["download_dir"]
         file_name = scratch_project_id_string + CATROBAT_FILE_EXT
         file_path = "%s/%s" % (file_dir, file_name)
         if not file_name or not os.path.exists(file_path):
             raise HTTPError(404)
-        self.set_header('Content-Type', 'application/force-download')
+        file_size = os.path.getsize(file_path)
+        self.set_header('Content-Type', 'application/zip')
         self.set_header('Content-Disposition', 'attachment; filename=%s' % file_name)
         with open(file_path, "rb") as f:
+            range_header = self.request.headers.get("Range")
+            request_range = None
+            if range_header:
+                # TODO: implement own parse request range helper method
+                request_range = httputil._parse_request_range(range_header, file_size)
+
+            if request_range:
+                # TODO: support HTTP range + test
+                # TODO: request_range.end
+                self.set_header('Content-Range', 'bytes {}-{}/{}'.format(request_range.start, (file_size - 1), file_size))
+                self.set_header('Content-Length', file_size - request_range.start + 1)#(request_range.end - request_range.start + 1))
+                file.seek(request_range.start)
+            else:
+                self.set_header('Content-Length', file_size)
+
             try:
                 while True:
-                    write_buffer = f.read(4096)
+                    write_buffer = f.read(4096) # XXX: what if file is smaller than this buffer-size?
                     if write_buffer:
                         self.write(write_buffer)
                     else:
-                        f.close()
                         self.finish()
                         return
             except:

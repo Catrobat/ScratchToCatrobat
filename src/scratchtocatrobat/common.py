@@ -87,7 +87,7 @@ class DictAccessWrapper(object):
         if isinstance(dict_object, set):
             dict_object = dict.fromkeys(dict_object, None)
         assert isinstance(dict_object, dict)
-        self.__dict_object = copy.deepcopy(dict_object)
+        self._dict_object = copy.deepcopy(dict_object)
 
     def _checked_dict_access(self):
         dict_ = self._dict_access_object()
@@ -96,10 +96,10 @@ class DictAccessWrapper(object):
 
     def __getattr__(self, name):
         def get():
-            return self.__dict_object.get(key)
+            return self._dict_object.get(key)
 
         def contains():
-            return key in self.__dict_object
+            return key in self._dict_object
 
         key = list(pad(name.split("_", 2), 2))[1]
         if name.startswith("get_"):
@@ -111,7 +111,7 @@ class DictAccessWrapper(object):
 
     def __try_wrapped_access(self, key):
         try:
-            return self.__dict_object[key]
+            return self._dict_object[key]
         except KeyError:
             raise KeyError("Key '{}' is not available for '{}'. Available keys: {}".format(key, self, self.__dict_object.keys()))
 

@@ -27,7 +27,6 @@ import shutil
 import types
 import zipfile
 import re
-import unicodedata
 from codecs import open
 
 import org.catrobat.catroid.common as catcommon
@@ -325,9 +324,29 @@ def _sound_length_variable_name_for(resource_name):
 def _is_generated(variable_name):
     return variable_name.startswith(_GENERATED_VARIABLE_PREFIX)
 
+class Context(object):
+    def __init__(self):
+        self._sprite_contexts = []
 
-def converted(scratch_project, progress_bar=None):
-    return Converter.converted_project_for(scratch_project, progress_bar)
+    def add_sprite_context(self, sprite_context):
+        assert isinstance(sprite_context, SpriteContext)
+        self._sprite_contexts += [sprite_context]
+
+    @property
+    def sprite_contexts(self):
+        return self._sprite_contexts
+
+class SpriteContext(object):
+    def __init__(self, name):
+        self.name = name
+        self.sound_wait_length_variable_names = set()
+
+class ScriptContext(object):
+    def __init__(self):
+        self.sound_wait_length_variable_names = set()
+
+def converted(scratch_project, progress_bar=None, context=None):
+    return Converter.converted_project_for(scratch_project, progress_bar, context)
 
 
 class Converter(object):
@@ -336,15 +355,15 @@ class Converter(object):
         self.scratch_project = scratch_project
 
     @classmethod
-    def converted_project_for(cls, scratch_project, progress_bar=None):
+    def converted_project_for(cls, scratch_project, progress_bar=None, context=None):
         converter = Converter(scratch_project)
-        catrobat_project = converter._converted_catrobat_program(progress_bar)
+        catrobat_project = converter._converted_catrobat_program(progress_bar, context)
         assert catrobat.is_background_sprite(catrobat_project.getSpriteList().get(0))
         return ConvertedProject(catrobat_project, scratch_project)
 
-    def _converted_catrobat_program(self, progress_bar=None):
+    def _converted_catrobat_program(self, progress_bar=None, context=None):
         _catr_project = catbase.Project(None, self.scratch_project.name)
-        self._scratch_object_converter = _ScratchObjectConverter(_catr_project, self.scratch_project, progress_bar)
+        self._scratch_object_converter = _ScratchObjectConverter(_catr_project, self.scratch_project, progress_bar, context)
         self._add_global_user_lists_to(_catr_project)
         self._add_converted_sprites_to(_catr_project)
         self._add_key_sprites_to(_catr_project, self.scratch_project.listened_keys)
@@ -435,10 +454,11 @@ class _ScratchObjectConverter(object):
     _catrobat_project = None
     _scratch_project = None
 
-    def __init__(self, catrobat_project, scratch_project, progress_bar=None):
+    def __init__(self, catrobat_project, scratch_project, progress_bar=None, context=None):
         _ScratchObjectConverter._catrobat_project = catrobat_project
         _ScratchObjectConverter._scratch_project = scratch_project
         self._progress_bar = progress_bar
+        self._context = context
 
     def __call__(self, scratch_object):
         return self._catrobat_sprite_from(scratch_object)
@@ -446,11 +466,16 @@ class _ScratchObjectConverter(object):
     def _catrobat_sprite_from(self, scratch_object):
         if not isinstance(scratch_object, scratch.Object):
             raise common.ScratchtobatError("Input must be of type={}, but is={}".format(scratch.Object, type(scratch_object)))
-        sprite = catbase.Sprite(scratch_object.get_objName())
+        sprite_name = scratch_object.get_objName()
+        sprite_context = SpriteContext(sprite_name)
+        sprite = catbase.Sprite(sprite_name)
+        assert sprite_name == sprite.getName()
         log.debug("sprite name: %s", sprite.getName())
 
+        # rename if sprite is background
         if scratch_object.is_stage():
             catrobat.set_as_background(sprite)
+            sprite_context.name = sprite.getName()
 
         # looks and sounds has to added first because of cross-validations
         sprite_looks = sprite.getLookDataList()
@@ -460,7 +485,7 @@ class _ScratchObjectConverter(object):
             if not costume_resolution:
                 costume_resolution = current_costume_resolution
             elif current_costume_resolution != costume_resolution:
-                    log.warning("Costume resolution not same for all costumes")
+                log.warning("Costume resolution not same for all costumes")
             sprite_looks.add(self._catrobat_look_from(scratch_costume))
 
         sprite_sounds = sprite.getSoundList()
@@ -474,15 +499,22 @@ class _ScratchObjectConverter(object):
                 catr_data_container.addSpriteUserListToSprite(sprite, user_list_data["listName"])
 
         for scratch_variable in scratch_object.get_variables():
-            sprite_name = sprite.getName() if not scratch_object.is_stage() else None
-            user_variable = catrobat.add_user_variable(self._catrobat_project, scratch_variable["name"], sprite=sprite, sprite_name=sprite_name)
+            user_variable = catrobat.add_user_variable(
+                    self._catrobat_project,
+                    scratch_variable["name"],
+                    sprite=sprite,
+                    sprite_name=sprite.getName() if not scratch_object.is_stage() else None
+            )
             assert user_variable is not None
             user_variable = self._catrobat_project.getDataContainer().getUserVariable(scratch_variable["name"], sprite)
             assert user_variable is not None
 
         for scratch_script in scratch_object.scripts:
-            sprite.addScript(self._catrobat_script_from(scratch_script, sprite))
+            sprite.addScript(self._catrobat_script_from(scratch_script, sprite, sprite_context))
             if self._progress_bar != None: self._progress_bar.update()
+
+        if self._context is not None:
+            self._context.add_sprite_context(sprite_context)
 
         self._add_default_behaviour_to(sprite, self._catrobat_project, scratch_object, self._scratch_project, costume_resolution)
 
@@ -558,23 +590,29 @@ class _ScratchObjectConverter(object):
         if sprite_startup_look_idx is not None:
             if isinstance(sprite_startup_look_idx, float):
                 sprite_startup_look_idx = int(round(sprite_startup_look_idx))
-            spriteStartupLook = sprite.getLookDataList()[sprite_startup_look_idx]
-            set_look_brick = catbricks.SetLookBrick()
-            set_look_brick.setLook(spriteStartupLook)
-            implicit_bricks_to_add += [set_look_brick]
+            if sprite_startup_look_idx != 0:
+                spriteStartupLook = sprite.getLookDataList()[sprite_startup_look_idx]
+                set_look_brick = catbricks.SetLookBrick()
+                set_look_brick.setLook(spriteStartupLook)
+                implicit_bricks_to_add += [set_look_brick]
 
         # object's scratchX and scratchY Keys determine position
-        x_pos = scratch_object.get_scratchX() or 0
-        y_pos = scratch_object.get_scratchY() or 0
-        place_at_brick = catbricks.PlaceAtBrick(int(x_pos), int(y_pos))
-        implicit_bricks_to_add += [place_at_brick]
+        x_pos = int(scratch_object.get_scratchX() or 0)
+        y_pos = int(scratch_object.get_scratchY() or 0)
+        if x_pos != 0 or y_pos != 0:
+            implicit_bricks_to_add += [catbricks.PlaceAtBrick(x_pos, y_pos)]
 
-        object_scale = scratch_object.get_scale() or 1
+        object_relative_scale = scratch_object.get_scale() or 1
         if costume_resolution is not None:
-            implicit_bricks_to_add += [catbricks.SetSizeToBrick(object_scale * 100.0 / costume_resolution)]
+            object_scale = object_relative_scale * 100.0 / costume_resolution
+            if object_scale != 100.0:
+                implicit_bricks_to_add += [catbricks.SetSizeToBrick(object_scale)]
 
-        object_direction = scratch_object.get_direction() or 90
-        implicit_bricks_to_add += [catbricks.PointInDirectionBrick(object_direction)]
+        object_rotation_in_degrees = float(scratch_object.get_direction() or 90.0)
+        number_of_full_object_rotations = int(round(object_rotation_in_degrees/360.0))
+        effective_object_rotation_in_degrees = object_rotation_in_degrees - 360.0 * number_of_full_object_rotations
+        if effective_object_rotation_in_degrees != 90.0:
+            implicit_bricks_to_add += [catbricks.PointInDirectionBrick(effective_object_rotation_in_degrees)]
 
         object_visible = scratch_object.get_visible()
         if object_visible is not None and not object_visible:
@@ -584,10 +622,11 @@ class _ScratchObjectConverter(object):
         if rotation_style and rotation_style != "normal":
             log.warning("Unsupported rotation style '{}' at object: {}".format(rotation_style, scratch_object.get_objName()))
 
-        catrobat.add_to_start_script(implicit_bricks_to_add, sprite)
+        if len(implicit_bricks_to_add) > 0:
+            catrobat.add_to_start_script(implicit_bricks_to_add, sprite)
 
     @classmethod
-    def _catrobat_script_from(cls, scratch_script, sprite):
+    def _catrobat_script_from(cls, scratch_script, sprite, context=None):
         if not isinstance(scratch_script, scratch.Script):
             raise common.ScratchtobatError("Arg1 must be of type={}, but is={}".format(scratch.Script, type(scratch_script)))
         if sprite and not isinstance(sprite, catbase.Sprite):
@@ -602,9 +641,15 @@ class _ScratchObjectConverter(object):
             for brick in wait_and_note_brick:
                 cat_script.addBrick(brick)
 
-        converted_bricks = cls._catrobat_bricks_from(scratch_script.script_element, sprite)
+        script_context = ScriptContext()
+        converted_bricks = cls._catrobat_bricks_from(scratch_script.script_element, sprite, script_context)
+
         assert isinstance(converted_bricks, list) and len(converted_bricks) == 1
         [converted_bricks] = converted_bricks
+
+        if context is not None:
+            context.sound_wait_length_variable_names |= script_context.sound_wait_length_variable_names
+
 #         print(map(catrobat.simple_name_for, converted_bricks))
 #         log.debug("   --> converted: <%s>", ", ".join(map(catrobat.simple_name_for, converted_bricks)))
         ignored_blocks = 0
@@ -626,10 +671,10 @@ class _ScratchObjectConverter(object):
         return cat_script
 
     @classmethod
-    def _catrobat_bricks_from(cls, scratch_blocks, catrobat_sprite):
+    def _catrobat_bricks_from(cls, scratch_blocks, catrobat_sprite, script_context=None):
         if not isinstance(scratch_blocks, scratch.ScriptElement):
             scratch_blocks = scratch.ScriptElement.from_raw_block(scratch_blocks)
-        traverser = _BlocksConversionTraverser(catrobat_sprite, cls._catrobat_project)
+        traverser = _BlocksConversionTraverser(catrobat_sprite, cls._catrobat_project, script_context)
         traverser.traverse(scratch_blocks)
         return traverser.converted_bricks
 
@@ -645,7 +690,7 @@ class ConvertedProject(object):
     def _converted_output_path(output_dir, project_name):
         return os.path.join(output_dir, catrobat.encoded_project_name(project_name) + catrobat.PACKAGED_PROGRAM_FILE_EXTENSION)
 
-    def save_as_catrobat_package_to(self, output_dir, archive_name=None, progress_bar=None):
+    def save_as_catrobat_package_to(self, output_dir, archive_name=None, progress_bar=None, context=None):
 
         def iter_dir(path):
             for root, _, files in os.walk(path):
@@ -654,7 +699,7 @@ class ConvertedProject(object):
         log.info("convert Scratch project to '%s'", output_dir)
 
         with common.TemporaryDirectory() as catrobat_program_dir:
-            self.save_as_catrobat_directory_structure_to(catrobat_program_dir, progress_bar)
+            self.save_as_catrobat_directory_structure_to(catrobat_program_dir, progress_bar, context)
             common.makedirs(output_dir)
             archive_name = self.name if archive_name == None else archive_name
             catrobat_zip_file_path = self._converted_output_path(output_dir, archive_name)
@@ -677,7 +722,7 @@ class ConvertedProject(object):
     def _sounds_dir_of_project(temp_dir):
         return os.path.join(temp_dir, "sounds")
 
-    def save_as_catrobat_directory_structure_to(self, temp_path, progress_bar=None):
+    def save_as_catrobat_directory_structure_to(self, temp_path, progress_bar=None, context=None):
         def create_directory_structure():
             sounds_path = self._sounds_dir_of_project(temp_path)
             os.mkdir(sounds_path)
@@ -795,13 +840,20 @@ class ConvertedProject(object):
             code_xml_content += storage_handler.getXMLStringOfAProject(catrobat_program)
             return code_xml_content
 
-        def write_program_source(catrobat_program):
+        def write_program_source(catrobat_program, context=None):
             # TODO: extract method
             # note: at this position because of use of sounds_path variable
             # TODO: make it more explicit that the "doPlayAndWait" brick workaround depends on the following code block
             for catrobat_sprite in catrobat_program.getSpriteList():
                 for sound_info in catrobat_sprite.getSoundList():
                     sound_length_variable_name = _sound_length_variable_name_for(sound_info.getTitle())
+
+                    # don't add length-variable if it is never used by any brick
+                    # (e.g. due to no doPlaySound block workaround)
+                    [sprite_context] = [ctxt for ctxt in context.sprite_contexts if ctxt.name == catrobat_sprite.getName()]
+                    if sound_length_variable_name not in sprite_context.sound_wait_length_variable_names:
+                        continue
+
                     sound_length = common.length_of_audio_file_in_secs(os.path.join(sounds_path, sound_info.getSoundFileName()))
                     sound_length = round(sound_length, 3) # accuracy +/- 0.5 milliseconds => review if we really need this...
                     _add_new_user_variable_with_initialization_value(catrobat_program, sound_length_variable_name, sound_length, catrobat_sprite, catrobat_sprite.getName())
@@ -823,7 +875,7 @@ class ConvertedProject(object):
         write_mediafiles(original_to_converted_catrobat_resource_file_name, progress_bar)
         rename_resource_file_names_in(self.catrobat_program, original_to_converted_catrobat_resource_file_name)
         log.info("  Saving project XML file")
-        write_program_source(self.catrobat_program)
+        write_program_source(self.catrobat_program, context)
         if progress_bar != None: progress_bar.update(progress_bar.saving_xml_progress_weight)
 
 # TODO: could be done with just user_variables instead of project object
@@ -848,14 +900,14 @@ def _register_handler(dict_, *names):
         return f
     return dec
 
-
 class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
     _block_name_to_handler_map = {}
 
-    def __init__(self, catrobat_sprite, catrobat_project):
+    def __init__(self, catrobat_sprite, catrobat_project, script_context=None):
         assert catrobat_sprite is not None
         assert catrobat_project is not None
+        self.script_context = script_context if script_context is not None else ScriptContext()
         self.sprite = catrobat_sprite
         self.project = catrobat_project
         self._stack = []
@@ -1267,7 +1319,9 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         play_sound_brick.setSoundInfo(sound_data)
         converted_bricks = [play_sound_brick]
         if self.block_name == "doPlaySoundAndWait":
-            sound_length_variable = _variable_for(_sound_length_variable_name_for(sound_name))
+            sound_length_variable_name = _sound_length_variable_name_for(sound_name)
+            sound_length_variable = _variable_for(sound_length_variable_name)
+            self.script_context.sound_wait_length_variable_names.add(sound_length_variable_name)
             converted_bricks += [catbricks.WaitBrick(catformula.Formula(sound_length_variable))]
         return converted_bricks
 

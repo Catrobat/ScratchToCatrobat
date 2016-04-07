@@ -159,7 +159,7 @@ class RawProject(Object):
     def num_of_iterations_of_downloaded_project(self, progress_bar):
         unique_resource_names = self.unique_resource_names
         num_total_resources = len(unique_resource_names)
-        num_of_additional_downloads = num_total_resources + 1 # includes project.json download
+        num_of_additional_downloads = num_total_resources + 1 # includes download of project.json file
 
         # update progress weight
         result = self.num_of_iterations_of_local_project(progress_bar) - progress_bar.saving_xml_progress_weight

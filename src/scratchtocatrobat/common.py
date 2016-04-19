@@ -113,7 +113,7 @@ class DictAccessWrapper(object):
         try:
             return self._dict_object[key]
         except KeyError:
-            raise KeyError("Key '{}' is not available for '{}'. Available keys: {}".format(key, self, self.__dict_object.keys()))
+            raise KeyError("Key '{}' is not available for '{}'. Available keys: {}".format(key, self, self._dict_object.keys()))
 
     def __getitem__(self, key):
         return self.__try_wrapped_access(key)

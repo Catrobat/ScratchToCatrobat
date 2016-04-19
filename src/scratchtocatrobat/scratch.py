@@ -29,7 +29,6 @@ import urllib2
 
 from scratchtocatrobat import common
 from scratchtocatrobat import scratchwebapi
-from decimal import Inexact
 
 _log = common.log
 
@@ -252,7 +251,7 @@ class RawProject(Object):
     def num_of_iterations_of_downloaded_project(self, progress_bar):
         unique_resource_names = self.unique_resource_names
         num_total_resources = len(unique_resource_names)
-        num_of_additional_downloads = num_total_resources + 1 # includes download of project.json file
+        num_of_additional_downloads = num_total_resources + 1 # includes project.json download
 
         # update progress weight
         result = self.num_of_iterations_of_local_project(progress_bar) - progress_bar.saving_xml_progress_weight
@@ -434,18 +433,11 @@ class Script(object):
         return self.type
 
     def __eq__(self, other):
-        print(self.type)
-        print(other.type)
-        print("-"*80)
-        if self.type != other.type:
-            return False
+        if self.type != other.type: return False
 
         def cmp_arguments(arguments, other_arguments):
             for (index, arg) in enumerate(arguments):
                 other_arg = other_arguments[index]
-                print(arg)
-                print(other_arg)
-                print("-"*80)
                 if isinstance(arg, list):
                     if not cmp_arguments(arg, other_arg):
                         return False
@@ -458,7 +450,7 @@ class Script(object):
 
         if not cmp_arguments(self.arguments, other.arguments):
             return False
- 
+
         def cmp_block(block, other_block):
             assert isinstance(block[0], (str, unicode))
             assert isinstance(other_block[0], (str, unicode))
@@ -483,18 +475,16 @@ class Script(object):
                     assert False, "Unexpected type %s" % type(block_arg)
             return True
 
-        print("test1")
         assert isinstance(self.blocks, list)
         assert isinstance(other.blocks, list)
-        if len(other.blocks) is not len(self.blocks): return False
-        print("test2")
+        if len(other.blocks) is not len(self.blocks):
+            return False
         for (index, block) in enumerate(self.blocks):
             other_block = other.blocks[index]
             assert isinstance(block, list)
             assert isinstance(other_block, list)
             if not cmp_block(block, other_block):
                 return False
-        print("test3")
         return True
 
 class ScriptElement(object):

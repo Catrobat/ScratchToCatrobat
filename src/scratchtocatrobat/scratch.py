@@ -29,6 +29,7 @@ import urllib2
 
 from scratchtocatrobat import common
 from scratchtocatrobat import scratchwebapi
+from decimal import Inexact
 
 _log = common.log
 
@@ -75,10 +76,8 @@ class Object(common.DictAccessWrapper):
         number_of_ignored_scripts = len(self.get_scripts()) - len(self.scripts)
         if number_of_ignored_scripts > 0:
             _log.debug("Ignored %s scripts", number_of_ignored_scripts)
-        self._preprocess_object()
                     
-    def _preprocess_object(self):
-###
+    def preprocess_object(self):
         all_headers = []
         all_param_variable_names = []
         for script in self.scripts:
@@ -153,8 +152,11 @@ class Object(common.DictAccessWrapper):
                 return new_block_list
 
             script.blocks = check_list_for_call_blocks(script.blocks)
+
             # parse again ScriptElement tree
             script.script_element = ScriptElement.from_raw_block(script.blocks)
+
+            
         for param_variable_name in all_param_variable_names:
             self._dict_object["variables"].append({
                 "name": param_variable_name,
@@ -162,7 +164,7 @@ class Object(common.DictAccessWrapper):
                 "isPersistent": False
             })
 
-
+        
         from scratchtocatrobat import converter
         preprocessed_scripts = []
         additional_scripts = []
@@ -188,7 +190,12 @@ class Object(common.DictAccessWrapper):
             script.raw_script[1:] = preprocessed_blocks
             script = Script([0, 0, script.raw_script])
             preprocessed_scripts += [script]
+            
+        
         self.scripts = preprocessed_scripts + additional_scripts
+
+
+
 
     @classmethod
     def is_valid_class_input(cls, object_data):
@@ -214,6 +221,7 @@ class RawProject(Object):
         self.dict_ = dict_
         self.raw_objects = [child for child in self.get_children() if "objName" in child]
         self.objects = [Object(raw_object) for raw_object in [dict_] + self.raw_objects]
+        for scratch_object in self.objects: scratch_object.preprocess_object()
         self.resource_names = [self._resource_name_from(raw_resource) for raw_resource in self._raw_resources()]
         self.unique_resource_names = list(set(self.resource_names))
 
@@ -402,7 +410,7 @@ class Script(object):
     def __init__(self, script_input):
         if not self.is_valid_script_input(script_input):
             raise ScriptError("Input is no valid Scratch script.")
-        self.raw_script = script_input[2]
+        self.raw_script = script_input[2] # TODO: remove this...
         script_block, self.blocks = self.raw_script[0], self.raw_script[1:]
         if not self.blocks:
             _log.debug("Empty script: %s", script_input)
@@ -425,6 +433,69 @@ class Script(object):
     def get_type(self):
         return self.type
 
+    def __eq__(self, other):
+        print(self.type)
+        print(other.type)
+        print("-"*80)
+        if self.type != other.type:
+            return False
+
+        def cmp_arguments(arguments, other_arguments):
+            for (index, arg) in enumerate(arguments):
+                other_arg = other_arguments[index]
+                print(arg)
+                print(other_arg)
+                print("-"*80)
+                if isinstance(arg, list):
+                    if not cmp_arguments(arg, other_arg):
+                        return False
+                elif isinstance(arg, (str, unicode, float, int)):
+                    if arg != other_arg:
+                        return False
+                else:
+                    assert False, "Unexpected script argument type %s" % type(arg)
+            return True
+
+        if not cmp_arguments(self.arguments, other.arguments):
+            return False
+ 
+        def cmp_block(block, other_block):
+            assert isinstance(block[0], (str, unicode))
+            assert isinstance(other_block[0], (str, unicode))
+
+            if block[0] != other_block[0]: return False
+            block_args = block[1:]
+            other_block_args = other_block[1:]
+
+            for (block_arg_index, block_arg) in enumerate(block_args):
+                other_block_arg = other_block_args[block_arg_index]
+                if type(block_arg) != type(other_block_arg) \
+                and not (isinstance(block_arg, (str, unicode)) and isinstance(block_arg, (str, unicode))):
+                    return False
+
+                if isinstance(block_arg, list):
+                    if not cmp_block(block_arg, other_block_arg):
+                        return False
+                elif isinstance(block_arg, (str, unicode, float, int)):
+                    if block_arg != other_block_arg:
+                        return False
+                else:
+                    assert False, "Unexpected type %s" % type(block_arg)
+            return True
+
+        print("test1")
+        assert isinstance(self.blocks, list)
+        assert isinstance(other.blocks, list)
+        if len(other.blocks) is not len(self.blocks): return False
+        print("test2")
+        for (index, block) in enumerate(self.blocks):
+            other_block = other.blocks[index]
+            assert isinstance(block, list)
+            assert isinstance(other_block, list)
+            if not cmp_block(block, other_block):
+                return False
+        print("test3")
+        return True
 
 class ScriptElement(object):
 

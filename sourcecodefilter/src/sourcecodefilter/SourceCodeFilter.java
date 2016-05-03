@@ -41,24 +41,41 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.AnnotationTypeDeclaration;
+import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.BodyDeclaration;
+import org.eclipse.jdt.core.dom.BreakStatement;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.EnumDeclaration;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IExtendedModifier;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.LabeledStatement;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.PackageDeclaration;
+import org.eclipse.jdt.core.dom.PostfixExpression;
+import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jface.text.Document;
+import org.eclipse.text.edits.TextEdit;
 import org.yaml.snakeyaml.Yaml;
 
 import sourcecodefilter.ConverterRelevantCatroidSource.FilteringProject;
@@ -73,10 +90,11 @@ class ExitCode {
 
 class SourceCodeFilter {
 
+	public static String[] REMOVED_CLASSES = null;
+	private static String[] REMOVED_METHOD_INVOCATIONS = null;
     private static String[] ADDITIONAL_SERIALIZATION_CLASSES = null;
     private static Set<String> PRESERVED_INTERFACES = null;
     public static String[] ADDITIONAL_HELPER_CLASSES = null;
-    public static String[] REMOVED_CLASSES = null;
     public static Map<String, Set<String>> classToPreservedFieldsMapping = null;
     public static Map<String, Set<String>> classToPreservedMethodsMapping = null;
     public static Map<String, Set<String>> removeFieldsMapping = null;
@@ -236,6 +254,121 @@ class SourceCodeFilter {
         }
     }
 
+    private static final ASTVisitor visitor = new ASTVisitor() {
+    	/*public boolean visit(SimpleName node) {
+    		System.out.println(">>> " + node);
+    		return false;
+    	}
+
+    	public boolean visit(final PrefixExpression node) {
+    		System.out.println(">>> " + node);
+			return false;
+    	}
+    	public boolean visit(final PostfixExpression node) {
+    		System.out.println(">>> " + node);
+    		return false;
+    	}
+
+    	public boolean visit(org.eclipse.jdt.core.dom.StringLiteral node) {
+    		System.out.println(">>> " + node);
+    		return false;
+    	}
+
+    	public boolean visit(QualifiedName node) {
+    		System.out.println(">>> " + node);
+    		return false;
+    	}
+    	
+    	public boolean visit(LabeledStatement node) {
+    		System.out.println(">>> " + node);
+    		return false;
+    	}
+
+    	public boolean visit(final VariableDeclarationFragment node) {
+    		System.out.println(">>> " + node);
+    		return false;
+    	}
+
+    	public boolean visit(final Assignment node) {
+    		System.out.println(">>> " + node);
+    		return false;
+    	}
+
+    	public boolean visit(EnhancedForStatement node) {
+    		System.out.println(">>> " + node);
+    		return false;
+    	}
+
+    	public boolean visit(final TypeDeclaration node) {
+    		System.out.println(">>> " + node);
+    		return false;
+    	}
+
+    	public boolean visit(PackageDeclaration node) {
+    		System.out.println(">>> " + node);
+    		return false;
+    	}
+
+    	public boolean visit(EnumDeclaration node) {
+    		System.out.println(">>> " + node);
+    		return false;
+    	}
+
+    	public boolean visit(AnnotationTypeDeclaration node) {
+    		System.out.println(">>> " + node);
+    		return false;
+    	}
+
+    	public boolean visit(BreakStatement node) {
+    		System.out.println(">>> " + node);
+    		return false;
+    	}*/
+
+		public boolean visit(MethodInvocation methodInvocation) {
+			String[] temp = methodInvocation.toString().split("\\(", 2);
+			assert(temp.length > 0);
+			String fullName = temp[0];
+			for (String unallowedMethodInvocation : REMOVED_METHOD_INVOCATIONS) {
+				boolean isMatching;
+				if (unallowedMethodInvocation.contains("*")) {
+					unallowedMethodInvocation = unallowedMethodInvocation.replace("*", "");
+					isMatching = fullName.startsWith(unallowedMethodInvocation);
+				} else {
+					isMatching = fullName.equals(unallowedMethodInvocation);
+				}
+
+	            if (isMatching) {
+	            	System.out.println(fullName);
+	            	methodInvocation.getParent().delete();
+	            	return false;
+	            }
+			}
+			return false;
+		}
+    };
+
+    @SuppressWarnings("unchecked")
+	private static void removeUnallowedMethodInvocations(ConverterRelevantCatroidSource source) {
+        CompilationUnit cu = source.getSourceAst();
+        final List<AbstractTypeDeclaration> types = cu.types();
+        assert types.size() > 0;
+
+        for (AbstractTypeDeclaration abstractTypeDecl : types) {
+            for (BodyDeclaration bodyDecl : new ArrayList<BodyDeclaration>(abstractTypeDecl.bodyDeclarations())) {
+                if (bodyDecl.getNodeType() != ASTNode.METHOD_DECLARATION) {
+                	continue;
+                }
+
+                MethodDeclaration methodDeclaration = (MethodDeclaration) bodyDecl;
+                Block body = methodDeclaration.getBody();
+                if ((body == null) || (body.statements().size() == 0)) {
+                	continue;
+                }
+                methodDeclaration.accept(visitor);
+            }
+        }
+    }
+
     public static void writePreprocessedCatrobatSource(final File inputProjectDir, File outputProjectDir) {
         writePreprocessedCatrobatSource(inputProjectDir, outputProjectDir, false);
     }
@@ -254,6 +387,10 @@ class SourceCodeFilter {
             }
             //  remove all unavailable import in class
             removeUnsupportedImportsIn(catroidSource, project);
+
+            // remove unallowed method invocations
+            removeUnallowedMethodInvocations(catroidSource);
+
             //  write modified class to output
             catroidSource.writeModifications(outputProjectDir);
         }
@@ -310,6 +447,8 @@ class SourceCodeFilter {
 	    	// include/exclude setup
 	    	List<String> removedCls = Util.getListFromConfigForKey("removed_classes", config);
 	    	SourceCodeFilter.REMOVED_CLASSES = (String[])removedCls.toArray(new String[removedCls.size()]);
+	    	List<String> removedMethodInvocations = Util.getListFromConfigForKey("removed_method_invocations", config);
+	    	SourceCodeFilter.REMOVED_METHOD_INVOCATIONS = (String[])removedMethodInvocations.toArray(new String[removedMethodInvocations.size()]);
 			List<String> addSerCls = Util.getListFromConfigForKey("additional_serialization_classes", config);
 	    	SourceCodeFilter.ADDITIONAL_SERIALIZATION_CLASSES = (String[])addSerCls.toArray(new String[addSerCls.size()]);
 	    	List<String> prsIfCls = Util.getListFromConfigForKey("preserved_interfaces", config);

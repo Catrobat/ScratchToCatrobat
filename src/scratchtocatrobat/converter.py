@@ -846,7 +846,7 @@ class ConvertedProject(object):
             code_xml_content += storage_handler.getXMLStringOfAProject(catrobat_program)
             return code_xml_content
 
-        def write_program_source(catrobat_program, context=None):
+        def write_program_source(catrobat_program, context):
             # TODO: extract method
             # note: at this position because of use of sounds_path variable
             # TODO: make it more explicit that the "doPlayAndWait" brick workaround depends on the following code block
@@ -854,11 +854,12 @@ class ConvertedProject(object):
                 for sound_info in catrobat_sprite.getSoundList():
                     sound_length_variable_name = _sound_length_variable_name_for(sound_info.getTitle())
 
-                    # don't add length-variable if it is never used by any brick
-                    # (e.g. due to no doPlaySound block workaround)
-                    [sprite_context] = [ctxt for ctxt in context.sprite_contexts if ctxt.name == catrobat_sprite.getName()]
-                    if sound_length_variable_name not in sprite_context.sound_wait_length_variable_names:
-                        continue
+                    if context is not None:
+                        # don't add length-variable if it is never used by any brick
+                        # (e.g. due to no doPlaySound block workaround)
+                        [sprite_context] = [ctxt for ctxt in context.sprite_contexts if ctxt.name == catrobat_sprite.getName()]
+                        if sound_length_variable_name not in sprite_context.sound_wait_length_variable_names:
+                            continue
 
                     sound_length = common.length_of_audio_file_in_secs(os.path.join(sounds_path, sound_info.getSoundFileName()))
                     sound_length = round(sound_length, 3) # accuracy +/- 0.5 milliseconds => review if we really need this...

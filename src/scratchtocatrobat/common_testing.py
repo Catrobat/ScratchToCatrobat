@@ -135,7 +135,7 @@ class ProjectTestCase(BaseTestCase):
             if header_tag in mandatory_header_tags:
                 assert xml_node.text is not None, "XML file error: Value for tag '{}' must be set".format(tag)
                 if header_tag == "screenMode":
-                    assert xml_node.text == catcommon.ScreenModes.MAXIMIZE.toString()  # @UndefinedVariable
+                    assert xml_node.text == catcommon.ScreenModes.STRETCH.toString()  # @UndefinedVariable
                 elif header_tag == "remixOf":
                     try:
                         with tempfile.NamedTemporaryFile() as temp:

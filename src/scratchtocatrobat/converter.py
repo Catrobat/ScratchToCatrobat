@@ -209,6 +209,12 @@ class _ScratchToCatrobat(object):
         "startScene": catbricks.BroadcastBrick,
         "nextScene": catbricks.NextLookBrick,  # only allowed in scene object so same as nextLook
 
+        # video
+        "setVideoState": lambda status: [
+                catbricks.ChooseCameraBrick(1),                       # use front camera by default!
+                catbricks.CameraBrick(int(status.lower() != 'off'))
+        ],
+
         # TODO: remove lambdas to increase readability
         "changeGraphicEffect:by:": lambda effect_type, value:
             catbricks.ChangeBrightnessByNBrick(value) if effect_type == 'brightness' else

@@ -52,7 +52,7 @@ TEST_PROJECT_URL_TO_ID_MAP = {
 }
 TEST_PROJECT_FILENAME_TO_ID_MAP = {
     'dancing_castle.zip': '10205819',
-    'Dance back.zip': '10132588',
+    'Dance back.zip': '10132588'
 }
 PROJECT_DUMMY_ID = "1013258"  # dance back
 # TODO: parse from Java annotations

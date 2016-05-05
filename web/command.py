@@ -32,7 +32,7 @@ sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "..", 
 from scratchtocatrobat.tools import helpers
 import converterwebsocketprotocol as protocol
 
-SCRATCH_PROJECT_BASE_URL = "https://scratch.mit.edu/projects/"
+SCRATCH_PROJECT_BASE_URL = helpers.config.get("SCRATCH_API", "project_base_url")
 JOB_TIMEOUT = int(helpers.config.get("CONVERTER_JOB", "timeout"))
 CATROBAT_FILE_EXT = helpers.config.get("CATROBAT", "file_extension")
 REDIS_CLIENT_PROJECT_KEY = "clientsOfProject#{}"

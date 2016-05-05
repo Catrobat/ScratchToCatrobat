@@ -77,10 +77,48 @@ class WebApiTest(common_testing.BaseTestCase):
             assert extracted_project_title == expected_project_title, \
                    "'{}' is not equal to '{}'".format(extracted_project_title, expected_project_title)
 
+    def test_can_request_project_owner_for_id(self):
+        for (project_id, expected_project_owner) in TEST_PROJECT_ID_TO_OWNER_MAP.iteritems():
+            document = scratchwebapi.request_project_page_as_Jsoup_document_for(project_id)
+            extracted_project_owner = scratchwebapi.extract_project_owner_from_document(document)
+            assert extracted_project_owner is not None
+            assert extracted_project_owner == expected_project_owner, \
+                   "'{}' is not equal to '{}'".format(extracted_project_owner, expected_project_owner)
+
     def test_can_request_project_description_for_id(self):
-        for project_id in common_testing.TEST_PROJECT_FILENAME_TO_ID_MAP.itervalues():
-            # FIXME: compare with descriptions
-            assert scratchwebapi.request_project_description_for(project_id) is not None
+        for (project_id, expected_project_description) in TEST_PROJECT_ID_TO_DESCRIPTION_MAP.iteritems():
+            extracted_project_description = scratchwebapi.request_project_description_for(project_id)
+            assert extracted_project_description is not None
+            assert extracted_project_description == expected_project_description, \
+                   "'{}' is not equal to '{}'".format(extracted_project_description, expected_project_description)
+
+    def test_can_request_project_info_for_id(self):
+        for (project_id, expected_project_title) in TEST_PROJECT_ID_TO_TITLE_MAP.iteritems():
+            document = scratchwebapi.request_project_page_as_Jsoup_document_for(project_id)
+            assert document is not None
+            extracted_project_info = scratchwebapi.extract_project_details_from_document(document)
+            assert extracted_project_info is not None
+            assert isinstance(extracted_project_info, scratchwebapi.ScratchProjectInfo)
+            assert extracted_project_info.title is not None
+            assert extracted_project_info.title == expected_project_title, \
+                   "'{}' is not equal to '{}'".format(extracted_project_info.title, expected_project_title)
+            assert extracted_project_info.owner is not None
+            assert extracted_project_info.owner == TEST_PROJECT_ID_TO_OWNER_MAP[project_id], \
+                   "'{}' is not equal to '{}'".format(extracted_project_info.owner, TEST_PROJECT_ID_TO_OWNER_MAP[project_id])
+            assert extracted_project_info.description is not None
+            assert extracted_project_info.description == TEST_PROJECT_ID_TO_DESCRIPTION_MAP[project_id], \
+                   "'{}' is not equal to '{}'".format(extracted_project_info.owner, TEST_PROJECT_ID_TO_DESCRIPTION_MAP[project_id])
+            assert extracted_project_info.views is not None
+            assert isinstance(extracted_project_info.views, int)
+            assert extracted_project_info.views > 0
+            assert extracted_project_info.favorites is not None
+            assert extracted_project_info.favorites >= 0
+            assert isinstance(extracted_project_info.favorites, int)
+            assert extracted_project_info.loves is not None
+            assert extracted_project_info.loves >= 0
+            assert isinstance(extracted_project_info.loves, int)
+            assert extracted_project_info.remixes is not None
+            assert isinstance(extracted_project_info.remixes, list)
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']

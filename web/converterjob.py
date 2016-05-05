@@ -55,7 +55,6 @@ MAX_WAIT_SECONDS_BEFORE_SHUTDOWN = int(helpers.config.get("CONVERTER_JOB", "max_
 BUFFER_SIZE = int(helpers.config.get("CONVERTER_JOB", "buffer_size"))
 CERTIFICATE_PATH = helpers.config.get("JOBMONITOR_SERVER", "certificate_path")
 CATROBAT_FILE_EXT = helpers.config.get("CATROBAT", "file_extension")
-PROJECT_INFO_URL_TEMPLATE = helpers.config.get("SCRATCH_API", "project_info_url_template")
 LINE_BUFFER_SIZE = 3
 
 class ConverterJobHandler(jobhandler.JobHandler):

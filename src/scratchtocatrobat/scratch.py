@@ -202,7 +202,7 @@ class Object(common.DictAccessWrapper):
 
     def is_stage(self):
         # TODO: extend and consolidate with verify in RawProject
-        return self.get_info() is not None
+        return self.get_info() != None
 
     def __iter__(self):
         return iter(self.scripts)
@@ -341,7 +341,7 @@ class Project(RawProject):
 
         super(Project, self).__init__(self.raw_project_code_from_project_folder_path(project_base_path))
         self.project_base_path = project_base_path
-        if id_ is not None:
+        if id_ != None:
             self.project_id = id_
         else:
             self.project_id = self.get_info().get("projectID")
@@ -355,12 +355,12 @@ class Project(RawProject):
             self.description = scratchwebapi.request_project_description_for(self.project_id)
         if progress_bar != None: progress_bar.update() # description step passed
 
-        if name is not None:
+        if name != None:
             self.name = name
         else:
             # FIXME: for some projects no project info available
             try:
-                self.name = scratchwebapi.request_project_name_for(self.project_id)
+                self.name = scratchwebapi.request_project_title_for(self.project_id)
             except urllib2.HTTPError:
                 self.name = str(self.project_id)
                 self.description = None
@@ -477,7 +477,7 @@ class Script(object):
 
         assert isinstance(self.blocks, list)
         assert isinstance(other.blocks, list)
-        if len(other.blocks) is not len(self.blocks):
+        if len(other.blocks) != len(self.blocks):
             return False
         for (index, block) in enumerate(self.blocks):
             other_block = other.blocks[index]

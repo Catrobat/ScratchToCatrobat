@@ -54,6 +54,14 @@ def is_valid_project_url(project_url):
     _HTTP_PROJECT_URL_PATTERN = scratch_base_url + r'\d+/?'
     return re.match(_HTTP_PROJECT_URL_PATTERN, project_url)
 
+def download_project_code(project_id, target_dir):
+    # TODO: consolidate with classes from scratch module
+    from scratchtocatrobat import common
+    import scratch
+    project_code_url = helpers.config.get("SCRATCH_API", "project_url_template").format(project_id)
+    project_file_path = os.path.join(target_dir, scratch._PROJECT_FILE_NAME)
+    common.download_file(project_code_url, project_file_path)
+
 def download_project(project_url, target_dir, progress_bar=None):
     # TODO: make this independent from Java
     from threading import Thread
@@ -62,22 +70,19 @@ def download_project(project_url, target_dir, progress_bar=None):
     from scratchtocatrobat import common
     import scratch
 
-    def project_id_from_url(project_url):
-        normalized_url = project_url.strip("/")
-        project_id = os.path.basename(urlparse(normalized_url).path)
-        return project_id
-
     # TODO: fix circular reference
     if not is_valid_project_url(project_url):
         scratch_base_url = helpers.config.get("SCRATCH_API", "project_base_url")
         raise ScratchWebApiError("Project URL must be matching '{}'. Given: {}".format(scratch_base_url + '<project id>', project_url))
     assert len(os.listdir(target_dir)) == 0
 
-    # TODO: consolidate with classes from scratch module
+    def project_id_from_url(project_url):
+        normalized_url = project_url.strip("/")
+        project_id = os.path.basename(urlparse(normalized_url).path)
+        return project_id
+
     project_id = project_id_from_url(project_url)
-    project_code_url = helpers.config.get("SCRATCH_API", "project_url_template").format(project_id)
-    project_file_path = os.path.join(target_dir, scratch._PROJECT_FILE_NAME)
-    common.download_file(project_code_url, project_file_path)
+    download_project_code(project_id, target_dir)
 
     project = scratch.RawProject.from_project_folder_path(target_dir)
     if progress_bar != None:

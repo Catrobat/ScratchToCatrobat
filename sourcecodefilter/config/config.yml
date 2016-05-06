@@ -1,5 +1,5 @@
 # Main settings
-git_tag: 0.9.18
+git_tag: v0.9.21
 archive_extension: "zip"
 URL: "https://github.com/Catrobat/Catroid/archive/%{tag_name}.%{archive_extension}"
 xstream_download_URL: "http://repo.maven.apache.org/maven2/com/thoughtworks/xstream/xstream/1.4.7/xstream-1.4.7.jar"
@@ -12,7 +12,15 @@ removed_classes:
     [LegoNXTSetting, LegoNxtMotorMoveBrick, LegoNxtMotorStopBrick,
     LegoNxtMotorTurnAngleBrick, LegoNxtPlayToneBrick, PhiroMotorMoveBackwardBrick,
     PhiroMotorMoveForwardBrick, PhiroMotorStopBrick, PhiroPlayToneBrick,
-    PhiroRGBLightBrick, PhiroIfLogicBeginBrick]
+    PhiroRGBLightBrick, PhiroIfLogicBeginBrick, ArduinoSendDigitalValueBrick, ArduinoSendPWMValueBrick,
+    DroneEmergencyBrick, DroneFlipBrick, DroneMoveBackwardBrick, DroneMoveBrick, DroneMoveDownBrick,
+    DroneMoveForwardBrick, DroneMoveLeftBrick, DroneMoveRightBrick, DroneMoveUpBrick, DronePlayLedAnimationBrick,
+    DroneSwitchCameraBrick, DroneTakeOffLandBrick, DroneTurnLeftBrick, DroneTurnRightBrick]
+
+removed_method_invocations:
+    ["Log.*", "MessageContainer.*", "setBounds", "setOrigin", "setScale",
+     "setRotation", "setTouchable", "addListeners", "createCatroidRoot",
+     "Utils.updateScreenWidthAndHeight", "setDeviceData"]
 
 additional_serialization_classes:
     - AllowedAfterDeadEndBrick
@@ -33,6 +41,7 @@ additional_serialization_classes:
     - Sensors
     - Look
     - StorageHandler
+    - SetTextBrick
     - ProjectManager
     - UserListBrick
     - UserVariableBrick
@@ -52,9 +61,7 @@ additional_helper_classes:
     - XStreamScriptConverter
     - XStreamSettingConverter
     - LOOKUP
-    - XStreamToSupportCatrobatLanguageVersion096AndBefore # introduced in v0.96
-    # - XStreamToSupportCatrobatLanguageVersion095AndBefore # introduced in v0.95
-    # - XStreamToSupportCatrobatLanguageVersion092AndBefore # removed in v0.95
+    - XStreamToSupportCatrobatLanguageVersion098AndBefore
     - XStreamUserVariableConverter
     # exception classes
     - ProjectException
@@ -84,6 +91,8 @@ class_to_preserved_fields_mapping:
         - position
     ProjectManager:
         [INSTANCE, project, currentScript, currentSprite, currentUserBrick]
+    SoundInfo:
+        - isBackpackSoundInfo
     IfLogicBeginBrick:
         [ifElseBrick, ifEndBrick]
     IfLogicElseBrick:
@@ -181,7 +190,8 @@ class_to_preserved_methods_mapping:
         - addProjectUserList
         - getOrCreateUserListListForSprite
         - findUserList
-        - getUserList"
+        - getUserList
+        - existSpriteList
     AddItemToUserListBrick:
         - initializeBrickFields
     ChangeTransparencyByNBrick:
@@ -253,6 +263,8 @@ class_to_preserved_methods_mapping:
         - initializeBrickFields
     WaitBrick:
         - initializeBrickFields
+    SetTextBrick:
+        - initializeBrickFields
     ShowTextBrick:
         - initializeBrickFields
     UserBrick:
@@ -274,10 +286,12 @@ class_to_preserved_methods_mapping:
         - addSprite
         - addScript
         - spriteExists
+    XmlHeader:
+        - setlandscapeMode
 
 remove_fields_mapping:
     Constants:
-        [DEFAULT_ROOT, TMP_PATH, TMP_IMAGE_PATH, TEXT_TO_SPEECH_TMP_PATH]
+        [DEFAULT_ROOT, TMP_PATH, TMP_IMAGE_PATH, TMP_LOOKS_PATH, TMP_SOUNDS_PATH, TEXT_TO_SPEECH_TMP_PATH]
     Look:
         [actionsToRestart, pixmap, whenParallelAction, shader]
     NXTSensor:
@@ -288,7 +302,7 @@ remove_methods_mapping:
         [uploadProject, loadProject, cancelLoadProject, canLoadProject, saveProject,
         initializeDefaultProject, initializeDroneProject, initializeNewProject,
         deleteCurrentProject, deleteProject, renameProject, addSprite,
-        addScript, spriteExists]
+        addScript]
     Look:
         [copyLookForSprite, createBrightnessContrastShader, checkImageChanged, setWhenParallelAction]
     NXTSensor:

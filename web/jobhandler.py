@@ -100,32 +100,33 @@ class JobHandler(object):
         args = { Request.ARGS_JOB_ID: job_ID, Request.ARGS_PROGRESS: progress }
         yield self._connection.send_message(Request(Request.Command.JOB_PROGRESS_NOTIFICATION, args))
 
-        # Job progress (reply)
-        data = json.loads((yield self._connection.read_message()).rstrip())
-        if not Reply.is_valid(data):
-            raise Exception("Invalid reply!")
-        reply = Reply(data[Reply.KEY_RESULT], data[Reply.KEY_MSG])
-        if not reply.result:
-            _logger.error("[%s]: %s" % (SERVER, reply.msg))
-            raise Exception("Job progress notification failed!")
-        _logger.info('[%s]: "%s"' % (SERVER, reply.msg))
+#         # Job progress (reply)
+#         data = json.loads((yield self._connection.read_message()).rstrip())
+#         if not Reply.is_valid(data):
+#             raise Exception("Invalid reply!")
+#         reply = Reply(data[Reply.KEY_RESULT], data[Reply.KEY_MSG])
+#         if not reply.result:
+#             _logger.error("[%s]: %s" % (SERVER, reply.msg))
+#             raise Exception("Job progress notification failed!")
+#         _logger.info('[%s]: "%s"' % (SERVER, reply.msg))
 
     @gen.coroutine
-    def send_job_output_notification(self, job_ID, message):
+    def send_job_output_notification(self, job_ID, messages):
         # Job output (request)
-        _logger.debug('[%s]: Sending job output notification: %s' % (CLIENT, message))
-        args = { Request.ARGS_JOB_ID: job_ID, Request.ARGS_MSG: message }
+        assert isinstance(messages, list)
+        _logger.debug('[%s]: Sending job output notification: %s' % (CLIENT, "\n".join(messages)))
+        args = { Request.ARGS_JOB_ID: job_ID, Request.ARGS_LINES: messages }
         yield self._connection.send_message(Request(Request.Command.JOB_OUTPUT_NOTIFICATION, args))
 
-        # Job output (reply)
-        data = json.loads((yield self._connection.read_message()).rstrip())
-        if not Reply.is_valid(data):
-            raise Exception("Invalid reply!")
-        reply = Reply(data[Reply.KEY_RESULT], data[Reply.KEY_MSG])
-        if not reply.result:
-            _logger.error("[%s]: %s" % (SERVER, reply.msg))
-            raise Exception("Job output notification failed!")
-        _logger.info('[%s]: "%s"' % (SERVER, reply.msg))
+#         # Job output (reply)
+#         data = json.loads((yield self._connection.read_message()).rstrip())
+#         if not Reply.is_valid(data):
+#             raise Exception("Invalid reply!")
+#         reply = Reply(data[Reply.KEY_RESULT], data[Reply.KEY_MSG])
+#         if not reply.result:
+#             _logger.error("[%s]: %s" % (SERVER, reply.msg))
+#             raise Exception("Job output notification failed!")
+#         _logger.info('[%s]: "%s"' % (SERVER, reply.msg))
 
     @gen.coroutine
     def send_job_finished_notification(self, job_ID, exit_code):

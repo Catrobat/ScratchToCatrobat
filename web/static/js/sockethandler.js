@@ -139,9 +139,12 @@ var socketHandler = {
           }
           consoleForMessage.hide();
         }
-        var progressMsgLine = $("<div></div>").addClass("console-message");
-        progressMsgLine.text(result.data["line"]);
-        consoleForMessage.append(progressMsgLine);
+        var lines = result.data["lines"];
+        for (var i = 0; i < lines.length; ++i) {
+          var progressMsgLine = $("<div></div>").addClass("console-message");
+          progressMsgLine.text(lines[i]);
+          consoleForMessage.append(progressMsgLine);
+        }
         var height = consoleLayer[0].scrollHeight;
         consoleLayer.scrollTop(height);
         return;
@@ -155,14 +158,14 @@ var socketHandler = {
         $("#progress").text(progress + "%");
         var now = new Date();
         if ((socketHandler.lastProgress == null) || (socketHandler.lastProgressCheck == null)) {
-          $("#status").text("Calculating remaining time...");
+          /*$("#status").text("Calculating remaining time...");*/
           socketHandler.progressStart = now;
         } else {
           var timeIntervalInMS = (now - socketHandler.lastProgressCheck);
           var timeElapsedInMS = (now - socketHandler.progressStart);
           var lastSpeed = (progress - socketHandler.lastProgress) / timeIntervalInMS;
-          // based on: http://stackoverflow.com/a/3841706
-          var SMOOTHING_FACTOR = 0.005;
+          /* based on: http://stackoverflow.com/a/3841706 */
+          var SMOOTHING_FACTOR = 0.03;
           if (socketHandler.averageProgressSpeed != null) {
             socketHandler.averageProgressSpeed = SMOOTHING_FACTOR * lastSpeed + (1-SMOOTHING_FACTOR) * socketHandler.averageProgressSpeed;
           } else {
@@ -170,6 +173,7 @@ var socketHandler = {
           }
           var etaInMS = (100.0 - progress)/socketHandler.averageProgressSpeed;
           var etaInS = etaInMS/1000;
+          /*
           if (etaInS > 60*60) {
             $("#status").text("Approximately " + Math.round(etaInS/(60*60)) + " hours remaining...");
           } else if (etaInS > 60) {
@@ -177,6 +181,7 @@ var socketHandler = {
           } else {
             $("#status").text("Approximately " + Math.round(etaInS) + " seconds remaining...");
           }
+          */
           //var estimatedEndTime = now + estimatedRemaining;
         }
         socketHandler.lastProgress = progress;

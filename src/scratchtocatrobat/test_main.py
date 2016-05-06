@@ -76,7 +76,7 @@ class MainTest(common_testing.ProjectTestCase):
         return_val = self.execute_run_script(args)
         assert return_val == helpers.ExitCode.SUCCESS
 
-        project_name = scratchwebapi.request_project_name_for(project_id)
+        project_name = scratchwebapi.request_project_title_for(project_id)
         self.assertValidCatrobatProgramPackageAndUnpackIf(converter.ConvertedProject._converted_output_path(output_path, project_name), project_name)
 
     def test_can_provide_catrobat_program_for_scratch_project_link(self):

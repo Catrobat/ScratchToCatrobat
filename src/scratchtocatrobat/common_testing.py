@@ -52,7 +52,7 @@ TEST_PROJECT_URL_TO_ID_MAP = {
 }
 TEST_PROJECT_FILENAME_TO_ID_MAP = {
     'dancing_castle.zip': '10205819',
-    'Dance back.zip': '10132588',
+    'Dance back.zip': '10132588'
 }
 PROJECT_DUMMY_ID = "1013258"  # dance back
 # TODO: parse from Java annotations
@@ -135,7 +135,7 @@ class ProjectTestCase(BaseTestCase):
             if header_tag in mandatory_header_tags:
                 assert xml_node.text is not None, "XML file error: Value for tag '{}' must be set".format(tag)
                 if header_tag == "screenMode":
-                    assert xml_node.text == catcommon.ScreenModes.MAXIMIZE.toString()  # @UndefinedVariable
+                    assert xml_node.text == catcommon.ScreenModes.STRETCH.toString()  # @UndefinedVariable
                 elif header_tag == "remixOf":
                     try:
                         with tempfile.NamedTemporaryFile() as temp:

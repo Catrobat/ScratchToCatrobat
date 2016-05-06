@@ -88,10 +88,10 @@ class JobReadyMessage(Message):
         super(JobReadyMessage, self).__init__(Message.Type.JOB_READY, { "jobID": job_ID })
 
 class JobOutputMessage(Message):
-    def __init__(self, job_ID, line):
+    def __init__(self, job_ID, lines):
         super(JobOutputMessage, self).__init__(Message.Type.JOB_OUTPUT, {
             "jobID": job_ID,
-            "line": line
+            "lines": lines
         })
 
 class JobProgressMessage(Message):

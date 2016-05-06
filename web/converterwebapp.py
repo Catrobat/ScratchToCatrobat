@@ -43,15 +43,18 @@ import logging
 import tornado.escape #@UnresolvedImport
 import tornado.web #@UnresolvedImport
 import tornado.websocket #@UnresolvedImport
+from tornado import httputil, httpclient #@UnresolvedImport
+from bs4 import BeautifulSoup #@UnresolvedImport
 import os.path
 import redis #@UnresolvedImport
 from command import get_command, InvalidCommand, Job, update_jobs_info_on_listening_clients
 import jobmonitorprotocol as jobmonprot
 from tornado.web import HTTPError #@UnresolvedImport
-import ast
-import sys
+import ast, sys
+from datetime import datetime, timedelta
 import converterwebsocketprotocol as protocol
 from jobmonitorprotocol import NotificationType
+from scratchtocatrobat import scratchwebapi
 
 sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "..", "src"))
 from scratchtocatrobat.tools import helpers
@@ -59,6 +62,15 @@ from scratchtocatrobat.tools import helpers
 _logger = logging.getLogger(__name__)
 
 CATROBAT_FILE_EXT = helpers.config.get("CATROBAT", "file_extension")
+CONVERTER_API_SETTINGS = helpers.config.items_as_dict("CONVERTER_API")
+SCRATCH_PROJECT_BASE_URL = helpers.config.get("SCRATCH_API", "http_delay")
+HTTP_RETRIES = int(helpers.config.get("SCRATCH_API", "http_retries"))
+HTTP_BACKOFF = int(helpers.config.get("SCRATCH_API", "http_backoff"))
+HTTP_DELAY = int(helpers.config.get("SCRATCH_API", "http_delay"))
+HTTP_TIMEOUT = int(helpers.config.get("SCRATCH_API", "http_timeout"))
+HTTP_USER_AGENT = helpers.config.get("SCRATCH_API", "user_agent")
+SCRATCH_PROJECT_BASE_URL = helpers.config.get("SCRATCH_API", "project_base_url")
+
 # TODO: check if redis is available => error!
 _redis_conn = redis.Redis() #'127.0.0.1', 6789) #, password='secret')
 
@@ -100,7 +112,8 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
             job.status = Job.Status.FAILED
         elif msg_type == NotificationType.JOB_OUTPUT:
             if job.output == None: job.output = ""
-            job.output += args[jobmonprot.Request.ARGS_MSG]
+            for line in args[jobmonprot.Request.ARGS_LINES]:
+                job.output += line
         elif msg_type == NotificationType.JOB_PROGRESS:
             job.progress = args[jobmonprot.Request.ARGS_PROGRESS]
         elif msg_type == NotificationType.JOB_FINISHED:
@@ -129,13 +142,13 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
                       ("is" if num_clients_of_project == 1 else "are", \
                        num_clients_of_project, "s" if num_clients_of_project != 1 else ""))
         listening_clients = [cls.client_ID_open_sockets_map[int(client_ID)] for client_ID in clients_of_project if int(client_ID) in cls.client_ID_open_sockets_map]
-        _logger.info("There are %d active clients listening on this job." % len(listening_clients))
+        _logger.debug("There are %d active clients listening on this job." % len(listening_clients))
 
         for socket_handlers in listening_clients:
             if msg_type == NotificationType.JOB_STARTED:
                 message = protocol.JobRunningMessage(scratch_project_ID)
             elif msg_type == NotificationType.JOB_OUTPUT:
-                message = protocol.JobOutputMessage(scratch_project_ID, args[jobmonprot.Request.ARGS_MSG])
+                message = protocol.JobOutputMessage(scratch_project_ID, args[jobmonprot.Request.ARGS_LINES])
             elif msg_type == NotificationType.JOB_PROGRESS:
                 message = protocol.JobProgressMessage(scratch_project_ID, args[jobmonprot.Request.ARGS_PROGRESS])
             elif msg_type == NotificationType.JOB_FINISHED:
@@ -162,7 +175,7 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
                 else:
                     cls.client_ID_open_sockets_map[client_ID] = open_sockets
                 _logger.info("Found websocket and closed it")
-                return # skip loop => maximal 1 socket/clientID possible
+                return # break out of loop => limit is 1 socket/clientID
 
     def send_message(self, message):
         assert isinstance(message, protocol.Message)
@@ -194,30 +207,105 @@ class _MainHandler(tornado.web.RequestHandler):
 
 class _DownloadHandler(tornado.web.RequestHandler):
     def get(self):
+        # TODO: support head request!
         scratch_project_id_string = self.get_query_argument("id", default=None)
         if scratch_project_id_string == None or not scratch_project_id_string.isdigit():
             raise HTTPError(404)
-        download_dir = self.application.settings["jobmonitorserver"]["download_dir"]
-        file_dir = download_dir
+        file_dir = self.application.settings["jobmonitorserver"]["download_dir"]
         file_name = scratch_project_id_string + CATROBAT_FILE_EXT
         file_path = "%s/%s" % (file_dir, file_name)
         if not file_name or not os.path.exists(file_path):
             raise HTTPError(404)
-        self.set_header('Content-Type', 'application/force-download')
+        file_size = os.path.getsize(file_path)
+        self.set_header('Content-Type', 'application/zip')
         self.set_header('Content-Disposition', 'attachment; filename=%s' % file_name)
         with open(file_path, "rb") as f:
+            range_header = self.request.headers.get("Range")
+            request_range = None
+            if range_header:
+                # TODO: implement own parse request range helper method
+                request_range = httputil._parse_request_range(range_header, file_size)
+
+            if request_range:
+                # TODO: support HTTP range + test
+                # TODO: request_range.end
+                self.set_header('Content-Range', 'bytes {}-{}/{}'.format(request_range.start, (file_size - 1), file_size))
+                self.set_header('Content-Length', file_size - request_range.start + 1)#(request_range.end - request_range.start + 1))
+                file.seek(request_range.start)
+            else:
+                self.set_header('Content-Length', file_size)
+
             try:
                 while True:
-                    write_buffer = f.read(4096)
+                    write_buffer = f.read(4096) # XXX: what if file is smaller than this buffer-size?
                     if write_buffer:
                         self.write(write_buffer)
                     else:
-                        f.close()
                         self.finish()
                         return
             except:
                 raise HTTPError(404)
         raise HTTPError(500)
+
+class _ResponseBeautifulSoupDocumentWrapper(scratchwebapi.ResponseDocumentWrapper):
+    def select_first_as_text(self, query):
+        result = self.wrapped_document.select(query)
+        if result is None or not isinstance(result, list) or len(result) == 0:
+            return None
+        return result[0].contents[0]
+
+    def select_all_as_text_list(self, query):
+        result = self.wrapped_document.select(query)
+        if result is None:
+            return None
+        return [element.contents[0] for element in result if element is not None]
+
+    def select_attributes_as_text_list(self, query, attribute_name):
+        result = self.wrapped_document.select(query)
+        if result is None:
+            return None
+        return [element[attribute_name] for element in result if element is not None]
+
+class _ProjectHandler(tornado.web.RequestHandler):
+    project_info_cache = {}
+    CACHE_ENTRY_VALID_FOR = 600 # 10 minutes (in seconds)
+
+    @tornado.gen.coroutine
+    def get(self, project_id = None):
+        if project_id is not None:
+            cls = self.__class__
+            if project_id in cls.project_info_cache \
+            and datetime.now() <= cls.project_info_cache[project_id]["validUntil"]:
+                _logger.info("Cache hit for project ID {}".format(project_id))
+                self.write(cls.project_info_cache[project_id]["info"].as_dict())
+                return
+
+            scratch_project_url = SCRATCH_PROJECT_BASE_URL + str(project_id)
+            _logger.info("Fetching project info from: {}".format(scratch_project_url))
+            http_response = yield self.application.async_http_client.fetch(scratch_project_url)
+            if http_response is None or http_response.body is None or not isinstance(http_response.body, (str, unicode)):
+                _logger.error("Unable to set title of project from the project's " \
+                              "website! Reason: Invalid or empty html content!")
+                self.write({})
+                return
+
+            document = _ResponseBeautifulSoupDocumentWrapper(BeautifulSoup(http_response.body, "html.parser"))
+            project_info = scratchwebapi.extract_project_details_from_document(document)
+            if project_info is None:
+                _logger.error("Unable to set title of project from the project's " \
+                              "website! Reason: Invalid or empty html content!")
+                self.write({})
+                return
+
+            cls.project_info_cache[project_id] = {
+                "info": project_info,
+                "validUntil": datetime.now() + timedelta(seconds=cls.CACHE_ENTRY_VALID_FOR)
+            }
+            self.write(project_info.as_dict())
+            return
+
+        # TODO: automatically update featured projects...
+        self.write({ "results": CONVERTER_API_SETTINGS["featured_projects"] })
 
 class ConverterWebApp(tornado.web.Application):
     def __init__(self, **settings):
@@ -226,5 +314,9 @@ class ConverterWebApp(tornado.web.Application):
             (r"/", _MainHandler),
             (r"/download", _DownloadHandler),
             (r"/convertersocket", ConverterWebSocketHandler),
+            (r"/api/v1/projects/?", _ProjectHandler),
+            (r"/api/v1/projects/(\d+)/?", _ProjectHandler),
         ]
+        httpclient.AsyncHTTPClient.configure(None, defaults=dict(user_agent=HTTP_USER_AGENT))
+        self.async_http_client = httpclient.AsyncHTTPClient()
         tornado.web.Application.__init__(self, handlers, **settings)

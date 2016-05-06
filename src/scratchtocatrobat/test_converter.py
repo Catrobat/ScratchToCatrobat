@@ -988,6 +988,33 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.NextLookBrick)
 
+    # setVideoState
+    def test_can_convert_setvideostate_block_with_state_on(self):
+        scratch_block = ["setVideoState", "on"]
+        [choose_camera_brick, camera_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(choose_camera_brick, catbricks.ChooseCameraBrick)
+        assert isinstance(camera_brick, catbricks.CameraBrick)
+        assert choose_camera_brick.spinnerSelectionID == catbricks.ChooseCameraBrick.FRONT # @UndefinedVariable
+        assert camera_brick.spinnerSelectionID == catbricks.CameraBrick.ON                 # @UndefinedVariable
+
+    # setVideoState
+    def test_can_convert_setvideostate_block_with_state_off(self):
+        scratch_block = ["setVideoState", "off"]
+        [choose_camera_brick, camera_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(choose_camera_brick, catbricks.ChooseCameraBrick)
+        assert isinstance(camera_brick, catbricks.CameraBrick)
+        assert choose_camera_brick.spinnerSelectionID == catbricks.ChooseCameraBrick.FRONT # @UndefinedVariable
+        assert camera_brick.spinnerSelectionID == catbricks.CameraBrick.OFF                # @UndefinedVariable
+
+    # setVideoState
+    def test_can_convert_setvideostate_block_with_state_on_flipped(self):
+        scratch_block = ["setVideoState", "on-flipped"]
+        [choose_camera_brick, camera_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(choose_camera_brick, catbricks.ChooseCameraBrick)
+        assert isinstance(camera_brick, catbricks.CameraBrick)
+        assert choose_camera_brick.spinnerSelectionID == catbricks.ChooseCameraBrick.FRONT # @UndefinedVariable
+        assert camera_brick.spinnerSelectionID == catbricks.CameraBrick.ON                 # @UndefinedVariable
+
     # glideSecs:toX:y:elapsed:from:
     def test_can_convert_glideto_block(self):
         scratch_block = _, glide_duration, glide_x, glide_y = ["glideSecs:toX:y:elapsed:from:", 5, 174, -122]
@@ -1029,7 +1056,8 @@ class TestConvertProjects(common_testing.ProjectTestCase):
         else:
             scratch_project_dir = common_testing.get_test_project_path(project_name)
         scratch_project = scratch.Project(scratch_project_dir, name=project_name, id_=common_testing.PROJECT_DUMMY_ID)
-        converted_project = converter.converted(scratch_project)
+        context = converter.Context()
+        converted_project = converter.converted(scratch_project, None, context)
         catrobat_zip_file_name = converted_project.save_as_catrobat_package_to(self._testresult_folder_path)
         self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, project_name, unused_scratch_resources=scratch_project.unused_resource_names)
         return converted_project.catrobat_program

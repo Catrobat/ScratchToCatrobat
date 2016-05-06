@@ -27,7 +27,7 @@ import zipfile
 import shutil
 import java
 from javax.sound.sampled import AudioSystem
-from java.net import SocketTimeoutException, SocketException
+from java.net import SocketTimeoutException, SocketException, UnknownHostException
 from java.io import IOException
 from org.python.core import PyReflectedField  #@UnresolvedImport
 from itertools import chain
@@ -87,7 +87,7 @@ class DictAccessWrapper(object):
         if isinstance(dict_object, set):
             dict_object = dict.fromkeys(dict_object, None)
         assert isinstance(dict_object, dict)
-        self.__dict_object = copy.deepcopy(dict_object)
+        self._dict_object = copy.deepcopy(dict_object)
 
     def _checked_dict_access(self):
         dict_ = self._dict_access_object()
@@ -96,10 +96,10 @@ class DictAccessWrapper(object):
 
     def __getattr__(self, name):
         def get():
-            return self.__dict_object.get(key)
+            return self._dict_object.get(key)
 
         def contains():
-            return key in self.__dict_object
+            return key in self._dict_object
 
         key = list(pad(name.split("_", 2), 2))[1]
         if name.startswith("get_"):
@@ -111,9 +111,9 @@ class DictAccessWrapper(object):
 
     def __try_wrapped_access(self, key):
         try:
-            return self.__dict_object[key]
+            return self._dict_object[key]
         except KeyError:
-            raise KeyError("Key '{}' is not available for '{}'. Available keys: {}".format(key, self, self.__dict_object.keys()))
+            raise KeyError("Key '{}' is not available for '{}'. Available keys: {}".format(key, self, self._dict_object.keys()))
 
     def __getitem__(self, key):
         return self.__try_wrapped_access(key)
@@ -228,7 +228,7 @@ def download_file(url, file_path, referer_url=None, retries=None, backoff=None, 
     max_redirects = int(helpers.config.get("SCRATCH_API", "http_max_redirects"))
     user_agent = helpers.config.get("SCRATCH_API", "user_agent")
 
-    @helpers.retry((SocketTimeoutException, SocketException, IOException), \
+    @helpers.retry((SocketTimeoutException, SocketException, UnknownHostException, IOException), \
                    delay=delay, backoff=backoff, tries=retries, hook=hook)
     def download_request(url, file_path, user_agent, referer_url, timeout, max_redirects, log):
         import jarray

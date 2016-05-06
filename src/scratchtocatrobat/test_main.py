@@ -115,15 +115,6 @@ class MainTest(common_testing.ProjectTestCase):
         assert "Sox binary must be available on system path" not in stderr
         assert return_val == helpers.ExitCode.SUCCESS
 
-    def test_fail_to_execute_with_batik_env_home_not_set(self):
-        self.test_environ = dict(os.environ)
-        del self.test_environ[helpers.config.get("PATHS", "batik_home")]
-        return_val, (stdout, stderr) = self.execute_main_module_check()
-
-        assert stderr, stdout
-        assert "Environment variable 'BATIK_HOME' must be set to batik library location" in stderr
-        assert return_val == helpers.ExitCode.FAILURE
-
     def test_can_get_catrobat_language_version(self):
         return_val, (stdout, _) = self.execute_main_module_check()
         assert "Catrobat language version:" in stdout

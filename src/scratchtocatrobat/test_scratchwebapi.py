@@ -19,6 +19,7 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see http://www.gnu.org/licenses/.
 import unittest
+import os
 
 from scratchtocatrobat import common
 from scratchtocatrobat import common_testing
@@ -59,16 +60,18 @@ class WebApiTest(common_testing.BaseTestCase):
 
     def test_fail_on_wrong_url(self):
         for wrong_url in ['http://www.tugraz.at', 'http://www.ist.tugraz.at/', 'http://scratch.mit.edu/', 'http://scratch.mit.edu/projects']:
-            with self.assertRaises(common.ScratchtobatError):
+            with self.assertRaises(scratchwebapi.ScratchWebApiError):
                 scratchwebapi.download_project(wrong_url, None)
 
     def test_can_request_project_code_content(self):
-        for _project_url, project_id in common_testing.TEST_PROJECT_URL_TO_ID_MAP.iteritems():
-            # TODO: fix tests!
-            pass
-            #project_code = scratchwebapi.request_project_code(project_id)
-            #raw_project = scratch.RawProject.from_project_code_content(project_code)
-            #assert raw_project
+        with common.TemporaryDirectory(remove_on_exit=True) as temp_dir:
+            for _project_url, project_id in common_testing.TEST_PROJECT_URL_TO_ID_MAP.iteritems():
+                scratchwebapi.download_project_code(project_id, temp_dir)
+                project_file_path = os.path.join(temp_dir, scratch._PROJECT_FILE_NAME)
+                with open(project_file_path, 'r') as project_code_file:
+                    project_code_content = project_code_file.read()
+                    raw_project = scratch.RawProject.from_project_code_content(project_code_content)
+                    assert raw_project
 
     def test_can_request_project_title_for_id(self):
         for (project_id, expected_project_title) in TEST_PROJECT_ID_TO_TITLE_MAP.iteritems():

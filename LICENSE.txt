@@ -1,0 +1,124 @@
+Licenses of the Catrobat system
+
+The following licenses, terms, and conditions apply to your use of the Catrobat system: 
+Version 3.5, 28 January 2015
+All source code of software constituting the Catrobat system, e.g., the integrated development environments (with all associated parts such as tutorial programs) and the interpreters and compilers for the Catrobat programming language, the image editing programs, the source code of software we wrote to run the Catrobat websites and other Internet resources, and all our own source code related to the Catrobat system, are free software: you can redistribute them and/or modify them under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version when it becomes available.
+
+The names and logos of the Catrobat project and subprojects are copyrighted by and trademarks of the Catrobat project and cannot be used in derivative work. You are however allowed to use the names and logos of Catrobat, Catroid, Catty, Pocket Code, Paintroid, Pocket Paint, and other names and logos of software created by the Catrobat team in non-derivative work such as, e.g., books, brochures, or descriptive web pages. We do ask to include a note that either says "Catrobat is developed by the Catrobat project http://developer.catrobat.org/" or "Catrobat makes it easy to program your own interactive stories, games, and animations --- and share your creations on the web. As you create and share Catrobat programs, you learn to think creatively, reason systematically, and work collaboratively. All parts of the Catrobat system are developed by the Catrobat project. They are available as free open source software from http://developer.catrobat.org/".
+
+For the parts of the Catrobat system necessary for running a Catrobat program, e.g., the interpreters, the GNU Affero General Public License is supplemented by an additional permission under section 7 of version 3 of the License. This exception allows you to convey a runtime version of a program written in the Catrobat programming language, for which you otherwise legally hold the necessary rights, in combination with the parts of the Catrobat system necessary for running that Catrobat program, under terms of your choice, consistent with the licensing of the independent parts of the corresponding Catrobat program.
+
+Please note that this is only possible either when you are the sole creator of the program including all its parts such as graphics, texts, sounds, etc, or in case you licensed the parts of other programs on which your program is based upon, including any additional material and/or possible trademarks etc, in such a way that you are allowed to convey the resulting software under your chosen terms in consistence with these third-party materials. This additional permission is similar to the additional permission for GCC (see the corresponding Rationale and FAQ page for the exception for GCC for more information). If the work thus created has an interactive user interface, it must display a note in a screen shown when the user presses an "About" menu button or a similar way to convey such a message that says "This work was created using programs developed by the Catrobat project. Catrobat makes it easy to program your own interactive stories, games, and animations --- and share your creations on the web. As you create and share programs with Catrobat, you learn to think creatively, reason systematically, and work collaboratively. Catrobat is available as free open source software from http://developer.catrobat.org/ and is distributed by the Catrobat project under the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version when it becomes available. For the parts of the Catrobat system necessary for running a Catrobat program, e.g., the Catrobat Interpreter, the GNU Affero General Public License is supplemented by an additional permission under section 7 of version 3 of the License. This exception allows to convey a runtime version of a Catrobat program, for which you otherwise legally hold the necessary rights, in combination with the parts of the Catrobat system necessary for running that Catrobat program, under terms of your choice, consistent with the licensing of the independent parts of the corresponding Catrobat program.". The same notice must also be added by you as text in or along any documents you distribute together with your runtime version of the program. Please consult our Catrobat License Additional Term page for the precise legal formulation of the additional permission under section 7 of version 3 of the GNU Affero General Public License. For clarification, note that this additional permission does not apply to programs you upload to Catrobat's website. Please consult https://pocketcode.org/termsOfUse for the terms and http://developer.catrobat.org/licenses_of_uploaded_catrobat_programs for the precise legal terms and conditions that apply to a project you upload to Catrobat's website.
+
+Please also note that by using or visiting any website (including any software that we created which either runs directly on our servers, or alternatively runs client-side, e.g., in your browser, but is served by our servers) or products (including all our web-services provided by software that we created which are offered through our servers), all executables we offer on any markets or the web (including, e.g., the Google Play App Store, Apple's iTunes App Store, Amazon's App Store, Microsoft's Windows Phone Apps Store, etc), data feeds, and services provided to you on, from, or through the Catrobat project (collectively the "Service"), you signify your agreement to (1) Catrobat's terms and conditions (the "Terms of Use and Service", found at http://developer.catrobat.org/terms_of_use_and_service), (2) Catrobat's privacy notice (found at http://developer.catrobat.org/privacy_policy), and (3) Catrobat's Community Guidelines (found at https://pocketcode.org/termsOfUse). If you do not agree to any of these terms, the Catrobat privacy notice, or the Community Guidelines, please do not use the Service.
+
+All non-software artefacts of the Catrobat system created by us, such as, e.g., text, graphics, photos, sounds, music, videos, audiovisual combinations, interactive features, and other materials are available under the Creative Commons Attribution-ShareAlike 4.0 International Public License (CC BY-SA 4.0), the only exceptions being the names and logos of the Catrobat project (including, e.g., Catrobat, Catroid, Catty, Pocket Code, Paintroid, Pocket Paint), which are copyrighted by and trademarks of the Catrobat project and cannot be used in derivative work. See http://creativecommons.org/licenses/by-sa/4.0/ for a human-readable summary of the Creative Commons Attribution-ShareAlike 4.0 International Public License.
+
+Catrobat additionally contains third party code and resources as follows:
+
+libGDX: <http://libgdx.badlogicgames.com>
+License information: Apache 2 License <https://raw.github.com/libgdx/libgdx/master/gdx/LICENSE>
+Copyright © 2011-2012 See <https://github.com/libgdx/libgdx/tree/master/gdx>
+
+XStream: <http://xstream.codehaus.org>
+License information: <http://xstream.codehaus.org/license.html>
+Copyright © 2003-2006, Joe Walnes
+Copyright © 2006-2009, 2011 XStream Committers
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+Neither the name of XStream nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Toolbar custom icons 1.0 facilities from Gentleface custom icon design: <http://gentleface.com/free_icon_set.html>
+License information: Creative Commons Attribution-NonCommercial 3.0: <https://creativecommons.org/licenses/by-nc-nd/3.0/>
+Copyright © 2006-2011 Gentleface.
+
+MINDdroid: <https://github.com/NXT/LEGO-MINDSTORMS-MINDdroid>
+Copyright © 2010/11 Guenther Hoelzl, Shawn Brown
+Copyright © 2010/11 LEGO System A/S, Aastvej 1, DK-7190 Billund, Denmark
+MINDdroid is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+MINDdroid is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details <http://www.gnu.org/licenses/>
+
+Sparrow: <https://github.com/Gamua/Sparrow-Framework>
+Simplified BSD License
+Copyright 2013 Gamua. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY GAMUA "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GAMUA OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The views and conclusions contained in the software and documentation are those of the authors and should not be interpreted as representing official policies, either expressed or implied, of Gamua.
+
+Java HTTP Request Library: <http://kevinsawicki.github.io/http-request/>
+Copyright (c) 2011 Kevin Sawicki.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+FlowLayout (part 1):
+<https://code.google.com/p/devoxx-schedule/source/.../FlowLayout.java>
+Copyright 2010 Romain Guy
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+FlowLayout (part 2):
+<https://github.com/ApmeM/android-flowlayout>
+Copyright (c) 2011, Artem Votincev (apmem.org)
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+* Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+* Neither the name of the apmem.org nor the
+names of its contributors may be used to endorse or promote products
+derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL ARTEM VOTINCEV BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Check back here from time-to-time, because we are always trying to improve our licenses.
+
+Please mail any suggestions regarding these licenses to webmaster@catrobat.org.
+
+
+Licenses of all used 3rd party libraries
+
+Libraries of our converter tool:
+Batik 1.7   Apache License Version 2.0
+jsoup       under MIT license, Copyright © 2009 - 2013 Jonathan Hedle(jonathan@hedley.net)
+xmlpull     Initial authors: Stefan Haustein and Aleksander Slominski
+xpp3_min    Copyright 2002 Extreme! Lab, Indiana University. All rights reserved.
+xstream     Copyright by the BSD license
+
+Web libraries:	
+bootstrap   Copyright by the MIT license
+jquery      Copyright by the MIT license
+qrcode      Copyright by the MIT license
+
+Libraries used in Sourcecode filter:	
+Guava       Apache License Version 2.0
+SnakeYAML   Licensed by APL 2.0.
+Commons-io  Apache License Version 2.0

@@ -896,7 +896,7 @@ def _assign_initialization_value_to_user_variable(project, variable_name, variab
     user_variable = project.getDataContainer().getUserVariable(variable_name, sprite)
     assert user_variable is not None and user_variable.getName() == variable_name, "variable: %s, sprite_name: %s" % (variable_name, sprite.getName())
     variable_initialization_brick = _create_variable_brick(variable_value, user_variable, catbricks.SetVariableBrick)
-    catrobat.add_to_start_script([variable_initialization_brick], sprite)
+    catrobat.add_to_start_script([variable_initialization_brick], sprite, position=0)
 
 # based on: http://stackoverflow.com/a/4274204
 def _register_handler(dict_, *names):

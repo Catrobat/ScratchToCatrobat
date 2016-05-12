@@ -31,7 +31,7 @@ HTTP_TIMEOUT = int(helpers.config.get("SCRATCH_API", "http_timeout"))
 HTTP_USER_AGENT = helpers.config.get("SCRATCH_API", "user_agent")
 SCRATCH_PROJECT_BASE_URL = helpers.config.get("SCRATCH_API", "project_base_url")
 
-class ScratchProjectInfo(namedtuple("ScratchProjectInfo", "title owner description views favorites loves remixes")):
+class ScratchProjectInfo(namedtuple("ScratchProjectInfo", "title owner description tags views favorites loves modified_date shared_date remixes")):
     def as_dict(self):
         return dict((s, getattr(self, s)) for s in self._fields)
     def __str__(self):
@@ -213,7 +213,7 @@ def extract_project_owner_from_document(document):
     if extracted_text is None:
         return None
 
-    return unicode(extracted_text).strip()
+    return unicode(extracted_text).replace("by ", "").strip()
 
 def extract_project_description_from_document(document):
     if document is None:
@@ -240,19 +240,19 @@ def extract_project_remixes_from_document(document):
     if document is None:
         return None
 
-    extracted_text_list = document.select_all_as_text_list("div.box > div.box-content > ul.media-col > li > div.project > span.title > a")
+    extracted_text_list = document.select_all_as_text_list("ul.media-col > li > div.project > span.title > a")
     if extracted_text_list is None:
         return None
 
     titles_of_remixed_projects = [unicode(text).strip() for text in extracted_text_list]
 
-    extracted_text_list = document.select_all_as_text_list("div.box > div.box-content > ul.media-col > li > div.project > span.owner")
+    extracted_text_list = document.select_all_as_text_list("ul.media-col > li > div.project > span.owner")
     if extracted_text_list is None:
         return None
 
     owners_of_remixed_projects = [unicode(text).replace("by ", "").strip() for text in extracted_text_list]
 
-    extracted_text_list = document.select_attributes_as_text_list("div.box > div.box-content > ul.media-col > li > div.project > a.image > img", "src")
+    extracted_text_list = document.select_attributes_as_text_list("ul.media-col > li > div.project > a.image > img", "src")
     if extracted_text_list is None:
         return None
 
@@ -288,7 +288,12 @@ def extract_project_details_from_document(document):
     if description is None:
         return None
 
-    extracted_text = document.select_first_as_text("div#stats > div.stats > div#total-views > span.views")
+    extracted_list = document.select_all_as_text_list("div#project-tags div.tag-box span.tag")
+    if extracted_list is None:
+        return None
+    tags = extracted_list
+
+    extracted_text = document.select_first_as_text("div#total-views > span.views")
     if extracted_text is None:
         return None
 
@@ -300,15 +305,26 @@ def extract_project_details_from_document(document):
 
     favorites = int(unicode(extracted_text).strip())
 
-    extracted_text = document.select_first_as_text("div#stats > div#love-this > span.love")
+    extracted_text = document.select_first_as_text("div#love-this > span.love")
     if extracted_text is None:
         return None
 
     loves = int(unicode(extracted_text).strip())
 
+    extracted_text = document.select_first_as_text("div#fixed div.dates span.date-updated")
+    if extracted_text is None:
+        return None
+    modified_date = unicode(extracted_text).replace("Modified:", "").strip()
+
+    extracted_text = document.select_first_as_text("div#fixed div.dates span.date-shared")
+    if extracted_text is None:
+        return None
+    shared_date = unicode(extracted_text).replace("Shared:", "").strip()
+
     remixes = extract_project_remixes_from_document(document)
     if remixes is None:
         return None
 
-    return ScratchProjectInfo(title = title, owner = owner, description = description, views = views,
-                              favorites = favorites, loves = loves, remixes = remixes)
+    return ScratchProjectInfo(title = title, owner = owner, description = description, tags = tags,
+                              views = views, favorites = favorites, loves = loves,
+                              modified_date = modified_date, shared_date = shared_date, remixes = remixes)

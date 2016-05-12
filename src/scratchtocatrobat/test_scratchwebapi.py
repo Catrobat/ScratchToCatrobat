@@ -36,6 +36,20 @@ TEST_PROJECT_ID_TO_OWNER_MAP = {
     "10132588": "psush09"
 }
 
+TEST_PROJECT_ID_TO_REMIXES_MAP = {
+    "10205819": [{
+        'owner': 'Amanda69',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/10211023_144x108.png?v=1368486334.0',
+        'title': "Dancin' in the Castle remake"
+    }],
+    "10132588": []
+}
+
+TEST_PROJECT_ID_TO_TAGS_MAP = {
+    "10205819": ['animations', 'castle'],
+    "10132588": ['music', 'simulations', 'animations']
+}
+
 TEST_PROJECT_ID_TO_DESCRIPTION_MAP = {
     "10205819": "----------------------------------------\n" \
                 + "Instructions:\nClick the flag to run the stack. Click the space bar to change it up!\n"
@@ -111,6 +125,9 @@ class WebApiTest(common_testing.BaseTestCase):
             assert extracted_project_info.description is not None
             assert extracted_project_info.description == TEST_PROJECT_ID_TO_DESCRIPTION_MAP[project_id], \
                    "'{}' is not equal to '{}'".format(extracted_project_info.owner, TEST_PROJECT_ID_TO_DESCRIPTION_MAP[project_id])
+            assert extracted_project_info.tags is not None
+            assert extracted_project_info.tags == TEST_PROJECT_ID_TO_TAGS_MAP[project_id], \
+                   "'{}' is not equal to '{}'".format(extracted_project_info.tags, TEST_PROJECT_ID_TO_TAGS_MAP[project_id])
             assert extracted_project_info.views is not None
             assert isinstance(extracted_project_info.views, int)
             assert extracted_project_info.views > 0
@@ -120,7 +137,13 @@ class WebApiTest(common_testing.BaseTestCase):
             assert extracted_project_info.loves is not None
             assert extracted_project_info.loves >= 0
             assert isinstance(extracted_project_info.loves, int)
+            assert extracted_project_info.modified_date is not None
+            assert isinstance(extracted_project_info.modified_date, (str, unicode))
+            assert extracted_project_info.shared_date is not None
+            assert isinstance(extracted_project_info.shared_date, (str, unicode))
             assert extracted_project_info.remixes is not None
+            assert extracted_project_info.remixes == TEST_PROJECT_ID_TO_REMIXES_MAP[project_id], \
+                   "'{}' is not equal to '{}'".format(extracted_project_info.remixes, TEST_PROJECT_ID_TO_REMIXES_MAP[project_id])
             assert isinstance(extracted_project_info.remixes, list)
 
 if __name__ == "__main__":

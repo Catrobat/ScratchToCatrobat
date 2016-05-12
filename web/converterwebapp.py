@@ -277,22 +277,23 @@ class _ProjectHandler(tornado.web.RequestHandler):
             if project_id in cls.project_info_cache \
             and datetime.now() <= cls.project_info_cache[project_id]["validUntil"]:
                 _logger.info("Cache hit for project ID {}".format(project_id))
-                self.write(cls.project_info_cache[project_id]["info"].as_dict())
-                return
+                #self.write(cls.project_info_cache[project_id]["info"].as_dict())
+                #return
 
             scratch_project_url = SCRATCH_PROJECT_BASE_URL + str(project_id)
             _logger.info("Fetching project info from: {}".format(scratch_project_url))
             http_response = yield self.application.async_http_client.fetch(scratch_project_url)
             if http_response is None or http_response.body is None or not isinstance(http_response.body, (str, unicode)):
-                _logger.error("Unable to set title of project from the project's " \
-                              "website! Reason: Invalid or empty html content!")
+                _logger.error("Unable to download the project's website! " \
+                              "Reason: Invalid or empty html content!")
                 self.write({})
                 return
 
-            document = _ResponseBeautifulSoupDocumentWrapper(BeautifulSoup(http_response.body, "html.parser"))
+            #body = re.sub("(.*" + re.escape("<li>") + r'\s*' + re.escape("<div class=\"project thumb\">") + r'.*' + re.escape("<span class=\"owner\">") + r'.*' + re.escape("</span>") + r'\s*' + ")" + "(" + re.escape("</li>.*") + ")", r'\1</div>\2', http_response.body)
+            document = _ResponseBeautifulSoupDocumentWrapper(BeautifulSoup(http_response.body, b'html5lib'))
             project_info = scratchwebapi.extract_project_details_from_document(document)
             if project_info is None:
-                _logger.error("Unable to set title of project from the project's " \
+                _logger.error("Unable parse project info from the project's " \
                               "website! Reason: Invalid or empty html content!")
                 self.write({})
                 return

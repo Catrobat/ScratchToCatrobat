@@ -252,13 +252,13 @@ class _ResponseBeautifulSoupDocumentWrapper(scratchwebapi.ResponseDocumentWrappe
         result = self.wrapped_document.select(query)
         if result is None or not isinstance(result, list) or len(result) == 0:
             return None
-        return result[0].contents[0]
+        return result[0].get_text()
 
     def select_all_as_text_list(self, query):
         result = self.wrapped_document.select(query)
         if result is None:
             return None
-        return [element.contents[0] for element in result if element is not None]
+        return [element.get_text() for element in result if element is not None]
 
     def select_attributes_as_text_list(self, query, attribute_name):
         result = self.wrapped_document.select(query)

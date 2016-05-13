@@ -59,6 +59,9 @@ else:
     error("Invalid input given!")
 
 for module in modules_under_test:
+    print("-"*80)
+    print("Testing '%s':" % module)
+    print("-"*80)
     exec_args = [jython_exec_path, "-m", module]
 
     if len(sys.argv) >= 3:
@@ -66,5 +69,7 @@ for module in modules_under_test:
     exit_code = subprocess.call(exec_args, env=env)
     if exit_code != 0:
         sys.exit(exit_code)
+    print()
+    print()
 
 sys.exit(helpers.ExitCode.SUCCESS)

@@ -25,7 +25,6 @@ import unittest
 
 from scratchtocatrobat import common, scratch
 from scratchtocatrobat import common_testing
-from scratchtocatrobat import scratch
 
 EASY_SCRIPTS = [
     [23, 125,
@@ -78,6 +77,22 @@ NEW_FUNCTION_COMPLEX_HELPER_OBJECT_DATA = {
                 80.45,
                 [["procDef", "another_function %n", ["value"], [1], False],
                         ["doIf", [">", ["getParam", "value", "r"], " 5 "], ["call", "destination_function"]]]]],
+}
+
+TIMER_HELPER_OBJECTS_DATA_TEMPLATE = {
+    "objName": "Stage",
+    "sounds": [],
+    "costumes": [],
+    "currentCostumeIndex": 0,
+    "penLayerMD5": "5c81a336fab8be57adc039a8a2b33ca9.png",
+    "penLayerID": 0,
+    "tempoBPM": 60,
+    "videoAlpha": 0.5,
+    "children": [{
+        "objName": "Sprite1",
+        "scripts": None
+    }],
+    "info": {}
 }
 
 TEST_PROJECT_FOLDER = "dancing_castle"
@@ -368,11 +383,11 @@ class TestBlockNewFunction(unittest.TestCase):
             assert script == expected_script, "Scripts are not equal!"
         
 class TestMoreComplexBlockNewFunction(unittest.TestCase):  
-    
+
     def setUp(self):
         unittest.TestCase.setUp(self)
         self.script_object = create_user_defined_function_workaround_scratch_object(NEW_FUNCTION_COMPLEX_HELPER_OBJECT_DATA)
-  
+
     def test_more_complicated_function_brick(self):
         expected_scripts = [
             [27, 80, [["whenGreenFlag"],
@@ -383,7 +398,7 @@ class TestMoreComplexBlockNewFunction(unittest.TestCase):
                     [u'doIf', [u'>', ['readVariable', u'S2CC_param_function %n_0'], u' 5 '], 
                         ['setVar:to:', u'S2CC_param_another_function %n_0', 3], 
                         ['doBroadcastAndWait', u'S2CC_msg_another_function %n']]]],
-            [678.45, 79.3, 
+            [678.45, 79.3,
                 [["whenIReceive", "S2CC_msg_destination_function"],
                     [u'playSound:', u'meow']]],
             [404.65, 80.45,
@@ -396,6 +411,223 @@ class TestMoreComplexBlockNewFunction(unittest.TestCase):
         for (index, script) in enumerate(self.script_object.scripts):
             expected_script = scratch.Script(expected_scripts[index])
             assert script == expected_script, "Scripts are not equal!"
+
+class TestTimerBlock(unittest.TestCase):
+
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        TIMER_HELPER_OBJECTS_DATA_TEMPLATE["scripts"] = []
+
+    def test_timer_block(self):
+        script_data = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["timer"]]]]
+        TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        raw_project = scratch.RawProject(TIMER_HELPER_OBJECTS_DATA_TEMPLATE)
+        expected_background_object_script_data = [0, 0, [['whenGreenFlag'],
+            ['doForever', [
+                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.1],
+                ['wait:elapsed:from:', 0.1]
+            ]]
+        ]]
+        expected_first_object_script_data = [0, 0, [["whenGreenFlag"],
+            ['wait:elapsed:from:', ['readVariable', scratch.S2CC_TIMER_VARIABLE_NAME]]
+        ]]
+
+        # validate
+        assert len(raw_project.objects) == 2
+        [background_object, first_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 1
+        script = background_object.scripts[0]
+        expected_script = scratch.Script(expected_background_object_script_data)
+        assert script == expected_script
+
+        # first object
+        assert len(first_object.scripts) == 1
+        script = first_object.scripts[0]
+        expected_script = scratch.Script(expected_first_object_script_data)
+        assert script == expected_script
+
+    def test_same_timer_block_twice(self):
+        script_data = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["timer"]], ["wait:elapsed:from:", ["timer"]]]]
+        TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        expected_background_object_script_data = [0, 0, [['whenGreenFlag'],
+            ['doForever', [
+                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.1],
+                ['wait:elapsed:from:', 0.1]
+            ]]
+        ]]
+        expected_first_object_script_data = [0, 0, [["whenGreenFlag"],
+            ['wait:elapsed:from:', ['readVariable', scratch.S2CC_TIMER_VARIABLE_NAME]],
+            ['wait:elapsed:from:', ['readVariable', scratch.S2CC_TIMER_VARIABLE_NAME]]
+        ]]
+
+        # create project
+        raw_project = scratch.RawProject(TIMER_HELPER_OBJECTS_DATA_TEMPLATE)
+
+        # validate
+        assert len(raw_project.objects) == 2
+        [background_object, first_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 1
+        script = background_object.scripts[0]
+        expected_script = scratch.Script(expected_background_object_script_data)
+        assert script == expected_script
+
+        # first object
+        assert len(first_object.scripts) == 1
+        script = first_object.scripts[0]
+        expected_script = scratch.Script(expected_first_object_script_data)
+        assert script == expected_script
+
+    def test_reset_timer_block_with_non_existant_timer_block_should_be_ignored(self):
+        script_data = [0, 0, [["whenGreenFlag"], ["timerReset"]]]
+        TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        expected_first_object_script_data = [0, 0, [["whenGreenFlag"],
+            ['doBroadcastAndWait', scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE]
+        ]]
+
+        # create project
+        raw_project = scratch.RawProject(TIMER_HELPER_OBJECTS_DATA_TEMPLATE)
+
+        # validate
+        assert len(raw_project.objects) == 2
+        [background_object, first_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 0
+
+        # first object
+        assert len(first_object.scripts) == 1
+        script = first_object.scripts[0]
+        expected_script = scratch.Script(expected_first_object_script_data)
+        assert script == expected_script
+
+    def test_reset_timer_block_with_existant_timer_block_in_same_object_must_NOT_be_ignored(self):
+        expected_background_object_scripts_data = [[0, 0, [['whenGreenFlag'],
+            ['doForever', [
+                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.1],
+                ['wait:elapsed:from:', 0.1]
+            ]]]
+        ], [0, 0, [['whenIReceive', scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE],
+            ['setVar:to:', scratch.S2CC_TIMER_VARIABLE_NAME, 0]
+        ]]]
+        script_data = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["timer"]], ["timerReset"]]]
+        TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        expected_first_object_script_data = [0, 0, [["whenGreenFlag"],
+            ['wait:elapsed:from:', ['readVariable', scratch.S2CC_TIMER_VARIABLE_NAME]],
+            ["doBroadcastAndWait", scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE]
+        ]]
+
+        # create project
+        raw_project = scratch.RawProject(TIMER_HELPER_OBJECTS_DATA_TEMPLATE)
+
+        # validate
+        assert len(raw_project.objects) == 2
+        [background_object, first_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 2
+        script = background_object.scripts[0]
+        expected_script = scratch.Script(expected_background_object_scripts_data[0])
+        assert script == expected_script
+        script = background_object.scripts[1]
+        expected_script = scratch.Script(expected_background_object_scripts_data[1])
+        assert script == expected_script
+
+        # first object
+        assert len(first_object.scripts) == 1
+        script = first_object.scripts[0]
+        expected_script = scratch.Script(expected_first_object_script_data)
+        assert script == expected_script
+
+    def test_reset_timer_block_and_timer_block_within_loop_must_NOT_be_ignored(self):
+        expected_background_object_scripts_data = [[0, 0, [['whenGreenFlag'],
+            ['doForever', [
+                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.1],
+                ['wait:elapsed:from:', 0.1]
+            ]]]
+        ], [0, 0, [['whenIReceive', scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE],
+            ['setVar:to:', scratch.S2CC_TIMER_VARIABLE_NAME, 0]
+        ]]]
+        script_data = [0, 0, [["whenGreenFlag"],
+            ["doRepeat", 100, [["wait:elapsed:from:", ["timer"]], ["timerReset"]]]]
+        ]
+        TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        expected_first_object_script_data = [0, 0, [["whenGreenFlag"],
+            ["doRepeat", 100, [
+                ['wait:elapsed:from:', ['readVariable', scratch.S2CC_TIMER_VARIABLE_NAME]],
+                ["doBroadcastAndWait", scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE]]
+        ]]]
+
+        # create project
+        raw_project = scratch.RawProject(TIMER_HELPER_OBJECTS_DATA_TEMPLATE)
+
+        # validate
+        assert len(raw_project.objects) == 2
+        [background_object, first_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 2
+        script = background_object.scripts[0]
+        expected_script = scratch.Script(expected_background_object_scripts_data[0])
+        assert script == expected_script
+        script = background_object.scripts[1]
+        expected_script = scratch.Script(expected_background_object_scripts_data[1])
+        assert script == expected_script
+
+        # first object
+        assert len(first_object.scripts) == 1
+        script = first_object.scripts[0]
+        expected_script = scratch.Script(expected_first_object_script_data)
+        assert script == expected_script
+
+    def test_reset_timer_block_with_existant_timer_block_in_other_object_must_NOT_be_ignored(self):
+        background_script_data = [0, 0, [["whenGreenFlag"], ["timerReset"]]]
+        TIMER_HELPER_OBJECTS_DATA_TEMPLATE["scripts"] = [background_script_data]
+        expected_background_object_scripts_data = [[0, 0, [['whenGreenFlag'],
+            ["doBroadcastAndWait", scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE]
+        ]], [0, 0, [['whenGreenFlag'],
+            ['doForever', [
+                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.1],
+                ['wait:elapsed:from:', 0.1]
+            ]]]
+        ], [0, 0, [['whenIReceive', scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE],
+            ['setVar:to:', scratch.S2CC_TIMER_VARIABLE_NAME, 0]
+        ]]]
+
+        # first object scripts
+        first_object_script_data = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["timer"]]]]
+        TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [first_object_script_data]
+        expected_first_object_script_data = [0, 0, [["whenGreenFlag"],
+            ['wait:elapsed:from:', ['readVariable', scratch.S2CC_TIMER_VARIABLE_NAME]]
+        ]]
+
+        # create project
+        raw_project = scratch.RawProject(TIMER_HELPER_OBJECTS_DATA_TEMPLATE)
+
+        # validate
+        assert len(raw_project.objects) == 2
+        [background_object, first_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 3
+        script = background_object.scripts[0]
+        expected_script = scratch.Script(expected_background_object_scripts_data[0])
+        assert script == expected_script
+        script = background_object.scripts[1]
+        expected_script = scratch.Script(expected_background_object_scripts_data[1])
+        assert script == expected_script
+        script = background_object.scripts[2]
+        expected_script = scratch.Script(expected_background_object_scripts_data[2])
+        assert script == expected_script
+
+        # first object
+        assert len(first_object.scripts) == 1
+        script = first_object.scripts[0]
+        expected_script = scratch.Script(expected_first_object_script_data)
+        assert script == expected_script
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']

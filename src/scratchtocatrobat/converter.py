@@ -368,12 +368,15 @@ class Converter(object):
         return ConvertedProject(catrobat_project, scratch_project)
 
     def _converted_catrobat_program(self, progress_bar=None, context=None):
-        _catr_project = catbase.Project(None, self.scratch_project.name)
-        self._scratch_object_converter = _ScratchObjectConverter(_catr_project, self.scratch_project, progress_bar, context)
+        scratch_project = self.scratch_project
+        _catr_project = catbase.Project(None, scratch_project.name)
+        self._scratch_object_converter = _ScratchObjectConverter(_catr_project, scratch_project,
+                                                                 progress_bar, context)
         self._add_global_user_lists_to(_catr_project)
         self._add_converted_sprites_to(_catr_project)
         self._add_key_sprites_to(_catr_project, self.scratch_project.listened_keys)
-        self._update_xml_header(_catr_project.getXmlHeader(), self.scratch_project.project_id, self.scratch_project.description)
+        self._update_xml_header(_catr_project.getXmlHeader(), scratch_project.project_id,
+                                scratch_project.instructions, scratch_project.notes_and_credits)
         return _catr_project
 
     def _add_global_user_lists_to(self, catrobat_project):
@@ -430,7 +433,8 @@ class Converter(object):
             catrobat_project.addSprite(key_sprite)
 
     @staticmethod
-    def _update_xml_header(xml_header, scratch_project_id, scratch_project_description):
+    def _update_xml_header(xml_header, scratch_project_id, scratch_project_instructions,
+                           scratch_project_notes_and_credits):
         xml_header.virtualScreenHeight = scratch.STAGE_HEIGHT_IN_PIXELS
         xml_header.virtualScreenWidth = scratch.STAGE_WIDTH_IN_PIXELS
         xml_header.setApplicationBuildName(helpers.application_info("build_name"))
@@ -448,8 +452,14 @@ class Converter(object):
         xml_header.programLicense = helpers.catrobat_info("program_license_url")
         assert scratch_project_id is not None
         xml_header.remixOf = helpers.config.get("SCRATCH_API", "project_base_url") + scratch_project_id
-        description = scratch_project_description if scratch_project_description is not None else ""
-        description = "\n" + description + "\n" if len(description) > 0 else ""
+
+        sep_line = "\n" + "-" * 40 + "\n"
+        description = sep_line
+        if scratch_project_instructions is not None:
+            description += "Instructions:\n" + scratch_project_instructions + sep_line
+        if scratch_project_notes_and_credits is not None:
+            description += "Description:\n" + scratch_project_notes_and_credits + sep_line
+
         description += "\nMade with {} version {}.\nOriginal Scratch project => {}".format( \
                          helpers.application_info("name"), \
                          helpers.application_info("version"), \

@@ -336,7 +336,7 @@ class RawProject(Object):
     def num_of_iterations_of_local_project(self, progress_bar):
         unique_resource_names = self.unique_resource_names
         num_total_unique_resources = len(unique_resource_names)
-        num_of_downloads = 2 # for fetching title and description (2 different requests!)
+        num_of_downloads = 2 # for fetching title and instructions (2 different requests!)
         objects_scripts = [obj.scripts for obj in self.objects]
         all_scripts = reduce(lambda obj1_scripts, obj2_scripts: obj1_scripts + obj2_scripts, objects_scripts)
         num_of_scripts = len(all_scripts)
@@ -381,7 +381,6 @@ class RawProject(Object):
         return cls(parsed_json)
 
 
-# FIXME: do not inherit from RawProject
 class Project(RawProject):
     """
     Represents a complete Scratch project including all resource files.
@@ -420,11 +419,12 @@ class Project(RawProject):
         if not self.project_id:
             self.project_id = "0"
             name = "Untitled"
-            self.description = None
+            self.instructions = self.notes_and_credits = None
             #raise ProjectError("No project id specified in project file. Please provide project id with constructor.")
         else:
-            self.description = scratchwebapi.request_project_description_for(self.project_id)
-        if progress_bar != None: progress_bar.update() # description step passed
+            self.instructions = scratchwebapi.request_project_instructions_for(self.project_id)
+            self.notes_and_credits = scratchwebapi.request_project_notes_and_credits_for(self.project_id)
+        if progress_bar != None: progress_bar.update() # instructions and notes-and-credits step passed
 
         if name != None:
             self.name = name
@@ -434,7 +434,7 @@ class Project(RawProject):
                 self.name = scratchwebapi.request_project_title_for(self.project_id)
             except urllib2.HTTPError:
                 self.name = str(self.project_id)
-                self.description = None
+                self.instructions = self.notes_and_credits = None
         if progress_bar != None: progress_bar.update() # name step passed
         self.name = self.name.strip() if self.name != None else "Unknown Project"
         self.md5_to_resource_path_map = read_md5_to_resource_path_mapping()

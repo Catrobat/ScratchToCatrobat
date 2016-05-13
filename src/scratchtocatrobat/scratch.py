@@ -179,24 +179,13 @@ class Object(common.DictAccessWrapper):
                     return True
             return False
 
-        def remove_timer_reset_blocks(block_list):
-            new_block_list = []
-            for block in block_list:
-                if isinstance(block, list):
-                    assert(block[0] != 'timer')
-                    if block[0] != 'timerReset':
-                        new_block_list += [replace_timer_blocks(block)]
-                else:
-                    new_block_list += [block]
-            return new_block_list
-
         def replace_timer_blocks(block_list):
             new_block_list = []
             for block in block_list:
                 if isinstance(block, list):
                     if block[0] == 'timer':
                         new_block_list += [["readVariable", S2CC_TIMER_VARIABLE_NAME]]
-                    if block[0] == 'timerReset':
+                    elif block[0] == 'timerReset':
                         new_block_list += [["doBroadcastAndWait", S2CC_TIMER_RESET_BROADCAST_MESSAGE]]
                     else:
                         new_block_list += [replace_timer_blocks(block)]
@@ -205,13 +194,11 @@ class Object(common.DictAccessWrapper):
             return new_block_list
 
         for script_number, script in enumerate(self.scripts):
-            if has_timer_reset_block(script.blocks):
-                workaround_info[ADD_TIMER_RESET_SCRIPT_KEY] = True
-            if has_timer_block(script.blocks):
-                workaround_info[ADD_TIMER_SCRIPT_KEY] = True
-                script.blocks = replace_timer_blocks(script.blocks)
-            else:
-                script.blocks = remove_timer_reset_blocks(script.blocks)
+            if has_timer_reset_block(script.blocks): workaround_info[ADD_TIMER_RESET_SCRIPT_KEY] = True
+            if has_timer_block(script.blocks): workaround_info[ADD_TIMER_SCRIPT_KEY] = True
+
+            script.blocks = replace_timer_blocks(script.blocks)
+
             # parse again ScriptElement tree
             script.script_element = ScriptElement.from_raw_block(script.blocks)
 
@@ -536,6 +523,11 @@ class Script(object):
             return False
 
         def cmp_block(block, other_block):
+            if isinstance(block[0], list):
+                if not isinstance(other_block[0], list): return False
+                block = block[0]
+                other_block = other_block[0]
+
             assert isinstance(block[0], (str, unicode))
             assert isinstance(other_block[0], (str, unicode))
 

@@ -293,7 +293,7 @@ class _ProjectHandler(tornado.web.RequestHandler):
             document = _ResponseBeautifulSoupDocumentWrapper(BeautifulSoup(http_response.body, b'html5lib'))
             project_info = scratchwebapi.extract_project_details_from_document(document)
             if project_info is None:
-                _logger.error("Unable parse project info from the project's " \
+                _logger.error("Unable to parse project info from the project's " \
                               "website! Reason: Invalid or empty html content!")
                 self.write({})
                 return

@@ -272,14 +272,9 @@ def extract_project_details_from_document(document):
     owner = extract_project_owner_from_document(document)
     if owner is None: return None
 
-    instructions = extract_project_instructions_from_document(document)
-    if instructions is None: return None
-
-    notes_and_credits = extract_project_notes_and_credits_from_document(document)
-    if notes_and_credits is None: return None
-
-    tags = document.select_all_as_text_list("div#project-tags div.tag-box span.tag")
-    if tags is None: return None
+    instructions = extract_project_instructions_from_document(document) or ""
+    notes_and_credits = extract_project_notes_and_credits_from_document(document) or ""
+    tags = document.select_all_as_text_list("div#project-tags div.tag-box span.tag") or []
 
     extracted_text = document.select_first_as_text("div#total-views > span.views")
     if extracted_text is None: return None

@@ -50,34 +50,32 @@ TEST_PROJECT_ID_TO_TAGS_MAP = {
     "10132588": ['music', 'simulations', 'animations']
 }
 
-TEST_PROJECT_ID_TO_DESCRIPTION_MAP = {
-    "10205819": "----------------------------------------\n" \
-                + "Instructions:\nClick the flag to run the stack. Click the space bar to change it up!\n"
-                + "--------------------------------------------------------------------------------\n"
-                + "Description:\nFirst project on Scratch! This was great.\n"
-                + "----------------------------------------",
-    "10132588": "----------------------------------------\n" \
-                + "Instructions:\nD,4,8 for the animals to move.C,A for background.\n"
-                + "--------------------------------------------------------------------------------\n"
-                + "Description:\n\n----------------------------------------",
+TEST_PROJECT_ID_TO_INSTRUCTIONS_MAP = {
+    "10205819": "Click the flag to run the stack. Click the space bar to change it up!",
+    "10132588": "D,4,8 for the animals to move.C,A for background."
+}
+
+TEST_PROJECT_ID_TO_NOTES_AND_CREDITS_MAP = {
+    "10205819": "First project on Scratch! This was great.",
+    "10132588": ""
 }
 
 class WebApiTest(common_testing.BaseTestCase):
 
-    def test_can_download_complete_project_from_project_url(self):
+    def test_can_download_project_from_project_url(self):
         for project_url, project_id in common_testing.TEST_PROJECT_URL_TO_ID_MAP.iteritems():
             self._set_testresult_folder_subdir(project_id)
             result_folder_path = self._testresult_folder_path
             scratchwebapi.download_project(project_url, result_folder_path)
             # TODO: replace with verifying function
-            assert scratch.Project(result_folder_path)
+            assert scratch.Project(result_folder_path) is not None
 
-    def test_fail_on_wrong_url(self):
+    def test_fail_download_project_on_wrong_url(self):
         for wrong_url in ['http://www.tugraz.at', 'http://www.ist.tugraz.at/', 'http://scratch.mit.edu/', 'http://scratch.mit.edu/projects']:
             with self.assertRaises(scratchwebapi.ScratchWebApiError):
                 scratchwebapi.download_project(wrong_url, None)
 
-    def test_can_request_project_code_content(self):
+    def test_can_request_project_code_for_id(self):
         with common.TemporaryDirectory(remove_on_exit=True) as temp_dir:
             for _project_url, project_id in common_testing.TEST_PROJECT_URL_TO_ID_MAP.iteritems():
                 scratchwebapi.download_project_code(project_id, temp_dir)
@@ -85,7 +83,7 @@ class WebApiTest(common_testing.BaseTestCase):
                 with open(project_file_path, 'r') as project_code_file:
                     project_code_content = project_code_file.read()
                     raw_project = scratch.RawProject.from_project_code_content(project_code_content)
-                    assert raw_project
+                    assert raw_project is not None
 
     def test_can_request_project_title_for_id(self):
         for (project_id, expected_project_title) in TEST_PROJECT_ID_TO_TITLE_MAP.iteritems():
@@ -96,24 +94,35 @@ class WebApiTest(common_testing.BaseTestCase):
 
     def test_can_request_project_owner_for_id(self):
         for (project_id, expected_project_owner) in TEST_PROJECT_ID_TO_OWNER_MAP.iteritems():
-            document = scratchwebapi.request_project_page_as_Jsoup_document_for(project_id)
-            extracted_project_owner = scratchwebapi.extract_project_owner_from_document(document)
+            extracted_project_owner = scratchwebapi.request_project_owner_for(project_id)
             assert extracted_project_owner is not None
             assert extracted_project_owner == expected_project_owner, \
                    "'{}' is not equal to '{}'".format(extracted_project_owner, expected_project_owner)
 
-    def test_can_request_project_description_for_id(self):
-        for (project_id, expected_project_description) in TEST_PROJECT_ID_TO_DESCRIPTION_MAP.iteritems():
-            extracted_project_description = scratchwebapi.request_project_description_for(project_id)
-            assert extracted_project_description is not None
-            assert extracted_project_description == expected_project_description, \
-                   "'{}' is not equal to '{}'".format(extracted_project_description, expected_project_description)
+    def test_can_request_project_instructions_for_id(self):
+        for (project_id, expected_project_instructions) in TEST_PROJECT_ID_TO_INSTRUCTIONS_MAP.iteritems():
+            extracted_project_instructions = scratchwebapi.request_project_instructions_for(project_id)
+            assert extracted_project_instructions is not None
+            assert extracted_project_instructions == expected_project_instructions, \
+                   "'{}' is not equal to '{}'".format(extracted_project_instructions, expected_project_instructions)
+
+    def test_can_request_project_notes_and_credits_for_id(self):
+        for (project_id, expected_project_notes_and_credits) in TEST_PROJECT_ID_TO_NOTES_AND_CREDITS_MAP.iteritems():
+            extracted_project_notes_and_credits = scratchwebapi.request_project_notes_and_credits_for(project_id)
+            assert extracted_project_notes_and_credits is not None
+            assert extracted_project_notes_and_credits == expected_project_notes_and_credits, \
+                   "'{}' is not equal to '{}'".format(extracted_project_notes_and_credits, expected_project_notes_and_credits)
+
+    def test_can_request_remixes_for_id(self):
+        for (project_id, expected_project_remixes) in TEST_PROJECT_ID_TO_REMIXES_MAP.iteritems():
+            extracted_project_remixes = scratchwebapi.request_project_remixes_for(project_id)
+            assert extracted_project_remixes is not None
+            assert extracted_project_remixes == expected_project_remixes, \
+                   "'{}' is not equal to '{}'".format(extracted_project_remixes, expected_project_remixes)
 
     def test_can_request_project_info_for_id(self):
         for (project_id, expected_project_title) in TEST_PROJECT_ID_TO_TITLE_MAP.iteritems():
-            document = scratchwebapi.request_project_page_as_Jsoup_document_for(project_id)
-            assert document is not None
-            extracted_project_info = scratchwebapi.extract_project_details_from_document(document)
+            extracted_project_info = scratchwebapi.request_project_details_for(project_id)
             assert extracted_project_info is not None
             assert isinstance(extracted_project_info, scratchwebapi.ScratchProjectInfo)
             assert extracted_project_info.title is not None
@@ -122,9 +131,12 @@ class WebApiTest(common_testing.BaseTestCase):
             assert extracted_project_info.owner is not None
             assert extracted_project_info.owner == TEST_PROJECT_ID_TO_OWNER_MAP[project_id], \
                    "'{}' is not equal to '{}'".format(extracted_project_info.owner, TEST_PROJECT_ID_TO_OWNER_MAP[project_id])
-            assert extracted_project_info.description is not None
-            assert extracted_project_info.description == TEST_PROJECT_ID_TO_DESCRIPTION_MAP[project_id], \
-                   "'{}' is not equal to '{}'".format(extracted_project_info.owner, TEST_PROJECT_ID_TO_DESCRIPTION_MAP[project_id])
+            assert extracted_project_info.instructions is not None
+            assert extracted_project_info.instructions == TEST_PROJECT_ID_TO_INSTRUCTIONS_MAP[project_id], \
+                   "'{}' is not equal to '{}'".format(extracted_project_info.owner, TEST_PROJECT_ID_TO_INSTRUCTIONS_MAP[project_id])
+            assert extracted_project_info.notes_and_credits is not None
+            assert extracted_project_info.notes_and_credits == TEST_PROJECT_ID_TO_NOTES_AND_CREDITS_MAP[project_id], \
+                   "'{}' is not equal to '{}'".format(extracted_project_info.owner, TEST_PROJECT_ID_TO_NOTES_AND_CREDITS_MAP[project_id])
             assert extracted_project_info.tags is not None
             assert extracted_project_info.tags == TEST_PROJECT_ID_TO_TAGS_MAP[project_id], \
                    "'{}' is not equal to '{}'".format(extracted_project_info.tags, TEST_PROJECT_ID_TO_TAGS_MAP[project_id])

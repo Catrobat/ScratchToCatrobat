@@ -282,7 +282,14 @@ class _ProjectHandler(tornado.web.RequestHandler):
 
             scratch_project_url = SCRATCH_PROJECT_BASE_URL + str(project_id)
             _logger.info("Fetching project info from: {}".format(scratch_project_url))
-            http_response = yield self.application.async_http_client.fetch(scratch_project_url)
+            try:
+                http_response = yield self.application.async_http_client.fetch(scratch_project_url)
+            except tornado.httpclient.HTTPError, e:
+                _logger.warn("Unable to download the project's website! " \
+                             "Reason: Not available! HTTP-Status-Code: " + str(e.code))
+                self.write({})
+                return
+
             if http_response is None or http_response.body is None or not isinstance(http_response.body, (str, unicode)):
                 _logger.error("Unable to download the project's website! " \
                               "Reason: Invalid or empty html content!")

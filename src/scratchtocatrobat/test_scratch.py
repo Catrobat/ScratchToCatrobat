@@ -629,6 +629,129 @@ class TestTimerBlock(unittest.TestCase):
         expected_script = scratch.Script(expected_first_object_script_data)
         assert script == expected_script
 
+
+class TestEmptyParamsInMathFunctionsAndOperators(unittest.TestCase):
+
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+
+    def test_non_empty_params_as_math_operand_arguments(self):
+        script_data = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["+", 1, 0]]]]
+        expected_raw_script_data = [["whenGreenFlag"], ["wait:elapsed:from:", ["+", 1, 0]]]
+
+        script = scratch.Script(script_data)
+        assert script.type == scratch.SCRIPT_GREEN_FLAG
+        assert len(script.arguments) == 0
+        assert script.raw_script == expected_raw_script_data
+        assert script.blocks == expected_raw_script_data[1:]
+        assert isinstance(script.script_element, scratch.BlockList)
+        assert script.script_element.name == '<LIST>'
+        assert len(script.script_element.children) == 1
+        script_element_child = script.script_element.children[0]
+        assert script_element_child.name == 'wait:elapsed:from:'
+        assert len(script_element_child.children) == 1
+        script_element_child = script_element_child.children[0]
+        assert script_element_child.name == '+'
+        assert len(script_element_child.children) == 2
+        left_child = script_element_child.children[0]
+        right_child = script_element_child.children[1]
+        assert left_child.name == 1
+        assert len(left_child.children) == 0
+        assert right_child.name == 0
+        assert len(right_child.children) == 0
+
+    def test_non_empty_params_as_math_function_arguments(self):
+        script_data = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["randomFrom:to:", -100, 100]]]]
+        expected_raw_script_data = [["whenGreenFlag"], ["wait:elapsed:from:", ["randomFrom:to:", -100, 100]]]
+
+        script = scratch.Script(script_data)
+        assert script.type == scratch.SCRIPT_GREEN_FLAG
+        assert len(script.arguments) == 0
+        assert script.raw_script == expected_raw_script_data
+        assert script.blocks == expected_raw_script_data[1:]
+        assert isinstance(script.script_element, scratch.BlockList)
+        assert script.script_element.name == '<LIST>'
+        assert len(script.script_element.children) == 1
+        script_element_child = script.script_element.children[0]
+        assert script_element_child.name == 'wait:elapsed:from:'
+        assert len(script_element_child.children) == 1
+        script_element_child = script_element_child.children[0]
+        assert script_element_child.name == 'randomFrom:to:'
+        assert len(script_element_child.children) == 2
+        left_child = script_element_child.children[0]
+        right_child = script_element_child.children[1]
+        assert left_child.name == -100
+        assert len(left_child.children) == 0
+        assert right_child.name == 100
+        assert len(right_child.children) == 0
+
+    def test_empty_params_as_math_operand_arguments(self):
+        script_data = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["+", \
+                        "", ["randomFrom:to:", -100, 100]]]]]
+        expected_raw_script_data = [["whenGreenFlag"], ["wait:elapsed:from:", ["+", \
+                        0, ["randomFrom:to:", -100, 100]]]]
+
+        script = scratch.Script(script_data)
+        assert script.type == scratch.SCRIPT_GREEN_FLAG
+        assert len(script.arguments) == 0
+        assert script.raw_script == expected_raw_script_data
+        assert script.blocks == expected_raw_script_data[1:]
+        assert isinstance(script.script_element, scratch.BlockList)
+        assert script.script_element.name == '<LIST>'
+        assert len(script.script_element.children) == 1
+        script_element_child = script.script_element.children[0]
+        assert script_element_child.name == 'wait:elapsed:from:'
+        assert len(script_element_child.children) == 1
+        script_element_child = script_element_child.children[0]
+        assert script_element_child.name == '+'
+        assert len(script_element_child.children) == 2
+        left_child = script_element_child.children[0]
+        right_child = script_element_child.children[1]
+        assert left_child.name == 0
+        assert len(left_child.children) == 0
+        assert right_child.name == 'randomFrom:to:'
+        assert len(right_child.children) == 2
+        left_child = right_child.children[0]
+        right_child = right_child.children[1]
+        assert left_child.name == -100
+        assert len(left_child.children) == 0
+        assert right_child.name == 100
+        assert len(right_child.children) == 0
+
+    def test_empty_params_as_math_function_arguments(self):
+        script_data = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["+", \
+                        0, ["randomFrom:to:", " ", 100]]]]]
+        expected_raw_script_data = [["whenGreenFlag"], ["wait:elapsed:from:", ["+", \
+                        0, ["randomFrom:to:", 0, 100]]]]
+
+        script = scratch.Script(script_data)
+        assert script.type == scratch.SCRIPT_GREEN_FLAG
+        assert len(script.arguments) == 0
+        assert script.raw_script == expected_raw_script_data
+        assert script.blocks == expected_raw_script_data[1:]
+        assert isinstance(script.script_element, scratch.BlockList)
+        assert script.script_element.name == '<LIST>'
+        assert len(script.script_element.children) == 1
+        script_element_child = script.script_element.children[0]
+        assert script_element_child.name == 'wait:elapsed:from:'
+        assert len(script_element_child.children) == 1
+        script_element_child = script_element_child.children[0]
+        assert script_element_child.name == '+'
+        assert len(script_element_child.children) == 2
+        left_child = script_element_child.children[0]
+        right_child = script_element_child.children[1]
+        assert left_child.name == 0
+        assert len(left_child.children) == 0
+        assert right_child.name == 'randomFrom:to:'
+        assert len(right_child.children) == 2
+        left_child = right_child.children[0]
+        right_child = right_child.children[1]
+        assert left_child.name == 0
+        assert len(left_child.children) == 0
+        assert right_child.name == 100
+        assert len(right_child.children) == 0
+
+
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

@@ -594,6 +594,16 @@ class ScriptElement(object):
 
     @classmethod
     def from_raw_block(cls, raw_block):
+
+        # replace empty arguments/operands of math functions and math operators
+        # (i.e. "" and " ") with 0. This is actually default behavior in Scratch.
+        from scratchtocatrobat import converter
+        if isinstance(raw_block, list) and len(raw_block) > 1 \
+        and converter.is_math_function_or_operator(raw_block[0]):
+            raw_block[1:] = map(lambda arg: arg if not isinstance(arg, (str, unicode)) \
+                                or arg.strip() != '' else 0, raw_block[1:])
+
+        # recursively create ScriptElement tree
         block_name = None
         block_arguments = []
         if isinstance(raw_block, list):

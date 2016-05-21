@@ -95,10 +95,16 @@ def _next_background_look_broadcast_message():
 def _sec_to_msec(duration):
     return duration * 1000
 
+def is_math_function_or_operator(key):
+    cls = _ScratchToCatrobat
+    all_keys = cls.math_function_block_parameters_mapping.keys() \
+             + cls.math_unary_operators_mapping.keys() + cls.math_operators_mapping.keys()
+    return key in all_keys
+
 # note: for Scratch blocks without mapping placeholder Catrobat bricks will be added
 class _ScratchToCatrobat(object):
 
-    compute_block_parameters_mapping = {
+    math_function_block_parameters_mapping = {
         # math functions
         "abs": catformula.Functions.ABS,
         "sqrt": catformula.Functions.SQRT,
@@ -119,23 +125,13 @@ class _ScratchToCatrobat(object):
         "10 ^": "dummy",
         "floor": catformula.Functions.FLOOR,
         "ceiling": catformula.Functions.CEIL,
-
-        # user list functions
-        "getLine:ofList:": catformula.Functions.LIST_ITEM,
-        "lineCountOfList:": catformula.Functions.NUMBER_OF_ITEMS,
-        "list:contains:": catformula.Functions.CONTAINS,
-
-        # string functions
-        "stringLength:": catformula.Functions.LENGTH,
-        "letter:of:": catformula.Functions.LETTER,
-        "concatenate:with:": catformula.Functions.JOIN
     }
 
-    unary_operators_mapping = {
+    math_unary_operators_mapping = {
         "not": catformula.Operators.LOGICAL_NOT,
     }
 
-    operators_mapping = dict({
+    math_operators_mapping = {
         "+": catformula.Operators.PLUS,
         "-": catformula.Operators.MINUS,
         "*": catformula.Operators.MULT,
@@ -145,7 +141,21 @@ class _ScratchToCatrobat(object):
         ">": catformula.Operators.GREATER_THAN,
         "&": catformula.Operators.LOGICAL_AND,
         "|": catformula.Operators.LOGICAL_OR,
-    }.items() + unary_operators_mapping.items())
+    }
+
+    user_list_block_parameters_mapping = {
+        # user list functions
+        "getLine:ofList:": catformula.Functions.LIST_ITEM,
+        "lineCountOfList:": catformula.Functions.NUMBER_OF_ITEMS,
+        "list:contains:": catformula.Functions.CONTAINS,
+    }
+
+    string_function_block_parameters_mapping = {
+        # string functions
+        "stringLength:": catformula.Functions.LENGTH,
+        "letter:of:": catformula.Functions.LETTER,
+        "concatenate:with:": catformula.Functions.JOIN
+    }
 
     complete_mapping = dict({
         #
@@ -248,7 +258,10 @@ class _ScratchToCatrobat(object):
         # sensors
         # WORKAROUND: using ROUND for Catrobat float => Scratch int
         "soundLevel": lambda *_args: catrobat.formula_element_for(catformula.Functions.ROUND, arguments=[catrobat.formula_element_for(catformula.Sensors.LOUDNESS)]),  # @UndefinedVariable
-    }.items() + compute_block_parameters_mapping.items() + operators_mapping.items())
+    }.items() + math_function_block_parameters_mapping.items() \
+              + math_unary_operators_mapping.items() + math_operators_mapping.items() \
+              + user_list_block_parameters_mapping.items() \
+              + string_function_block_parameters_mapping.items())
 
     @classmethod
     def catrobat_brick_class_for(cls, scratch_block_name):

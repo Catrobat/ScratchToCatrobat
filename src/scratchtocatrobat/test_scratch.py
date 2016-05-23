@@ -795,7 +795,7 @@ class TestDistanceBlockWorkaround(unittest.TestCase):
         cls = self.__class__
         cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE["scripts"] = []
 
-    def test_distance_block(self):
+    def test_single_distance_block(self):
         cls = self.__class__
         script_data = [0, 0, [["whenGreenFlag"], ["forward:", ["distanceTo:", "Sprite2"]]]]
         cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
@@ -846,6 +846,206 @@ class TestDistanceBlockWorkaround(unittest.TestCase):
         assert len(global_variables) == 2
         assert global_variables[0] == { "name": position_x_var_name, "value": 0, "isPersistent": False }
         assert global_variables[1] == { "name": position_y_var_name, "value": 0, "isPersistent": False }
+
+    def test_two_distance_blocks_in_same_object(self):
+        cls = self.__class__
+        script_data = [0, 0, [["whenGreenFlag"], ["forward:", ["distanceTo:", "Sprite2"]],
+                              ["forward:", ["distanceTo:", "Sprite2"]]]]
+        cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE["children"][1]["scripts"] = []
+        raw_project = scratch.RawProject(cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE)
+        position_x_var_name = scratch.S2CC_POSITION_X_VARIABLE_NAME_PREFIX + "Sprite2"
+        position_y_var_name = scratch.S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + "Sprite2"
+        expected_first_object_script_data = [0, 0, [["whenGreenFlag"], ['forward:',
+            ["computeFunction:of:", "sqrt", ["+",
+              ["*",
+                ["()", ["-", ["xpos"], ["readVariable", position_x_var_name]]],
+                ["()", ["-", ["xpos"], ["readVariable", position_x_var_name]]]
+              ], ["*",
+                ["()", ["-", ["ypos"], ["readVariable", position_y_var_name]]],
+                ["()", ["-", ["ypos"], ["readVariable", position_y_var_name]]]
+              ]
+            ]]
+        ], ['forward:',
+            ["computeFunction:of:", "sqrt", ["+",
+              ["*",
+                ["()", ["-", ["xpos"], ["readVariable", position_x_var_name]]],
+                ["()", ["-", ["xpos"], ["readVariable", position_x_var_name]]]
+              ], ["*",
+                ["()", ["-", ["ypos"], ["readVariable", position_y_var_name]]],
+                ["()", ["-", ["ypos"], ["readVariable", position_y_var_name]]]
+              ]
+            ]]
+        ]]]
+        expected_second_object_script_data = [0, 0, [['whenGreenFlag'],
+            ["doForever", [
+              ["setVar:to:", position_x_var_name, ["xpos"]],
+              ["setVar:to:", position_y_var_name, ["ypos"]],
+              ["wait:elapsed:from:", 0.03]
+            ]]
+        ]]
+
+        # validate
+        assert len(raw_project.objects) == 3
+        [background_object, first_object, second_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 0
+
+        # first object
+        assert len(first_object.scripts) == 1
+        script = first_object.scripts[0]
+        expected_script = scratch.Script(expected_first_object_script_data)
+        assert script == expected_script
+
+        # second object
+        assert len(second_object.scripts) == 1
+        script = second_object.scripts[0]
+        expected_script = scratch.Script(expected_second_object_script_data)
+        assert script == expected_script
+
+        # global variables
+        global_variables = background_object._dict_object["variables"]
+        assert len(global_variables) == 2
+        assert global_variables[0] == { "name": position_x_var_name, "value": 0, "isPersistent": False }
+        assert global_variables[1] == { "name": position_y_var_name, "value": 0, "isPersistent": False }
+
+    def test_two_distance_blocks_in_different_objects(self):
+        cls = self.__class__
+        script_data = [0, 0, [["whenGreenFlag"], ["forward:", ["distanceTo:", "Sprite2"]]]]
+        cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE["scripts"] = [script_data]
+        cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE["children"][1]["scripts"] = []
+        raw_project = scratch.RawProject(cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE)
+        position_x_var_name = scratch.S2CC_POSITION_X_VARIABLE_NAME_PREFIX + "Sprite2"
+        position_y_var_name = scratch.S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + "Sprite2"
+        expected_background_and_first_object_script_data = [0, 0, [["whenGreenFlag"], ['forward:',
+            ["computeFunction:of:", "sqrt", ["+",
+              ["*",
+                ["()", ["-", ["xpos"], ["readVariable", position_x_var_name]]],
+                ["()", ["-", ["xpos"], ["readVariable", position_x_var_name]]]
+              ], ["*",
+                ["()", ["-", ["ypos"], ["readVariable", position_y_var_name]]],
+                ["()", ["-", ["ypos"], ["readVariable", position_y_var_name]]]
+              ]
+            ]]
+        ]]]
+        expected_second_object_script_data = [0, 0, [['whenGreenFlag'],
+            ["doForever", [
+              ["setVar:to:", position_x_var_name, ["xpos"]],
+              ["setVar:to:", position_y_var_name, ["ypos"]],
+              ["wait:elapsed:from:", 0.03]
+            ]]
+        ]]
+
+        # validate
+        assert len(raw_project.objects) == 3
+        [background_object, first_object, second_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 1
+        script = background_object.scripts[0]
+        expected_script = scratch.Script(expected_background_and_first_object_script_data)
+        assert script == expected_script
+
+        # first object
+        assert len(first_object.scripts) == 1
+        script = first_object.scripts[0]
+        expected_script = scratch.Script(expected_background_and_first_object_script_data)
+        assert script == expected_script
+
+        # second object
+        assert len(second_object.scripts) == 1
+        script = second_object.scripts[0]
+        expected_script = scratch.Script(expected_second_object_script_data)
+        assert script == expected_script
+
+        # global variables
+        global_variables = background_object._dict_object["variables"]
+        assert len(global_variables) == 2
+        assert global_variables[0] == { "name": position_x_var_name, "value": 0, "isPersistent": False }
+        assert global_variables[1] == { "name": position_y_var_name, "value": 0, "isPersistent": False }
+
+    def test_two_different_distance_blocks_in_different_objects(self):
+        cls = self.__class__
+        script_data0 = [0, 0, [["whenGreenFlag"], ["forward:", ["distanceTo:", "Sprite2"]]]]
+        script_data2 = [0, 0, [["whenGreenFlag"], ["forward:", ["distanceTo:", "Sprite1"]]]]
+        cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE["scripts"] = [script_data0]
+        cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = []
+        cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE["children"][1]["scripts"] = [script_data2]
+        raw_project = scratch.RawProject(cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE)
+        position_x_var_name1 = scratch.S2CC_POSITION_X_VARIABLE_NAME_PREFIX + "Sprite1"
+        position_y_var_name1 = scratch.S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + "Sprite1"
+        position_x_var_name2 = scratch.S2CC_POSITION_X_VARIABLE_NAME_PREFIX + "Sprite2"
+        position_y_var_name2 = scratch.S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + "Sprite2"
+        expected_background_object_script_data = [0, 0, [["whenGreenFlag"], ['forward:',
+            ["computeFunction:of:", "sqrt", ["+",
+              ["*",
+                ["()", ["-", ["xpos"], ["readVariable", position_x_var_name2]]],
+                ["()", ["-", ["xpos"], ["readVariable", position_x_var_name2]]]
+              ], ["*",
+                ["()", ["-", ["ypos"], ["readVariable", position_y_var_name2]]],
+                ["()", ["-", ["ypos"], ["readVariable", position_y_var_name2]]]
+              ]
+            ]]
+        ]]]
+        expected_first_object_script_data = [0, 0, [['whenGreenFlag'],
+            ["doForever", [
+              ["setVar:to:", position_x_var_name1, ["xpos"]],
+              ["setVar:to:", position_y_var_name1, ["ypos"]],
+              ["wait:elapsed:from:", 0.03]
+            ]]
+        ]]
+        expected_second_object_scripts_data = [[0, 0, [["whenGreenFlag"], ['forward:',
+            ["computeFunction:of:", "sqrt", ["+",
+              ["*",
+                ["()", ["-", ["xpos"], ["readVariable", position_x_var_name1]]],
+                ["()", ["-", ["xpos"], ["readVariable", position_x_var_name1]]]
+              ], ["*",
+                ["()", ["-", ["ypos"], ["readVariable", position_y_var_name1]]],
+                ["()", ["-", ["ypos"], ["readVariable", position_y_var_name1]]]
+              ]
+            ]]
+        ]]], [0, 0, [['whenGreenFlag'],
+            ["doForever", [
+              ["setVar:to:", position_x_var_name2, ["xpos"]],
+              ["setVar:to:", position_y_var_name2, ["ypos"]],
+              ["wait:elapsed:from:", 0.03]
+            ]]
+        ]]]
+
+        # validate
+        assert len(raw_project.objects) == 3
+        [background_object, first_object, second_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 1
+        script = background_object.scripts[0]
+        expected_script = scratch.Script(expected_background_object_script_data)
+        assert script == expected_script
+
+        # first object
+        assert len(first_object.scripts) == 1
+        script = first_object.scripts[0]
+        expected_script = scratch.Script(expected_first_object_script_data)
+        assert script == expected_script
+
+        # second object
+        assert len(second_object.scripts) == 2
+        script = second_object.scripts[0]
+        expected_script = scratch.Script(expected_second_object_scripts_data[0])
+        assert script == expected_script
+        script = second_object.scripts[1]
+        expected_script = scratch.Script(expected_second_object_scripts_data[1])
+        assert script == expected_script
+
+        # global variables
+        global_variables = background_object._dict_object["variables"]
+        assert len(global_variables) == 4
+        assert global_variables[0] == { "name": position_x_var_name2, "value": 0, "isPersistent": False }
+        assert global_variables[1] == { "name": position_y_var_name2, "value": 0, "isPersistent": False }
+        assert global_variables[2] == { "name": position_x_var_name1, "value": 0, "isPersistent": False }
+        assert global_variables[3] == { "name": position_y_var_name1, "value": 0, "isPersistent": False }
 
 
 if __name__ == "__main__":

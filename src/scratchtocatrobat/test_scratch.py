@@ -43,52 +43,6 @@ EASY_SCRIPTS = [
     [30.5, 355.5, [["whenKeyPressed", "space"], ["changeGraphicEffect:by:", "color", 25]]],
 ]
 
-NEW_FUNCTION_HELPER_OBJECT_DATA = {
-    "objName": "Sprite1",
-    "variables": [{"name": "var1", "value": 0, "isPersistent": False}],
-    "scripts": [[148, 82,
-        [["whenGreenFlag"],
-            ["setVar:to:", "var1", 0],
-            ["call", "Function1 %n", 1],
-            ["call", "Function1 %n", 1]]],
-        [515.75, 87.85,
-            [["procDef", "Function1 %n", ["number1"], [1], True],
-                ["playSound:", "Aufnahme1"],
-                ["wait:elapsed:from:", ["+", ["readVariable", "var1"], ["getParam", "number1", "r"]]]]],
-    ]
-}
-
-NEW_FUNCTION_COMPLEX_HELPER_OBJECT_DATA = {
-    "objName": "Sprite1",
-    "scripts": [[27, 80,
-        [["whenGreenFlag"],
-            ["call", "function %n", 6]]],
-        [171.6, 78.2,
-            [["procDef", "function %n", ["number"], [1], False],
-                ["doIf", [">", ["getParam", "number", "r"], " 5 "], ["call", "another_function %n", 3]]]],
-        [678.45, 79.3,
-            [["procDef", "destination_function", [], [], False], ["playSound:", "meow"]]],
-        [404.65, 80.45,
-            [["procDef", "another_function %n", ["value"], [1], False],
-                    ["doIf", [">", ["getParam", "value", "r"], " 5 "], ["call", "destination_function"]]]]],
-}
-
-TIMER_HELPER_OBJECTS_DATA_TEMPLATE = {
-    "objName": "Stage",
-    "sounds": [],
-    "costumes": [],
-    "currentCostumeIndex": 0,
-    "penLayerMD5": "5c81a336fab8be57adc039a8a2b33ca9.png",
-    "penLayerID": 0,
-    "tempoBPM": 60,
-    "videoAlpha": 0.5,
-    "children": [{
-        "objName": "Sprite1",
-        "scripts": None
-    }],
-    "info": {}
-}
-
 TEST_PROJECT_FOLDER = "dancing_castle"
 
 def create_user_defined_function_workaround_scratch_object(object_data):
@@ -347,12 +301,27 @@ class TestBlockInit(unittest.TestCase):
             assert [len(block.children) for block in nested_blocks] == list(expected_block_children_number)
 
 class TestBlockNewFunctionWorkaround(unittest.TestCase):
+    NEW_FUNCTION_HELPER_OBJECT_DATA = {
+        "objName": "Sprite1",
+        "variables": [{"name": "var1", "value": 0, "isPersistent": False}],
+        "scripts": [
+            [148, 82, [["whenGreenFlag"],
+                ["setVar:to:", "var1", 0],
+                ["call", "Function1 %n", 1],
+                ["call", "Function1 %n", 1]]],
+            [515.75, 87.85, [["procDef", "Function1 %n", ["number1"], [1], True],
+                ["playSound:", "Aufnahme1"],
+                ["wait:elapsed:from:", ["+", ["readVariable", "var1"], ["getParam", "number1", "r"]]]]],
+        ]
+    }
 
     def setUp(self):
+        cls = self.__class__
         unittest.TestCase.setUp(self)
-        self.script_object = create_user_defined_function_workaround_scratch_object(NEW_FUNCTION_HELPER_OBJECT_DATA)
+        self.script_object = create_user_defined_function_workaround_scratch_object(cls.NEW_FUNCTION_HELPER_OBJECT_DATA)
 
     def test_new_function_brick(self):
+        cls = self.__class__
         expected_scripts = [
             [148, 82, [["whenGreenFlag"],
                 ["setVar:to:", "var1", 0],
@@ -371,18 +340,30 @@ class TestBlockNewFunctionWorkaround(unittest.TestCase):
             ]]
         ]
 
-        self.script_object.preprocess_object([NEW_FUNCTION_HELPER_OBJECT_DATA["objName"]])
+        self.script_object.preprocess_object([cls.NEW_FUNCTION_HELPER_OBJECT_DATA["objName"]])
         for (index, script) in enumerate(self.script_object.scripts):
             expected_script = scratch.Script(expected_scripts[index])
             assert script == expected_script, "Scripts are not equal!"
         
 class TestMoreComplexBlockNewFunctionWorkaround(unittest.TestCase):  
+    NEW_FUNCTION_COMPLEX_HELPER_OBJECT_DATA = {
+        "objName": "Sprite1",
+        "scripts": [[27, 80,
+            [["whenGreenFlag"], ["call", "function %n", 6]]],
+            [171.6, 78.2, [["procDef", "function %n", ["number"], [1], False],
+                ["doIf", [">", ["getParam", "number", "r"], " 5 "], ["call", "another_function %n", 3]]]],
+            [678.45, 79.3, [["procDef", "destination_function", [], [], False], ["playSound:", "meow"]]],
+            [404.65, 80.45, [["procDef", "another_function %n", ["value"], [1], False],
+                ["doIf", [">", ["getParam", "value", "r"], " 5 "], ["call", "destination_function"]]]]],
+    }
 
     def setUp(self):
+        cls = self.__class__
         unittest.TestCase.setUp(self)
-        self.script_object = create_user_defined_function_workaround_scratch_object(NEW_FUNCTION_COMPLEX_HELPER_OBJECT_DATA)
+        self.script_object = create_user_defined_function_workaround_scratch_object(cls.NEW_FUNCTION_COMPLEX_HELPER_OBJECT_DATA)
 
     def test_more_complicated_function_brick(self):
+        cls = self.__class__
         expected_scripts = [
             [27, 80, [["whenGreenFlag"],
                 ['setVar:to:', u'S2CC_param_function %n_0', 6],
@@ -401,21 +382,35 @@ class TestMoreComplexBlockNewFunctionWorkaround(unittest.TestCase):
                         ['doBroadcastAndWait', u'S2CC_msg_destination_function']]]]
         ]
 
-        self.script_object.preprocess_object([NEW_FUNCTION_HELPER_OBJECT_DATA["objName"]])
+        self.script_object.preprocess_object([cls.NEW_FUNCTION_HELPER_OBJECT_DATA["objName"]])
         for (index, script) in enumerate(self.script_object.scripts):
             expected_script = scratch.Script(expected_scripts[index])
             assert script == expected_script, "Scripts are not equal!"
 
 class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
+    TIMER_HELPER_OBJECTS_DATA_TEMPLATE = {
+        "objName": "Stage",
+        "sounds": [],
+        "costumes": [],
+        "currentCostumeIndex": 0,
+        "penLayerMD5": "5c81a336fab8be57adc039a8a2b33ca9.png",
+        "penLayerID": 0,
+        "tempoBPM": 60,
+        "videoAlpha": 0.5,
+        "children": [{ "objName": "Sprite1", "scripts": None }],
+        "info": {}
+    }
 
     def setUp(self):
         unittest.TestCase.setUp(self)
-        TIMER_HELPER_OBJECTS_DATA_TEMPLATE["scripts"] = []
+        cls = self.__class__
+        cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE["scripts"] = []
 
     def test_timer_block(self):
+        cls = self.__class__
         script_data = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["timer"]]]]
-        TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
-        raw_project = scratch.RawProject(TIMER_HELPER_OBJECTS_DATA_TEMPLATE)
+        cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        raw_project = scratch.RawProject(cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE)
         expected_background_object_script_data = [0, 0, [['whenGreenFlag'],
             ['doForever', [
                 ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.1],
@@ -448,8 +443,9 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
         assert global_variables[0] == { "name": scratch.S2CC_TIMER_VARIABLE_NAME, "value": 0, "isPersistent": False }
 
     def test_same_timer_block_twice(self):
+        cls = self.__class__
         script_data = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["timer"]], ["wait:elapsed:from:", ["timer"]]]]
-        TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
         expected_background_object_script_data = [0, 0, [['whenGreenFlag'],
             ['doForever', [
                 ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.1],
@@ -462,7 +458,7 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
         ]]
 
         # create project
-        raw_project = scratch.RawProject(TIMER_HELPER_OBJECTS_DATA_TEMPLATE)
+        raw_project = scratch.RawProject(cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE)
 
         # validate
         assert len(raw_project.objects) == 2
@@ -486,14 +482,15 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
         assert global_variables[0] == { "name": scratch.S2CC_TIMER_VARIABLE_NAME, "value": 0, "isPersistent": False }
 
     def test_reset_timer_block_with_non_existant_timer_block_should_be_ignored(self):
+        cls = self.__class__
         script_data = [0, 0, [["whenGreenFlag"], ["timerReset"]]]
-        TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
         expected_first_object_script_data = [0, 0, [["whenGreenFlag"],
             ['doBroadcastAndWait', scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE]
         ]]
 
         # create project
-        raw_project = scratch.RawProject(TIMER_HELPER_OBJECTS_DATA_TEMPLATE)
+        raw_project = scratch.RawProject(cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE)
 
         # validate
         assert len(raw_project.objects) == 2
@@ -513,6 +510,7 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
         assert len(global_variables) == 0
 
     def test_reset_timer_block_with_existant_timer_block_in_same_object_must_NOT_be_ignored(self):
+        cls = self.__class__
         expected_background_object_scripts_data = [[0, 0, [['whenGreenFlag'],
             ['doForever', [
                 ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.1],
@@ -522,14 +520,14 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
             ['setVar:to:', scratch.S2CC_TIMER_VARIABLE_NAME, 0]
         ]]]
         script_data = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["timer"]], ["timerReset"]]]
-        TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
         expected_first_object_script_data = [0, 0, [["whenGreenFlag"],
             ['wait:elapsed:from:', ['readVariable', scratch.S2CC_TIMER_VARIABLE_NAME]],
             ["doBroadcastAndWait", scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE]
         ]]
 
         # create project
-        raw_project = scratch.RawProject(TIMER_HELPER_OBJECTS_DATA_TEMPLATE)
+        raw_project = scratch.RawProject(cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE)
 
         # validate
         assert len(raw_project.objects) == 2
@@ -556,6 +554,7 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
         assert global_variables[0] == { "name": scratch.S2CC_TIMER_VARIABLE_NAME, "value": 0, "isPersistent": False }
 
     def test_reset_timer_block_and_timer_block_within_loop_must_NOT_be_ignored(self):
+        cls = self.__class__
         expected_background_object_scripts_data = [[0, 0, [['whenGreenFlag'],
             ['doForever', [
                 ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.1],
@@ -567,7 +566,7 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
         script_data = [0, 0, [["whenGreenFlag"],
             ["doRepeat", 100, [["wait:elapsed:from:", ["timer"]], ["timerReset"]]]]
         ]
-        TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
         expected_first_object_script_data = [0, 0, [["whenGreenFlag"],
             ["doRepeat", 100, [
                 ['wait:elapsed:from:', ['readVariable', scratch.S2CC_TIMER_VARIABLE_NAME]],
@@ -575,7 +574,7 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
         ]]]
 
         # create project
-        raw_project = scratch.RawProject(TIMER_HELPER_OBJECTS_DATA_TEMPLATE)
+        raw_project = scratch.RawProject(cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE)
 
         # validate
         assert len(raw_project.objects) == 2
@@ -602,8 +601,9 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
         assert global_variables[0] == { "name": scratch.S2CC_TIMER_VARIABLE_NAME, "value": 0, "isPersistent": False }
 
     def test_reset_timer_block_with_existant_timer_block_in_other_object_must_NOT_be_ignored(self):
+        cls = self.__class__
         background_script_data = [0, 0, [["whenGreenFlag"], ["timerReset"]]]
-        TIMER_HELPER_OBJECTS_DATA_TEMPLATE["scripts"] = [background_script_data]
+        cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE["scripts"] = [background_script_data]
         expected_background_object_scripts_data = [[0, 0, [['whenGreenFlag'],
             ["doBroadcastAndWait", scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE]
         ]], [0, 0, [['whenGreenFlag'],
@@ -617,13 +617,13 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
 
         # first object scripts
         first_object_script_data = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["timer"]]]]
-        TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [first_object_script_data]
+        cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [first_object_script_data]
         expected_first_object_script_data = [0, 0, [["whenGreenFlag"],
             ['wait:elapsed:from:', ['readVariable', scratch.S2CC_TIMER_VARIABLE_NAME]]
         ]]
 
         # create project
-        raw_project = scratch.RawProject(TIMER_HELPER_OBJECTS_DATA_TEMPLATE)
+        raw_project = scratch.RawProject(cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE)
 
         # validate
         assert len(raw_project.objects) == 2

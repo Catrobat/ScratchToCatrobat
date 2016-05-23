@@ -61,8 +61,11 @@ STAGE_WIDTH_IN_PIXELS = 480
 STAGE_HEIGHT_IN_PIXELS = 360
 S2CC_TIMER_VARIABLE_NAME = "S2CC_timer"
 S2CC_TIMER_RESET_BROADCAST_MESSAGE = "S2CC_reset_timer"
-ADD_TIMER_SCRIPT_KEY = "add_timer_script"
-ADD_TIMER_RESET_SCRIPT_KEY = "add_timer_reset_script"
+S2CC_POSITION_X_VARIABLE_NAME_PREFIX = "S2CC_position_x_"
+S2CC_POSITION_Y_VARIABLE_NAME_PREFIX = "S2CC_position_y_"
+ADD_TIMER_SCRIPT_KEY = "add_timer_script_key"
+ADD_TIMER_RESET_SCRIPT_KEY = "add_timer_reset_script_key"
+ADD_POSITION_SCRIPT_TO_OBJECTS_KEY = "add_position_script_to_objects_key"
 
 # TODO: rename
 class Object(common.DictAccessWrapper):
@@ -264,13 +267,46 @@ class RawProject(Object):
         # preprocessing
         add_timer_script = False
         add_timer_reset_script = False
+        sprite_name_sprite_mapping = dict(map(lambda obj: (obj.get_objName(), obj), self.objects))
+        all_sprite_names = sprite_name_sprite_mapping.keys()
+        position_script_to_be_added = set()
         for scratch_object in self.objects:
-            workaround_info = scratch_object.preprocess_object()
+            workaround_info = scratch_object.preprocess_object(all_sprite_names)
             if workaround_info[ADD_TIMER_SCRIPT_KEY]: add_timer_script = True
             if workaround_info[ADD_TIMER_RESET_SCRIPT_KEY]: add_timer_reset_script = True
+            position_script_to_be_added |= workaround_info[ADD_POSITION_SCRIPT_TO_OBJECTS_KEY]
 
         if add_timer_script: self._add_timer_script_to_stage_object()
         if add_timer_script and add_timer_reset_script: self._add_timer_reset_script_to_stage_object()
+        for destination_sprite_name in position_script_to_be_added:
+            sprite_object = sprite_name_sprite_mapping[destination_sprite_name]
+            assert sprite_object is not None
+            self._add_update_position_script_to_object(sprite_object)
+
+    def _add_update_position_script_to_object(self, sprite_object):
+        # add global variables for positions!
+        position_x_var_name = S2CC_POSITION_X_VARIABLE_NAME_PREFIX + sprite_object.get_objName()
+        position_y_var_name = S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + sprite_object.get_objName()
+        global_variables = self.objects[0]._dict_object["variables"]
+        global_variables.append({
+            "name": position_x_var_name,
+            "value": 0,
+            "isPersistent": False
+        })
+        global_variables.append({
+            "name": position_y_var_name,
+            "value": 0,
+            "isPersistent": False
+        })
+        # update position script
+        script_blocks = [
+            ["doForever", [
+              ["setVar:to:", position_x_var_name, ["xpos"]],
+              ["setVar:to:", position_y_var_name, ["ypos"]],
+              ["wait:elapsed:from:", 0.03]
+            ]]
+        ]
+        sprite_object.scripts += [Script([0, 0, [[SCRIPT_GREEN_FLAG]] + script_blocks])]
 
     def _add_timer_script_to_stage_object(self):
         assert len(self.objects) > 0

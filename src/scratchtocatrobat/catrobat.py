@@ -55,7 +55,7 @@ def simple_name_for(brick):
         simple_class_name += ": 'S2CC-TODO: UNKNOWN_MESSAGE'"
 #        simple_class_name += ": '%s'" % brick.note
     elif isinstance(brick, catformula.FormulaElement):
-        simple_class_name += ": " + brick.getValue()
+        simple_class_name += ": " + str(brick.getValue())
     elif isinstance(brick, catformula.Formula):
         simple_class_name += ": " + brick.formulaTree.getValue()
     elif simple_class_name is None:

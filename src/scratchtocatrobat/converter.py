@@ -43,7 +43,6 @@ from scratchtocatrobat.scratch import JsonKeys as scratchkeys
 from scratchtocatrobat.tools import svgtopng
 from scratchtocatrobat.tools import wavconverter
 from scratchtocatrobat.tools import helpers
-from __builtin__ import None
 
 _DEFAULT_BRICK_CLASS = catbricks.WaitBrick
 _DEFAULT_FORMULA_ELEMENT = catformula.FormulaElement(catElementType.NUMBER, str(00001), None)  # @UndefinedVariable (valueOf)
@@ -61,7 +60,7 @@ UNSUPPORTED_SCRATCH_BRICK_NOTE_MESSAGE_PREFIX = "Missing brick for Scratch ident
 log = common.log
 
 class ConversionError(common.ScratchtobatError):
-        pass
+    pass
 
 class UnmappedBlock(object):
 
@@ -128,6 +127,7 @@ class _ScratchToCatrobat(object):
     }
 
     math_unary_operators_mapping = {
+        "()": "dummy", # this operator is only used internally and not part of Scratch
         "not": catformula.Operators.LOGICAL_NOT,
     }
 
@@ -1075,6 +1075,14 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         return converted_element
 
     # formula element blocks (compute, operator, ...)
+    @_register_handler(_block_name_to_handler_map, "()")
+    def _convert_bracket_block(self):
+        # NOTE: this operator is only used internally and not part of Scratch
+        [value] = self.arguments
+        formula_element = catformula.FormulaElement(catElementType.BRACKET, None, None)
+        formula_element.setRightChild(value)
+        return formula_element
+
     @_register_handler(_block_name_to_handler_map, "10 ^")
     def _convert_pow_of_10_block(self):
         [value] = self.arguments

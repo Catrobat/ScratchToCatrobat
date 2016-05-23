@@ -775,6 +775,79 @@ class TestEmptyParamsInMathFunctionsAndOperators(unittest.TestCase):
         assert len(right_child.children) == 0
 
 
+class TestDistanceBlockWorkaround(unittest.TestCase):
+    DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE = {
+        "objName": "Stage",
+        "sounds": [],
+        "costumes": [],
+        "currentCostumeIndex": 0,
+        "penLayerMD5": "5c81a336fab8be57adc039a8a2b33ca9.png",
+        "penLayerID": 0,
+        "tempoBPM": 60,
+        "videoAlpha": 0.5,
+        "children": [{ "objName": "Sprite1", "scripts": None },
+                     { "objName": "Sprite2", "scripts": None }],
+        "info": {}
+    }
+
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        cls = self.__class__
+        cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE["scripts"] = []
+
+    def test_distance_block(self):
+        cls = self.__class__
+        script_data = [0, 0, [["whenGreenFlag"], ["forward:", ["distanceTo:", "Sprite2"]]]]
+        cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE["children"][1]["scripts"] = []
+        raw_project = scratch.RawProject(cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE)
+        position_x_var_name = scratch.S2CC_POSITION_X_VARIABLE_NAME_PREFIX + "Sprite2"
+        position_y_var_name = scratch.S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + "Sprite2"
+        expected_first_object_script_data = [0, 0, [["whenGreenFlag"], ['forward:',
+            ["computeFunction:of:", "sqrt", ["+",
+              ["*",
+                ["()", ["-", ["xpos"], ["readVariable", position_x_var_name]]],
+                ["()", ["-", ["xpos"], ["readVariable", position_x_var_name]]]
+              ], ["*",
+                ["()", ["-", ["ypos"], ["readVariable", position_y_var_name]]],
+                ["()", ["-", ["ypos"], ["readVariable", position_y_var_name]]]
+              ]
+            ]]
+        ]]]
+        expected_second_object_script_data = [0, 0, [['whenGreenFlag'],
+            ["doForever", [
+              ["setVar:to:", position_x_var_name, ["xpos"]],
+              ["setVar:to:", position_y_var_name, ["ypos"]],
+              ["wait:elapsed:from:", 0.03]
+            ]]
+        ]]
+
+        # validate
+        assert len(raw_project.objects) == 3
+        [background_object, first_object, second_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 0
+
+        # first object
+        assert len(first_object.scripts) == 1
+        script = first_object.scripts[0]
+        expected_script = scratch.Script(expected_first_object_script_data)
+        assert script == expected_script
+
+        # second object
+        assert len(second_object.scripts) == 1
+        script = second_object.scripts[0]
+        expected_script = scratch.Script(expected_second_object_script_data)
+        assert script == expected_script
+
+        # global variables
+        global_variables = background_object._dict_object["variables"]
+        assert len(global_variables) == 2
+        assert global_variables[0] == { "name": position_x_var_name, "value": 0, "isPersistent": False }
+        assert global_variables[1] == { "name": position_y_var_name, "value": 0, "isPersistent": False }
+
+
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

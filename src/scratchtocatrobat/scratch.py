@@ -82,8 +82,12 @@ class Object(common.DictAccessWrapper):
         if number_of_ignored_scripts > 0:
             _log.debug("Ignored %s scripts", number_of_ignored_scripts)
 
-    def preprocess_object(self):
-        workaround_info = { ADD_TIMER_SCRIPT_KEY: False, ADD_TIMER_RESET_SCRIPT_KEY: False }
+    def preprocess_object(self, all_sprite_names):
+        workaround_info = {
+            ADD_TIMER_SCRIPT_KEY: False,
+            ADD_TIMER_RESET_SCRIPT_KEY: False,
+            ADD_POSITION_SCRIPT_TO_OBJECTS_KEY: set()
+        }
 
         ############################################################################################
         # user-defined function workaround
@@ -204,6 +208,50 @@ class Object(common.DictAccessWrapper):
 
             # parse again ScriptElement tree
             script.script_element = ScriptElement.from_raw_block(script.blocks)
+
+        ############################################################################################
+        # distance to object workaround
+        ############################################################################################
+        def has_distance_to_object_block(block_list, all_sprite_names):
+            for block in block_list:
+                if isinstance(block, list) \
+                and ((block[0] == 'distanceTo:' and block[1] in all_sprite_names) \
+                     or has_distance_to_object_block(block, all_sprite_names)):
+                    return True
+            return False
+
+        def replace_distance_to_object_blocks(block_list, positions_needed_for_sprite_names):
+            new_block_list = []
+            for block in block_list:
+                if isinstance(block, list):
+                    if block[0] == 'distanceTo:':
+                        # euclidean distance (Pythagorean theorem) to compute distance
+                        # between both sprite objects
+                        new_block_list += [
+                            ["computeFunction:of:", "sqrt", ["+",
+                              ["*",
+                                ["()", ["-", ["xpos"], ["readVariable", S2CC_POSITION_X_VARIABLE_NAME_PREFIX + block[1]]]],
+                                ["()", ["-", ["xpos"], ["readVariable", S2CC_POSITION_X_VARIABLE_NAME_PREFIX + block[1]]]]
+                              ], ["*",
+                                ["()", ["-", ["ypos"], ["readVariable", S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + block[1]]]],
+                                ["()", ["-", ["ypos"], ["readVariable", S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + block[1]]]]
+                              ]
+                            ]]
+                        ]
+                        positions_needed_for_sprite_names.add(block[1])
+                    else:
+                        new_block_list += [replace_distance_to_object_blocks(block, positions_needed_for_sprite_names)]
+                else:
+                    new_block_list += [block]
+            return new_block_list
+
+        positions_needed_for_sprite_names = set()
+        for script_number, script in enumerate(self.scripts):
+            if has_distance_to_object_block(script.blocks, all_sprite_names):
+                script.blocks = replace_distance_to_object_blocks(script.blocks, positions_needed_for_sprite_names)
+            # parse again ScriptElement tree
+            script.script_element = ScriptElement.from_raw_block(script.blocks)
+        workaround_info[ADD_POSITION_SCRIPT_TO_OBJECTS_KEY] = positions_needed_for_sprite_names
 
         ############################################################################################
         # doUntil and doWaitUntil workaround

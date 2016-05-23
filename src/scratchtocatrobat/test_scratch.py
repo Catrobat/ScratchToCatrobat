@@ -382,7 +382,7 @@ class TestMoreComplexBlockNewFunctionWorkaround(unittest.TestCase):
                         ['doBroadcastAndWait', u'S2CC_msg_destination_function']]]]
         ]
 
-        self.script_object.preprocess_object([cls.NEW_FUNCTION_HELPER_OBJECT_DATA["objName"]])
+        self.script_object.preprocess_object([TestBlockNewFunctionWorkaround.NEW_FUNCTION_HELPER_OBJECT_DATA["objName"]])
         for (index, script) in enumerate(self.script_object.scripts):
             expected_script = scratch.Script(expected_scripts[index])
             assert script == expected_script, "Scripts are not equal!"

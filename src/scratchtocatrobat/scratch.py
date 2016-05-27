@@ -678,7 +678,6 @@ class ScriptElement(object):
 
     @classmethod
     def from_raw_block(cls, raw_block):
-
         # replace empty arguments/operands of math functions and math operators
         # (i.e. "" and " ") with 0. This is actually default behavior in Scratch.
         from scratchtocatrobat import converter

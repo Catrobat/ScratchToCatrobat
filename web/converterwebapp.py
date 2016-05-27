@@ -198,6 +198,7 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
         # TODO: when client ID is given => check if it belongs to socket handler!
         redis_conn = _redis_conn
         ctxt = Context(self, redis_conn, self.application.settings["jobmonitorserver"])
+        _logger.info("Executing command %s", command.__class__.__name__)
         self.send_message(command.execute(ctxt, args))
 
 class _MainHandler(tornado.web.RequestHandler):

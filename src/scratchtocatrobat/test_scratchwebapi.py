@@ -38,6 +38,7 @@ TEST_PROJECT_ID_TO_OWNER_MAP = {
 
 TEST_PROJECT_ID_TO_REMIXES_MAP = {
     "10205819": [{
+        'id'   : 10211023,
         'owner': 'Amanda69',
         'image': 'https://cdn2.scratch.mit.edu/get_image/project/10211023_144x108.png?v=1368486334.0',
         'title': "Dancin' in the Castle remake"

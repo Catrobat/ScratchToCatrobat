@@ -257,9 +257,15 @@ def extract_project_remixes_from_document(document):
     remixed_project_info = []
     for index, title in enumerate(titles_of_remixed_projects):
         data = {}
+        image_url = image_urls_of_remixed_projects[index]
+        url_parts = image_url.split("/")
+        assert len(url_parts) > 0
+        resource_name_paths = url_parts[len(url_parts) - 1].split("_")
+        assert len(resource_name_paths) == 2
+        data["id"] = int(resource_name_paths[0])
         data["title"] = title
         data["owner"] = owners_of_remixed_projects[index]
-        data["image"] = image_urls_of_remixed_projects[index]
+        data["image"] = image_url
         remixed_project_info += [data]
     return remixed_project_info
 

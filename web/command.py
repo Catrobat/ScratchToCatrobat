@@ -198,6 +198,7 @@ class ScheduleJobCommand(Command):
         if job != None:
             if job.status == Job.Status.READY or job.status == Job.Status.RUNNING:
                 # TODO: lock.release()
+                _logger.info("Job already scheduled (scratch project with ID: %d)", scratch_project_ID)
                 update_jobs_info_on_listening_clients(ctxt)
                 return protocol.JobAlreadyRunningMessage(scratch_project_ID)
             elif job.status == Job.Status.FINISHED and not force:
@@ -222,6 +223,7 @@ class ScheduleJobCommand(Command):
         q = Queue(connection=redis_conn)
         host = jobmonitorserver_settings["host"]
         port = jobmonitorserver_settings["port"]
+        _logger.info("Scheduled new job (host: %s, port: %s, scratch project ID: %d)", host, port, scratch_project_ID)
         #q.enqueue(convert_scratch_project, scratch_project_ID, host, port)
         q.enqueue_call(func=convert_scratch_project, args=(scratch_project_ID, host, port,), timeout=JOB_TIMEOUT)
         # TODO: lock.release()

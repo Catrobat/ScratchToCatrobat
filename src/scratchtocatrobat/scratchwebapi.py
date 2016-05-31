@@ -31,7 +31,7 @@ HTTP_TIMEOUT = int(helpers.config.get("SCRATCH_API", "http_timeout"))
 HTTP_USER_AGENT = helpers.config.get("SCRATCH_API", "user_agent")
 SCRATCH_PROJECT_BASE_URL = helpers.config.get("SCRATCH_API", "project_base_url")
 
-class ScratchProjectInfo(namedtuple("ScratchProjectInfo", "title owner description views favorites loves remixes")):
+class ScratchProjectInfo(namedtuple("ScratchProjectInfo", "title owner instructions notes_and_credits tags views favorites loves modified_date shared_date remixes")):
     def as_dict(self):
         return dict((s, getattr(self, s)) for s in self._fields)
     def __str__(self):
@@ -54,6 +54,14 @@ def is_valid_project_url(project_url):
     _HTTP_PROJECT_URL_PATTERN = scratch_base_url + r'\d+/?'
     return re.match(_HTTP_PROJECT_URL_PATTERN, project_url)
 
+def download_project_code(project_id, target_dir):
+    # TODO: consolidate with classes from scratch module
+    from scratchtocatrobat import common
+    import scratch
+    project_code_url = helpers.config.get("SCRATCH_API", "project_url_template").format(project_id)
+    project_file_path = os.path.join(target_dir, scratch._PROJECT_FILE_NAME)
+    common.download_file(project_code_url, project_file_path)
+
 def download_project(project_url, target_dir, progress_bar=None):
     # TODO: make this independent from Java
     from threading import Thread
@@ -62,22 +70,19 @@ def download_project(project_url, target_dir, progress_bar=None):
     from scratchtocatrobat import common
     import scratch
 
-    def project_id_from_url(project_url):
-        normalized_url = project_url.strip("/")
-        project_id = os.path.basename(urlparse(normalized_url).path)
-        return project_id
-
     # TODO: fix circular reference
     if not is_valid_project_url(project_url):
         scratch_base_url = helpers.config.get("SCRATCH_API", "project_base_url")
         raise ScratchWebApiError("Project URL must be matching '{}'. Given: {}".format(scratch_base_url + '<project id>', project_url))
     assert len(os.listdir(target_dir)) == 0
 
-    # TODO: consolidate with classes from scratch module
+    def project_id_from_url(project_url):
+        normalized_url = project_url.strip("/")
+        project_id = os.path.basename(urlparse(normalized_url).path)
+        return project_id
+
     project_id = project_id_from_url(project_url)
-    project_code_url = helpers.config.get("SCRATCH_API", "project_url_template").format(project_id)
-    project_file_path = os.path.join(target_dir, scratch._PROJECT_FILE_NAME)
-    common.download_file(project_code_url, project_file_path)
+    download_project_code(project_id, target_dir)
 
     project = scratch.RawProject.from_project_folder_path(target_dir)
     if progress_bar != None:
@@ -179,20 +184,32 @@ def request_project_page_as_Jsoup_document_for(project_id):
         _log.error("Retry limit exceeded or an unexpected error occured: {}".format(sys.exc_info()[0]))
         return None
 
+
 # TODO: class instead of request functions
 def request_project_title_for(project_id):
     return extract_project_title_from_document(request_project_page_as_Jsoup_document_for(project_id))
 
-def request_project_description_for(project_id):
-    return extract_project_description_from_document(request_project_page_as_Jsoup_document_for(project_id))
+def request_project_owner_for(project_id):
+    return extract_project_owner_from_document(request_project_page_as_Jsoup_document_for(project_id))
+
+def request_project_instructions_for(project_id):
+    return extract_project_instructions_from_document(request_project_page_as_Jsoup_document_for(project_id))
+
+def request_project_notes_and_credits_for(project_id):
+    return extract_project_notes_and_credits_from_document(request_project_page_as_Jsoup_document_for(project_id))
+
+def request_project_remixes_for(project_id):
+    return extract_project_remixes_from_document(request_project_page_as_Jsoup_document_for(project_id))
+
+def request_project_details_for(project_id):
+    return extract_project_details_from_document(request_project_page_as_Jsoup_document_for(project_id))
+
 
 def extract_project_title_from_document(document):
-    if document is None:
-        return None
+    if document is None: return None
 
     extracted_text = document.select_first_as_text("html > head > title")
-    if extracted_text is None:
-        return None
+    if extracted_text is None: return None
 
     title = unicode(extracted_text).strip()
     appended_title_text = "on Scratch"
@@ -201,109 +218,94 @@ def extract_project_title_from_document(document):
     return title
 
 def extract_project_owner_from_document(document):
-    if document is None:
-        return None
-
+    if document is None: return None
     extracted_text = document.select_first_as_text("span#owner")
-    if extracted_text is None:
-        return None
+    return unicode(extracted_text).replace("by ", "").strip() if extracted_text != None else None
 
-    return unicode(extracted_text).strip()
-
-def extract_project_description_from_document(document):
-    if document is None:
-        return None
-
-    description = ""
+def extract_project_instructions_from_document(document):
+    if document is None: return None
     extracted_text = document.select_first_as_text("div#instructions > div.viewport > div.overview")
-    if extracted_text != None:
-        description += "-" * 40 + "\n"
-        description += "Instructions:\n"
-        description += unicode(extracted_text).strip() + "\n"
-        description += "-" * 40
+    return unicode(extracted_text).strip() if extracted_text != None else None
 
+def extract_project_notes_and_credits_from_document(document):
+    if document is None: return None
     extracted_text = document.select_first_as_text("div#description > div.viewport > div.overview")
-    if extracted_text != None:
-        description += "-" * 40 + "\n"
-        description += "Description:\n"
-        description += unicode(extracted_text).strip() + "\n"
-        description += "-" * 40
-
-    return description
+    return unicode(extracted_text).strip() if extracted_text != None else None
 
 def extract_project_remixes_from_document(document):
-    if document is None:
-        return None
+    if document is None: return None
 
-    extracted_text_list = document.select_all_as_text_list("div.box > div.box-content > ul.media-col > li > div.project > span.title > a")
-    if extracted_text_list is None:
-        return None
+    extracted_text_list = document.select_all_as_text_list("ul.media-col > li > div.project > span.title > a")
+    if extracted_text_list is None: return None
 
     titles_of_remixed_projects = [unicode(text).strip() for text in extracted_text_list]
 
-    extracted_text_list = document.select_all_as_text_list("div.box > div.box-content > ul.media-col > li > div.project > span.owner")
-    if extracted_text_list is None:
-        return None
+    extracted_text_list = document.select_all_as_text_list("ul.media-col > li > div.project > span.owner")
+    if extracted_text_list is None: return None
 
     owners_of_remixed_projects = [unicode(text).replace("by ", "").strip() for text in extracted_text_list]
 
-    extracted_text_list = document.select_attributes_as_text_list("div.box > div.box-content > ul.media-col > li > div.project > a.image > img", "src")
-    if extracted_text_list is None:
-        return None
+    extracted_text_list = document.select_attributes_as_text_list("ul.media-col > li > div.project > a.image > img", "src")
+    if extracted_text_list is None: return None
 
     extracted_image_urls = [unicode(url).strip() for url in extracted_text_list]
     image_urls_of_remixed_projects = [url.replace("//", "https://") if url.startswith("//") else url for url in extracted_image_urls]
 
     has_unique_length = len(set([len(titles_of_remixed_projects), len(owners_of_remixed_projects), len(image_urls_of_remixed_projects)])) == 1
-    if not has_unique_length:
-        return None
+    if not has_unique_length: return None
 
     remixed_project_info = []
     for index, title in enumerate(titles_of_remixed_projects):
         data = {}
+        image_url = image_urls_of_remixed_projects[index]
+        url_parts = image_url.split("/")
+        assert len(url_parts) > 0
+        resource_name_paths = url_parts[len(url_parts) - 1].split("_")
+        assert len(resource_name_paths) == 2
+        data["id"] = int(resource_name_paths[0])
         data["title"] = title
         data["owner"] = owners_of_remixed_projects[index]
-        data["image"] = image_urls_of_remixed_projects[index]
+        data["image"] = image_url
         remixed_project_info += [data]
     return remixed_project_info
 
 def extract_project_details_from_document(document):
-    if document is None:
-        return None
+    if document is None: return None
 
     title = extract_project_title_from_document(document)
-    if title is None:
-        return None
+    if title is None: return None
 
     owner = extract_project_owner_from_document(document)
-    if owner is None:
-        return None
+    if owner is None: return None
 
-    description = extract_project_description_from_document(document)
-    if description is None:
-        return None
+    instructions = extract_project_instructions_from_document(document) or ""
+    notes_and_credits = extract_project_notes_and_credits_from_document(document) or ""
+    tags = document.select_all_as_text_list("div#project-tags div.tag-box span.tag") or []
 
-    extracted_text = document.select_first_as_text("div#stats > div.stats > div#total-views > span.views")
-    if extracted_text is None:
-        return None
-
+    extracted_text = document.select_first_as_text("div#total-views > span.views")
+    if extracted_text is None: return None
     views = int(unicode(extracted_text).strip())
 
     extracted_text = document.select_first_as_text("div#stats > div.action > span.favorite")
-    if extracted_text is None:
-        return None
-
+    if extracted_text is None: return None
     favorites = int(unicode(extracted_text).strip())
 
-    extracted_text = document.select_first_as_text("div#stats > div#love-this > span.love")
-    if extracted_text is None:
-        return None
-
+    extracted_text = document.select_first_as_text("div#love-this > span.love")
+    if extracted_text is None: return None
     loves = int(unicode(extracted_text).strip())
 
-    remixes = extract_project_remixes_from_document(document)
-    if remixes is None:
-        return None
+    extracted_text = document.select_first_as_text("div#fixed div.dates span.date-updated")
+    if extracted_text is None: return None
+    modified_date = unicode(extracted_text).replace("Modified:", "").strip()
 
-    return ScratchProjectInfo(title = title, owner = owner, description = description, views = views,
-                              favorites = favorites, loves = loves, remixes = remixes)
+    extracted_text = document.select_first_as_text("div#fixed div.dates span.date-shared")
+    if extracted_text is None: return None
+    shared_date = unicode(extracted_text).replace("Shared:", "").strip()
+
+    remixes = extract_project_remixes_from_document(document)
+    if remixes is None: return None
+
+    return ScratchProjectInfo(title = title, owner = owner, instructions = instructions,
+                              notes_and_credits = notes_and_credits, tags = tags, views = views,
+                              favorites = favorites, loves = loves, modified_date = modified_date,
+                              shared_date = shared_date, remixes = remixes)

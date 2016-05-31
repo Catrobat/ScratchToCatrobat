@@ -59,7 +59,13 @@ SCRIPT_GREEN_FLAG, SCRIPT_RECEIVE, SCRIPT_KEY_PRESSED, SCRIPT_SENSOR_GREATER_THA
 STAGE_OBJECT_NAME = "Stage"
 STAGE_WIDTH_IN_PIXELS = 480
 STAGE_HEIGHT_IN_PIXELS = 360
-
+S2CC_TIMER_VARIABLE_NAME = "S2CC_timer"
+S2CC_TIMER_RESET_BROADCAST_MESSAGE = "S2CC_reset_timer"
+S2CC_POSITION_X_VARIABLE_NAME_PREFIX = "S2CC_position_x_"
+S2CC_POSITION_Y_VARIABLE_NAME_PREFIX = "S2CC_position_y_"
+ADD_TIMER_SCRIPT_KEY = "add_timer_script_key"
+ADD_TIMER_RESET_SCRIPT_KEY = "add_timer_reset_script_key"
+ADD_POSITION_SCRIPT_TO_OBJECTS_KEY = "add_position_script_to_objects_key"
 
 # TODO: rename
 class Object(common.DictAccessWrapper):
@@ -75,8 +81,52 @@ class Object(common.DictAccessWrapper):
         number_of_ignored_scripts = len(self.get_scripts()) - len(self.scripts)
         if number_of_ignored_scripts > 0:
             _log.debug("Ignored %s scripts", number_of_ignored_scripts)
-                    
-    def preprocess_object(self):
+
+    def preprocess_object(self, all_sprite_names):
+        workaround_info = {
+            ADD_TIMER_SCRIPT_KEY: False,
+            ADD_TIMER_RESET_SCRIPT_KEY: False,
+            ADD_POSITION_SCRIPT_TO_OBJECTS_KEY: set()
+        }
+
+        ############################################################################################
+        # user-defined function workaround
+        ############################################################################################
+        def check_list_for_getParam_blocks(scratch_function_header, block_list, all_param_variable_names):
+            for block in block_list:
+                if not isinstance(block, list):
+                    continue
+                if 'getParam' == block[0]:
+                    assert isinstance(block[1], (str, unicode))
+                    assert block[1] in param_names
+                    block[0] = "readVariable"
+                    block[1] = "S2CC_param_" + scratch_function_header + "_" + str(param_names.index(block[1]))
+                    assert block[1] not in all_param_variable_names
+                    all_param_variable_names += [block[1]]
+                    del block[2:]
+                else:
+                    check_list_for_getParam_blocks(scratch_function_header, block, all_param_variable_names)
+
+        def check_list_for_call_blocks(block_list):
+            new_block_list = []
+            for block in block_list:
+                if isinstance(block, list):
+                    if 'call' == block[0]:
+                        assert isinstance(block[1], (str, unicode))
+                        scratch_function_header = block[1]
+                        var_blocks = []
+                        for param_index, param_value in enumerate(block[2:]):
+                            var_name = "S2CC_param_" + scratch_function_header + "_" + str(param_index)
+                            var_blocks += [["setVar:to:", var_name, param_value]]
+                        new_block_list += var_blocks
+                        broadcast_message = "S2CC_msg_" + scratch_function_header
+                        new_block_list += [["doBroadcastAndWait", broadcast_message]]
+                    else:
+                        new_block_list += [check_list_for_call_blocks(block)]
+                else:
+                    new_block_list += [block]
+            return new_block_list
+
         all_headers = []
         all_param_variable_names = []
         for script in self.scripts:
@@ -89,7 +139,7 @@ class Object(common.DictAccessWrapper):
                     continue # ignore duplicates
                 all_headers += [scratch_function_header]
                 # filter all % characters
-                
+
                 filtered_scratch_function_header = scratch_function_header.replace("\\%", "")
                 num_of_params = filtered_scratch_function_header.count("%")
                 param_names = script.arguments[1]
@@ -102,60 +152,18 @@ class Object(common.DictAccessWrapper):
                     assert len(param_type) == 1
                     param_types += [param_type]
 
-                get_param_blocks = []
+                check_list_for_getParam_blocks(scratch_function_header, script.blocks, all_param_variable_names)
 
-                def check_list_for_getParam_blocks(block_list, all_param_variable_names):
-                    for block in block_list:
-                        if isinstance(block, list):
-                            if 'getParam' == block[0]:
-                                assert isinstance(block[1], (str, unicode))
-                                assert block[1] in param_names
-                                block[0] = "readVariable"
-                                block[1] = "S2CC_param_" + scratch_function_header + "_" + str(param_names.index(block[1]))
-                                assert block[1] not in all_param_variable_names
-                                all_param_variable_names += [block[1]]
-                                del block[2:]
-                                get_param_blocks.append(block)
-                            else:
-                                check_list_for_getParam_blocks(block, all_param_variable_names)
-                                
-                check_list_for_getParam_blocks(script.blocks, all_param_variable_names)
-
-                script.type = "whenIReceive"
+                script.type = SCRIPT_RECEIVE
                 script.arguments = ["S2CC_msg_" + scratch_function_header]
                 script.raw_script = [[script.type] + script.arguments] + script.blocks
                 assert isinstance(script.script_element, BlockList)
 
-
-            call_blocks = []
-
-            def check_list_for_call_blocks(block_list):
-                new_block_list = []
-                for block in block_list:
-                    if isinstance(block, list):
-                        if 'call' == block[0]:
-                            assert isinstance(block[1], (str, unicode))
-                            scratch_function_header = block[1]
-                            var_blocks = []
-                            for param_index, param_value in enumerate(block[2:]):
-                                var_name = "S2CC_param_" + scratch_function_header + "_" + str(param_index)
-                                var_blocks += [["setVar:to:", var_name, param_value]]
-                            call_blocks.append(block)
-                            new_block_list += var_blocks
-                            broadcast_message = "S2CC_msg_" + scratch_function_header
-                            new_block_list += [["doBroadcastAndWait", broadcast_message]]
-                        else:
-                            new_block_list += [check_list_for_call_blocks(block)]
-                    else:
-                        new_block_list += [block]
-                return new_block_list
-
             script.blocks = check_list_for_call_blocks(script.blocks)
-
             # parse again ScriptElement tree
             script.script_element = ScriptElement.from_raw_block(script.blocks)
 
-            
+        # add new variables
         for param_variable_name in all_param_variable_names:
             self._dict_object["variables"].append({
                 "name": param_variable_name,
@@ -163,7 +171,91 @@ class Object(common.DictAccessWrapper):
                 "isPersistent": False
             })
 
-        
+        ############################################################################################
+        # timer and timerReset workaround
+        ############################################################################################
+        def has_timer_block(block_list):
+            for block in block_list:
+                if isinstance(block, list) and (block[0] == 'timer' or has_timer_block(block)):
+                    return True
+            return False
+
+        def has_timer_reset_block(block_list):
+            for block in block_list:
+                if isinstance(block, list) and (block[0] == 'timerReset' or has_timer_reset_block(block)):
+                    return True
+            return False
+
+        def replace_timer_blocks(block_list):
+            new_block_list = []
+            for block in block_list:
+                if isinstance(block, list):
+                    if block[0] == 'timer':
+                        new_block_list += [["readVariable", S2CC_TIMER_VARIABLE_NAME]]
+                    elif block[0] == 'timerReset':
+                        new_block_list += [["doBroadcastAndWait", S2CC_TIMER_RESET_BROADCAST_MESSAGE]]
+                    else:
+                        new_block_list += [replace_timer_blocks(block)]
+                else:
+                    new_block_list += [block]
+            return new_block_list
+
+        for script_number, script in enumerate(self.scripts):
+            if has_timer_reset_block(script.blocks): workaround_info[ADD_TIMER_RESET_SCRIPT_KEY] = True
+            if has_timer_block(script.blocks): workaround_info[ADD_TIMER_SCRIPT_KEY] = True
+
+            script.blocks = replace_timer_blocks(script.blocks)
+
+            # parse again ScriptElement tree
+            script.script_element = ScriptElement.from_raw_block(script.blocks)
+
+        ############################################################################################
+        # distance to object workaround
+        ############################################################################################
+        def has_distance_to_object_block(block_list, all_sprite_names):
+            for block in block_list:
+                if isinstance(block, list) \
+                and ((block[0] == 'distanceTo:' and block[1] in all_sprite_names) \
+                     or has_distance_to_object_block(block, all_sprite_names)):
+                    return True
+            return False
+
+        def replace_distance_to_object_blocks(block_list, positions_needed_for_sprite_names):
+            new_block_list = []
+            for block in block_list:
+                if isinstance(block, list):
+                    if block[0] == 'distanceTo:':
+                        # euclidean distance (Pythagorean theorem) to compute distance
+                        # between both sprite objects
+                        new_block_list += [
+                            ["computeFunction:of:", "sqrt", ["+",
+                              ["*",
+                                ["()", ["-", ["xpos"], ["readVariable", S2CC_POSITION_X_VARIABLE_NAME_PREFIX + block[1]]]],
+                                ["()", ["-", ["xpos"], ["readVariable", S2CC_POSITION_X_VARIABLE_NAME_PREFIX + block[1]]]]
+                              ], ["*",
+                                ["()", ["-", ["ypos"], ["readVariable", S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + block[1]]]],
+                                ["()", ["-", ["ypos"], ["readVariable", S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + block[1]]]]
+                              ]
+                            ]]
+                        ]
+                        positions_needed_for_sprite_names.add(block[1])
+                    else:
+                        new_block_list += [replace_distance_to_object_blocks(block, positions_needed_for_sprite_names)]
+                else:
+                    new_block_list += [block]
+            return new_block_list
+
+        positions_needed_for_sprite_names = set()
+        for script_number, script in enumerate(self.scripts):
+            if has_distance_to_object_block(script.blocks, all_sprite_names):
+                script.blocks = replace_distance_to_object_blocks(script.blocks, positions_needed_for_sprite_names)
+            # parse again ScriptElement tree
+            script.script_element = ScriptElement.from_raw_block(script.blocks)
+        workaround_info[ADD_POSITION_SCRIPT_TO_OBJECTS_KEY] = positions_needed_for_sprite_names
+
+        ############################################################################################
+        # doUntil and doWaitUntil workaround
+        ############################################################################################
         from scratchtocatrobat import converter
         preprocessed_scripts = []
         additional_scripts = []
@@ -181,7 +273,7 @@ class Object(common.DictAccessWrapper):
                     loop_guard = ["doIf", ["not", ["=", ["readVariable", loop_done_variable], 1]], loop_blocks]
                     replacement_blocks = [["setVar:to:", loop_done_variable, 0], ["doForever", [loop_guard]]]
                     preprocessed_blocks += replacement_blocks
-                    after_loop_raw_script = [0, 0, [["whenIReceive", broadcast_msg]] + [block for block in blocks_iterator]]
+                    after_loop_raw_script = [0, 0, [[SCRIPT_RECEIVE, broadcast_msg]] + [block for block in blocks_iterator]]
                     additional_scripts += [Script(after_loop_raw_script)]
                 else:
                     preprocessed_blocks += [block]
@@ -189,12 +281,9 @@ class Object(common.DictAccessWrapper):
             script.raw_script[1:] = preprocessed_blocks
             script = Script([0, 0, script.raw_script])
             preprocessed_scripts += [script]
-            
-        
+
         self.scripts = preprocessed_scripts + additional_scripts
-
-
-
+        return workaround_info
 
     @classmethod
     def is_valid_class_input(cls, object_data):
@@ -220,9 +309,75 @@ class RawProject(Object):
         self.dict_ = dict_
         self.raw_objects = [child for child in self.get_children() if "objName" in child]
         self.objects = [Object(raw_object) for raw_object in [dict_] + self.raw_objects]
-        for scratch_object in self.objects: scratch_object.preprocess_object()
         self.resource_names = [self._resource_name_from(raw_resource) for raw_resource in self._raw_resources()]
         self.unique_resource_names = list(set(self.resource_names))
+
+        # preprocessing
+        add_timer_script = False
+        add_timer_reset_script = False
+        sprite_name_sprite_mapping = dict(map(lambda obj: (obj.get_objName(), obj), self.objects))
+        all_sprite_names = sprite_name_sprite_mapping.keys()
+        position_script_to_be_added = set()
+        for scratch_object in self.objects:
+            workaround_info = scratch_object.preprocess_object(all_sprite_names)
+            if workaround_info[ADD_TIMER_SCRIPT_KEY]: add_timer_script = True
+            if workaround_info[ADD_TIMER_RESET_SCRIPT_KEY]: add_timer_reset_script = True
+            position_script_to_be_added |= workaround_info[ADD_POSITION_SCRIPT_TO_OBJECTS_KEY]
+
+        if add_timer_script: self._add_timer_script_to_stage_object()
+        if add_timer_script and add_timer_reset_script: self._add_timer_reset_script_to_stage_object()
+        for destination_sprite_name in position_script_to_be_added:
+            sprite_object = sprite_name_sprite_mapping[destination_sprite_name]
+            assert sprite_object is not None
+            self._add_update_position_script_to_object(sprite_object)
+
+    def _add_update_position_script_to_object(self, sprite_object):
+        # add global variables for positions!
+        position_x_var_name = S2CC_POSITION_X_VARIABLE_NAME_PREFIX + sprite_object.get_objName()
+        position_y_var_name = S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + sprite_object.get_objName()
+        global_variables = self.objects[0]._dict_object["variables"]
+        global_variables.append({
+            "name": position_x_var_name,
+            "value": 0,
+            "isPersistent": False
+        })
+        global_variables.append({
+            "name": position_y_var_name,
+            "value": 0,
+            "isPersistent": False
+        })
+        # update position script
+        script_blocks = [
+            ["doForever", [
+              ["setVar:to:", position_x_var_name, ["xpos"]],
+              ["setVar:to:", position_y_var_name, ["ypos"]],
+              ["wait:elapsed:from:", 0.03]
+            ]]
+        ]
+        sprite_object.scripts += [Script([0, 0, [[SCRIPT_GREEN_FLAG]] + script_blocks])]
+
+    def _add_timer_script_to_stage_object(self):
+        assert len(self.objects) > 0
+        # add timer variable to stage object (in Scratch this acts as a global variable)
+        self.objects[0]._dict_object["variables"].append({
+            "name": S2CC_TIMER_VARIABLE_NAME,
+            "value": 0,
+            "isPersistent": False
+        })
+        # timer counter script
+        script_blocks = [
+            ["doForever", [
+              ["changeVar:by:", S2CC_TIMER_VARIABLE_NAME, 0.1],
+              ["wait:elapsed:from:", 0.1]
+            ]]
+        ]
+        self.objects[0].scripts += [Script([0, 0, [[SCRIPT_GREEN_FLAG]] + script_blocks])]
+
+    def _add_timer_reset_script_to_stage_object(self):
+        assert len(self.objects) > 0
+        # timer reset script
+        script_blocks = [["setVar:to:", S2CC_TIMER_VARIABLE_NAME, 0]]
+        self.objects[0].scripts += [Script([0, 0, [[SCRIPT_RECEIVE, S2CC_TIMER_RESET_BROADCAST_MESSAGE]] + script_blocks])]
 
     def __iter__(self):
         return iter(self.objects)
@@ -265,7 +420,7 @@ class RawProject(Object):
     def num_of_iterations_of_local_project(self, progress_bar):
         unique_resource_names = self.unique_resource_names
         num_total_unique_resources = len(unique_resource_names)
-        num_of_downloads = 2 # for fetching title and description (2 different requests!)
+        num_of_downloads = 2 # for fetching title and instructions (2 different requests!)
         objects_scripts = [obj.scripts for obj in self.objects]
         all_scripts = reduce(lambda obj1_scripts, obj2_scripts: obj1_scripts + obj2_scripts, objects_scripts)
         num_of_scripts = len(all_scripts)
@@ -310,7 +465,6 @@ class RawProject(Object):
         return cls(parsed_json)
 
 
-# FIXME: do not inherit from RawProject
 class Project(RawProject):
     """
     Represents a complete Scratch project including all resource files.
@@ -349,11 +503,12 @@ class Project(RawProject):
         if not self.project_id:
             self.project_id = "0"
             name = "Untitled"
-            self.description = None
+            self.instructions = self.notes_and_credits = None
             #raise ProjectError("No project id specified in project file. Please provide project id with constructor.")
         else:
-            self.description = scratchwebapi.request_project_description_for(self.project_id)
-        if progress_bar != None: progress_bar.update() # description step passed
+            self.instructions = scratchwebapi.request_project_instructions_for(self.project_id)
+            self.notes_and_credits = scratchwebapi.request_project_notes_and_credits_for(self.project_id)
+        if progress_bar != None: progress_bar.update() # instructions and notes-and-credits step passed
 
         if name != None:
             self.name = name
@@ -363,7 +518,7 @@ class Project(RawProject):
                 self.name = scratchwebapi.request_project_title_for(self.project_id)
             except urllib2.HTTPError:
                 self.name = str(self.project_id)
-                self.description = None
+                self.instructions = self.notes_and_credits = None
         if progress_bar != None: progress_bar.update() # name step passed
         self.name = self.name.strip() if self.name != None else "Unknown Project"
         self.md5_to_resource_path_map = read_md5_to_resource_path_mapping()
@@ -452,6 +607,11 @@ class Script(object):
             return False
 
         def cmp_block(block, other_block):
+            if isinstance(block[0], list):
+                if not isinstance(other_block[0], list): return False
+                block = block[0]
+                other_block = other_block[0]
+
             assert isinstance(block[0], (str, unicode))
             assert isinstance(other_block[0], (str, unicode))
 
@@ -518,6 +678,15 @@ class ScriptElement(object):
 
     @classmethod
     def from_raw_block(cls, raw_block):
+        # replace empty arguments/operands of math functions and math operators
+        # (i.e. "" and " ") with 0. This is actually default behavior in Scratch.
+        from scratchtocatrobat import converter
+        if isinstance(raw_block, list) and len(raw_block) > 1 \
+        and converter.is_math_function_or_operator(raw_block[0]):
+            raw_block[1:] = map(lambda arg: arg if not isinstance(arg, (str, unicode)) \
+                                or arg.strip() != '' else 0, raw_block[1:])
+
+        # recursively create ScriptElement tree
         block_name = None
         block_arguments = []
         if isinstance(raw_block, list):

@@ -29,23 +29,6 @@ from scratchtocatrobat.tools import helpers
 
 class SvgToPngTest(common_testing.BaseTestCase):
 
-    def test_fail_on_missing_env_variable(self):
-        env_backup = None
-        batik_home_dir = helpers.config.get("PATHS", "batik_home")
-        if batik_home_dir in os.environ:
-            env_backup = os.environ.copy()
-            del os.environ[batik_home_dir]
-        try:
-            svgtopng.convert("dummy.svg")
-            self.fail("Expected exception 'EnvironmentError' not thrown")
-        except EnvironmentError:
-            pass
-        finally:
-            if env_backup:
-                os.environ.clear()
-                os.environ.update(env_backup)
-            assert batik_home_dir in os.environ
-
     def test_can_convert_file_from_svg_to_png(self):
         regular_svg_path = os.path.join(common_testing.get_test_project_path("dancing_castle"), "1.svg")
         svg_path_with_fileext = os.path.join(self.temp_dir, "test_path_which_includes_extension_.svg.svg", "1.svg")

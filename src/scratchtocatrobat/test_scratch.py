@@ -18,6 +18,7 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see http://www.gnu.org/licenses/.
+
 import json
 import os
 import string
@@ -25,60 +26,22 @@ import unittest
 
 from scratchtocatrobat import common, scratch
 from scratchtocatrobat import common_testing
-from scratchtocatrobat import scratch
 
 EASY_SCRIPTS = [
     [23, 125,
         [["whenGreenFlag"],
             ["say:duration:elapsed:from:", "Watch me dance!", 2],
-            ["doRepeat",
-                10,
-                [["forward:", 10],
-                    ["playDrum", 1, 0.2],
-                    ["forward:", -10],
-                    ["playDrum", 1, 0.2]]],
+            ["doRepeat", 10, [
+                ["forward:", 10],
+                ["playDrum", 1, 0.2],
+                ["forward:", -10],
+                ["playDrum", 1, 0.2]
+            ]],
             ["changeGraphicEffect:by:", "color", 25],
             ["say:", "test"], ], ],
     [30, 355, [["whenKeyPressed", "space"], ["changeGraphicEffect:by:", "color", 25]]],
     [30.5, 355.5, [["whenKeyPressed", "space"], ["changeGraphicEffect:by:", "color", 25]]],
 ]
-
-NEW_FUNCTION_HELPER_OBJECT_DATA = {
-    "objName": "Sprite1",
-    "variables": [{"name": "var1", "value": 0, "isPersistent": False}],
-    "scripts": [[148,
-            82,
-            [["whenGreenFlag"],
-                ["setVar:to:", "var1", 0],
-                ["call", "Function1 %n", 1],
-                ["call", "Function1 %n", 1]]],
-        [515.75,
-            87.85,
-            [["procDef", "Function1 %n", ["number1"], [1], True],
-                ["playSound:", "Aufnahme1"],
-                ["wait:elapsed:from:", ["+", ["readVariable", "var1"], ["getParam", "number1", "r"]]]]],
-    ]
-}
-
-NEW_FUNCTION_COMPLEX_HELPER_OBJECT_DATA = {
-    "objName": "Sprite1",
-    "scripts": [[27, 80, 
-            [["whenGreenFlag"],
-                ["call", "function %n", 6]]],
-            
-            [171.6,
-                78.2,
-                [["procDef", "function %n", ["number"], [1], False],
-                    ["doIf", [">", ["getParam", "number", "r"], " 5 "], ["call", "another_function %n", 3]]]],
-
-            [678.45, 79.3, 
-                [["procDef", "destination_function", [], [], False], ["playSound:", "meow"]]],
-                
-            [404.65,
-                80.45,
-                [["procDef", "another_function %n", ["value"], [1], False],
-                        ["doIf", [">", ["getParam", "value", "r"], " 5 "], ["call", "destination_function"]]]]],
-}
 
 TEST_PROJECT_FOLDER = "dancing_castle"
 
@@ -337,13 +300,28 @@ class TestBlockInit(unittest.TestCase):
             assert all(isinstance(block, scratch.ScriptElement) for block in nested_blocks)
             assert [len(block.children) for block in nested_blocks] == list(expected_block_children_number)
 
-class TestBlockNewFunction(unittest.TestCase):
+class TestBlockNewFunctionWorkaround(unittest.TestCase):
+    NEW_FUNCTION_HELPER_OBJECT_DATA = {
+        "objName": "Sprite1",
+        "variables": [{"name": "var1", "value": 0, "isPersistent": False}],
+        "scripts": [
+            [148, 82, [["whenGreenFlag"],
+                ["setVar:to:", "var1", 0],
+                ["call", "Function1 %n", 1],
+                ["call", "Function1 %n", 1]]],
+            [515.75, 87.85, [["procDef", "Function1 %n", ["number1"], [1], True],
+                ["playSound:", "Aufnahme1"],
+                ["wait:elapsed:from:", ["+", ["readVariable", "var1"], ["getParam", "number1", "r"]]]]],
+        ]
+    }
 
     def setUp(self):
+        cls = self.__class__
         unittest.TestCase.setUp(self)
-        self.script_object = create_user_defined_function_workaround_scratch_object(NEW_FUNCTION_HELPER_OBJECT_DATA)
+        self.script_object = create_user_defined_function_workaround_scratch_object(cls.NEW_FUNCTION_HELPER_OBJECT_DATA)
 
     def test_new_function_brick(self):
+        cls = self.__class__
         expected_scripts = [
             [148, 82, [["whenGreenFlag"],
                 ["setVar:to:", "var1", 0],
@@ -362,18 +340,30 @@ class TestBlockNewFunction(unittest.TestCase):
             ]]
         ]
 
-        self.script_object.preprocess_object()
+        self.script_object.preprocess_object([cls.NEW_FUNCTION_HELPER_OBJECT_DATA["objName"]])
         for (index, script) in enumerate(self.script_object.scripts):
             expected_script = scratch.Script(expected_scripts[index])
             assert script == expected_script, "Scripts are not equal!"
         
-class TestMoreComplexBlockNewFunction(unittest.TestCase):  
-    
+class TestMoreComplexBlockNewFunctionWorkaround(unittest.TestCase):  
+    NEW_FUNCTION_COMPLEX_HELPER_OBJECT_DATA = {
+        "objName": "Sprite1",
+        "scripts": [[27, 80,
+            [["whenGreenFlag"], ["call", "function %n", 6]]],
+            [171.6, 78.2, [["procDef", "function %n", ["number"], [1], False],
+                ["doIf", [">", ["getParam", "number", "r"], " 5 "], ["call", "another_function %n", 3]]]],
+            [678.45, 79.3, [["procDef", "destination_function", [], [], False], ["playSound:", "meow"]]],
+            [404.65, 80.45, [["procDef", "another_function %n", ["value"], [1], False],
+                ["doIf", [">", ["getParam", "value", "r"], " 5 "], ["call", "destination_function"]]]]],
+    }
+
     def setUp(self):
+        cls = self.__class__
         unittest.TestCase.setUp(self)
-        self.script_object = create_user_defined_function_workaround_scratch_object(NEW_FUNCTION_COMPLEX_HELPER_OBJECT_DATA)
-  
+        self.script_object = create_user_defined_function_workaround_scratch_object(cls.NEW_FUNCTION_COMPLEX_HELPER_OBJECT_DATA)
+
     def test_more_complicated_function_brick(self):
+        cls = self.__class__
         expected_scripts = [
             [27, 80, [["whenGreenFlag"],
                 ['setVar:to:', u'S2CC_param_function %n_0', 6],
@@ -383,7 +373,7 @@ class TestMoreComplexBlockNewFunction(unittest.TestCase):
                     [u'doIf', [u'>', ['readVariable', u'S2CC_param_function %n_0'], u' 5 '], 
                         ['setVar:to:', u'S2CC_param_another_function %n_0', 3], 
                         ['doBroadcastAndWait', u'S2CC_msg_another_function %n']]]],
-            [678.45, 79.3, 
+            [678.45, 79.3,
                 [["whenIReceive", "S2CC_msg_destination_function"],
                     [u'playSound:', u'meow']]],
             [404.65, 80.45,
@@ -392,10 +382,671 @@ class TestMoreComplexBlockNewFunction(unittest.TestCase):
                         ['doBroadcastAndWait', u'S2CC_msg_destination_function']]]]
         ]
 
-        self.script_object.preprocess_object()
+        self.script_object.preprocess_object([TestBlockNewFunctionWorkaround.NEW_FUNCTION_HELPER_OBJECT_DATA["objName"]])
         for (index, script) in enumerate(self.script_object.scripts):
             expected_script = scratch.Script(expected_scripts[index])
             assert script == expected_script, "Scripts are not equal!"
+
+class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
+    TIMER_HELPER_OBJECTS_DATA_TEMPLATE = {
+        "objName": "Stage",
+        "sounds": [],
+        "costumes": [],
+        "currentCostumeIndex": 0,
+        "penLayerMD5": "5c81a336fab8be57adc039a8a2b33ca9.png",
+        "penLayerID": 0,
+        "tempoBPM": 60,
+        "videoAlpha": 0.5,
+        "children": [{ "objName": "Sprite1", "scripts": None }],
+        "info": {}
+    }
+
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        cls = self.__class__
+        cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE["scripts"] = []
+
+    def test_timer_block(self):
+        cls = self.__class__
+        script_data = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["timer"]]]]
+        cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        raw_project = scratch.RawProject(cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE)
+        expected_background_object_script_data = [0, 0, [['whenGreenFlag'],
+            ['doForever', [
+                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.1],
+                ['wait:elapsed:from:', 0.1]
+            ]]
+        ]]
+        expected_first_object_script_data = [0, 0, [["whenGreenFlag"],
+            ['wait:elapsed:from:', ['readVariable', scratch.S2CC_TIMER_VARIABLE_NAME]]
+        ]]
+
+        # validate
+        assert len(raw_project.objects) == 2
+        [background_object, first_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 1
+        script = background_object.scripts[0]
+        expected_script = scratch.Script(expected_background_object_script_data)
+        assert script == expected_script
+
+        # first object
+        assert len(first_object.scripts) == 1
+        script = first_object.scripts[0]
+        expected_script = scratch.Script(expected_first_object_script_data)
+        assert script == expected_script
+
+        # global variables
+        global_variables = background_object._dict_object["variables"]
+        assert len(global_variables) == 1
+        assert global_variables[0] == { "name": scratch.S2CC_TIMER_VARIABLE_NAME, "value": 0, "isPersistent": False }
+
+    def test_same_timer_block_twice(self):
+        cls = self.__class__
+        script_data = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["timer"]], ["wait:elapsed:from:", ["timer"]]]]
+        cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        expected_background_object_script_data = [0, 0, [['whenGreenFlag'],
+            ['doForever', [
+                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.1],
+                ['wait:elapsed:from:', 0.1]
+            ]]
+        ]]
+        expected_first_object_script_data = [0, 0, [["whenGreenFlag"],
+            ['wait:elapsed:from:', ['readVariable', scratch.S2CC_TIMER_VARIABLE_NAME]],
+            ['wait:elapsed:from:', ['readVariable', scratch.S2CC_TIMER_VARIABLE_NAME]]
+        ]]
+
+        # create project
+        raw_project = scratch.RawProject(cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE)
+
+        # validate
+        assert len(raw_project.objects) == 2
+        [background_object, first_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 1
+        script = background_object.scripts[0]
+        expected_script = scratch.Script(expected_background_object_script_data)
+        assert script == expected_script
+
+        # first object
+        assert len(first_object.scripts) == 1
+        script = first_object.scripts[0]
+        expected_script = scratch.Script(expected_first_object_script_data)
+        assert script == expected_script
+
+        # global variables
+        global_variables = background_object._dict_object["variables"]
+        assert len(global_variables) == 1
+        assert global_variables[0] == { "name": scratch.S2CC_TIMER_VARIABLE_NAME, "value": 0, "isPersistent": False }
+
+    def test_reset_timer_block_with_non_existant_timer_block_should_be_ignored(self):
+        cls = self.__class__
+        script_data = [0, 0, [["whenGreenFlag"], ["timerReset"]]]
+        cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        expected_first_object_script_data = [0, 0, [["whenGreenFlag"],
+            ['doBroadcastAndWait', scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE]
+        ]]
+
+        # create project
+        raw_project = scratch.RawProject(cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE)
+
+        # validate
+        assert len(raw_project.objects) == 2
+        [background_object, first_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 0
+
+        # first object
+        assert len(first_object.scripts) == 1
+        script = first_object.scripts[0]
+        expected_script = scratch.Script(expected_first_object_script_data)
+        assert script == expected_script
+
+        # global variables
+        global_variables = background_object._dict_object["variables"]
+        assert len(global_variables) == 0
+
+    def test_reset_timer_block_with_existant_timer_block_in_same_object_must_NOT_be_ignored(self):
+        cls = self.__class__
+        expected_background_object_scripts_data = [[0, 0, [['whenGreenFlag'],
+            ['doForever', [
+                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.1],
+                ['wait:elapsed:from:', 0.1]
+            ]]]
+        ], [0, 0, [['whenIReceive', scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE],
+            ['setVar:to:', scratch.S2CC_TIMER_VARIABLE_NAME, 0]
+        ]]]
+        script_data = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["timer"]], ["timerReset"]]]
+        cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        expected_first_object_script_data = [0, 0, [["whenGreenFlag"],
+            ['wait:elapsed:from:', ['readVariable', scratch.S2CC_TIMER_VARIABLE_NAME]],
+            ["doBroadcastAndWait", scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE]
+        ]]
+
+        # create project
+        raw_project = scratch.RawProject(cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE)
+
+        # validate
+        assert len(raw_project.objects) == 2
+        [background_object, first_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 2
+        script = background_object.scripts[0]
+        expected_script = scratch.Script(expected_background_object_scripts_data[0])
+        assert script == expected_script
+        script = background_object.scripts[1]
+        expected_script = scratch.Script(expected_background_object_scripts_data[1])
+        assert script == expected_script
+
+        # first object
+        assert len(first_object.scripts) == 1
+        script = first_object.scripts[0]
+        expected_script = scratch.Script(expected_first_object_script_data)
+        assert script == expected_script
+
+        # global variables
+        global_variables = background_object._dict_object["variables"]
+        assert len(global_variables) == 1
+        assert global_variables[0] == { "name": scratch.S2CC_TIMER_VARIABLE_NAME, "value": 0, "isPersistent": False }
+
+    def test_reset_timer_block_and_timer_block_within_loop_must_NOT_be_ignored(self):
+        cls = self.__class__
+        expected_background_object_scripts_data = [[0, 0, [['whenGreenFlag'],
+            ['doForever', [
+                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.1],
+                ['wait:elapsed:from:', 0.1]
+            ]]]
+        ], [0, 0, [['whenIReceive', scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE],
+            ['setVar:to:', scratch.S2CC_TIMER_VARIABLE_NAME, 0]
+        ]]]
+        script_data = [0, 0, [["whenGreenFlag"],
+            ["doRepeat", 100, [["wait:elapsed:from:", ["timer"]], ["timerReset"]]]]
+        ]
+        cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        expected_first_object_script_data = [0, 0, [["whenGreenFlag"],
+            ["doRepeat", 100, [
+                ['wait:elapsed:from:', ['readVariable', scratch.S2CC_TIMER_VARIABLE_NAME]],
+                ["doBroadcastAndWait", scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE]]
+        ]]]
+
+        # create project
+        raw_project = scratch.RawProject(cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE)
+
+        # validate
+        assert len(raw_project.objects) == 2
+        [background_object, first_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 2
+        script = background_object.scripts[0]
+        expected_script = scratch.Script(expected_background_object_scripts_data[0])
+        assert script == expected_script
+        script = background_object.scripts[1]
+        expected_script = scratch.Script(expected_background_object_scripts_data[1])
+        assert script == expected_script
+
+        # first object
+        assert len(first_object.scripts) == 1
+        script = first_object.scripts[0]
+        expected_script = scratch.Script(expected_first_object_script_data)
+        assert script == expected_script
+
+        # global variables
+        global_variables = background_object._dict_object["variables"]
+        assert len(global_variables) == 1
+        assert global_variables[0] == { "name": scratch.S2CC_TIMER_VARIABLE_NAME, "value": 0, "isPersistent": False }
+
+    def test_reset_timer_block_with_existant_timer_block_in_other_object_must_NOT_be_ignored(self):
+        cls = self.__class__
+        background_script_data = [0, 0, [["whenGreenFlag"], ["timerReset"]]]
+        cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE["scripts"] = [background_script_data]
+        expected_background_object_scripts_data = [[0, 0, [['whenGreenFlag'],
+            ["doBroadcastAndWait", scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE]
+        ]], [0, 0, [['whenGreenFlag'],
+            ['doForever', [
+                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.1],
+                ['wait:elapsed:from:', 0.1]
+            ]]]
+        ], [0, 0, [['whenIReceive', scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE],
+            ['setVar:to:', scratch.S2CC_TIMER_VARIABLE_NAME, 0]
+        ]]]
+
+        # first object scripts
+        first_object_script_data = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["timer"]]]]
+        cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [first_object_script_data]
+        expected_first_object_script_data = [0, 0, [["whenGreenFlag"],
+            ['wait:elapsed:from:', ['readVariable', scratch.S2CC_TIMER_VARIABLE_NAME]]
+        ]]
+
+        # create project
+        raw_project = scratch.RawProject(cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE)
+
+        # validate
+        assert len(raw_project.objects) == 2
+        [background_object, first_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 3
+        script = background_object.scripts[0]
+        expected_script = scratch.Script(expected_background_object_scripts_data[0])
+        assert script == expected_script
+        script = background_object.scripts[1]
+        expected_script = scratch.Script(expected_background_object_scripts_data[1])
+        assert script == expected_script
+        script = background_object.scripts[2]
+        expected_script = scratch.Script(expected_background_object_scripts_data[2])
+        assert script == expected_script
+
+        # first object
+        assert len(first_object.scripts) == 1
+        script = first_object.scripts[0]
+        expected_script = scratch.Script(expected_first_object_script_data)
+        assert script == expected_script
+
+        # global variables
+        global_variables = background_object._dict_object["variables"]
+        assert len(global_variables) == 1
+        assert global_variables[0] == { "name": scratch.S2CC_TIMER_VARIABLE_NAME, "value": 0, "isPersistent": False }
+
+
+class TestEmptyParamsInMathFunctionsAndOperators(unittest.TestCase):
+
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+
+    def test_non_empty_params_as_math_operand_arguments(self):
+        script_data = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["+", 1, 0]]]]
+        expected_raw_script_data = [["whenGreenFlag"], ["wait:elapsed:from:", ["+", 1, 0]]]
+
+        script = scratch.Script(script_data)
+        assert script.type == scratch.SCRIPT_GREEN_FLAG
+        assert len(script.arguments) == 0
+        assert script.raw_script == expected_raw_script_data
+        assert script.blocks == expected_raw_script_data[1:]
+        assert isinstance(script.script_element, scratch.BlockList)
+        assert script.script_element.name == '<LIST>'
+        assert len(script.script_element.children) == 1
+        script_element_child = script.script_element.children[0]
+        assert script_element_child.name == 'wait:elapsed:from:'
+        assert len(script_element_child.children) == 1
+        script_element_child = script_element_child.children[0]
+        assert script_element_child.name == '+'
+        assert len(script_element_child.children) == 2
+        left_child = script_element_child.children[0]
+        right_child = script_element_child.children[1]
+        assert left_child.name == 1
+        assert len(left_child.children) == 0
+        assert right_child.name == 0
+        assert len(right_child.children) == 0
+
+    def test_non_empty_params_as_math_function_arguments(self):
+        script_data = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["randomFrom:to:", -100, 100]]]]
+        expected_raw_script_data = [["whenGreenFlag"], ["wait:elapsed:from:", ["randomFrom:to:", -100, 100]]]
+
+        script = scratch.Script(script_data)
+        assert script.type == scratch.SCRIPT_GREEN_FLAG
+        assert len(script.arguments) == 0
+        assert script.raw_script == expected_raw_script_data
+        assert script.blocks == expected_raw_script_data[1:]
+        assert isinstance(script.script_element, scratch.BlockList)
+        assert script.script_element.name == '<LIST>'
+        assert len(script.script_element.children) == 1
+        script_element_child = script.script_element.children[0]
+        assert script_element_child.name == 'wait:elapsed:from:'
+        assert len(script_element_child.children) == 1
+        script_element_child = script_element_child.children[0]
+        assert script_element_child.name == 'randomFrom:to:'
+        assert len(script_element_child.children) == 2
+        left_child = script_element_child.children[0]
+        right_child = script_element_child.children[1]
+        assert left_child.name == -100
+        assert len(left_child.children) == 0
+        assert right_child.name == 100
+        assert len(right_child.children) == 0
+
+    def test_empty_params_as_math_operand_arguments(self):
+        script_data = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["+", \
+                        "", ["randomFrom:to:", -100, 100]]]]]
+        expected_raw_script_data = [["whenGreenFlag"], ["wait:elapsed:from:", ["+", \
+                        0, ["randomFrom:to:", -100, 100]]]]
+
+        script = scratch.Script(script_data)
+        assert script.type == scratch.SCRIPT_GREEN_FLAG
+        assert len(script.arguments) == 0
+        assert script.raw_script == expected_raw_script_data
+        assert script.blocks == expected_raw_script_data[1:]
+        assert isinstance(script.script_element, scratch.BlockList)
+        assert script.script_element.name == '<LIST>'
+        assert len(script.script_element.children) == 1
+        script_element_child = script.script_element.children[0]
+        assert script_element_child.name == 'wait:elapsed:from:'
+        assert len(script_element_child.children) == 1
+        script_element_child = script_element_child.children[0]
+        assert script_element_child.name == '+'
+        assert len(script_element_child.children) == 2
+        left_child = script_element_child.children[0]
+        right_child = script_element_child.children[1]
+        assert left_child.name == 0
+        assert len(left_child.children) == 0
+        assert right_child.name == 'randomFrom:to:'
+        assert len(right_child.children) == 2
+        left_child = right_child.children[0]
+        right_child = right_child.children[1]
+        assert left_child.name == -100
+        assert len(left_child.children) == 0
+        assert right_child.name == 100
+        assert len(right_child.children) == 0
+
+    def test_empty_params_as_math_function_arguments(self):
+        script_data = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["+", \
+                        0, ["randomFrom:to:", " ", 100]]]]]
+        expected_raw_script_data = [["whenGreenFlag"], ["wait:elapsed:from:", ["+", \
+                        0, ["randomFrom:to:", 0, 100]]]]
+
+        script = scratch.Script(script_data)
+        assert script.type == scratch.SCRIPT_GREEN_FLAG
+        assert len(script.arguments) == 0
+        assert script.raw_script == expected_raw_script_data
+        assert script.blocks == expected_raw_script_data[1:]
+        assert isinstance(script.script_element, scratch.BlockList)
+        assert script.script_element.name == '<LIST>'
+        assert len(script.script_element.children) == 1
+        script_element_child = script.script_element.children[0]
+        assert script_element_child.name == 'wait:elapsed:from:'
+        assert len(script_element_child.children) == 1
+        script_element_child = script_element_child.children[0]
+        assert script_element_child.name == '+'
+        assert len(script_element_child.children) == 2
+        left_child = script_element_child.children[0]
+        right_child = script_element_child.children[1]
+        assert left_child.name == 0
+        assert len(left_child.children) == 0
+        assert right_child.name == 'randomFrom:to:'
+        assert len(right_child.children) == 2
+        left_child = right_child.children[0]
+        right_child = right_child.children[1]
+        assert left_child.name == 0
+        assert len(left_child.children) == 0
+        assert right_child.name == 100
+        assert len(right_child.children) == 0
+
+
+class TestDistanceBlockWorkaround(unittest.TestCase):
+    DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE = {
+        "objName": "Stage",
+        "sounds": [],
+        "costumes": [],
+        "currentCostumeIndex": 0,
+        "penLayerMD5": "5c81a336fab8be57adc039a8a2b33ca9.png",
+        "penLayerID": 0,
+        "tempoBPM": 60,
+        "videoAlpha": 0.5,
+        "children": [{ "objName": "Sprite1", "scripts": None },
+                     { "objName": "Sprite2", "scripts": None }],
+        "info": {}
+    }
+
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        cls = self.__class__
+        cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE["scripts"] = []
+
+    def test_single_distance_block(self):
+        cls = self.__class__
+        script_data = [0, 0, [["whenGreenFlag"], ["forward:", ["distanceTo:", "Sprite2"]]]]
+        cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE["children"][1]["scripts"] = []
+        raw_project = scratch.RawProject(cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE)
+        position_x_var_name = scratch.S2CC_POSITION_X_VARIABLE_NAME_PREFIX + "Sprite2"
+        position_y_var_name = scratch.S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + "Sprite2"
+        expected_first_object_script_data = [0, 0, [["whenGreenFlag"], ['forward:',
+            ["computeFunction:of:", "sqrt", ["+",
+              ["*",
+                ["()", ["-", ["xpos"], ["readVariable", position_x_var_name]]],
+                ["()", ["-", ["xpos"], ["readVariable", position_x_var_name]]]
+              ], ["*",
+                ["()", ["-", ["ypos"], ["readVariable", position_y_var_name]]],
+                ["()", ["-", ["ypos"], ["readVariable", position_y_var_name]]]
+              ]
+            ]]
+        ]]]
+        expected_second_object_script_data = [0, 0, [['whenGreenFlag'],
+            ["doForever", [
+              ["setVar:to:", position_x_var_name, ["xpos"]],
+              ["setVar:to:", position_y_var_name, ["ypos"]],
+              ["wait:elapsed:from:", 0.03]
+            ]]
+        ]]
+
+        # validate
+        assert len(raw_project.objects) == 3
+        [background_object, first_object, second_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 0
+
+        # first object
+        assert len(first_object.scripts) == 1
+        script = first_object.scripts[0]
+        expected_script = scratch.Script(expected_first_object_script_data)
+        assert script == expected_script
+
+        # second object
+        assert len(second_object.scripts) == 1
+        script = second_object.scripts[0]
+        expected_script = scratch.Script(expected_second_object_script_data)
+        assert script == expected_script
+
+        # global variables
+        global_variables = background_object._dict_object["variables"]
+        assert len(global_variables) == 2
+        assert global_variables[0] == { "name": position_x_var_name, "value": 0, "isPersistent": False }
+        assert global_variables[1] == { "name": position_y_var_name, "value": 0, "isPersistent": False }
+
+    def test_two_distance_blocks_in_same_object(self):
+        cls = self.__class__
+        script_data = [0, 0, [["whenGreenFlag"], ["forward:", ["distanceTo:", "Sprite2"]],
+                              ["forward:", ["distanceTo:", "Sprite2"]]]]
+        cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE["children"][1]["scripts"] = []
+        raw_project = scratch.RawProject(cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE)
+        position_x_var_name = scratch.S2CC_POSITION_X_VARIABLE_NAME_PREFIX + "Sprite2"
+        position_y_var_name = scratch.S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + "Sprite2"
+        expected_first_object_script_data = [0, 0, [["whenGreenFlag"], ['forward:',
+            ["computeFunction:of:", "sqrt", ["+",
+              ["*",
+                ["()", ["-", ["xpos"], ["readVariable", position_x_var_name]]],
+                ["()", ["-", ["xpos"], ["readVariable", position_x_var_name]]]
+              ], ["*",
+                ["()", ["-", ["ypos"], ["readVariable", position_y_var_name]]],
+                ["()", ["-", ["ypos"], ["readVariable", position_y_var_name]]]
+              ]
+            ]]
+        ], ['forward:',
+            ["computeFunction:of:", "sqrt", ["+",
+              ["*",
+                ["()", ["-", ["xpos"], ["readVariable", position_x_var_name]]],
+                ["()", ["-", ["xpos"], ["readVariable", position_x_var_name]]]
+              ], ["*",
+                ["()", ["-", ["ypos"], ["readVariable", position_y_var_name]]],
+                ["()", ["-", ["ypos"], ["readVariable", position_y_var_name]]]
+              ]
+            ]]
+        ]]]
+        expected_second_object_script_data = [0, 0, [['whenGreenFlag'],
+            ["doForever", [
+              ["setVar:to:", position_x_var_name, ["xpos"]],
+              ["setVar:to:", position_y_var_name, ["ypos"]],
+              ["wait:elapsed:from:", 0.03]
+            ]]
+        ]]
+
+        # validate
+        assert len(raw_project.objects) == 3
+        [background_object, first_object, second_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 0
+
+        # first object
+        assert len(first_object.scripts) == 1
+        script = first_object.scripts[0]
+        expected_script = scratch.Script(expected_first_object_script_data)
+        assert script == expected_script
+
+        # second object
+        assert len(second_object.scripts) == 1
+        script = second_object.scripts[0]
+        expected_script = scratch.Script(expected_second_object_script_data)
+        assert script == expected_script
+
+        # global variables
+        global_variables = background_object._dict_object["variables"]
+        assert len(global_variables) == 2
+        assert global_variables[0] == { "name": position_x_var_name, "value": 0, "isPersistent": False }
+        assert global_variables[1] == { "name": position_y_var_name, "value": 0, "isPersistent": False }
+
+    def test_two_distance_blocks_in_different_objects(self):
+        cls = self.__class__
+        script_data = [0, 0, [["whenGreenFlag"], ["forward:", ["distanceTo:", "Sprite2"]]]]
+        cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE["scripts"] = [script_data]
+        cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE["children"][1]["scripts"] = []
+        raw_project = scratch.RawProject(cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE)
+        position_x_var_name = scratch.S2CC_POSITION_X_VARIABLE_NAME_PREFIX + "Sprite2"
+        position_y_var_name = scratch.S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + "Sprite2"
+        expected_background_and_first_object_script_data = [0, 0, [["whenGreenFlag"], ['forward:',
+            ["computeFunction:of:", "sqrt", ["+",
+              ["*",
+                ["()", ["-", ["xpos"], ["readVariable", position_x_var_name]]],
+                ["()", ["-", ["xpos"], ["readVariable", position_x_var_name]]]
+              ], ["*",
+                ["()", ["-", ["ypos"], ["readVariable", position_y_var_name]]],
+                ["()", ["-", ["ypos"], ["readVariable", position_y_var_name]]]
+              ]
+            ]]
+        ]]]
+        expected_second_object_script_data = [0, 0, [['whenGreenFlag'],
+            ["doForever", [
+              ["setVar:to:", position_x_var_name, ["xpos"]],
+              ["setVar:to:", position_y_var_name, ["ypos"]],
+              ["wait:elapsed:from:", 0.03]
+            ]]
+        ]]
+
+        # validate
+        assert len(raw_project.objects) == 3
+        [background_object, first_object, second_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 1
+        script = background_object.scripts[0]
+        expected_script = scratch.Script(expected_background_and_first_object_script_data)
+        assert script == expected_script
+
+        # first object
+        assert len(first_object.scripts) == 1
+        script = first_object.scripts[0]
+        expected_script = scratch.Script(expected_background_and_first_object_script_data)
+        assert script == expected_script
+
+        # second object
+        assert len(second_object.scripts) == 1
+        script = second_object.scripts[0]
+        expected_script = scratch.Script(expected_second_object_script_data)
+        assert script == expected_script
+
+        # global variables
+        global_variables = background_object._dict_object["variables"]
+        assert len(global_variables) == 2
+        assert global_variables[0] == { "name": position_x_var_name, "value": 0, "isPersistent": False }
+        assert global_variables[1] == { "name": position_y_var_name, "value": 0, "isPersistent": False }
+
+    def test_two_different_distance_blocks_in_different_objects(self):
+        cls = self.__class__
+        script_data0 = [0, 0, [["whenGreenFlag"], ["forward:", ["distanceTo:", "Sprite2"]]]]
+        script_data2 = [0, 0, [["whenGreenFlag"], ["forward:", ["distanceTo:", "Sprite1"]]]]
+        cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE["scripts"] = [script_data0]
+        cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = []
+        cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE["children"][1]["scripts"] = [script_data2]
+        raw_project = scratch.RawProject(cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE)
+        position_x_var_name1 = scratch.S2CC_POSITION_X_VARIABLE_NAME_PREFIX + "Sprite1"
+        position_y_var_name1 = scratch.S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + "Sprite1"
+        position_x_var_name2 = scratch.S2CC_POSITION_X_VARIABLE_NAME_PREFIX + "Sprite2"
+        position_y_var_name2 = scratch.S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + "Sprite2"
+        expected_background_object_script_data = [0, 0, [["whenGreenFlag"], ['forward:',
+            ["computeFunction:of:", "sqrt", ["+",
+              ["*",
+                ["()", ["-", ["xpos"], ["readVariable", position_x_var_name2]]],
+                ["()", ["-", ["xpos"], ["readVariable", position_x_var_name2]]]
+              ], ["*",
+                ["()", ["-", ["ypos"], ["readVariable", position_y_var_name2]]],
+                ["()", ["-", ["ypos"], ["readVariable", position_y_var_name2]]]
+              ]
+            ]]
+        ]]]
+        expected_first_object_script_data = [0, 0, [['whenGreenFlag'],
+            ["doForever", [
+              ["setVar:to:", position_x_var_name1, ["xpos"]],
+              ["setVar:to:", position_y_var_name1, ["ypos"]],
+              ["wait:elapsed:from:", 0.03]
+            ]]
+        ]]
+        expected_second_object_scripts_data = [[0, 0, [["whenGreenFlag"], ['forward:',
+            ["computeFunction:of:", "sqrt", ["+",
+              ["*",
+                ["()", ["-", ["xpos"], ["readVariable", position_x_var_name1]]],
+                ["()", ["-", ["xpos"], ["readVariable", position_x_var_name1]]]
+              ], ["*",
+                ["()", ["-", ["ypos"], ["readVariable", position_y_var_name1]]],
+                ["()", ["-", ["ypos"], ["readVariable", position_y_var_name1]]]
+              ]
+            ]]
+        ]]], [0, 0, [['whenGreenFlag'],
+            ["doForever", [
+              ["setVar:to:", position_x_var_name2, ["xpos"]],
+              ["setVar:to:", position_y_var_name2, ["ypos"]],
+              ["wait:elapsed:from:", 0.03]
+            ]]
+        ]]]
+
+        # validate
+        assert len(raw_project.objects) == 3
+        [background_object, first_object, second_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 1
+        script = background_object.scripts[0]
+        expected_script = scratch.Script(expected_background_object_script_data)
+        assert script == expected_script
+
+        # first object
+        assert len(first_object.scripts) == 1
+        script = first_object.scripts[0]
+        expected_script = scratch.Script(expected_first_object_script_data)
+        assert script == expected_script
+
+        # second object
+        assert len(second_object.scripts) == 2
+        script = second_object.scripts[0]
+        expected_script = scratch.Script(expected_second_object_scripts_data[0])
+        assert script == expected_script
+        script = second_object.scripts[1]
+        expected_script = scratch.Script(expected_second_object_scripts_data[1])
+        assert script == expected_script
+
+        # global variables
+        global_variables = background_object._dict_object["variables"]
+        assert len(global_variables) == 4
+        assert global_variables[0] == { "name": position_x_var_name2, "value": 0, "isPersistent": False }
+        assert global_variables[1] == { "name": position_y_var_name2, "value": 0, "isPersistent": False }
+        assert global_variables[2] == { "name": position_x_var_name1, "value": 0, "isPersistent": False }
+        assert global_variables[3] == { "name": position_y_var_name1, "value": 0, "isPersistent": False }
+
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']

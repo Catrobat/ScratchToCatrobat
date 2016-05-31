@@ -18,9 +18,9 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see http://www.gnu.org/licenses/.
-from __future__ import unicode_literals
 
 import os
+import unittest
 
 from scratchtocatrobat import common
 from scratchtocatrobat import common_testing
@@ -79,3 +79,7 @@ class CommonTest(common_testing.BaseTestCase):
             audio_file_path = common_testing.get_test_resources_path(*("wav_pcm", test_path_structure))
             assert os.path.exists(audio_file_path)
             self.assertAlmostEqual(common.length_of_audio_file_in_secs(audio_file_path), expected_duration_in_msec / 1000.0, delta=0.001)
+
+if __name__ == "__main__":
+    # import sys;sys.argv = ['', 'Test.testName']
+    unittest.main()

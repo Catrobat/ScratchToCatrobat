@@ -43,7 +43,6 @@ from scratchtocatrobat.scratch import JsonKeys as scratchkeys
 from scratchtocatrobat.tools import svgtopng
 from scratchtocatrobat.tools import wavconverter
 from scratchtocatrobat.tools import helpers
-from __builtin__ import None
 
 _DEFAULT_BRICK_CLASS = catbricks.WaitBrick
 _DEFAULT_FORMULA_ELEMENT = catformula.FormulaElement(catElementType.NUMBER, str(00001), None)  # @UndefinedVariable (valueOf)
@@ -61,7 +60,7 @@ UNSUPPORTED_SCRATCH_BRICK_NOTE_MESSAGE_PREFIX = "Missing brick for Scratch ident
 log = common.log
 
 class ConversionError(common.ScratchtobatError):
-        pass
+    pass
 
 class UnmappedBlock(object):
 
@@ -95,10 +94,16 @@ def _next_background_look_broadcast_message():
 def _sec_to_msec(duration):
     return duration * 1000
 
+def is_math_function_or_operator(key):
+    cls = _ScratchToCatrobat
+    all_keys = cls.math_function_block_parameters_mapping.keys() \
+             + cls.math_unary_operators_mapping.keys() + cls.math_operators_mapping.keys()
+    return key in all_keys
+
 # note: for Scratch blocks without mapping placeholder Catrobat bricks will be added
 class _ScratchToCatrobat(object):
 
-    compute_block_parameters_mapping = {
+    math_function_block_parameters_mapping = {
         # math functions
         "abs": catformula.Functions.ABS,
         "sqrt": catformula.Functions.SQRT,
@@ -119,23 +124,14 @@ class _ScratchToCatrobat(object):
         "10 ^": "dummy",
         "floor": catformula.Functions.FLOOR,
         "ceiling": catformula.Functions.CEIL,
-
-        # user list functions
-        "getLine:ofList:": catformula.Functions.LIST_ITEM,
-        "lineCountOfList:": catformula.Functions.NUMBER_OF_ITEMS,
-        "list:contains:": catformula.Functions.CONTAINS,
-
-        # string functions
-        "stringLength:": catformula.Functions.LENGTH,
-        "letter:of:": catformula.Functions.LETTER,
-        "concatenate:with:": catformula.Functions.JOIN
     }
 
-    unary_operators_mapping = {
+    math_unary_operators_mapping = {
+        "()": "dummy", # this operator is only used internally and not part of Scratch
         "not": catformula.Operators.LOGICAL_NOT,
     }
 
-    operators_mapping = dict({
+    math_operators_mapping = {
         "+": catformula.Operators.PLUS,
         "-": catformula.Operators.MINUS,
         "*": catformula.Operators.MULT,
@@ -145,7 +141,21 @@ class _ScratchToCatrobat(object):
         ">": catformula.Operators.GREATER_THAN,
         "&": catformula.Operators.LOGICAL_AND,
         "|": catformula.Operators.LOGICAL_OR,
-    }.items() + unary_operators_mapping.items())
+    }
+
+    user_list_block_parameters_mapping = {
+        # user list functions
+        "getLine:ofList:": catformula.Functions.LIST_ITEM,
+        "lineCountOfList:": catformula.Functions.NUMBER_OF_ITEMS,
+        "list:contains:": catformula.Functions.CONTAINS,
+    }
+
+    string_function_block_parameters_mapping = {
+        # string functions
+        "stringLength:": catformula.Functions.LENGTH,
+        "letter:of:": catformula.Functions.LETTER,
+        "concatenate:with:": catformula.Functions.JOIN
+    }
 
     complete_mapping = dict({
         #
@@ -248,7 +258,10 @@ class _ScratchToCatrobat(object):
         # sensors
         # WORKAROUND: using ROUND for Catrobat float => Scratch int
         "soundLevel": lambda *_args: catrobat.formula_element_for(catformula.Functions.ROUND, arguments=[catrobat.formula_element_for(catformula.Sensors.LOUDNESS)]),  # @UndefinedVariable
-    }.items() + compute_block_parameters_mapping.items() + operators_mapping.items())
+    }.items() + math_function_block_parameters_mapping.items() \
+              + math_unary_operators_mapping.items() + math_operators_mapping.items() \
+              + user_list_block_parameters_mapping.items() \
+              + string_function_block_parameters_mapping.items())
 
     @classmethod
     def catrobat_brick_class_for(cls, scratch_block_name):
@@ -368,12 +381,15 @@ class Converter(object):
         return ConvertedProject(catrobat_project, scratch_project)
 
     def _converted_catrobat_program(self, progress_bar=None, context=None):
-        _catr_project = catbase.Project(None, self.scratch_project.name)
-        self._scratch_object_converter = _ScratchObjectConverter(_catr_project, self.scratch_project, progress_bar, context)
+        scratch_project = self.scratch_project
+        _catr_project = catbase.Project(None, scratch_project.name)
+        self._scratch_object_converter = _ScratchObjectConverter(_catr_project, scratch_project,
+                                                                 progress_bar, context)
         self._add_global_user_lists_to(_catr_project)
         self._add_converted_sprites_to(_catr_project)
         self._add_key_sprites_to(_catr_project, self.scratch_project.listened_keys)
-        self._update_xml_header(_catr_project.getXmlHeader(), self.scratch_project.project_id, self.scratch_project.description)
+        self._update_xml_header(_catr_project.getXmlHeader(), scratch_project.project_id,
+                                scratch_project.instructions, scratch_project.notes_and_credits)
         return _catr_project
 
     def _add_global_user_lists_to(self, catrobat_project):
@@ -430,7 +446,8 @@ class Converter(object):
             catrobat_project.addSprite(key_sprite)
 
     @staticmethod
-    def _update_xml_header(xml_header, scratch_project_id, scratch_project_description):
+    def _update_xml_header(xml_header, scratch_project_id, scratch_project_instructions,
+                           scratch_project_notes_and_credits):
         xml_header.virtualScreenHeight = scratch.STAGE_HEIGHT_IN_PIXELS
         xml_header.virtualScreenWidth = scratch.STAGE_WIDTH_IN_PIXELS
         xml_header.setApplicationBuildName(helpers.application_info("build_name"))
@@ -448,8 +465,14 @@ class Converter(object):
         xml_header.programLicense = helpers.catrobat_info("program_license_url")
         assert scratch_project_id is not None
         xml_header.remixOf = helpers.config.get("SCRATCH_API", "project_base_url") + scratch_project_id
-        description = scratch_project_description if scratch_project_description is not None else ""
-        description = "\n" + description + "\n" if len(description) > 0 else ""
+
+        sep_line = "\n" + "-" * 40 + "\n"
+        description = sep_line
+        if scratch_project_instructions is not None:
+            description += "Instructions:\n" + scratch_project_instructions + sep_line
+        if scratch_project_notes_and_credits is not None:
+            description += "Description:\n" + scratch_project_notes_and_credits + sep_line
+
         description += "\nMade with {} version {}.\nOriginal Scratch project => {}".format( \
                          helpers.application_info("name"), \
                          helpers.application_info("version"), \
@@ -896,7 +919,7 @@ def _assign_initialization_value_to_user_variable(project, variable_name, variab
     user_variable = project.getDataContainer().getUserVariable(variable_name, sprite)
     assert user_variable is not None and user_variable.getName() == variable_name, "variable: %s, sprite_name: %s" % (variable_name, sprite.getName())
     variable_initialization_brick = _create_variable_brick(variable_value, user_variable, catbricks.SetVariableBrick)
-    catrobat.add_to_start_script([variable_initialization_brick], sprite)
+    catrobat.add_to_start_script([variable_initialization_brick], sprite, position=0)
 
 # based on: http://stackoverflow.com/a/4274204
 def _register_handler(dict_, *names):
@@ -1052,6 +1075,14 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         return converted_element
 
     # formula element blocks (compute, operator, ...)
+    @_register_handler(_block_name_to_handler_map, "()")
+    def _convert_bracket_block(self):
+        # NOTE: this operator is only used internally and not part of Scratch
+        [value] = self.arguments
+        formula_element = catformula.FormulaElement(catElementType.BRACKET, None, None)
+        formula_element.setRightChild(value)
+        return formula_element
+
     @_register_handler(_block_name_to_handler_map, "10 ^")
     def _convert_pow_of_10_block(self):
         [value] = self.arguments

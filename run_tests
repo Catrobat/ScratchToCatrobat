@@ -36,27 +36,32 @@ env = os.environ
 env['JYTHONPATH'] = jython_path if sys.platform != 'win32' else jython_path.replace(":", ";")
 
 if not os.path.isdir(jython_home_dir):
-    error("Invalid jython home path given. No valid directory. Please update 'jython_home' in the config file.")
+    helpers.error("Invalid jython home path given. No valid directory. Please update 'jython_home' in the config file.")
 if not os.path.isfile(jython_exec_path):
-    error("Jython script path '%s' must exist." % jython_exec_path.replace(".bat", "[.bat]"))
+    helpers.error("Jython script path '%s' must exist." % jython_exec_path.replace(".bat", "[.bat]"))
 
-modules_under_test = []
-if len(sys.argv) < 2 or sys.argv[1] == "all":
-    normalized_src_path = os.path.normpath(helpers.SRC_PATH)
-    for subdir, dirs, files in os.walk(helpers.SRC_PATH):
-        for file in files:
-            if file.startswith("test_") and file.endswith(".py"):
-                relative_subdir_path = os.path.normpath(subdir).replace(normalized_src_path, "")
-                if relative_subdir_path.startswith(os.sep):
-                    relative_subdir_path = relative_subdir_path[1:]
-                if relative_subdir_path.endswith(os.sep):
-                    relative_subdir_path = relative_subdir_path[:-1]
-                test_module_name = relative_subdir_path.replace(os.sep, ".") + "." + file[:-3]
-                modules_under_test.append(test_module_name)
-elif (isinstance(sys.argv[1], str) or isinstance(sys.argv[1], unicode)) and sys.argv[1].startswith("test_"):
-    modules_under_test.append("scratchtocatrobat." + sys.argv[1])
+modules_under_test = set()
+normalized_src_path = os.path.normpath(helpers.SRC_PATH)
+for subdir, dirs, files in os.walk(helpers.SRC_PATH):
+    for file in files:
+        if file.startswith("test_") and file.endswith(".py"):
+            relative_subdir_path = os.path.normpath(subdir).replace(normalized_src_path, "")
+            if relative_subdir_path.startswith(os.sep):
+                relative_subdir_path = relative_subdir_path[1:]
+            if relative_subdir_path.endswith(os.sep):
+                relative_subdir_path = relative_subdir_path[:-1]
+            test_module_name = relative_subdir_path.replace(os.sep, ".") + "." + file[:-3]
+            modules_under_test.add(test_module_name)
+
+if len(sys.argv) >= 2 and sys.argv[1] != "all":
+    if (isinstance(sys.argv[1], str) or isinstance(sys.argv[1], unicode)) and sys.argv[1].startswith("test_"):
+        modules_under_test = filter(lambda m: sys.argv[1] in m, modules_under_test)
+        if len(modules_under_test) == 0:
+            helpers.error("Module %s not found" % sys.argv[1])
+    else:
+        helpers.error("Invalid input given! Module name must always start with 'test_' (e.g. 'test_scratch')")
 else:
-    error("Invalid input given!")
+    print("Testing all modules!")
 
 for module in modules_under_test:
     print("-"*80)

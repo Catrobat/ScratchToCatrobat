@@ -648,7 +648,7 @@ class Script(object):
         return True
 
 class ScriptElement(object):
-
+    math_stack = []
     def __init__(self, name=None, arguments=None):
         if arguments is None:
             arguments = []
@@ -680,11 +680,30 @@ class ScriptElement(object):
     def from_raw_block(cls, raw_block):
         # replace empty arguments/operands of math functions and math operators
         # (i.e. "" and " ") with 0. This is actually default behavior in Scratch.
+        def _has_previous_operator_higher_priority(previous_operator, curr_operator):
+            if previous_operator == curr_operator:
+                return True
+            return False
+        
         from scratchtocatrobat import converter
+  
         if isinstance(raw_block, list) and len(raw_block) > 1 \
         and converter.is_math_function_or_operator(raw_block[0]):
             raw_block[1:] = map(lambda arg: arg if not isinstance(arg, (str, unicode)) \
-                                or arg.strip() != '' else 0, raw_block[1:])
+                        or arg.strip() != '' else 0, raw_block[1:])
+            #current_operator = raw_block[0]
+            #if len(cls.math_stack) > 0:
+            #    previous_operator = cls.math_stack[len(cls.math_stack) - 1]
+             #   if _has_previous_operator_higher_priority(previous_operator, current_operator):
+             #       print("Hallo")
+             #       raw_block = ["()", raw_block]
+            #    assert(not isinstance(current_operator, list))
+                
+
+                
+            #cls.math_stack.append(current_operator)
+        #elif isinstance(raw_block, list) and not isinstance(raw_block[0], list) and common.int_or_float(raw_block[0]):
+        #    cls.math_stack = []
 
         # recursively create ScriptElement tree
         block_name = None
@@ -705,7 +724,10 @@ class ScriptElement(object):
 
 
 class Block(ScriptElement):
-    pass
+    
+    def __init__(self, *args, **kwargs):
+        ScriptElement.math_stack = []
+        super(Block, self).__init__(*args, **kwargs)
 
 
 class BlockList(ScriptElement):

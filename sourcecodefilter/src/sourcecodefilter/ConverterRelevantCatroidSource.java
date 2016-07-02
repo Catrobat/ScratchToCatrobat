@@ -233,15 +233,13 @@ public class ConverterRelevantCatroidSource {
         assert catroidProjectDir.isDirectory();
         List<ConverterRelevantCatroidSource> relevantSources = new ArrayList<ConverterRelevantCatroidSource>();
         Set<String> serializationTargetClassNames = SourceCodeFilter.parseSerializationRelevantClassNames(catroidProjectDir);
-        Set<String> serializationHelperClassNames = new HashSet<String>(Arrays.asList(SourceCodeFilter.ADDITIONAL_HELPER_CLASSES));
-        Set<String> removedClassNames = new HashSet<String>(Arrays.asList(SourceCodeFilter.REMOVED_CLASSES));
         List<String> existingSources = new ArrayList<String>();
         for (File sourcePath : FileUtils.listFiles(catroidProjectDir, new String[] { "java" }, true)) {
             if (! (project.toOutputPath(sourcePath).exists())) {
                 String className = Files.getNameWithoutExtension(sourcePath.getName());
                 boolean isSerializationSource = serializationTargetClassNames.contains(className);
-                boolean isHelperSource = serializationHelperClassNames.contains(className);
-                boolean isRemovedClass = removedClassNames.contains(className);
+                boolean isHelperSource = SourceCodeFilter.ADDITIONAL_HELPER_CLASSES.contains(className);
+                boolean isRemovedClass = SourceCodeFilter.REMOVED_CLASSES.contains(className);
                 if ((! isRemovedClass) && (isSerializationSource || isHelperSource)) {
                     ConverterRelevantCatroidSource catroidSource = new ConverterRelevantCatroidSource(
                         sourcePath,

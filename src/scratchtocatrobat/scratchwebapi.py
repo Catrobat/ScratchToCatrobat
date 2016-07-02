@@ -23,6 +23,7 @@ from urlparse import urlparse
 from scratchtocatrobat import logger
 from tools import helpers
 from collections import namedtuple
+from datetime import datetime
 
 HTTP_RETRIES = int(helpers.config.get("SCRATCH_API", "http_retries"))
 HTTP_BACKOFF = int(helpers.config.get("SCRATCH_API", "http_backoff"))
@@ -31,13 +32,17 @@ HTTP_TIMEOUT = int(helpers.config.get("SCRATCH_API", "http_timeout"))
 HTTP_USER_AGENT = helpers.config.get("SCRATCH_API", "user_agent")
 SCRATCH_PROJECT_BASE_URL = helpers.config.get("SCRATCH_API", "project_base_url")
 
+_log = logger.log
+
+
 class ScratchProjectInfo(namedtuple("ScratchProjectInfo", "title owner instructions notes_and_credits tags views favorites loves modified_date shared_date remixes")):
     def as_dict(self):
-        return dict((s, getattr(self, s)) for s in self._fields)
+        return dict(map(lambda s: (s, getattr(self, s).strftime("%Y-%m-%d") \
+                                   if isinstance(getattr(self, s), datetime) else getattr(self, s)),
+                        self._fields))
+
     def __str__(self):
         return str(self.as_dict())
-
-_log = logger.log
 
 class ScratchWebApiError(Exception):
     pass
@@ -296,11 +301,13 @@ def extract_project_details_from_document(document):
 
     extracted_text = document.select_first_as_text("div#fixed div.dates span.date-updated")
     if extracted_text is None: return None
-    modified_date = unicode(extracted_text).replace("Modified:", "").strip()
+    modified_date_str = unicode(extracted_text).replace("Modified:", "").strip()
+    modified_date = datetime.strptime(modified_date_str, '%d %b %Y')
 
     extracted_text = document.select_first_as_text("div#fixed div.dates span.date-shared")
     if extracted_text is None: return None
-    shared_date = unicode(extracted_text).replace("Shared:", "").strip()
+    shared_date_str = unicode(extracted_text).replace("Shared:", "").strip()
+    shared_date = datetime.strptime(shared_date_str, '%d %b %Y')
 
     remixes = extract_project_remixes_from_document(document)
     if remixes is None: return None

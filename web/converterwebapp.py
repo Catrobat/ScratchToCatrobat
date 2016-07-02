@@ -278,8 +278,8 @@ class _ProjectHandler(tornado.web.RequestHandler):
             if project_id in cls.project_info_cache \
             and datetime.now() <= cls.project_info_cache[project_id]["validUntil"]:
                 _logger.info("Cache hit for project ID {}".format(project_id))
-                #self.write(cls.project_info_cache[project_id]["info"].as_dict())
-                #return
+                self.write(cls.project_info_cache[project_id]["info"].as_dict())
+                return
 
             scratch_project_url = SCRATCH_PROJECT_BASE_URL + str(project_id)
             _logger.info("Fetching project info from: {}".format(scratch_project_url))

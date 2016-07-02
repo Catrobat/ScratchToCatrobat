@@ -25,6 +25,7 @@ from scratchtocatrobat import common
 from scratchtocatrobat import common_testing
 from scratchtocatrobat import scratch
 from scratchtocatrobat import scratchwebapi
+from datetime import datetime
 
 TEST_PROJECT_ID_TO_TITLE_MAP = {
     "10205819": "Dancin' in the Castle",
@@ -151,9 +152,9 @@ class WebApiTest(common_testing.BaseTestCase):
             assert extracted_project_info.loves >= 0
             assert isinstance(extracted_project_info.loves, int)
             assert extracted_project_info.modified_date is not None
-            assert isinstance(extracted_project_info.modified_date, (str, unicode))
+            assert isinstance(extracted_project_info.modified_date, datetime)
             assert extracted_project_info.shared_date is not None
-            assert isinstance(extracted_project_info.shared_date, (str, unicode))
+            assert isinstance(extracted_project_info.shared_date, datetime)
             assert extracted_project_info.remixes is not None
             assert extracted_project_info.remixes == TEST_PROJECT_ID_TO_REMIXES_MAP[project_id], \
                    "'{}' is not equal to '{}'".format(extracted_project_info.remixes, TEST_PROJECT_ID_TO_REMIXES_MAP[project_id])

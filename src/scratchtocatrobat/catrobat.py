@@ -73,11 +73,12 @@ def create_lookdata(name, file_name):
 
 def set_as_background(sprite):
     sprite.setName(_BACKGROUND_SPRITE_NAME)
+    sprite.isBackgroundObject = True
     assert is_background_sprite(sprite)
 
 
 def is_background_sprite(sprite):
-    return sprite.getName() == _BACKGROUND_SPRITE_NAME
+    return sprite.getName() == _BACKGROUND_SPRITE_NAME and sprite.isBackgroundObject
 
 
 def background_sprite_of(project):

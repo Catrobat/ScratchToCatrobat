@@ -272,8 +272,7 @@ class _ScratchToCatrobat(object):
         return catrobat_brick
 
     @classmethod
-    def create_script(cls, scratch_script_name, sprite, arguments):
-        assert sprite is not None
+    def create_script(cls, scratch_script_name, arguments):
         if scratch_script_name not in scratch.SCRIPTS:
             assert False, "Missing script mapping for: " + scratch_script_name
         # TODO: separate script and brick mapping
@@ -667,7 +666,7 @@ class _ScratchObjectConverter(object):
 
         log.debug("  script type: %s, args: %s", scratch_script.type, scratch_script.arguments)
         try:
-            cat_script = _ScratchToCatrobat.create_script(scratch_script.type, sprite, scratch_script.arguments)
+            cat_script = _ScratchToCatrobat.create_script(scratch_script.type, scratch_script.arguments)
         except:
             cat_script = catbase.StartScript()
             wait_and_note_brick = _placeholder_for_unmapped_bricks_to("UNSUPPORTED SCRIPT", scratch_script.type)

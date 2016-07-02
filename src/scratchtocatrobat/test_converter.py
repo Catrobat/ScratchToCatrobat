@@ -42,7 +42,9 @@ def create_catrobat_sprite_stub(name=None):
     return sprite
 
 def create_catrobat_background_sprite_stub():
-    return create_catrobat_sprite_stub(catrobat._BACKGROUND_SPRITE_NAME)
+    sprite_stub = create_catrobat_sprite_stub(catrobat._BACKGROUND_SPRITE_NAME)
+    catrobat.set_as_background(sprite_stub)
+    return sprite_stub
 
 DUMMY_CATR_SPRITE = create_catrobat_sprite_stub()
 TEST_PROJECT_PATH = common_testing.get_test_project_path("dancing_castle")

@@ -54,6 +54,13 @@ class ResponseDocumentWrapper(object):
     def select_first_as_text(self, query):
         pass
 
+    def select_all_as_text_list(self, query):
+        pass
+
+    def select_attributes_as_text_list(self, query, attribute_name):
+        pass
+
+
 def is_valid_project_url(project_url):
     scratch_base_url = helpers.config.get("SCRATCH_API", "project_base_url")
     _HTTP_PROJECT_URL_PATTERN = scratch_base_url + r'\d+/?'

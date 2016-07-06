@@ -730,6 +730,17 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert formula_tree_value.leftChild is None
         assert formula_tree_value.rightChild is None
 
+    # changeGraphicEffect:by: (ghost)
+    def test_can_convert_change_graphic_effect_ghost_block(self):
+        scratch_block = _, _, expected_value = ["changeGraphicEffect:by:", "ghost", 10.2]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.ChangeTransparencyByNBrick)
+        formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.TRANSPARENCY_CHANGE).formulaTree # @UndefinedVariable
+        assert formula_tree_value.type == catformula.FormulaElement.ElementType.NUMBER
+        assert str(expected_value) == formula_tree_value.value
+        assert formula_tree_value.leftChild is None
+        assert formula_tree_value.rightChild is None
+
     # showVariable:
     def test_can_convert_show_variable_block(self):
         # create user variable

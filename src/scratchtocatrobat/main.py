@@ -87,13 +87,30 @@ def run_converter(scratch_project_file_or_url, output_dir,
             is_local_project = True
             if scratch_project_file_or_url.startswith("https://"):
                 is_local_project = False
-                log.info("Downloading project from URL: '{}' to temp dir {} ...".format(scratch_project_file_or_url, scratch_project_dir))
+                if not scratchwebapi.is_valid_project_url(scratch_project_file_or_url):
+                    raise common.ScratchtobatError("Invalid URL for Scratch-project given: %s" %
+                                                   scratch_project_file_or_url)
+                project_ID = scratchwebapi.extract_project_id_from_url(scratch_project_file_or_url)
+                if not scratchwebapi.request_is_project_available(project_ID):
+                    raise common.ScratchtobatError("Project with ID %s not available" % project_ID)
+                if scratchwebapi.request_project_visibility_state_for(project_ID) != scratchwebapi.ScratchProjectVisibiltyState.PUBLIC:
+                    log.warn('-'*80)
+                    log.warn("CAVE: Project with ID %s is NOT a public project!! Trying to " \
+                             "continue the conversion-process anyway, but expecting the " \
+                             "conversion to fail or to be incomplete...", project_ID)
+                    log.warn('-'*80)
+                log.info("Downloading project from URL: '{}' to temp dir {} ...".format(
+                                                scratch_project_file_or_url, scratch_project_dir))
                 scratchwebapi.download_project(scratch_project_file_or_url, scratch_project_dir, progress_bar)
+
             elif os.path.isfile(scratch_project_file_or_url):
                 log.info("Extracting project from path: '{}' ...".format(scratch_project_file_or_url))
                 common.extract(scratch_project_file_or_url, scratch_project_dir)
+
             else:
-                assert os.path.isdir(scratch_project_file_or_url)
+                if not os.path.isdir(scratch_project_file_or_url):
+                    raise common.ScratchtobatError("Directory of local project not found in %s" %
+                                                   scratch_project_file_or_url)
                 log.info("Loading project from path: '{}' ...".format(scratch_project_file_or_url))
                 scratch_project_dir = scratch_project_file_or_url
 

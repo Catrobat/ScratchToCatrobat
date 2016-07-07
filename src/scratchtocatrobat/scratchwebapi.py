@@ -172,16 +172,15 @@ class _ResponseJsoupDocumentWrapper(ResponseDocumentWrapper):
             return None
         return [element.attr(attribute_name) for element in result if element is not None]
 
-_cached_documents = {}
-def request_project_page_as_Jsoup_document_for(project_id):
-    global _cached_documents
+def request_project_page_as_Jsoup_document_for(project_id, retry_after_http_status_exception=True):
+    global _cached_jsoup_documents
 
     from java.net import SocketTimeoutException, UnknownHostException
     from org.jsoup import Jsoup, HttpStatusException
 
-    if project_id in _cached_documents:
+    if project_id in _cached_jsoup_documents:
         _log.debug("Cache hit: Document!")
-        return _cached_documents[project_id]
+        return _cached_jsoup_documents[project_id]
 
     scratch_project_url = SCRATCH_PROJECT_BASE_URL + str(project_id)
     if not is_valid_project_url(scratch_project_url):
@@ -190,7 +189,11 @@ def request_project_page_as_Jsoup_document_for(project_id):
     def retry_hook(exc, tries, delay):
         _log.warning("  Exception: {}\nRetrying after {}:'{}' in {} secs (remaining trys: {})".format(sys.exc_info()[0], type(exc).__name__, exc, delay, tries))
 
-    @helpers.retry((HttpStatusException, SocketTimeoutException, UnknownHostException), delay=HTTP_DELAY, backoff=HTTP_BACKOFF, tries=HTTP_RETRIES, hook=retry_hook)
+    exceptions_retry = (SocketTimeoutException, UnknownHostException)
+    if retry_after_http_status_exception:
+        exceptions_retry += (HttpStatusException, )
+
+    @helpers.retry(exceptions_retry, delay=HTTP_DELAY, backoff=HTTP_BACKOFF, tries=HTTP_RETRIES, hook=retry_hook)
     def fetch_document(scratch_project_url, timeout, user_agent):
         connection = Jsoup.connect(scratch_project_url)
         connection.userAgent(user_agent)
@@ -200,10 +203,12 @@ def request_project_page_as_Jsoup_document_for(project_id):
     try:
         document = fetch_document(scratch_project_url, HTTP_TIMEOUT, HTTP_USER_AGENT)
         if document != None:
-            _cached_documents[project_id] = document
+            _cached_jsoup_documents[project_id] = document
         return document
+    except HttpStatusException as e:
+        raise e
     except:
-        _log.error("Retry limit exceeded or an unexpected error occured: {}".format(sys.exc_info()[0]))
+        _log.error("Retry limit exceeded or an unexpected error occurred: {}".format(sys.exc_info()[0]))
         return None
 
 

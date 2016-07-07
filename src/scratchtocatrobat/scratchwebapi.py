@@ -33,9 +33,12 @@ HTTP_USER_AGENT = helpers.config.get("SCRATCH_API", "user_agent")
 SCRATCH_PROJECT_BASE_URL = helpers.config.get("SCRATCH_API", "project_base_url")
 
 _log = logger.log
+_cached_jsoup_documents = {}
 
 
-class ScratchProjectInfo(namedtuple("ScratchProjectInfo", "title owner instructions notes_and_credits tags views favorites loves modified_date shared_date remixes")):
+class ScratchProjectInfo(namedtuple("ScratchProjectInfo", "title owner instructions " \
+                                    "notes_and_credits tags views favorites loves modified_date " \
+                                    "shared_date remixes")):
     def as_dict(self):
         return dict(map(lambda s: (s, getattr(self, s).strftime("%Y-%m-%d") \
                                    if isinstance(getattr(self, s), datetime) else getattr(self, s)),
@@ -43,6 +46,13 @@ class ScratchProjectInfo(namedtuple("ScratchProjectInfo", "title owner instructi
 
     def __str__(self):
         return str(self.as_dict())
+
+class ScratchProjectVisibiltyState(object):
+    # Note: never change these values here.
+    #       They are used in HTTP-responses and used across platforms!
+    UNKNOWN = 0
+    PRIVATE = 1
+    PUBLIC = 2
 
 class ScratchWebApiError(Exception):
     pass
@@ -66,6 +76,11 @@ def is_valid_project_url(project_url):
     _HTTP_PROJECT_URL_PATTERN = scratch_base_url + r'\d+/?'
     return re.match(_HTTP_PROJECT_URL_PATTERN, project_url)
 
+def extract_project_id_from_url(project_url):
+    normalized_url = project_url.strip("/")
+    project_id = os.path.basename(urlparse(normalized_url).path)
+    return project_id
+
 def download_project_code(project_id, target_dir):
     # TODO: consolidate with classes from scratch module
     from scratchtocatrobat import common
@@ -88,12 +103,7 @@ def download_project(project_url, target_dir, progress_bar=None):
         raise ScratchWebApiError("Project URL must be matching '{}'. Given: {}".format(scratch_base_url + '<project id>', project_url))
     assert len(os.listdir(target_dir)) == 0
 
-    def project_id_from_url(project_url):
-        normalized_url = project_url.strip("/")
-        project_id = os.path.basename(urlparse(normalized_url).path)
-        return project_id
-
-    project_id = project_id_from_url(project_url)
+    project_id = extract_project_id_from_url(project_url)
     download_project_code(project_id, target_dir)
 
     project = scratch.RawProject.from_project_folder_path(target_dir)
@@ -198,6 +208,18 @@ def request_project_page_as_Jsoup_document_for(project_id):
 
 
 # TODO: class instead of request functions
+def request_is_project_available(project_id):
+    from org.jsoup import HttpStatusException
+    try:
+        request_project_page_as_Jsoup_document_for(project_id, False)
+        return True
+    except HttpStatusException as e:
+        if e.getStatusCode() == 404:
+            _log.error("HTTP 404 - Not found! Project not available.")
+            return False
+        else:
+            raise e
+
 def request_project_title_for(project_id):
     return extract_project_title_from_document(request_project_page_as_Jsoup_document_for(project_id))
 
@@ -215,6 +237,9 @@ def request_project_remixes_for(project_id):
 
 def request_project_details_for(project_id):
     return extract_project_details_from_document(request_project_page_as_Jsoup_document_for(project_id))
+
+def request_project_visibility_state_for(project_id):
+    return extract_project_visibilty_state_from_document(request_project_page_as_Jsoup_document_for(project_id))
 
 
 def extract_project_title_from_document(document):
@@ -280,6 +305,15 @@ def extract_project_remixes_from_document(document):
         data["image"] = image_url
         remixed_project_info += [data]
     return remixed_project_info
+
+def extract_project_visibilty_state_from_document(document):
+    extracted_text = document.select_first_as_text("div#share-bar > span")
+    if extracted_text == "Sorry this project is not shared":
+        return ScratchProjectVisibiltyState.PRIVATE
+    elif extracted_text is not None:
+        return ScratchProjectVisibiltyState.UNKNOWN
+    else:
+        return ScratchProjectVisibiltyState.PUBLIC
 
 def extract_project_details_from_document(document):
     if document is None: return None

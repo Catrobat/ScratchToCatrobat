@@ -30,7 +30,7 @@ import imghdr
 
 class ImageProcessingTest(common_testing.BaseTestCase):
 
-    _allowed_font_names = ["Scratch", "Marker","Gloria", "Helvetica", "Donegal", "Mystery"]
+    _allowed_font_names = ["Marker","Scratch","Gloria", "Helvetica", "Donegal", "Mystery"]
 
     @classmethod
     def img_proc_pngfile_paths(cls):
@@ -71,7 +71,8 @@ class ImageProcessingTest(common_testing.BaseTestCase):
             green = rgb >> 8 & int("0x000000FF", 16)
             blue = rgb & int("0x000000FF", 16)
             assert red == 0 and green == 0 and blue == 0
-        buffered_image = img_proc.add_text_to_image(buffered_image, "Hello world!", font, Color.RED, 10.0, 10.0)
+        buffered_image = img_proc.add_text_to_image(buffered_image, "Hello world!", font, Color.BLUE, 10.0, 10.0)
+        #buffered_image = img_proc.add_text_to_image(buffered_image, "Franz ist hier!?", font, Color.BLUE,10.0, 2.0)
         # the left-outline of letter "H" in "Hello world" must NOW appear in the image!
         for i in range(0, 8):
             rgb = buffered_image.getRGB(11, i)
@@ -85,6 +86,21 @@ class ImageProcessingTest(common_testing.BaseTestCase):
         buffered_image = img_proc.read_editable_image_from_disk(dummy_png)
         assert isinstance(buffered_image, java.awt.image.BufferedImage)
         font = img_proc.create_font(self._allowed_font_names[0], 14.0, bold=False, italic=False)
+        marker_font_value = 0
+        scratch_font_value = 1
+        gloria_font_value = 2
+        helvetica_font_value = 3
+        donegal_font_value = 4
+        mystery_font_value = 5
+        
+        marker_font =  img_proc.create_font(self._allowed_font_names[marker_font_value], 14.0, bold=False, italic=False)
+        scratch_font =  img_proc.create_font(self._allowed_font_names[scratch_font_value], 14.0, bold=False, italic=False)
+        gloria_font =  img_proc.create_font(self._allowed_font_names[gloria_font_value], 14.0, bold=False, italic=False)
+        helvetica_font =  img_proc.create_font(self._allowed_font_names[helvetica_font_value], 14.0, bold=False, italic=False)
+        donegal_font =  img_proc.create_font(self._allowed_font_names[donegal_font_value], 14.0, bold=False, italic=False)
+        mystery_font =  img_proc.create_font(self._allowed_font_names[mystery_font_value], 14.0, bold=False, italic=False)
+        
+        
         # check whether the left-outline of letter "H" in "Hello world" is NOT present in the image!
         for i in range(0, 8):
             rgb = buffered_image.getRGB(11, i)
@@ -92,7 +108,11 @@ class ImageProcessingTest(common_testing.BaseTestCase):
             green = rgb >> 8 & int("0x000000FF", 16)
             blue = rgb & int("0x000000FF", 16)
             assert red == 0 and green == 0 and blue == 0
-        buffered_image = img_proc.add_text_to_image(buffered_image, "Hello world!", font, Color.RED, 10.0, 10.0)
+        buffered_image = img_proc.add_text_to_image(buffered_image, "Hello world!", mystery_font, Color.RED, 10.0, 10.0)
+        buffered_image = img_proc.add_text_to_image(buffered_image, "Franz ist hier!?", marker_font, Color.BLUE,10.0, 20.0)
+        buffered_image = img_proc.add_text_to_image(buffered_image, "iloveKF", donegal_font, Color.GREEN,10.0, 32.0)
+
+
         # the left-outline of letter "H" in "Hello world" must NOW appear in the image!
         for i in range(0, 8):
             rgb = buffered_image.getRGB(11, i)

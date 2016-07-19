@@ -66,7 +66,7 @@ def convert(input_svg_path):
         assert os.path.exists(output_png_path)
         return output_png_path
     except:
-        error = common.ScratchtobatError("PNG to SVG conversion call failed for: %s" % input_svg_image)
+        error = common.ScratchtobatError("PNG to SVG conversion call failed for: %s" % input_svg_path)
     finally:
         # free resources
         if png_ostream != None:

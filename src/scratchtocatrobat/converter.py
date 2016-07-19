@@ -221,15 +221,11 @@ class _ScratchToCatrobat(object):
 
         # video
         "setVideoState": lambda status: [
-                catbricks.ChooseCameraBrick(1),                       # use front camera by default!
-                catbricks.CameraBrick(int(status.lower() != 'off'))
+            catbricks.ChooseCameraBrick(1),                       # use front camera by default!
+            catbricks.CameraBrick(int(status.lower() != 'off'))
         ],
 
-        # TODO: remove lambdas to increase readability
-        "changeGraphicEffect:by:": lambda effect_type, value:
-            catbricks.ChangeBrightnessByNBrick(value) if effect_type == 'brightness' else
-            catbricks.ChangeTransparencyByNBrick(value) if effect_type == 'ghost' else
-            _placeholder_for_unmapped_bricks_to("changeGraphicEffect:by:", effect_type, value),
+        "changeGraphicEffect:by:": None,
         "setGraphicEffect:to:": lambda effect_type, value:
             catbricks.SetBrightnessBrick(value) if effect_type == 'brightness' else
             catbricks.SetTransparencyBrick(value) if effect_type == 'ghost' else
@@ -272,8 +268,7 @@ class _ScratchToCatrobat(object):
         return catrobat_brick
 
     @classmethod
-    def create_script(cls, scratch_script_name, sprite, arguments):
-        assert sprite is not None
+    def create_script(cls, scratch_script_name, arguments):
         if scratch_script_name not in scratch.SCRIPTS:
             assert False, "Missing script mapping for: " + scratch_script_name
         # TODO: separate script and brick mapping
@@ -499,7 +494,9 @@ class _ScratchObjectConverter(object):
         sprite_context = SpriteContext(sprite_name)
         sprite = catbase.Sprite(sprite_name)
         assert sprite_name == sprite.getName()
-        log.debug("sprite name: %s", sprite.getName())
+        log.info('-'*80)
+        log.info("Converting Sprite: '%s'", sprite.getName())
+        log.info('-'*80)
 
         # rename if sprite is background
         if scratch_object.is_stage():
@@ -552,6 +549,8 @@ class _ScratchObjectConverter(object):
             if not scratch_object.is_stage():
                 args += [sprite.getName()]
             _assign_initialization_value_to_user_variable(*args)
+
+        log.info('')
         return sprite
 
     @staticmethod
@@ -663,7 +662,7 @@ class _ScratchObjectConverter(object):
 
         log.debug("  script type: %s, args: %s", scratch_script.type, scratch_script.arguments)
         try:
-            cat_script = _ScratchToCatrobat.create_script(scratch_script.type, sprite, scratch_script.arguments)
+            cat_script = _ScratchToCatrobat.create_script(scratch_script.type, scratch_script.arguments)
         except:
             cat_script = catbase.StartScript()
             wait_and_note_brick = _placeholder_for_unmapped_bricks_to("UNSUPPORTED SCRIPT", scratch_script.type)
@@ -1000,10 +999,9 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
                 else:
                     converted_element = self._regular_block_conversion()
             except Exception as e:
-                log.warn("-" * 80)
-                log.warn("Replacing {0} with NoteBrick".format(block_name))
-                log.warn("Exception: {0}, ".format(e.message), exc_info=1)
-                log.warn("-" * 80)
+                log.warn("  " + ">" * 78)
+                log.warn("  Replacing {0} with NoteBrick".format(block_name))
+                log.warn("  Exception: {0}, ".format(e.message), exc_info=1)
                 converted_element = _placeholder_for_unmapped_bricks_to(block_name)
         elif isinstance(self.script_element, scratch.BlockValue):
             converted_element = [script_element.name]
@@ -1362,6 +1360,36 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             self.script_context.sound_wait_length_variable_names.add(sound_length_variable_name)
             converted_bricks += [catbricks.WaitBrick(catformula.Formula(sound_length_variable))]
         return converted_bricks
+
+    @_register_handler(_block_name_to_handler_map, "setGraphicEffect:to:")
+    def _convert_set_graphic_effect_block(self):
+        [effect_type, value] = self.arguments
+        if effect_type == 'brightness':
+            # range  Scratch:  -100 to 100  (default:   0)
+            # range Catrobat:     0 to 200% (default: 100%)
+            formula_elem = self._converted_helper_brick_or_formula_element([value, 100], "+")
+            return catbricks.SetBrightnessBrick(catrobat.create_formula_with_value(formula_elem))
+        elif effect_type == 'ghost':
+            # range  Scratch:     0 to 100  (default:   0)
+            # range Catrobat:     0 to 100% (default:   0%)
+            return catbricks.SetTransparencyBrick(value)
+        else:
+            return _placeholder_for_unmapped_bricks_to("setGraphicEffect:to:", effect_type, value)
+
+    @_register_handler(_block_name_to_handler_map, "changeGraphicEffect:by:")
+    def _convert_change_graphic_effect_block(self):
+        [effect_type, value] = self.arguments
+        if effect_type == 'brightness':
+            # range  Scratch:  -100 to 100  (default:   0)
+            # range Catrobat:     0 to 200% (default: 100%)
+            # since ChangeBrightnessByNBrick adds increment -> no range-conversion needed
+            return catbricks.ChangeBrightnessByNBrick(value)
+        elif effect_type == 'ghost':
+            # range  Scratch:     0 to 100  (default:   0)
+            # range Catrobat:     0 to 100% (default:   0%)
+            return catbricks.ChangeTransparencyByNBrick(value)
+        else:
+            return _placeholder_for_unmapped_bricks_to("changeGraphicEffect:by:", effect_type, value)
 
     @_register_handler(_block_name_to_handler_map, "changeVar:by:", "setVar:to:")
     def _convert_variable_block(self):

@@ -23,6 +23,7 @@ from urlparse import urlparse
 from scratchtocatrobat import logger
 from tools import helpers
 from collections import namedtuple
+from datetime import datetime
 
 HTTP_RETRIES = int(helpers.config.get("SCRATCH_API", "http_retries"))
 HTTP_BACKOFF = int(helpers.config.get("SCRATCH_API", "http_backoff"))
@@ -31,13 +32,27 @@ HTTP_TIMEOUT = int(helpers.config.get("SCRATCH_API", "http_timeout"))
 HTTP_USER_AGENT = helpers.config.get("SCRATCH_API", "user_agent")
 SCRATCH_PROJECT_BASE_URL = helpers.config.get("SCRATCH_API", "project_base_url")
 
-class ScratchProjectInfo(namedtuple("ScratchProjectInfo", "title owner instructions notes_and_credits tags views favorites loves modified_date shared_date remixes")):
+_log = logger.log
+_cached_jsoup_documents = {}
+
+
+class ScratchProjectInfo(namedtuple("ScratchProjectInfo", "title owner instructions " \
+                                    "notes_and_credits tags views favorites loves modified_date " \
+                                    "shared_date remixes")):
     def as_dict(self):
-        return dict((s, getattr(self, s)) for s in self._fields)
+        return dict(map(lambda s: (s, getattr(self, s).strftime("%Y-%m-%d") \
+                                   if isinstance(getattr(self, s), datetime) else getattr(self, s)),
+                        self._fields))
+
     def __str__(self):
         return str(self.as_dict())
 
-_log = logger.log
+class ScratchProjectVisibiltyState(object):
+    # Note: never change these values here.
+    #       They are used in HTTP-responses and used across platforms!
+    UNKNOWN = 0
+    PRIVATE = 1
+    PUBLIC = 2
 
 class ScratchWebApiError(Exception):
     pass
@@ -49,10 +64,22 @@ class ResponseDocumentWrapper(object):
     def select_first_as_text(self, query):
         pass
 
+    def select_all_as_text_list(self, query):
+        pass
+
+    def select_attributes_as_text_list(self, query, attribute_name):
+        pass
+
+
 def is_valid_project_url(project_url):
     scratch_base_url = helpers.config.get("SCRATCH_API", "project_base_url")
     _HTTP_PROJECT_URL_PATTERN = scratch_base_url + r'\d+/?'
     return re.match(_HTTP_PROJECT_URL_PATTERN, project_url)
+
+def extract_project_id_from_url(project_url):
+    normalized_url = project_url.strip("/")
+    project_id = os.path.basename(urlparse(normalized_url).path)
+    return project_id
 
 def download_project_code(project_id, target_dir):
     # TODO: consolidate with classes from scratch module
@@ -76,12 +103,7 @@ def download_project(project_url, target_dir, progress_bar=None):
         raise ScratchWebApiError("Project URL must be matching '{}'. Given: {}".format(scratch_base_url + '<project id>', project_url))
     assert len(os.listdir(target_dir)) == 0
 
-    def project_id_from_url(project_url):
-        normalized_url = project_url.strip("/")
-        project_id = os.path.basename(urlparse(normalized_url).path)
-        return project_id
-
-    project_id = project_id_from_url(project_url)
+    project_id = extract_project_id_from_url(project_url)
     download_project_code(project_id, target_dir)
 
     project = scratch.RawProject.from_project_folder_path(target_dir)
@@ -150,16 +172,15 @@ class _ResponseJsoupDocumentWrapper(ResponseDocumentWrapper):
             return None
         return [element.attr(attribute_name) for element in result if element is not None]
 
-_cached_documents = {}
-def request_project_page_as_Jsoup_document_for(project_id):
-    global _cached_documents
+def request_project_page_as_Jsoup_document_for(project_id, retry_after_http_status_exception=True):
+    global _cached_jsoup_documents
 
     from java.net import SocketTimeoutException, UnknownHostException
     from org.jsoup import Jsoup, HttpStatusException
 
-    if project_id in _cached_documents:
+    if project_id in _cached_jsoup_documents:
         _log.debug("Cache hit: Document!")
-        return _cached_documents[project_id]
+        return _cached_jsoup_documents[project_id]
 
     scratch_project_url = SCRATCH_PROJECT_BASE_URL + str(project_id)
     if not is_valid_project_url(scratch_project_url):
@@ -168,7 +189,11 @@ def request_project_page_as_Jsoup_document_for(project_id):
     def retry_hook(exc, tries, delay):
         _log.warning("  Exception: {}\nRetrying after {}:'{}' in {} secs (remaining trys: {})".format(sys.exc_info()[0], type(exc).__name__, exc, delay, tries))
 
-    @helpers.retry((HttpStatusException, SocketTimeoutException, UnknownHostException), delay=HTTP_DELAY, backoff=HTTP_BACKOFF, tries=HTTP_RETRIES, hook=retry_hook)
+    exceptions_retry = (SocketTimeoutException, UnknownHostException)
+    if retry_after_http_status_exception:
+        exceptions_retry += (HttpStatusException, )
+
+    @helpers.retry(exceptions_retry, delay=HTTP_DELAY, backoff=HTTP_BACKOFF, tries=HTTP_RETRIES, hook=retry_hook)
     def fetch_document(scratch_project_url, timeout, user_agent):
         connection = Jsoup.connect(scratch_project_url)
         connection.userAgent(user_agent)
@@ -178,14 +203,28 @@ def request_project_page_as_Jsoup_document_for(project_id):
     try:
         document = fetch_document(scratch_project_url, HTTP_TIMEOUT, HTTP_USER_AGENT)
         if document != None:
-            _cached_documents[project_id] = document
+            _cached_jsoup_documents[project_id] = document
         return document
+    except HttpStatusException as e:
+        raise e
     except:
-        _log.error("Retry limit exceeded or an unexpected error occured: {}".format(sys.exc_info()[0]))
+        _log.error("Retry limit exceeded or an unexpected error occurred: {}".format(sys.exc_info()[0]))
         return None
 
 
 # TODO: class instead of request functions
+def request_is_project_available(project_id):
+    from org.jsoup import HttpStatusException
+    try:
+        request_project_page_as_Jsoup_document_for(project_id, False)
+        return True
+    except HttpStatusException as e:
+        if e.getStatusCode() == 404:
+            _log.error("HTTP 404 - Not found! Project not available.")
+            return False
+        else:
+            raise e
+
 def request_project_title_for(project_id):
     return extract_project_title_from_document(request_project_page_as_Jsoup_document_for(project_id))
 
@@ -203,6 +242,9 @@ def request_project_remixes_for(project_id):
 
 def request_project_details_for(project_id):
     return extract_project_details_from_document(request_project_page_as_Jsoup_document_for(project_id))
+
+def request_project_visibility_state_for(project_id):
+    return extract_project_visibilty_state_from_document(request_project_page_as_Jsoup_document_for(project_id))
 
 
 def extract_project_title_from_document(document):
@@ -269,6 +311,15 @@ def extract_project_remixes_from_document(document):
         remixed_project_info += [data]
     return remixed_project_info
 
+def extract_project_visibilty_state_from_document(document):
+    extracted_text = document.select_first_as_text("div#share-bar > span")
+    if extracted_text == "Sorry this project is not shared":
+        return ScratchProjectVisibiltyState.PRIVATE
+    elif extracted_text is not None:
+        return ScratchProjectVisibiltyState.UNKNOWN
+    else:
+        return ScratchProjectVisibiltyState.PUBLIC
+
 def extract_project_details_from_document(document):
     if document is None: return None
 
@@ -296,11 +347,13 @@ def extract_project_details_from_document(document):
 
     extracted_text = document.select_first_as_text("div#fixed div.dates span.date-updated")
     if extracted_text is None: return None
-    modified_date = unicode(extracted_text).replace("Modified:", "").strip()
+    modified_date_str = unicode(extracted_text).replace("Modified:", "").strip()
+    modified_date = datetime.strptime(modified_date_str, '%d %b %Y')
 
     extracted_text = document.select_first_as_text("div#fixed div.dates span.date-shared")
     if extracted_text is None: return None
-    shared_date = unicode(extracted_text).replace("Shared:", "").strip()
+    shared_date_str = unicode(extracted_text).replace("Shared:", "").strip()
+    shared_date = datetime.strptime(shared_date_str, '%d %b %Y')
 
     remixes = extract_project_remixes_from_document(document)
     if remixes is None: return None

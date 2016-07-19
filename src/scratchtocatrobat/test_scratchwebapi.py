@@ -25,6 +25,7 @@ from scratchtocatrobat import common
 from scratchtocatrobat import common_testing
 from scratchtocatrobat import scratch
 from scratchtocatrobat import scratchwebapi
+from datetime import datetime
 
 TEST_PROJECT_ID_TO_TITLE_MAP = {
     "10205819": "Dancin' in the Castle",
@@ -151,13 +152,33 @@ class WebApiTest(common_testing.BaseTestCase):
             assert extracted_project_info.loves >= 0
             assert isinstance(extracted_project_info.loves, int)
             assert extracted_project_info.modified_date is not None
-            assert isinstance(extracted_project_info.modified_date, (str, unicode))
+            assert isinstance(extracted_project_info.modified_date, datetime)
             assert extracted_project_info.shared_date is not None
-            assert isinstance(extracted_project_info.shared_date, (str, unicode))
+            assert isinstance(extracted_project_info.shared_date, datetime)
             assert extracted_project_info.remixes is not None
             assert extracted_project_info.remixes == TEST_PROJECT_ID_TO_REMIXES_MAP[project_id], \
                    "'{}' is not equal to '{}'".format(extracted_project_info.remixes, TEST_PROJECT_ID_TO_REMIXES_MAP[project_id])
             assert isinstance(extracted_project_info.remixes, list)
+
+    def test_can_detect_correct_availability_state_of_project(self):
+        project_availability_map = {
+            "108628771": False,
+            "107178598": True,
+            "95106124": True
+        }
+        for (project_id, expected_availability_state) in project_availability_map.iteritems():
+            detected_availability_state = scratchwebapi.request_is_project_available(project_id)
+            assert expected_availability_state == detected_availability_state
+
+    def test_can_detect_correct_visibility_state_of_project(self):
+        project_visibility_map = {
+            "107178598": scratchwebapi.ScratchProjectVisibiltyState.PRIVATE,
+            "95106124": scratchwebapi.ScratchProjectVisibiltyState.PUBLIC,
+            "85594786": scratchwebapi.ScratchProjectVisibiltyState.PUBLIC
+        }
+        for (project_id, expected_visibility_state) in project_visibility_map.iteritems():
+            detected_visibility_state = scratchwebapi.request_project_visibility_state_for(project_id)
+            assert expected_visibility_state == detected_visibility_state
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']

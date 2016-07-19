@@ -42,7 +42,9 @@ def create_catrobat_sprite_stub(name=None):
     return sprite
 
 def create_catrobat_background_sprite_stub():
-    return create_catrobat_sprite_stub(catrobat._BACKGROUND_SPRITE_NAME)
+    sprite_stub = create_catrobat_sprite_stub(catrobat._BACKGROUND_SPRITE_NAME)
+    catrobat.set_as_background(sprite_stub)
+    return sprite_stub
 
 DUMMY_CATR_SPRITE = create_catrobat_sprite_stub()
 TEST_PROJECT_PATH = common_testing.get_test_project_path("dancing_castle")
@@ -682,6 +684,62 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, dummy_sprite)
         assert isinstance(catr_brick, catbricks.PlaySoundBrick)
         assert catr_brick.sound.getTitle() == sound_name
+
+    # setGraphicEffect:to: (brightness)
+    def test_can_convert_set_graphic_effect_brightness_block(self):
+        scratch_block = _, _, expected_value = ["setGraphicEffect:to:", "brightness", 10.1]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.SetBrightnessBrick)
+        formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.BRIGHTNESS).formulaTree # @UndefinedVariable
+        assert formula_tree_value.type == catformula.FormulaElement.ElementType.OPERATOR
+        assert formula_tree_value.value == catformula.Operators.PLUS.toString() # @UndefinedVariable
+        assert formula_tree_value.leftChild is not None
+        assert formula_tree_value.rightChild is not None
+
+        formula_left_child = formula_tree_value.leftChild
+        assert formula_left_child.type == catformula.FormulaElement.ElementType.NUMBER
+        assert str(expected_value) == formula_left_child.value
+        assert formula_left_child.leftChild is None
+        assert formula_left_child.rightChild is None
+
+        formula_right_child = formula_tree_value.rightChild
+        assert formula_right_child.type == catformula.FormulaElement.ElementType.NUMBER
+        assert "100" == formula_right_child.value # offset 100 due to range-conversion!
+        assert formula_right_child.leftChild is None
+        assert formula_right_child.rightChild is None
+
+    # setGraphicEffect:to: (ghost)
+    def test_can_convert_set_graphic_effect_ghost_block(self):
+        scratch_block = _, _, expected_value = ["setGraphicEffect:to:", "ghost", 10.2]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.SetTransparencyBrick)
+        formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.TRANSPARENCY).formulaTree # @UndefinedVariable
+        assert formula_tree_value.type == catformula.FormulaElement.ElementType.NUMBER
+        assert str(expected_value) == formula_tree_value.value
+        assert formula_tree_value.leftChild is None
+        assert formula_tree_value.rightChild is None
+
+    # changeGraphicEffect:by: (brightness)
+    def test_can_convert_change_graphic_effect_brightness_block(self):
+        scratch_block = _, _, expected_value = ["changeGraphicEffect:by:", "brightness", 10.1]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.ChangeBrightnessByNBrick)
+        formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.BRIGHTNESS_CHANGE).formulaTree # @UndefinedVariable
+        assert formula_tree_value.type == catformula.FormulaElement.ElementType.NUMBER
+        assert str(expected_value) == formula_tree_value.value
+        assert formula_tree_value.leftChild is None
+        assert formula_tree_value.rightChild is None
+
+    # changeGraphicEffect:by: (ghost)
+    def test_can_convert_change_graphic_effect_ghost_block(self):
+        scratch_block = _, _, expected_value = ["changeGraphicEffect:by:", "ghost", 10.2]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.ChangeTransparencyByNBrick)
+        formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.TRANSPARENCY_CHANGE).formulaTree # @UndefinedVariable
+        assert formula_tree_value.type == catformula.FormulaElement.ElementType.NUMBER
+        assert str(expected_value) == formula_tree_value.value
+        assert formula_tree_value.leftChild is None
+        assert formula_tree_value.rightChild is None
 
     # showVariable:
     def test_can_convert_show_variable_block(self):

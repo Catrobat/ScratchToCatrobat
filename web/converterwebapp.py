@@ -22,9 +22,8 @@
 #  ---------------------------------------------------------------------------------------
 #  NOTE:
 #  ---------------------------------------------------------------------------------------
-#  This module is a simple websocket application based on the Tornado
-#  web framework and asynchronous networking library, which is
-#  licensed under the Apache License, Version 2.0.
+#  This module is a simple web socket server based on the Tornado web framework and
+#  asynchronous networking library, which is licensed under the Apache License, Version 2.0.
 #  For more information about the Apache License please visit:
 #
 #    http://www.apache.org/licenses/LICENSE-2.0
@@ -36,7 +35,7 @@
 #
 
 """
-  Simple websocket application for handling conversion requests.
+  Simple web socket server for handling conversion requests.
 """
 
 import logging
@@ -51,10 +50,11 @@ from command import get_command, InvalidCommand, Job, update_jobs_info_on_listen
 import jobmonitorprotocol as jobmonprot
 from tornado.web import HTTPError #@UnresolvedImport
 import ast, sys
-from datetime import datetime, timedelta
+from datetime import datetime as dt, timedelta
 import converterwebsocketprotocol as protocol
 from jobmonitorprotocol import NotificationType
 from scratchtocatrobat import scratchwebapi
+from scratchtocatrobat.scratchwebapi import ScratchProjectVisibiltyState
 
 sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "..", "src"))
 from scratchtocatrobat.tools import helpers
@@ -73,6 +73,7 @@ SCRATCH_PROJECT_BASE_URL = helpers.config.get("SCRATCH_API", "project_base_url")
 
 # TODO: check if redis is available => error!
 _redis_conn = redis.Redis() #'127.0.0.1', 6789) #, password='secret')
+
 
 class Context(object):
     def __init__(self, handler, redis_connection, jobmonitorserver_settings):
@@ -267,54 +268,93 @@ class _ResponseBeautifulSoupDocumentWrapper(scratchwebapi.ResponseDocumentWrappe
             return None
         return [element[attribute_name] for element in result if element is not None]
 
+
+class ProjectDataResponse(object):
+    def __init__(self):
+        self.accessible = True
+        self.visibility_state = ScratchProjectVisibiltyState.UNKNOWN
+        self.project_data = {}
+        self.valid_until = None
+
+    def as_dict(self):
+        return {
+            "accessible": self.accessible,
+            "visibility": self.visibility_state,
+            "projectData": self.project_data,
+            "validUntil": None if not self.valid_until else self.valid_until.strftime("%Y-%m-%d %H:%M:%S")
+        }
+
+
 class _ProjectHandler(tornado.web.RequestHandler):
-    project_info_cache = {}
+    response_cache = {}
     CACHE_ENTRY_VALID_FOR = 600 # 10 minutes (in seconds)
 
     @tornado.gen.coroutine
     def get(self, project_id = None):
-        if project_id is not None:
-            cls = self.__class__
-            if project_id in cls.project_info_cache \
-            and datetime.now() <= cls.project_info_cache[project_id]["validUntil"]:
-                _logger.info("Cache hit for project ID {}".format(project_id))
-                #self.write(cls.project_info_cache[project_id]["info"].as_dict())
-                #return
-
-            scratch_project_url = SCRATCH_PROJECT_BASE_URL + str(project_id)
-            _logger.info("Fetching project info from: {}".format(scratch_project_url))
-            try:
-                http_response = yield self.application.async_http_client.fetch(scratch_project_url)
-            except tornado.httpclient.HTTPError, e:
-                _logger.warn("Unable to download the project's website! " \
-                             "Reason: Not available! HTTP-Status-Code: " + str(e.code))
-                self.write({})
-                return
-
-            if http_response is None or http_response.body is None or not isinstance(http_response.body, (str, unicode)):
-                _logger.error("Unable to download the project's website! " \
-                              "Reason: Invalid or empty html content!")
-                self.write({})
-                return
-
-            #body = re.sub("(.*" + re.escape("<li>") + r'\s*' + re.escape("<div class=\"project thumb\">") + r'.*' + re.escape("<span class=\"owner\">") + r'.*' + re.escape("</span>") + r'\s*' + ")" + "(" + re.escape("</li>.*") + ")", r'\1</div>\2', http_response.body)
-            document = _ResponseBeautifulSoupDocumentWrapper(BeautifulSoup(http_response.body, b'html5lib'))
-            project_info = scratchwebapi.extract_project_details_from_document(document)
-            if project_info is None:
-                _logger.error("Unable to parse project info from the project's " \
-                              "website! Reason: Invalid or empty html content!")
-                self.write({})
-                return
-
-            cls.project_info_cache[project_id] = {
-                "info": project_info,
-                "validUntil": datetime.now() + timedelta(seconds=cls.CACHE_ENTRY_VALID_FOR)
-            }
-            self.write(project_info.as_dict())
+        # ------------------------------------------------------------------------------------------
+        # Featured projects HTTP-request
+        # ------------------------------------------------------------------------------------------
+        if project_id is None:
+            # TODO: automatically update featured projects...
+            self.write({ "results": CONVERTER_API_SETTINGS["featured_projects"] })
             return
 
-        # TODO: automatically update featured projects...
-        self.write({ "results": CONVERTER_API_SETTINGS["featured_projects"] })
+        # ------------------------------------------------------------------------------------------
+        # Project details HTTP-request
+        # ------------------------------------------------------------------------------------------
+        cls = self.__class__
+        if project_id in cls.response_cache and dt.now() <= cls.response_cache[project_id].valid_until:
+            _logger.info("Cache hit for project ID {}".format(project_id))
+            self.write(cls.response_cache[project_id].as_dict())
+            return
+
+        try:
+            scratch_project_url = SCRATCH_PROJECT_BASE_URL + str(project_id)
+            _logger.info("Fetching project info from: {}".format(scratch_project_url))
+            http_response = yield self.application.async_http_client.fetch(scratch_project_url)
+        except tornado.httpclient.HTTPError, e:
+            _logger.warn("Unable to download project's web page: HTTP-Status-Code: " + str(e.code))
+            response = ProjectDataResponse()
+            if e.code == 404:
+                # 'HTTP 404 - Not found' means not accessible
+                # (e.g. projects that have been removed in the meanwhile...)
+                response.accessible = False
+                response.valid_until = dt.now() + timedelta(seconds=cls.CACHE_ENTRY_VALID_FOR)
+                cls.response_cache[project_id] = response
+
+            self.write(response.as_dict())
+            return
+
+        if http_response is None or http_response.body is None or not isinstance(http_response.body, (str, unicode)):
+            _logger.error("Unable to download web page of project: Invalid or empty HTML-content!")
+            self.write(ProjectDataResponse().as_dict())
+            return
+
+        #body = re.sub("(.*" + re.escape("<li>") + r'\s*' + re.escape("<div class=\"project thumb\">") + r'.*' + re.escape("<span class=\"owner\">") + r'.*' + re.escape("</span>") + r'\s*' + ")" + "(" + re.escape("</li>.*") + ")", r'\1</div>\2', http_response.body)
+        document = _ResponseBeautifulSoupDocumentWrapper(BeautifulSoup(http_response.body, b'html5lib'))
+        visibility_state = scratchwebapi.extract_project_visibilty_state_from_document(document)
+        response = ProjectDataResponse()
+        response.accessible = True
+        response.visibility_state = visibility_state
+        response.valid_until = dt.now() + timedelta(seconds=cls.CACHE_ENTRY_VALID_FOR)
+
+        if visibility_state != ScratchProjectVisibiltyState.PUBLIC:
+            _logger.warn("Not allowed to access non-public scratch-project!")
+            cls.response_cache[project_id] = response
+            self.write(response.as_dict())
+            return
+
+        project_info = scratchwebapi.extract_project_details_from_document(document)
+        if project_info is None:
+            _logger.error("Unable to parse project-info from web page: Invalid or empty HTML-content!")
+            self.write(response.as_dict())
+            return
+
+        response.project_data = project_info.as_dict()
+        cls.response_cache[project_id] = response
+        self.write(response.as_dict())
+        return
+
 
 class ConverterWebApp(tornado.web.Application):
     def __init__(self, **settings):

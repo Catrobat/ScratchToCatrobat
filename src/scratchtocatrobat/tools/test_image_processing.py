@@ -136,8 +136,8 @@ class ImageProcessingTest(common_testing.BaseTestCase):
                 #assert red == 255 and green == 0 and blue == 0
         except Exception, e:
             raise e
-       # finally:
-            #os.remove(output_path) # finally remove the image
+        finally:
+            os.remove(output_path) # finally remove the image
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']

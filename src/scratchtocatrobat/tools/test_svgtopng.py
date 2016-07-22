@@ -41,6 +41,38 @@ class SvgToPngTest(common_testing.BaseTestCase):
 
             assert os.path.exists(output_png_path)
             assert imghdr.what(output_png_path) == "png"
+            
+    def test_true_cut_of_png(self):
+        input_png_path = "/home/munter/workspace/ScratchToCatrobat/test/res/img_proc_png/1.png"
+        output_png_path = "/home/munter/workspace/ScratchToCatrobat/test/res/img_proc_png/test_result.png"
+        expected_image_path = "/home/munter/workspace/ScratchToCatrobat/test/res/img_proc_png/expected_image.png"
+        
+        assert os.path.exists(input_png_path)
+
+        final_image = svgtopng._process_png_image(input_png_path)
+        
+        from javax.imageio import ImageIO
+        from java.io import File      
+        ImageIO.write(final_image, "PNG", File(output_png_path))
+        assert os.path.exists(output_png_path)
+        assert imghdr.what(output_png_path) == "png"
+        
+        from javax.swing import ImageIcon
+        bufferd_image = svgtopng._create_buffered_image(ImageIcon(output_png_path).getImage())
+        width, height = bufferd_image.getWidth(), bufferd_image.getHeight()
+        output_image_matrix = [[bufferd_image.getRGB(i, j) for j in xrange(height)] for i in xrange(width)]
+        
+        bufferd_image = svgtopng._create_buffered_image(ImageIcon(expected_image_path).getImage())
+        width, height = bufferd_image.getWidth(), bufferd_image.getHeight()
+        expected_image_matrix = [[bufferd_image.getRGB(i, j) for j in xrange(height)] for i in xrange(width)]
+        
+        for i in xrange(width):
+            for j in xrange(height):
+                exp_rgb_val = expected_image_matrix[i][j]
+                result_rgb_val = output_image_matrix[i][j]
+                print(exp_rgb_val, "   ", result_rgb_val)
+                assert exp_rgb_val == result_rgb_val
+                
 
 
 if __name__ == "__main__":

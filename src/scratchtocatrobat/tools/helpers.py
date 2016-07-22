@@ -171,6 +171,10 @@ def latest_catroid_repository_release_data():
     except Exception:
         return None
 
+def extract_version_number(version_str):
+    parts = version_str.replace("v", "").split(".")
+    return float("%s.%s" % (parts[0], ''.join(parts[1:]))) if len(parts) > 1 else float(version_str)
+
 def print_info_or_version_screen(show_version_only, catrobat_language_version):
     tag_name = tag_name_of_used_catroid_hierarchy()
     latest_release_data = latest_catroid_repository_release_data()
@@ -181,10 +185,15 @@ def print_info_or_version_screen(show_version_only, catrobat_language_version):
     print(application_info("short_name"), "Version:", application_info("version"))
     print("Catrobat language version:", catrobat_language_version)
     print("Catroid version of currently used hierarchy:", tag_name)
+
     if latest_release_data:
+        current_release_version = extract_version_number(tag_name)
+        latest_release_version = extract_version_number(latest_release_data["tag_name"])
         print("Latest Catroid release: %s (%s)" % (latest_release_data["tag_name"], latest_release_data["published_at"]))
-        if tag_name != latest_release_data["tag_name"]:
-            print("%sA NEW CATROID RELEASE IS AVAILABLE!\nPLEASE UPDATE THE CLASS HIERARCHY OF THE CONVERTER FROM CATROID VERSION %s TO VERSION %s%s" % (cli_colors.FAIL, tag_name, latest_release_data["tag_name"], cli_colors.ENDC))
+        if current_release_version < latest_release_version:
+            print("%sA NEW CATROID RELEASE IS AVAILABLE!\nPLEASE UPDATE THE CLASS HIERARCHY " \
+                  "OF THE CONVERTER FROM CATROID VERSION %s TO VERSION %s%s" \
+                  % (cli_colors.FAIL, tag_name, latest_release_data["tag_name"], cli_colors.ENDC))
     if show_version_only:
         return ExitCode.SUCCESS
     print("Build Name:", application_info("build_name"))

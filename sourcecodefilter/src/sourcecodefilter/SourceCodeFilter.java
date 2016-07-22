@@ -41,41 +41,27 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.Annotation;
-import org.eclipse.jdt.core.dom.AnnotationTypeDeclaration;
-import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.BodyDeclaration;
-import org.eclipse.jdt.core.dom.BreakStatement;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.EnumDeclaration;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IExtendedModifier;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
-import org.eclipse.jdt.core.dom.LabeledStatement;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
-import org.eclipse.jdt.core.dom.PackageDeclaration;
-import org.eclipse.jdt.core.dom.PostfixExpression;
-import org.eclipse.jdt.core.dom.PrefixExpression;
-import org.eclipse.jdt.core.dom.QualifiedName;
-import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
-import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
-import org.eclipse.jface.text.Document;
-import org.eclipse.text.edits.TextEdit;
 import org.yaml.snakeyaml.Yaml;
 
 import sourcecodefilter.ConverterRelevantCatroidSource.FilteringProject;
@@ -88,13 +74,13 @@ class ExitCode {
 	public static final int SUCCESS = 0;
 }
 
-class SourceCodeFilter {
+public class SourceCodeFilter {
 
-	public static String[] REMOVED_CLASSES = null;
-	private static String[] REMOVED_METHOD_INVOCATIONS = null;
-    private static String[] ADDITIONAL_SERIALIZATION_CLASSES = null;
+	public static Set<String> REMOVED_CLASSES = null;
+	private static Set<String> REMOVED_METHOD_INVOCATIONS = null;
+    private static Set<String> ADDITIONAL_SERIALIZATION_CLASSES = null;
     private static Set<String> PRESERVED_INTERFACES = null;
-    public static String[] ADDITIONAL_HELPER_CLASSES = null;
+    public static Set<String> ADDITIONAL_HELPER_CLASSES = null;
     public static Map<String, Set<String>> classToPreservedFieldsMapping = null;
     public static Map<String, Set<String>> classToPreservedMethodsMapping = null;
     public static Map<String, Set<String>> removeFieldsMapping = null;
@@ -169,8 +155,7 @@ class SourceCodeFilter {
         if (!(xstreamConfigurationSourceFile.exists())) {
             throw new RuntimeException("Serialization configuration source must exist: " + xstreamConfigurationSourceFile.toString());
         }
-        Set<String> classNames = new HashSet<String>();
-        classNames.addAll(Arrays.asList(ADDITIONAL_SERIALIZATION_CLASSES));
+        Set<String> classNames = new HashSet<>(ADDITIONAL_SERIALIZATION_CLASSES);
         try {
             String fileContent = Files.toString(xstreamConfigurationSourceFile, Charsets.UTF_8);
             Pattern serializedClassNamePattern = Pattern.compile("(?:xstream\\..*?)(\\w+)(?:\\.class)");
@@ -398,77 +383,91 @@ class SourceCodeFilter {
 
 	public static void main(String[] args) {
     	InputStream input = null;
-        FileOutputStream fos = null;
 		try {
 			input = new FileInputStream(new File("config", "config.yml"));
 	        Yaml yaml = new Yaml();
 			@SuppressWarnings("unchecked")
-			Map<String, Object> config = (Map<String, Object>)yaml.load(input);
-	        String gitTag = config.get("git_tag").toString();
-	        String archiveExtension = config.get("archive_extension").toString();
-	        String URLString = config.get("URL").toString().replace("%{tag_name}", gitTag).replace("%{archive_extension}", archiveExtension);
-	        String downloadPath = config.get("download_path").toString();
-	        URL downloadURL = new URL(URLString);
+			Config config = new Config((Map<String, Object>)yaml.load(input));
+
+			// get parameters from config
+	        final String catroidVersion = config.getString("catroid_version");
+	        final String archiveExtension = config.getString("archive_extension");
+	        final String URLString = config.getString("URL");
+	        final String downloadPath = config.getString("download_path");
+	        final String relativeCodeSourcePath = config.getString("relative_code_source_path");
+	        final String outputSrcPath = config.getString("output_src_path");
+	        final String outputLibPath = config.getString("output_lib_path");
+	        final String xstreamVersion = config.getString("xstream_version");
+	        final String xstreamLibExtension = config.getString("xstream_lib_extension");
+	        final String xstreamLibraryDownloadURLString = config.getString("xstream_download_URL");
+
+	        // include/exclude setup
+	        REMOVED_CLASSES = config.getSet("removed_classes");
+	        REMOVED_METHOD_INVOCATIONS = config.getSet("removed_method_invocations");
+	        ADDITIONAL_SERIALIZATION_CLASSES = config.getSet("additional_serialization_classes");
+	        PRESERVED_INTERFACES = config.getSet("preserved_interfaces");
+	        ADDITIONAL_HELPER_CLASSES = config.getSet("additional_helper_classes");
+	        classToPreservedFieldsMapping = config.getMap("class_to_preserved_fields_mapping");
+	        classToPreservedMethodsMapping = config.getMap("class_to_preserved_methods_mapping");
+	        removeFieldsMapping = config.getMap("remove_fields_mapping");
+	        removeMethodsMapping = config.getMap("remove_methods_mapping");
+
+	        // download Catroid code project from Github
 	        File downloadDir = new File(downloadPath);
 	        downloadDir.mkdirs(); // create intermediate recursive directories if needed...
 	        if (downloadDir.isDirectory() == false) {
 	        	System.err.println(downloadDir.getAbsolutePath() + " is not a directory!");
 	        	System.exit(ExitCode.FAILURE);
 	        }
-	        File archiveFile = new File(downloadDir, gitTag + "." + archiveExtension);
+	        File archiveFile = new File(downloadDir, catroidVersion + "." + archiveExtension);
 	        if (archiveFile.exists() == false) {
 	        	System.out.println("Downloading new release...");
-	        	fos = new FileOutputStream(archiveFile);
-	        	ReadableByteChannel rbc = Channels.newChannel(downloadURL.openStream());
-	        	fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+	        	Util.downloadFile(new URL(URLString), archiveFile);
 	        }
+
+	        // extract ZIP archive
         	System.out.println("Extracting new release...");
 	        String rootDirectoryPath = Util.extractZip(archiveFile, downloadDir.getAbsolutePath());
 	        if (rootDirectoryPath == null) {
 	        	System.exit(ExitCode.FAILURE);
 	        }
-	    	String relativeCodeSourcePath = config.get("relative_code_source_path").toString();
+
+	        // download XStream-library
+	        File xstreamLibraryFile = new File(downloadDir, xstreamVersion + "." + xstreamLibExtension);
+	        if (xstreamLibraryFile.exists() == false) {
+	        	System.out.println("Downloading XStream library...");
+	        	Util.downloadFile(new URL(xstreamLibraryDownloadURLString), xstreamLibraryFile);
+	        }
+
+	        // move XStream-library to output library directory
+	    	File outputLibDir = new File(outputLibPath);
+	    	outputLibDir.mkdirs(); // create intermediate recursive directories if needed...
+	    	File xstreamOutputPath = new File(outputLibPath, "xstream-" + xstreamVersion
+	    			+ "." + xstreamLibExtension);
+	    	Files.copy(xstreamLibraryFile, xstreamOutputPath);
+
+	        // check if directories exist
 	    	File rootDirectoryDir = new File(downloadPath, rootDirectoryPath);
 	    	if (rootDirectoryDir.exists() == false) {
 	    		System.err.println(rootDirectoryDir.getAbsolutePath() + " is not a directory!");
 	    		System.exit(ExitCode.FAILURE);
 	    	}
-	        File testInputDir = new File(rootDirectoryDir, relativeCodeSourcePath);
-	        if (testInputDir.exists() == false) {
-	        	System.err.println(testInputDir.getAbsolutePath() + " is not a directory!");
+	        File inputDir = new File(rootDirectoryDir, relativeCodeSourcePath);
+	        if (inputDir.exists() == false) {
+	        	System.err.println(inputDir.getAbsolutePath() + " is not a directory!");
 	        	System.exit(ExitCode.FAILURE);
 	        }
+	    	File outputSrcDir = new File(outputSrcPath);
+	    	outputSrcDir.mkdirs(); // create intermediate recursive directories if needed...
+	    	Util.deleteDirectory(outputSrcDir); // delete directory of path but not intermediate!!
 
-	        String destinationPath = config.get("extraction_path").toString();
-	        File testOutputDir = new File(destinationPath);
-	        testOutputDir.mkdirs(); // create intermediate recursive directories if needed...
-	    	Util.deleteDirectory(testOutputDir); // delete directory of path but not intermediate!!
+	    	// preprocess & filter
+	        writePreprocessedCatrobatSource(inputDir, outputSrcDir);
 
-	    	// include/exclude setup
-	    	List<String> removedCls = Util.getListFromConfigForKey("removed_classes", config);
-	    	SourceCodeFilter.REMOVED_CLASSES = (String[])removedCls.toArray(new String[removedCls.size()]);
-	    	List<String> removedMethodInvocations = Util.getListFromConfigForKey("removed_method_invocations", config);
-	    	SourceCodeFilter.REMOVED_METHOD_INVOCATIONS = (String[])removedMethodInvocations.toArray(new String[removedMethodInvocations.size()]);
-			List<String> addSerCls = Util.getListFromConfigForKey("additional_serialization_classes", config);
-	    	SourceCodeFilter.ADDITIONAL_SERIALIZATION_CLASSES = (String[])addSerCls.toArray(new String[addSerCls.size()]);
-	    	List<String> prsIfCls = Util.getListFromConfigForKey("preserved_interfaces", config);
-	    	SourceCodeFilter.PRESERVED_INTERFACES = new HashSet<String>(prsIfCls);
-	    	List<String> addHlpCls = Util.getListFromConfigForKey("additional_helper_classes", config);
-	    	SourceCodeFilter.ADDITIONAL_HELPER_CLASSES = (String[])addHlpCls.toArray(new String[addHlpCls.size()]);
-	    	Map<String, ArrayList<String>> pfArrayListMap = Util.getMapFromConfigForKey("class_to_preserved_fields_mapping", config);
-	    	classToPreservedFieldsMapping = Util.convertArrayListToSetMapping(pfArrayListMap);
-	    	Map<String, ArrayList<String>> pmArrayListMap = Util.getMapFromConfigForKey("class_to_preserved_methods_mapping", config);
-	    	classToPreservedMethodsMapping = Util.convertArrayListToSetMapping(pmArrayListMap);
-	    	Map<String, ArrayList<String>> rfArrayListMap = Util.getMapFromConfigForKey("remove_fields_mapping", config);
-	    	removeFieldsMapping = Util.convertArrayListToSetMapping(rfArrayListMap);
-	    	Map<String, ArrayList<String>> rmArrayListMap = Util.getMapFromConfigForKey("remove_methods_mapping", config);
-	    	removeMethodsMapping = Util.convertArrayListToSetMapping(rmArrayListMap);
-	        writePreprocessedCatrobatSource(testInputDir, testOutputDir);
 		} catch (IOException exception) {
 			exception.printStackTrace();
 			System.exit(ExitCode.FAILURE);
 		} finally {
-			Util.close(fos);
 			Util.close(input);
 		}
 		System.exit(ExitCode.SUCCESS);

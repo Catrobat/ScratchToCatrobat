@@ -25,41 +25,87 @@ package sourcecodefilter;
 
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.MatchResult;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 public class Util {
 
-    @SuppressWarnings("unchecked")
-    public static ArrayList<String> getListFromConfigForKey(String key, Map<String, Object> config) {
-    	return (ArrayList<String>)config.get(key);
-    }
-	@SuppressWarnings("unchecked")
-	public static Map<String, ArrayList<String>> getMapFromConfigForKey(String key, Map<String, Object> config) {
-    	return (Map<String, ArrayList<String>>)config.get(key);
-    }
+    /**
+     * taken from http://stackoverflow.com/a/6020436
+     * @param p
+     * @param input
+     * @return Iterable<MatchResult>
+     */
+    public static Iterable<MatchResult> allMatches(final Pattern p, final CharSequence input) {
+    	return new Iterable<MatchResult>() {
+    		public Iterator<MatchResult> iterator() {
+    			return new Iterator<MatchResult>() {
+    				// Use a matcher internally.
+    				final Matcher matcher = p.matcher(input);
+    				// Keep a match around that supports any interleaving of hasNext/next calls.
+    				MatchResult pending;
 
-    public static Map<String, Set<String>> convertArrayListToSetMapping(Map<String, ArrayList<String>> arrayListMapping) {
-    	Map<String, Set<String>> setMapping = new HashMap<String, Set<String>>();
-    	for (Entry<String, ArrayList<String>> entry : arrayListMapping.entrySet()){
-    		setMapping.put(entry.getKey(), new HashSet<String>(entry.getValue()));
-    	}
-    	return setMapping;
-    }
+    				public boolean hasNext() {
+    					// Lazily fill pending, and avoid calling find() multiple times if the
+    					// clients call hasNext() repeatedly before sampling via next().
+    					if (pending == null && matcher.find()) {
+    						pending = matcher.toMatchResult();
+    					}
+    					return pending != null;
+    				}
 
+    				public MatchResult next() {
+    					// Fill pending if necessary (as when clients call next() without
+    					// checking hasNext()), throw if not possible.
+    					if (!hasNext()) { throw new NoSuchElementException(); }
+    					// Consume pending so next call to hasNext() does a find().
+    					MatchResult next = pending;
+    					pending = null;
+    					return next;
+    				}
+
+    				/** Required to satisfy the interface, but unsupported. */
+    				public void remove() { throw new UnsupportedOperationException(); }
+    			};
+    		}
+    	};
+    }
+    
     public static void close(Closeable closeable) {
     	if (closeable == null) return;
     	try { closeable.close(); } catch (IOException e) {}
+    }
+
+    public static void downloadFile(final URL url, File file) throws IOException {
+        FileOutputStream fos = null;
+        try {
+        	fos = new FileOutputStream(file);
+        	ReadableByteChannel rbc = Channels.newChannel(url.openStream());
+        	fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+        	Util.close(fos);
+        } catch (IOException ex) {
+			Util.close(fos);
+			throw ex;
+        }
     }
 
     /**

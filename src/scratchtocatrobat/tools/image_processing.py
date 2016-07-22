@@ -36,7 +36,34 @@ _supported_fonts_path_mapping = { 'Helvetica' : {
     'bold': 'nimbus-sans-l/nimbus-sans-l_bold.ttf',
     'italic': 'nimbus-sans-l/nimbus-sans-l_italic.ttf',
     'bold-italic': 'nimbus-sans-l/nimbus-sans-l_bold-italic.ttf'
-}}
+},
+ 'Donegal' : {
+    'regular': 'MinionPro(Donegal)/MinionPro-Regular.otf',
+    'bold': 'MinionPro(Donegal)/MinionPro-Bold.otf',
+    'italic': 'MinionPro(Donegal)/MinionPro-It.otf',
+    'bold-italic': 'MinionPro(Donegal)/MinionPro-BoldIt.otf'
+},
+'Gloria' : {
+    'regular': 'Segoe-Print(Gloria)/segoepr.ttf',
+    'bold': 'Segoe-Print(Gloria)/segoeprb.ttf',
+    
+},
+'Marker' : {
+'regular': 'permanent_marker(Marker)/PermanentMarker.ttf',
+
+    
+},
+'Mystery' : {
+'regular': 'mystery_quest(Mystery)/MysteryQuest-Regular.ttf',
+
+    
+},
+'Scratch' : {
+'regular': 'Black-boys-on-mopeds(Scratch)/BLACKBOY.ttf',
+
+    
+}
+                                 }
 
 def read_editable_image_from_disk(path):
     assert os.path.isfile(path)

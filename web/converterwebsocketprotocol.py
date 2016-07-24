@@ -25,9 +25,9 @@ class JsonKeys(object):
         ARGS = "args"
 
         ARGS_CLIENT_ID = "clientID"
-        ARGS_URL = "url"
+        ARGS_JOB_ID = "jobID"
         ARGS_FORCE = "force"
-        allowed_arg_keys = [ARGS_CLIENT_ID, ARGS_URL, ARGS_FORCE]
+        allowed_arg_keys = [ARGS_CLIENT_ID, ARGS_JOB_ID, ARGS_FORCE]
 
         @classmethod
         def is_valid(cls, data):
@@ -54,7 +54,6 @@ class Message(object):
         JOB_DOWNLOAD = 8
         JOBS_INFO = 9
         CLIENT_ID = 10
-        RENEW_CLIENT_ID = 11
 
     def __init__(self, message_type, data):
         self.type = message_type
@@ -119,7 +118,3 @@ class JobsInfoMessage(Message):
 class ClientIDMessage(Message):
     def __init__(self, client_ID):
         super(ClientIDMessage, self).__init__(Message.Type.CLIENT_ID, { "clientID": client_ID })
-
-class RenewClientIDMessage(Message):
-    def __init__(self, client_ID):
-        super(RenewClientIDMessage, self).__init__(Message.Type.RENEW_CLIENT_ID, { "clientID": client_ID })

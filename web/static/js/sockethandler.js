@@ -2,13 +2,10 @@
 function fetchJobsInfo() {
   // fetch jobs info if client ID is set
   socketHandler.openedSockedCallback = function() {
-    var data = { "cmd": "retrieve_client_ID", "args": {} };
     if (typeof(Storage) !== "undefined") {
       socketHandler.clientID = localStorage.getItem("clientID");
     }
-    if (socketHandler.clientID != null) {
-      var data = { "cmd": "set_client_ID", "args": { "clientID": socketHandler.clientID } };
-    }
+    var data = { "cmd": "set_client_ID", "args": { "clientID": socketHandler.clientID } };
     socketHandler.socket.send(JSON.stringify(data));
   };
   socketHandler.start();
@@ -21,7 +18,7 @@ function startConversion(url, force, finishedConversionCallback) {
     "cmd": "schedule_job",
     "args": {
       "clientID": socketHandler.clientID,
-      "url": url,
+      "jobID": socketHandler.projectID,
       "force": force
     }
   };
@@ -68,8 +65,7 @@ var socketHandler = {
         "JOB_FINISHED": 7,
         "JOB_DOWNLOAD": 8,
         "JOBS_INFO": 9,
-        "CLIENT_ID": 10,
-        "RENEW_CLIENT_ID": 11
+        "CLIENT_ID": 10
       };
 
       // ERROR: { "msg" }
@@ -238,25 +234,7 @@ var socketHandler = {
       }
 
       // CLIENT_ID: { "clientID" }
-      // (retrieve_client_id & set_client_id)
       if (result.type == notificationTypes["CLIENT_ID"]) {
-        if (socketHandler.clientID != null && socketHandler.clientID != result.data["clientID"]) {
-          alert("Server echoed invalid client ID back. This should never happen!");
-          return;
-        }
-        socketHandler.clientID = result.data["clientID"];
-        if (typeof(Storage) !== "undefined") {
-          localStorage.setItem("clientID", socketHandler.clientID);
-        }
-      }
-
-      // RENEW_CLIENT_ID: { "clientID" }
-      // (set_client_id, if given clientID is not valid any more)
-      if (result.type == notificationTypes["RENEW_CLIENT_ID"]) {
-        if (socketHandler.clientID == null) {
-          alert("Server sent renew-clientID-request with same client ID back. This should never happen!");
-          return;
-        }
         socketHandler.clientID = result.data["clientID"];
         if (typeof(Storage) !== "undefined") {
           localStorage.setItem("clientID", socketHandler.clientID);

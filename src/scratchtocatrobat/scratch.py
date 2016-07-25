@@ -29,6 +29,7 @@ import urllib2
 
 from scratchtocatrobat import common
 from scratchtocatrobat import scratchwebapi
+from string import punctuation
 
 _log = common.log
 
@@ -562,6 +563,7 @@ class Script(object):
             _log.debug("Empty script: %s", script_input)
         self.script_element = ScriptElement.from_raw_block(self.blocks)
         assert isinstance(self.script_element, BlockList)
+        assert len(self.script_element.math_stack) == 0
         self.type, self.arguments = script_block[0], script_block[1:]
         # FIXME: never reached as is_valid_script_input() fails before
         if self.type not in SCRIPTS:
@@ -674,8 +676,20 @@ class ScriptElement(object):
         # (i.e. "" and " ") with 0. This is actually default behavior in Scratch.
         def _has_previous_operator_higher_priority(previous_operator, curr_operator):
             if previous_operator == curr_operator:
+                return False
+            line_operators = ["+", "-"]
+            punctuation_operators = ["*", "/"]
+            logic_operators = ["|","&", "not"]
+            comparison_operator = ["<", ">", "="]
+            
+            if previous_operator in punctuation_operators:
+                if curr_operator in line_operators:
+                    return True
+            
+            if (previous_operator == "%") or (previous_operator in comparison_operator) or (previous_operator in logic_operators):
                 return True
-            return False
+            
+            return previous_operator != curr_operator
         
         from scratchtocatrobat import converter
   
@@ -683,19 +697,16 @@ class ScriptElement(object):
         and converter.is_math_function_or_operator(raw_block[0]):
             raw_block[1:] = map(lambda arg: arg if not isinstance(arg, (str, unicode)) \
                         or arg.strip() != '' else 0, raw_block[1:])
-            #current_operator = raw_block[0]
-            #if len(cls.math_stack) > 0:
-            #    previous_operator = cls.math_stack[len(cls.math_stack) - 1]
-             #   if _has_previous_operator_higher_priority(previous_operator, current_operator):
-             #       print("Hallo")
-             #       raw_block = ["()", raw_block]
-            #    assert(not isinstance(current_operator, list))
-                
+            current_operator = raw_block[0]
+            if len(cls.math_stack) > 0:
+                previous_operator = cls.math_stack[len(cls.math_stack) - 1]
+                if _has_previous_operator_higher_priority(previous_operator, current_operator):
+                    raw_block = ["()", raw_block]
+                assert(not isinstance(current_operator, list))
 
-                
-            #cls.math_stack.append(current_operator)
-        #elif isinstance(raw_block, list) and not isinstance(raw_block[0], list) and common.int_or_float(raw_block[0]):
-        #    cls.math_stack = []
+            cls.math_stack.append(current_operator)
+        elif isinstance(raw_block, list) and not isinstance(raw_block[0], list) and common.int_or_float(raw_block[0]):
+            cls.math_stack = []
 
         # recursively create ScriptElement tree
         block_name = None

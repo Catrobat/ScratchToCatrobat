@@ -20,6 +20,7 @@
 #  along with this program.  If not, see http://www.gnu.org/licenses/.
 import logging
 import os
+import re
 from scratchtocatrobat import common
 from scratchtocatrobat.tools import helpers
 from java.io import FileOutputStream
@@ -57,16 +58,18 @@ def convert(input_svg_path):
     output_png_path = os.path.splitext(input_svg_path)[0] + ".png"
 
     png_ostream = None
+    error = None
     try:
         # read input SVG document into Transcoder Input (use Java NIO for this purpose)
         svg_URI_input = Paths.get(input_svg_path).toUri().toURL().toString()
-        
-        #_checkAndRewriteSVGFile(svg_URI_input)
+        #print("############# ", svg_URI_input[5:])
+        _checkAndRewriteSVGFile(svg_URI_input[5:])
         
         input_svg_image = TranscoderInput(svg_URI_input)
 
         # define OutputStream to PNG Image and attach to TranscoderOutputSc    
         png_ostream = FileOutputStream(output_png_path)
+        
         output_png_image = TranscoderOutput(png_ostream)
 
         # Convert and Write output
@@ -80,12 +83,17 @@ def convert(input_svg_path):
         
         final_image = _process_png_image(output_png_path)
         
+        if final_image is None:
+            return output_png_path
+
         from javax.imageio import ImageIO
         from java.io import File      
         ImageIO.write(final_image, "PNG", File(output_png_path))
         
         return output_png_path
     except:
+        import sys
+        exc_info = sys.exc_info()
         error = common.ScratchtobatError("PNG to SVG conversion call failed for: %s" % input_svg_path)
     finally:
         # free resources
@@ -153,6 +161,7 @@ def _create_buffered_image(image):
     result.getGraphics().drawImage(image,0,0,None)
     return result 
 
+
 def _checkAndRewriteSVGFile(svg_file_path):
     write_str = ""
 
@@ -164,10 +173,9 @@ def _checkAndRewriteSVGFile(svg_file_path):
 
     while True:
         read_line = buffered_reader.readLine()
-        if read_line == None:
+        if read_line is None:
             break
-
-        if read_line.contains("viewBox"):
+        if "viewBox" in read_line:
             view_box_content = _getViewBoxContent(read_line)
             view_box_values = _getViewBoxValues(view_box_content)
             if view_box_values[0] != 0:
@@ -180,9 +188,9 @@ def _checkAndRewriteSVGFile(svg_file_path):
             
             new_view_box = str(view_box_values[0]) + " " + str(view_box_values[1]) + " " + str(view_box_values[2]) + " " + str(view_box_values[3])
       
-            read_line = read_line.replaceFirst("viewBox=\"[0-9[ ][-][+]]+\"", "viewBox=\""+ new_view_box + "\"")
-            read_line = read_line.replaceFirst("width=\"[0-9]+\"", "width=\""+ str(view_box_values[2]) + "\"")
-            read_line = read_line.replaceFirst("height=\"[0-9]+\"", "height=\""+ str(view_box_values[3]) + "\"")
+            read_line = re.sub(r"viewBox=\"[\-|0-9| ]+\"", "viewBox=\""+ new_view_box + "\"", read_line, 1)
+            read_line = re.sub(r"width=\"[0-9]+\"", "width=\""+ str(view_box_values[2]) + "\"", read_line, 1)
+            read_line = re.sub(r"height=\"[0-9]+\"", "height=\""+ str(view_box_values[3]) + "\"", read_line, 1)
         
         write_str += read_line + "\n"
     
@@ -190,9 +198,9 @@ def _checkAndRewriteSVGFile(svg_file_path):
     buffered_reader.close()
     file_reader.close()
     
-    #file_writer = PrintWriter(svg_file_path)
-    #file_writer.print(write_str)
-    #file_writer.close()
+    file_writer = PrintWriter(svg_file_path)
+    file_writer.print(write_str)
+    file_writer.close()
     
     
 def _getViewBoxValues(view_box_str):
@@ -206,11 +214,9 @@ def _getViewBoxValues(view_box_str):
     
     
 def _getViewBoxContent(view_box_str):
-    start_view_box = view_box_str.indexOf("viewBox") + 9
-    end_view_box = view_box_str.indexOf("\"", start_view_box)
-    return view_box_str.substring(start_view_box, end_view_box)
+    start_view_box = view_box_str.index("viewBox") + 9
+    end_view_box = view_box_str.index("\"", start_view_box)
+    return view_box_str[start_view_box:end_view_box]
     
-
-
 
     

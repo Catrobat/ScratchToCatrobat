@@ -43,9 +43,10 @@ class SvgToPngTest(common_testing.BaseTestCase):
             assert imghdr.what(output_png_path) == "png"
             
     def test_true_cut_of_png(self):
-        input_png_path = "/home/munter/workspace/ScratchToCatrobat/test/res/img_proc_png/1.png"
-        output_png_path = "/home/munter/workspace/ScratchToCatrobat/test/res/img_proc_png/test_result.png"
-        expected_image_path = "/home/munter/workspace/ScratchToCatrobat/test/res/img_proc_png/expected_image.png"
+        img_proc_dir = os.path.join(helpers.APP_PATH, "test", "res", "img_proc_png")
+        input_png_path = os.path.join(img_proc_dir, "1.png")
+        output_png_path = os.path.join(img_proc_dir, "test_result.png")
+        expected_image_path = os.path.join(img_proc_dir, "expected_image.png")
         
         assert os.path.exists(input_png_path)
 
@@ -70,7 +71,6 @@ class SvgToPngTest(common_testing.BaseTestCase):
             for j in xrange(height):
                 exp_rgb_val = expected_image_matrix[i][j]
                 result_rgb_val = output_image_matrix[i][j]
-                print(exp_rgb_val, "   ", result_rgb_val)
                 assert exp_rgb_val == result_rgb_val
                 
 

@@ -48,9 +48,9 @@ class Job(object):
         FINISHED = 2
         FAILED = 3
 
-    def __init__(self, jid=0, title=None, status=Status.READY, url=None,
+    def __init__(self, job_ID=0, title=None, status=Status.READY, url=None,
                  progress=None, output=None):
-        self.jid = jid
+        self.jobID = job_ID
         self.title = title
         self.status = status
         self.url = url

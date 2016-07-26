@@ -209,7 +209,7 @@ var socketHandler = {
           var jobInfo = result.data["jobsInfo"][index];
           var tr = $("<tr></tr>");
           var jobID = jobInfo.ID;
-          var statusLink = $("<a></a>").attr("href", "#").attr("id", "job_ID[" + jobInfo.jid + "]").addClass("job_link").text(statusText[jobInfo.status]);
+          var statusLink = $("<a></a>").attr("href", "#").attr("id", "job_ID[" + jobInfo.jobID + "]").addClass("job_link").text(statusText[jobInfo.status]);
           tr.append($("<td></td>").append(statusLink));
           var scratchProjectLink = $("<a></a>").attr("href", jobInfo.url).attr("target", "_blank").text(jobInfo.url);
           var scratchProjectLinkLayer = $("<div></div>").append(scratchProjectLink);

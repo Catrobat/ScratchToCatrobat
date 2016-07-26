@@ -24,6 +24,7 @@ import ast
 import sys
 import os
 import converterwebapp
+import urllib
 
 from rq import Queue, use_connection #@UnresolvedImport
 from converterjob import convert_scratch_project
@@ -183,6 +184,11 @@ class ScheduleJobCommand(Command):
         job_ID = int(args["jobID"])
         scratch_project_url = "%s%d" % (SCRATCH_PROJECT_BASE_URL, job_ID)
 
+        verbose = False
+        if "verbose" in args:
+            verbose_param = str(args["verbose"]).lower()
+            verbose = verbose_param == "true" or verbose_param == "1"
+
         # schedule this job
         redis_conn = ctxt.redis_connection
         # TODO: lock.acquire() => use context-handler (i.e. "with"-keyword) and file lock!
@@ -202,7 +208,7 @@ class ScheduleJobCommand(Command):
                 file_name = str(job_ID) + CATROBAT_FILE_EXT
                 file_path = "%s/%s" % (download_dir, file_name)
                 if file_name and os.path.exists(file_path):
-                    download_url = "/download?id=" + str(job_ID)
+                    download_url = "/download?id=" + str(job_ID) + "&fname=" + urllib.quote_plus(job.title)
                     # TODO: lock.release()
                     update_jobs_info_on_listening_clients(ctxt)
                     return protocol.JobDownloadMessage(job_ID, download_url)
@@ -221,7 +227,7 @@ class ScheduleJobCommand(Command):
         port = jobmonitorserver_settings["port"]
         _logger.info("Scheduled new job (host: %s, port: %s, scratch project ID: %d)", host, port, job_ID)
         #q.enqueue(convert_scratch_project, scratch_project_ID, host, port)
-        q.enqueue_call(func=convert_scratch_project, args=(job_ID, host, port,), timeout=JOB_TIMEOUT)
+        q.enqueue_call(func=convert_scratch_project, args=(job_ID, host, port, verbose,), timeout=JOB_TIMEOUT)
         # TODO: lock.release()
         return protocol.JobReadyMessage(job_ID)
 

@@ -55,6 +55,7 @@ import converterwebsocketprotocol as protocol
 from jobmonitorprotocol import NotificationType
 from scratchtocatrobat import scratchwebapi
 from scratchtocatrobat.scratchwebapi import ScratchProjectVisibiltyState
+import urllib
 
 sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "..", "src"))
 from scratchtocatrobat.tools import helpers
@@ -155,7 +156,7 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
             elif msg_type == NotificationType.JOB_FINISHED:
                 message = protocol.JobFinishedMessage(scratch_project_ID)
             elif msg_type == NotificationType.FILE_TRANSFER_FINISHED:
-                download_url = "/download?id=" + scratch_project_ID
+                download_url = "/download?id=" + scratch_project_ID + "&fname=" + urllib.quote_plus(job.title)
                 message = protocol.JobDownloadMessage(scratch_project_ID, download_url)
             elif msg_type == NotificationType.JOB_FAILED:
                 message = protocol.JobFailedMessage(scratch_project_ID)
@@ -220,7 +221,7 @@ class _DownloadHandler(tornado.web.RequestHandler):
             raise HTTPError(404)
         file_size = os.path.getsize(file_path)
         self.set_header('Content-Type', 'application/zip')
-        self.set_header('Content-Disposition', 'attachment; filename=%s' % file_name)
+        self.set_header('Content-Disposition', 'attachment; filename="%s"' % file_name)
         with open(file_path, "rb") as f:
             range_header = self.request.headers.get("Range")
             request_range = None

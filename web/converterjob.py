@@ -90,11 +90,11 @@ class ConverterJobHandler(jobhandler.JobHandler):
             # case: console output
             _logger.debug("[%s]: %s" % (CLIENT, line))
             line_buffer += [line]
-            if len(line_buffer) >= LINE_BUFFER_SIZE:
+            if self._verbose and len(line_buffer) >= LINE_BUFFER_SIZE:
                 yield self.send_job_output_notification(job_ID, line_buffer)
                 line_buffer = []
 
-        if len(line_buffer):
+        if self._verbose and len(line_buffer):
             yield self.send_job_output_notification(job_ID, line_buffer)
 
         exit_code = process.wait() # XXX: work around this when experiencing errors...
@@ -166,7 +166,7 @@ class ConverterJobHandler(jobhandler.JobHandler):
                 _logger.info('Shutdown')
         stop_io_loop()
 
-def convert_scratch_project(scratch_project_ID, host, port):
+def convert_scratch_project(scratch_project_ID, host, port, verbose):
     logging.basicConfig(
         filename=None,
         level=logging.DEBUG,
@@ -251,7 +251,7 @@ def convert_scratch_project(scratch_project_ID, host, port):
     ssl_ctx.check_hostname = (host != "localhost")
     ssl_ctx.load_verify_locations(cafile=CERTIFICATE_PATH)
 
-    handler = ConverterJobHandler(host, port, AUTH_KEY, ssl_options=ssl_ctx)
+    handler = ConverterJobHandler(host, port, verbose, AUTH_KEY, ssl_options=ssl_ctx)
     handler.run(args)
     IOLoop.instance().start()
 

@@ -31,9 +31,10 @@ class JobTCPClient(tornado.tcpclient.TCPClient):
     pass
 
 class JobHandler(object):
-    def __init__(self, host, port, auth_key, ssl_options):
+    def __init__(self, host, port, verbose, auth_key, ssl_options):
         self._host = host
         self._port = port
+        self._verbose = verbose
         self._auth_key = auth_key
         self._ssl_options = ssl_options
         self._connection = None

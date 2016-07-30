@@ -62,9 +62,9 @@ class ConverterJobHandler(jobhandler.JobHandler):
     @gen.coroutine
     def run_job(self, args):
         exec_args = ["/usr/bin/env", "python", CONVERTER_RUN_SCRIPT_PATH,
-                     args["url"], args["outputDir"], args["archiveName"], "--web-mode"]
+                     args["url"], args["outputDir"], str(args["jobID"]), "--web-mode"]
         process = subprocess.Popen(exec_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        job_ID = str(args["projectID"])
+        job_ID = args["jobID"]
         title = args["title"] if isinstance(args["title"], (str, unicode)) else str(args["title"])
         yield self.send_job_started_notification(job_ID, title)
 
@@ -105,20 +105,19 @@ class ConverterJobHandler(jobhandler.JobHandler):
 
     @gen.coroutine
     def post_processing(self, args):
-        file_path = os.path.join(args["outputDir"], args["archiveName"] + CATROBAT_FILE_EXT)
+        file_path = os.path.join(args["outputDir"], str(args["jobID"]) + CATROBAT_FILE_EXT)
         if not os.path.isfile(file_path):
             yield self._connection.send_message(Request(Request.Command.JOB_FAILED, {
-                Request.ARGS_JOB_ID: str(args["projectID"]),
+                Request.ARGS_JOB_ID: args["jobID"],
                 Request.ARGS_MSG: "Cannot transfer file! File does not exist!"
             }))
             return
-        file_size = os.path.getsize(file_path)
 
+        file_size = os.path.getsize(file_path)
         with open(file_path, 'rb') as fp:
             file_hash = hashlib.sha256(fp.read()).hexdigest()
             args = {
-                Request.ARGS_JOB_ID: str(args["projectID"]),
-                Request.ARGS_FILE_NAME: str(args["projectID"]) + CATROBAT_FILE_EXT,
+                Request.ARGS_JOB_ID: args["jobID"],
                 Request.ARGS_FILE_SIZE: file_size,
                 Request.ARGS_FILE_HASH: file_hash
             }
@@ -166,7 +165,7 @@ class ConverterJobHandler(jobhandler.JobHandler):
                 _logger.info('Shutdown')
         stop_io_loop()
 
-def convert_scratch_project(scratch_project_ID, host, port, verbose):
+def convert_scratch_project(job_ID, host, port, verbose):
     logging.basicConfig(
         filename=None,
         level=logging.DEBUG,
@@ -179,8 +178,8 @@ def convert_scratch_project(scratch_project_ID, host, port, verbose):
 #     job.save()
 
     # validate URL
-    if scratch_project_ID == None or not isinstance(scratch_project_ID, int):
-        _logger.error("No or invalid Scratch project ID given: {}".format(scratch_project_ID))
+    if job_ID == None or not isinstance(job_ID, int):
+        _logger.error("No or invalid Scratch project ID given: {}".format(job_ID))
         return
 
     if not os.path.isfile(CERTIFICATE_PATH):
@@ -206,7 +205,7 @@ def convert_scratch_project(scratch_project_ID, host, port, verbose):
         return urllib2.urlopen(req, timeout=timeout_in_secs).read()
 
     title = None
-    scratch_project_url = scratch_base_url + str(scratch_project_ID)
+    scratch_project_url = scratch_base_url + str(job_ID)
     appended_title_text = "on Scratch"
     try:
         html_content = read_content_of_url(scratch_project_url)
@@ -232,13 +231,12 @@ def convert_scratch_project(scratch_project_ID, host, port, verbose):
                                                                 sys.exc_info()[0]))
 
     # reconstruct URL
-    scratch_project_url = "%s%d" % (SCRATCH_PROJECT_BASE_URL, scratch_project_ID)
+    scratch_project_url = "%s%d" % (SCRATCH_PROJECT_BASE_URL, job_ID)
     args = {
         "url": scratch_project_url,
-        "projectID": scratch_project_ID,
+        "jobID": job_ID,
         "title": title,
-        "outputDir": helpers.config.get("PATHS", "web_output"),
-        "archiveName": str(scratch_project_ID)
+        "outputDir": helpers.config.get("PATHS", "web_output")
     }
 
     # set up signal handler

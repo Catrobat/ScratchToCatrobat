@@ -51,6 +51,9 @@ import datetime
 import hashlib
 import os
 import sys
+from scratchtocatrobat.tools import helpers
+
+CATROBAT_FILE_EXT = helpers.config.get("CATROBAT", "file_extension")
 
 _logger = logging.getLogger(__name__)
 
@@ -172,11 +175,12 @@ class TCPConnectionHandler(object):
         request = Request.request_from_data(data)
         _logger.info("[%s]: Received file transfer notification" % SERVER)
 
-        file_name = request.args[Request.ARGS_FILE_NAME]
+        job_ID = int(request.args[Request.ARGS_JOB_ID])
+        file_name = str(job_ID) + CATROBAT_FILE_EXT
         file_size = int(request.args[Request.ARGS_FILE_SIZE])
         file_hash = request.args[Request.ARGS_FILE_HASH]
-        _logger.info("[%s]: File name: %s, File size: %d, SHA256: %s"
-                     % (CLIENT, file_name, file_size, file_hash))
+        _logger.info("[%s]: Job ID: %d, File size: %d, SHA256: %s"
+                     % (CLIENT, job_ID, file_size, file_hash))
 
         if file_size == 0:
             raise TCPConnectionException("Cannot transfer empty file...", context=request.args)

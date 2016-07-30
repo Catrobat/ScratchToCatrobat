@@ -19,7 +19,8 @@ function startConversion(url, force, finishedConversionCallback) {
     "args": {
       "clientID": socketHandler.clientID,
       "jobID": socketHandler.projectID,
-      "force": force
+      "force": force,
+      "verbose": true
     }
   };
   socketHandler.socket.send(JSON.stringify(data));

@@ -20,9 +20,9 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-  This module implements a simple job that is run by a worker process and calls the
-  converter in a child process.
-  Here, the Job Handler is used to notify the scheduling-webserver (via a TCP connection).
+  This module implements a simple job that is run by a worker process and invokes the
+  converter run as child process.
+  The Job Handler is used to notify the scheduling-webserver (via a TCP connection).
   The scheduling-webserver maintains all websocket connections to the users and can
   further notify the users about the progress of the currently running job.
 """

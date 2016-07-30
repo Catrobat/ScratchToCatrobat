@@ -97,14 +97,14 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
 
     @classmethod
     def notify(cls, msg_type, args):
-        # jobID is scratch project ID in this case
-        scratch_project_ID = args[jobmonprot.Request.ARGS_JOB_ID]
-        REDIS_CLIENT_PROJECT_KEY = "clientsOfProject#{}".format(scratch_project_ID)
-        REDIS_PROJECT_KEY = "project#{}".format(scratch_project_ID)
+        # Note: jobID is always equivalent to scratch project ID
+        job_ID = args[jobmonprot.Request.ARGS_JOB_ID]
+        REDIS_CLIENT_PROJECT_KEY = "clientsOfProject#{}".format(job_ID)
+        REDIS_PROJECT_KEY = "project#{}".format(job_ID)
         job = Job.from_redis(_redis_conn, REDIS_PROJECT_KEY)
         old_status = job.status
         if job == None:
-            _logger.error("Cannot find job #{}".format(scratch_project_ID))
+            _logger.error("Cannot find job #{}".format(job_ID))
             return
         if msg_type == NotificationType.JOB_STARTED:
             job.title = args[jobmonprot.Request.ARGS_TITLE]
@@ -119,10 +119,11 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
         elif msg_type == NotificationType.JOB_PROGRESS:
             job.progress = args[jobmonprot.Request.ARGS_PROGRESS]
         elif msg_type == NotificationType.JOB_FINISHED:
-            _logger.info("Job #{} finished, waiting for file transfer".format(scratch_project_ID))
+            _logger.info("Job #{} finished, waiting for file transfer".format(job_ID))
         elif msg_type == NotificationType.FILE_TRANSFER_FINISHED:
             job.progress = 100.0
             job.status = Job.Status.FINISHED
+            job.archive_cached_date = dt.now().strftime(Job.DATETIME_FORMAT)
         if not job.save_to_redis(_redis_conn, REDIS_PROJECT_KEY):
             _logger.info("Unable to update job status!")
             return
@@ -148,18 +149,18 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
 
         for socket_handlers in listening_clients:
             if msg_type == NotificationType.JOB_STARTED:
-                message = protocol.JobRunningMessage(scratch_project_ID)
+                message = protocol.JobRunningMessage(job_ID)
             elif msg_type == NotificationType.JOB_OUTPUT:
-                message = protocol.JobOutputMessage(scratch_project_ID, args[jobmonprot.Request.ARGS_LINES])
+                message = protocol.JobOutputMessage(job_ID, args[jobmonprot.Request.ARGS_LINES])
             elif msg_type == NotificationType.JOB_PROGRESS:
-                message = protocol.JobProgressMessage(scratch_project_ID, args[jobmonprot.Request.ARGS_PROGRESS])
+                message = protocol.JobProgressMessage(job_ID, args[jobmonprot.Request.ARGS_PROGRESS])
             elif msg_type == NotificationType.JOB_FINISHED:
-                message = protocol.JobFinishedMessage(scratch_project_ID)
+                message = protocol.JobFinishedMessage(job_ID)
             elif msg_type == NotificationType.FILE_TRANSFER_FINISHED:
-                download_url = "/download?id=" + scratch_project_ID + "&fname=" + urllib.quote_plus(job.title)
-                message = protocol.JobDownloadMessage(scratch_project_ID, download_url)
+                download_url = "/download?id=" + str(job_ID) + "&fname=" + urllib.quote_plus(job.title)
+                message = protocol.JobDownloadMessage(job_ID, download_url, job.archive_cached_date)
             elif msg_type == NotificationType.JOB_FAILED:
-                message = protocol.JobFailedMessage(scratch_project_ID)
+                message = protocol.JobFailedMessage(job_ID)
             else:
                 _logger.warn("IGNORING UNKNOWN MESSAGE")
                 return
@@ -271,6 +272,9 @@ class _ResponseBeautifulSoupDocumentWrapper(scratchwebapi.ResponseDocumentWrappe
 
 
 class ProjectDataResponse(object):
+
+    DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+
     def __init__(self):
         self.accessible = True
         self.visibility_state = ScratchProjectVisibiltyState.UNKNOWN
@@ -278,11 +282,12 @@ class ProjectDataResponse(object):
         self.valid_until = None
 
     def as_dict(self):
+        cls = self.__class__
         return {
             "accessible": self.accessible,
             "visibility": self.visibility_state,
             "projectData": self.project_data,
-            "validUntil": None if not self.valid_until else self.valid_until.strftime("%Y-%m-%d %H:%M:%S")
+            "validUntil": None if not self.valid_until else self.valid_until.strftime(cls.DATETIME_FORMAT)
         }
 
 

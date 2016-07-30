@@ -25,6 +25,7 @@ import sys
 import os
 import converterwebapp
 import urllib
+from datetime import datetime as dt, timedelta
 
 from rq import Queue, use_connection #@UnresolvedImport
 from converterjob import convert_scratch_project
@@ -49,6 +50,9 @@ class Job(object):
         FINISHED = 2
         FAILED = 3
 
+    DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+    CACHE_ENTRY_VALID_FOR = 600
+
     def __init__(self, job_ID=0, title=None, status=Status.READY, url=None,
                  progress=None, output=None):
         self.jobID = job_ID
@@ -57,6 +61,7 @@ class Job(object):
         self.url = url
         self.progress = progress
         self.output = output
+        self.archive_cached_date = None
 
     def save_to_redis(self, redis_connection, key):
         return redis_connection.set(key, self.__dict__)
@@ -197,13 +202,17 @@ class ScheduleJobCommand(Command):
         project_key = REDIS_PROJECT_KEY.format(job_ID)
         job = Job.from_redis(redis_conn, project_key)
         jobmonitorserver_settings = ctxt.jobmonitorserver_settings
+
         if job != None:
+            archive_cached_date = dt.strptime(job.archive_cached_date, Job.DATETIME_FORMAT)
+            download_valid_until = archive_cached_date + timedelta(seconds=Job.CACHE_ENTRY_VALID_FOR)
+
             if job.status == Job.Status.READY or job.status == Job.Status.RUNNING:
                 # TODO: lock.release()
                 _logger.info("Job already scheduled (scratch project with ID: %d)", job_ID)
                 update_jobs_info_on_listening_clients(ctxt)
                 return protocol.JobAlreadyRunningMessage(job_ID)
-            elif job.status == Job.Status.FINISHED and not force:
+            elif job.status == Job.Status.FINISHED and not force and dt.now() <= download_valid_until:
                 download_dir = ctxt.jobmonitorserver_settings["download_dir"]
                 file_name = str(job_ID) + CATROBAT_FILE_EXT
                 file_path = "%s/%s" % (download_dir, file_name)
@@ -211,7 +220,7 @@ class ScheduleJobCommand(Command):
                     download_url = "/download?id=" + str(job_ID) + "&fname=" + urllib.quote_plus(job.title)
                     # TODO: lock.release()
                     update_jobs_info_on_listening_clients(ctxt)
-                    return protocol.JobDownloadMessage(job_ID, download_url)
+                    return protocol.JobDownloadMessage(job_ID, download_url, job.archive_cached_date)
             else:
                 assert job.status == Job.Status.FAILED or force
 

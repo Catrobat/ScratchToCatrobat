@@ -228,6 +228,9 @@ def request_is_project_available(project_id):
 def request_project_title_for(project_id):
     return extract_project_title_from_document(request_project_page_as_Jsoup_document_for(project_id))
 
+def request_project_image_url_for(project_id):
+    return extract_project_image_url_from_document(request_project_page_as_Jsoup_document_for(project_id))
+
 def request_project_owner_for(project_id):
     return extract_project_owner_from_document(request_project_page_as_Jsoup_document_for(project_id))
 
@@ -258,6 +261,17 @@ def extract_project_title_from_document(document):
     if title.endswith(appended_title_text):
         title = title.split(appended_title_text)[0].strip()
     return title
+
+def extract_project_image_url_from_document(document):
+    if document is None: return None
+
+    extracted_text_list = document.select_attributes_as_text_list("div#scratch > img.image", "src")
+    if extracted_text_list is None or len(extracted_text_list) == 0: return None
+
+    image_url_of_project = unicode(extracted_text_list[0]).strip()
+    if image_url_of_project.startswith("//"):
+        image_url_of_project = image_url_of_project.replace("//", "https://")
+    return image_url_of_project
 
 def extract_project_owner_from_document(document):
     if document is None: return None

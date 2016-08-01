@@ -1,5 +1,5 @@
 #  ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
-#  Copyright (C) 2013-2015 The Catrobat Team
+#  Copyright (C) 2013-2016 The Catrobat Team
 #  (<http://developer.catrobat.org/credits>)
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -34,7 +34,7 @@ sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "..", 
 from scratchtocatrobat.tools import helpers
 import converterwebsocketprotocol as protocol
 
-SCRATCH_PROJECT_BASE_URL = helpers.config.get("SCRATCH_API", "project_base_url")
+SCRATCH_PROJECT_IMAGE_URL_TEMPLATE = helpers.config.get("SCRATCH_API", "project_image_url_template")
 JOB_TIMEOUT = int(helpers.config.get("CONVERTER_JOB", "timeout"))
 CATROBAT_FILE_EXT = helpers.config.get("CATROBAT", "file_extension")
 REDIS_CLIENT_PROJECT_KEY = "clientsOfProject#{}"
@@ -53,15 +53,17 @@ class Job(object):
     DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
     CACHE_ENTRY_VALID_FOR = 600
 
-    def __init__(self, job_ID=0, title=None, status=Status.READY, url=None,
-                 progress=None, output=None):
+    def __init__(self, job_ID=0, title=None, status=Status.READY, progress=0.0, output=None,
+                 image_url=None, image_width=150, image_height=150, archive_cached_utc_date=None):
         self.jobID = job_ID
         self.title = title
         self.status = status
-        self.url = url
         self.progress = progress
         self.output = output
-        self.archive_cached_date = None
+        self.imageURL = image_url
+        self.imageWidth = image_width
+        self.imageHeight = image_height
+        self.archiveCachedUTCDate = archive_cached_utc_date
 
     def save_to_redis(self, redis_connection, key):
         return redis_connection.set(key, self.__dict__)
@@ -184,10 +186,7 @@ class ScheduleJobCommand(Command):
 
         # parameters
         client_ID_string = str(args["clientID"])
-
-        # reconstruct URL
         job_ID = int(args["jobID"])
-        scratch_project_url = "%s%d" % (SCRATCH_PROJECT_BASE_URL, job_ID)
 
         verbose = False
         if "verbose" in args:
@@ -204,27 +203,29 @@ class ScheduleJobCommand(Command):
         jobmonitorserver_settings = ctxt.jobmonitorserver_settings
 
         if job != None:
-            archive_cached_date = dt.strptime(job.archive_cached_date, Job.DATETIME_FORMAT)
-            download_valid_until = archive_cached_date + timedelta(seconds=Job.CACHE_ENTRY_VALID_FOR)
-
             if job.status == Job.Status.READY or job.status == Job.Status.RUNNING:
                 # TODO: lock.release()
                 _logger.info("Job already scheduled (scratch project with ID: %d)", job_ID)
                 update_jobs_info_on_listening_clients(ctxt)
                 return protocol.JobAlreadyRunningMessage(job_ID)
-            elif job.status == Job.Status.FINISHED and not force and dt.now() <= download_valid_until:
-                download_dir = ctxt.jobmonitorserver_settings["download_dir"]
-                file_name = str(job_ID) + CATROBAT_FILE_EXT
-                file_path = "%s/%s" % (download_dir, file_name)
-                if file_name and os.path.exists(file_path):
-                    download_url = "/download?id=" + str(job_ID) + "&fname=" + urllib.quote_plus(job.title)
-                    # TODO: lock.release()
-                    update_jobs_info_on_listening_clients(ctxt)
-                    return protocol.JobDownloadMessage(job_ID, download_url, job.archive_cached_date)
+            elif job.status == Job.Status.FINISHED and not force:
+                assert job.archiveCachedUTCDate is not None
+                archive_cached_utc_date = dt.strptime(job.archiveCachedUTCDate, Job.DATETIME_FORMAT)
+                download_valid_until_utc = archive_cached_utc_date + timedelta(seconds=Job.CACHE_ENTRY_VALID_FOR)
+
+                if dt.utcnow() <= download_valid_until_utc:
+                    file_name = str(job_ID) + CATROBAT_FILE_EXT
+                    file_path = "%s/%s" % (ctxt.jobmonitorserver_settings["download_dir"], file_name)
+                    if file_name and os.path.exists(file_path):
+                        download_url = "/download?id=" + str(job_ID) + "&fname=" + urllib.quote_plus(job.title)
+                        # TODO: lock.release()
+                        update_jobs_info_on_listening_clients(ctxt)
+                        return protocol.JobDownloadMessage(job_ID, download_url, job.archiveCachedUTCDate)
+
             else:
                 assert job.status == Job.Status.FAILED or force
 
-        job = Job(job_ID, "-", Job.Status.READY, scratch_project_url, 0.0)
+        job = Job(job_ID, "-", Job.Status.READY)
         if not job.save_to_redis(redis_conn, project_key):
             # TODO: lock.release()
             return protocol.ErrorMessage("Cannot schedule job!")

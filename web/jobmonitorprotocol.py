@@ -1,5 +1,5 @@
 #  ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
-#  Copyright (C) 2013-2015 The Catrobat Team
+#  Copyright (C) 2013-2016 The Catrobat Team
 #  (<http://developer.catrobat.org/credits>)
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -53,6 +53,7 @@ class Request(object):
     ARGS_MSG = "ARGS_MSG"
     ARGS_LINES = "ARGS_LINES"
     ARGS_TITLE = "ARGS_TITLE"
+    ARGS_IMAGE_URL = "ARGS_IMAGE_URL"
     ARGS_JOB_ID = "ARGS_JOB_ID"
     ARGS_PROGRESS = "ARGS_PROGRESS"
     ARGS_RESULT = "ARGS_RESULT"
@@ -62,7 +63,7 @@ class Request(object):
 
     COMMAND_ARGS = {
         Command.AUTH: [ARGS_AUTH_KEY],
-        Command.JOB_STARTED_NOTIFICATION: [ARGS_JOB_ID, ARGS_TITLE, ARGS_MSG],
+        Command.JOB_STARTED_NOTIFICATION: [ARGS_JOB_ID, ARGS_TITLE, ARGS_IMAGE_URL, ARGS_MSG],
         Command.JOB_PROGRESS_NOTIFICATION: [ARGS_JOB_ID, ARGS_PROGRESS],
         Command.JOB_OUTPUT_NOTIFICATION: [ARGS_JOB_ID, ARGS_LINES],
         Command.JOB_FINISHED_NOTIFICATION: [ARGS_JOB_ID, ARGS_RESULT, ARGS_MSG],

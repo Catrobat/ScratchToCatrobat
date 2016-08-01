@@ -106,11 +106,11 @@ class JobFinishedMessage(Message):
         super(JobFinishedMessage, self).__init__(Message.Type.JOB_FINISHED, { "jobID": job_ID })
 
 class JobDownloadMessage(Message):
-    def __init__(self, job_ID, download_url, cached_date):
+    def __init__(self, job_ID, download_url, cached_utc_date):
         super(JobDownloadMessage, self).__init__(Message.Type.JOB_DOWNLOAD, {
             "jobID": job_ID,
             "url": download_url,
-            "cachedDate": cached_date
+            "cachedUTCDate": cached_utc_date
         })
 
 class JobsInfoMessage(Message):

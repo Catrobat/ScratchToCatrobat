@@ -1,5 +1,5 @@
 #  ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
-#  Copyright (C) 2013-2015 The Catrobat Team
+#  Copyright (C) 2013-2016 The Catrobat Team
 #  (<http://developer.catrobat.org/credits>)
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -41,7 +41,9 @@ import jobhandler
 from httplib import BadStatusLine
 from jobmonitorprotocol import Request, Reply, SERVER, CLIENT
 sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "..", "src"))
+import helpers as webhelpers
 from scratchtocatrobat.tools import helpers
+from scratchtocatrobat import scratchwebapi
 from bs4 import BeautifulSoup #@UnresolvedImport
 from tornado.ioloop import IOLoop #@UnresolvedImport
 from tornado import gen #@UnresolvedImport
@@ -61,12 +63,17 @@ class ConverterJobHandler(jobhandler.JobHandler):
 
     @gen.coroutine
     def run_job(self, args):
+        assert isinstance(args["jobID"], int)
+        assert isinstance(args["title"], (str, unicode))
+        assert isinstance(args["imageURL"], (str, unicode))
+        assert isinstance(args["url"], (str, unicode))
+        assert isinstance(args["outputDir"], (str, unicode))
+        job_ID, title, image_URL = args["jobID"], args["title"], args["imageURL"]
+
         exec_args = ["/usr/bin/env", "python", CONVERTER_RUN_SCRIPT_PATH,
                      args["url"], args["outputDir"], str(args["jobID"]), "--web-mode"]
         process = subprocess.Popen(exec_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        job_ID = args["jobID"]
-        title = args["title"] if isinstance(args["title"], (str, unicode)) else str(args["title"])
-        yield self.send_job_started_notification(job_ID, title)
+        yield self.send_job_started_notification(job_ID, title, image_URL)
 
         start_progr_indicator = helpers.ProgressBar.START_PROGRESS_INDICATOR
         end_progr_indicator = helpers.ProgressBar.END_PROGRESS_INDICATOR
@@ -80,7 +87,8 @@ class ConverterJobHandler(jobhandler.JobHandler):
             if line.startswith(start_progr_indicator) and line.endswith(end_progr_indicator):
                 progress = line.split(start_progr_indicator)[1].split(end_progr_indicator)[0]
                 if not helpers.isfloat(progress):
-                    _logger.warn("[%s]: Ignoring line! Parsed progress is no valid float: '%s'" % (CLIENT, progress))
+                    _logger.warn("[%s]: Ignoring line! Parsed progress is no valid float: '%s'"
+                                 % (CLIENT, progress))
                     continue
                 progress = float(progress)
                 yield self.send_job_progress_notification(job_ID, progress)
@@ -186,56 +194,52 @@ def convert_scratch_project(job_ID, host, port, verbose):
         _logger.error("Cannot find server certificate: %s", CERTIFICATE_PATH)
         return
 
-    scratch_base_url = helpers.config.get("SCRATCH_API", "project_base_url")
     retries = int(helpers.config.get("SCRATCH_API", "http_retries"))
     timeout_in_secs = int(helpers.config.get("SCRATCH_API", "http_timeout")) / 1000
     backoff = int(helpers.config.get("SCRATCH_API", "http_backoff"))
     delay = int(helpers.config.get("SCRATCH_API", "http_delay"))
     user_agent = helpers.config.get("SCRATCH_API", "user_agent")
 
-    # preprocessing: get project title via web API
+    # preprocessing: fetch project title and project image URL via web API
     def retry_hook(exc, tries, delay):
-        _logger.warning("  Exception: {}\nRetrying after {}:'{}' in {} secs (remaining trys: {})".format(sys.exc_info()[0], type(exc).__name__, exc, delay, tries))
+        _logger.warning("  Exception: {}\nRetrying after {}:'{}' in {} secs (remaining trys: {})" \
+                        .format(sys.exc_info()[0], type(exc).__name__, exc, delay, tries))
 
-
-    @helpers.retry((urllib2.URLError, socket.timeout, IOError, BadStatusLine), delay=delay, backoff=backoff, tries=retries, hook=retry_hook)
+    @helpers.retry((urllib2.URLError, socket.timeout, IOError, BadStatusLine), delay=delay,
+                   backoff=backoff, tries=retries, hook=retry_hook)
     def read_content_of_url(url):
         _logger.info("Fetching project title from: {}".format(scratch_project_url))
         req = urllib2.Request(url, headers={ "User-Agent": user_agent })
         return urllib2.urlopen(req, timeout=timeout_in_secs).read()
 
     title = None
-    scratch_project_url = scratch_base_url + str(job_ID)
-    appended_title_text = "on Scratch"
+    image_URL = None
+    scratch_project_url = "%s%d" % (SCRATCH_PROJECT_BASE_URL, job_ID)
     try:
         html_content = read_content_of_url(scratch_project_url)
         if html_content == None or not isinstance(html_content, str):
             raise Warning("Unable to set title of project from the project's " \
                           "website! Reason: Invalid or empty html content!")
-        soup = BeautifulSoup(html_content, "html.parser")
-        result = soup.select("html head title")
 
-        if result != None and isinstance(result, list) and len(result) > 0 \
-        and isinstance(result[0].contents, list) and len(result[0].contents) > 0 \
-        and result[0].contents[0] != None:
-            title = unicode(result[0].contents[0]).strip()
-            if title.endswith(appended_title_text):
-                title = title.split(appended_title_text)[0].strip()
-
+        document = webhelpers.ResponseBeautifulSoupDocumentWrapper(BeautifulSoup(html_content, b'html5lib'))
+        title = scratchwebapi.extract_project_title_from_document(document)
+        image_URL = scratchwebapi.extract_project_image_url_from_document(document)
         if title == None:
             raise Warning("Unable to set title of project from the project's website!" \
                           " Reason: Cannot parse title from returned html content!")
+        if image_URL == None:
+            raise Warning("Unable to extract image url of project from the project's website!" \
+                          " Reason: Cannot parse image url from returned html content!")
     except:
-        # log error and continue without updating title!
+        # log error and continue without updating title and/or image URL!
         _logger.error("Unexpected error for URL: {}, {}".format(scratch_project_url, \
                                                                 sys.exc_info()[0]))
 
-    # reconstruct URL
-    scratch_project_url = "%s%d" % (SCRATCH_PROJECT_BASE_URL, job_ID)
     args = {
         "url": scratch_project_url,
         "jobID": job_ID,
         "title": title,
+        "imageURL": image_URL,
         "outputDir": helpers.config.get("PATHS", "web_output")
     }
 

@@ -74,9 +74,14 @@ class JobHandler(object):
         _logger.info('[%s]: "%s"' % (SERVER, reply.msg))
 
     @gen.coroutine
-    def send_job_started_notification(self, job_ID, title):
+    def send_job_started_notification(self, job_ID, title, image_URL):
         _logger.debug('[%s]: Sending job started notification' % CLIENT)
-        args = { Request.ARGS_JOB_ID: job_ID, Request.ARGS_TITLE: title, Request.ARGS_MSG: "Job started" }
+        args = {
+            Request.ARGS_JOB_ID: job_ID,
+            Request.ARGS_IMAGE_URL: image_URL,
+            Request.ARGS_TITLE: title,
+            Request.ARGS_MSG: "Job started"
+        }
         request = Request(Request.Command.JOB_STARTED_NOTIFICATION, args)
         yield self._connection.send_message(request)
         # Job started (reply)

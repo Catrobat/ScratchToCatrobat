@@ -1,5 +1,5 @@
 #  ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
-#  Copyright (C) 2013-2015 The Catrobat Team
+#  Copyright (C) 2013-2016 The Catrobat Team
 #  (<http://developer.catrobat.org/credits>)
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -55,6 +55,7 @@ import converterwebsocketprotocol as protocol
 from jobmonitorprotocol import NotificationType
 from scratchtocatrobat import scratchwebapi
 from scratchtocatrobat.scratchwebapi import ScratchProjectVisibiltyState
+import helpers as webhelpers
 import urllib
 
 sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "..", "src"))
@@ -82,6 +83,7 @@ class Context(object):
         self.redis_connection = redis_connection
         self.jobmonitorserver_settings = jobmonitorserver_settings
 
+
 class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
 
     client_ID_open_sockets_map = {}
@@ -107,7 +109,10 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
             _logger.error("Cannot find job #{}".format(job_ID))
             return
         if msg_type == NotificationType.JOB_STARTED:
+            imageURL = args[jobmonprot.Request.ARGS_IMAGE_URL]
             job.title = args[jobmonprot.Request.ARGS_TITLE]
+            job.imageURL = imageURL
+            job.width, job.height = webhelpers.extract_width_and_height_from_scratch_image_url(imageURL, job_ID)
             job.status = Job.Status.RUNNING
         elif msg_type == NotificationType.JOB_FAILED:
             _logger.warn("Job failed! Exception Args: %s", args)
@@ -123,7 +128,7 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
         elif msg_type == NotificationType.FILE_TRANSFER_FINISHED:
             job.progress = 100.0
             job.status = Job.Status.FINISHED
-            job.archive_cached_date = dt.now().strftime(Job.DATETIME_FORMAT)
+            job.archiveCachedUTCDate = dt.utcnow().strftime(Job.DATETIME_FORMAT)
         if not job.save_to_redis(_redis_conn, REDIS_PROJECT_KEY):
             _logger.info("Unable to update job status!")
             return
@@ -158,7 +163,7 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
                 message = protocol.JobFinishedMessage(job_ID)
             elif msg_type == NotificationType.FILE_TRANSFER_FINISHED:
                 download_url = "/download?id=" + str(job_ID) + "&fname=" + urllib.quote_plus(job.title)
-                message = protocol.JobDownloadMessage(job_ID, download_url, job.archive_cached_date)
+                message = protocol.JobDownloadMessage(job_ID, download_url, None)
             elif msg_type == NotificationType.JOB_FAILED:
                 message = protocol.JobFailedMessage(job_ID)
             else:
@@ -251,25 +256,6 @@ class _DownloadHandler(tornado.web.RequestHandler):
                 raise HTTPError(404)
         raise HTTPError(500)
 
-class _ResponseBeautifulSoupDocumentWrapper(scratchwebapi.ResponseDocumentWrapper):
-    def select_first_as_text(self, query):
-        result = self.wrapped_document.select(query)
-        if result is None or not isinstance(result, list) or len(result) == 0:
-            return None
-        return result[0].get_text()
-
-    def select_all_as_text_list(self, query):
-        result = self.wrapped_document.select(query)
-        if result is None:
-            return None
-        return [element.get_text() for element in result if element is not None]
-
-    def select_attributes_as_text_list(self, query, attribute_name):
-        result = self.wrapped_document.select(query)
-        if result is None:
-            return None
-        return [element[attribute_name] for element in result if element is not None]
-
 
 class ProjectDataResponse(object):
 
@@ -337,7 +323,7 @@ class _ProjectHandler(tornado.web.RequestHandler):
             return
 
         #body = re.sub("(.*" + re.escape("<li>") + r'\s*' + re.escape("<div class=\"project thumb\">") + r'.*' + re.escape("<span class=\"owner\">") + r'.*' + re.escape("</span>") + r'\s*' + ")" + "(" + re.escape("</li>.*") + ")", r'\1</div>\2', http_response.body)
-        document = _ResponseBeautifulSoupDocumentWrapper(BeautifulSoup(http_response.body, b'html5lib'))
+        document = webhelpers.ResponseBeautifulSoupDocumentWrapper(BeautifulSoup(http_response.body, b'html5lib'))
         visibility_state = scratchwebapi.extract_project_visibilty_state_from_document(document)
         response = ProjectDataResponse()
         response.accessible = True

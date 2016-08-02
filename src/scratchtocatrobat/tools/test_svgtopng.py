@@ -39,7 +39,7 @@ class SvgToPngTest(common_testing.BaseTestCase):
 
             output_png_path = svgtopng.convert(input_svg_path)
 
-            assert os.path.exists(output_png_path)
+            assert os.path.exists(output_png_path) 
             assert imghdr.what(output_png_path) == "png"
             
     def test_true_cut_of_png(self):

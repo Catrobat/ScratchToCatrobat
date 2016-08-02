@@ -1046,6 +1046,10 @@ class TestDistanceBlockWorkaround(unittest.TestCase):
         assert global_variables[1] == { "name": position_y_var_name2, "value": 0, "isPersistent": False }
         assert global_variables[2] == { "name": position_x_var_name1, "value": 0, "isPersistent": False }
         assert global_variables[3] == { "name": position_y_var_name1, "value": 0, "isPersistent": False }
+        
+class TestInsertBrackets(unittest.TestCase):
+    def test_can_extract_project(self):
+        pass
 
 
 if __name__ == "__main__":

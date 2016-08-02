@@ -30,10 +30,13 @@ from org.apache.batik.transcoder import TranscoderOutput
 from java.nio.file import Paths
 from java.awt.image import BufferedImage
 from java.awt import Image
+from java.awt import AlphaComposite
+from java.awt import Graphics2D
 from java.io import BufferedReader
 from java.io import FileReader
 from java.io import PrintWriter
 from java.util import StringTokenizer
+from javax.swing import ImageIcon
 
 
 _BATIK_CLI_JAR = "batik-rasterizer.jar"
@@ -52,7 +55,7 @@ def _checked_batik_jar_path():
     _batik_jar_path = batik_jar_path
     return _batik_jar_path
 
-def convert(input_svg_path):
+def convert(input_svg_path, rotation_x=36, rotation_y=67):
     assert isinstance(input_svg_path, (str, unicode))
     assert os.path.splitext(input_svg_path)[1] == ".svg"
     output_png_path = os.path.splitext(input_svg_path)[0] + ".png"
@@ -84,7 +87,12 @@ def convert(input_svg_path):
         final_image = _process_png_image(output_png_path)
         
         if final_image is None:
-            return output_png_path
+            raise RuntimeError("...")
+        
+        final_image = _rescale_png_image(final_image, rotation_x, rotation_y)
+        
+        if final_image is None:
+            raise RuntimeError("...")
 
         from javax.imageio import ImageIO
         from java.io import File      
@@ -104,9 +112,46 @@ def convert(input_svg_path):
     if error != None:
         raise error
     
-def _process_png_image(output_png_path):
-    from javax.swing import ImageIcon
+def _rescale_png_image(img, rotation_x, rotation_y):
+   
+    dst_new_width, dst_new_height = None, None
+    half_old_width, half_old_height = None, None
+    while True:
+        dst_new_width, dst_new_height = rotation_x * 2, rotation_y * 2
+        half_old_width, half_old_height = img.getWidth() / 2, img.getHeight() / 2
+        start_x, start_y = rotation_x - half_old_height, rotation_y - half_old_width
+        end_x, end_y = rotation_x + img.getHeight() - half_old_height, rotation_y + img.getWidth() - half_old_width
+    
+        if start_x >= 0 and start_y >= 0 and end_x >= 0 and end_y >= 0:
+            break
+        else:
+            rotation_x *= 2
+            rotation_y *= 2
+            
+            
+    bufferedImage = BufferedImage(dst_new_height, dst_new_width, BufferedImage.TYPE_INT_ARGB)
+    g2d = bufferedImage.createGraphics()
+    g2d.setComposite(AlphaComposite.Clear)
+    g2d.fillRect(0, 0, dst_new_width, dst_new_height)
+    
+    img_matrix = [[img.getRGB(row_index, column_index) for column_index in xrange(img.getHeight())] for row_index in xrange(img.getWidth())]
+    
+    transposed_img_matrix = _transpose_matrix(img_matrix)
+    
+    #System.out.println(start_x + "|" + start_y + "\t" + start_x + "|" + end_y);
+    #System.out.println(end_x + "|" + start_y + "\t" + end_x + "|" + end_y);
 
+    for row_index, old_row_index in zip(xrange(start_x, end_x + 1), xrange(len(transposed_img_matrix))):
+        for column_index, old_column_index in zip(xrange(start_y, end_y + 1), xrange(len(transposed_img_matrix[0]))):
+            bufferedImage.setRGB(column_index, row_index, transposed_img_matrix[old_row_index][old_column_index])
+
+    return bufferedImage
+            
+            
+            
+    
+    
+def _process_png_image(output_png_path):
     bufferd_image = _create_buffered_image(ImageIcon(output_png_path).getImage())
 
     width, height = bufferd_image.getWidth(), bufferd_image.getHeight()

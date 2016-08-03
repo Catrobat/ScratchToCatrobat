@@ -109,7 +109,6 @@ class SetClientIDCommand(Command):
             return protocol.ClientIDMessage(self.retrieve_new_client_ID(ctxt))
         client_ID = int(args["clientID"])
         ctxt.handler.set_client_ID(client_ID) # map client ID to web socket handler
-        update_jobs_info_on_listening_clients(ctxt)
         return protocol.ClientIDMessage(client_ID)
 
 class RetrieveJobsInfoCommand(Command):
@@ -206,7 +205,7 @@ class ScheduleJobCommand(Command):
             if job.status == Job.Status.READY or job.status == Job.Status.RUNNING:
                 # TODO: lock.release()
                 _logger.info("Job already scheduled (scratch project with ID: %d)", job_ID)
-                update_jobs_info_on_listening_clients(ctxt)
+                #update_jobs_info_on_listening_clients(ctxt)
                 return protocol.JobAlreadyRunningMessage(job_ID)
             elif job.status == Job.Status.FINISHED and not force:
                 assert job.archiveCachedUTCDate is not None
@@ -219,7 +218,7 @@ class ScheduleJobCommand(Command):
                     if file_name and os.path.exists(file_path):
                         download_url = "/download?id=" + str(job_ID) + "&fname=" + urllib.quote_plus(job.title)
                         # TODO: lock.release()
-                        update_jobs_info_on_listening_clients(ctxt)
+                        #update_jobs_info_on_listening_clients(ctxt)
                         return protocol.JobDownloadMessage(job_ID, download_url, job.archiveCachedUTCDate)
 
             else:
@@ -229,7 +228,7 @@ class ScheduleJobCommand(Command):
         if not job.save_to_redis(redis_conn, project_key):
             # TODO: lock.release()
             return protocol.ErrorMessage("Cannot schedule job!")
-        update_jobs_info_on_listening_clients(ctxt)
+        #update_jobs_info_on_listening_clients(ctxt)
 
         use_connection(redis_conn)
         q = Queue(connection=redis_conn)

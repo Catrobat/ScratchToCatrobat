@@ -134,8 +134,9 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
             return
 
         # inform all clients if status or progress changed
-        if old_status != job.status or msg_type == NotificationType.JOB_PROGRESS:
-            update_jobs_info_on_listening_clients(Context(None, _redis_conn, None))
+        # TODO: refactor this!
+        #if old_status != job.status or msg_type == NotificationType.JOB_PROGRESS:
+        #    update_jobs_info_on_listening_clients(Context(None, _redis_conn, None))
 
         # find listening clients
         # TODO: cache this...

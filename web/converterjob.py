@@ -78,6 +78,7 @@ class ConverterJobHandler(jobhandler.JobHandler):
         start_progr_indicator = helpers.ProgressBar.START_PROGRESS_INDICATOR
         end_progr_indicator = helpers.ProgressBar.END_PROGRESS_INDICATOR
         line_buffer = []
+        old_progress = 0.0
         while True:
             line = process.stdout.readline()
             if line == '': break
@@ -91,7 +92,11 @@ class ConverterJobHandler(jobhandler.JobHandler):
                                  % (CLIENT, progress))
                     continue
                 progress = float(progress)
-                yield self.send_job_progress_notification(job_ID, progress)
+                progress = round(progress)
+                progress_difference = progress - old_progress
+                old_progress = progress
+                if progress_difference >= 1.0:
+                    yield self.send_job_progress_notification(job_ID, progress)
                 _logger.debug("[%s]: %d" % (CLIENT, progress))
                 continue
 

@@ -264,6 +264,10 @@ def download_file(url, file_path, referer_url=None, retries=None, backoff=None, 
                 # check for redirect
                 is_redirect = False
                 status_code = http_url_connection.getResponseCode()
+
+                if status_code == HttpURLConnection.HTTP_NOT_FOUND:
+                    raise ScratchtobatError("HTTP 404 NOT FOUND for URL: " + url)
+
                 if status_code != HttpURLConnection.HTTP_OK:
                     if status_code == HttpURLConnection.HTTP_MOVED_TEMP \
                     or status_code == HttpURLConnection.HTTP_MOVED_PERM \

@@ -896,6 +896,11 @@ class ConvertedProject(object):
                 key_image_path = _key_image_path_for(listened_key)
                 shutil.copyfile(key_image_path, os.path.join(images_path, _key_filename_for(listened_key)))
 
+        def download_automatic_screenshot(output_dir, scratch_project):
+            _AUTOMATIC_SCREENSHOT_FILE_NAME = helpers.catrobat_info("automatic_screenshot_file_name")
+            download_file_path = os.path.join(output_dir, _AUTOMATIC_SCREENSHOT_FILE_NAME)
+            common.download_file(scratch_project.automatic_screenshot_image_url, download_file_path)
+
         # TODO: rename/rearrange abstracting methods
         log.info("  Creating Catrobat project structure")
         sounds_path, images_path = create_directory_structure()
@@ -905,6 +910,8 @@ class ConvertedProject(object):
         rename_resource_file_names_in(self.catrobat_program, original_to_converted_catrobat_resource_file_name)
         log.info("  Saving project XML file")
         write_program_source(self.catrobat_program, context)
+        log.info("  Downloading and adding automatic screenshot")
+        download_automatic_screenshot(temp_path, self.scratch_project)
         if progress_bar != None: progress_bar.update(progress_bar.saving_xml_progress_weight)
 
 # TODO: could be done with just user_variables instead of project object

@@ -29,10 +29,11 @@ import urllib2
 
 from scratchtocatrobat import common
 from scratchtocatrobat import scratchwebapi
+from scratchtocatrobat.tools import helpers
 
 _log = common.log
 
-_PROJECT_FILE_NAME = "project.json"
+_PROJECT_FILE_NAME = helpers.scratch_info("code_file_name")
 
 class JsonKeys(object):
     BASELAYER_ID = "baseLayerID"
@@ -508,6 +509,7 @@ class Project(RawProject):
             self.name = name if name is not None else scratchwebapi.request_project_title_for(self.project_id)
             self.instructions = scratchwebapi.request_project_instructions_for(self.project_id)
             self.notes_and_credits = scratchwebapi.request_project_notes_and_credits_for(self.project_id)
+            self.automatic_screenshot_image_url = scratchwebapi.request_project_image_url_for(self.project_id)
 
         if progress_bar != None: progress_bar.update() # instructions and notes-and-credits step passed
         if progress_bar != None: progress_bar.update() # name step passed

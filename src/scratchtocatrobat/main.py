@@ -55,7 +55,8 @@ def run_converter(scratch_project_file_or_url, output_dir,
         return helpers.ExitCode.FAILURE
 
     # nested import to be able to check for Jython interpreter first
-    from scratchtocatrobat import catrobat, common, converter, scratch, scratchwebapi, tools
+    from scratchtocatrobat import catrobat, common, scratch, scratchwebapi, tools
+    from scratchtocatrobat.converter import converter
 
     try:
         check_base_environment()

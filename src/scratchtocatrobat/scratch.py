@@ -257,7 +257,7 @@ class Object(common.DictAccessWrapper):
         ############################################################################################
         # doUntil and doWaitUntil workaround
         ############################################################################################
-        from scratchtocatrobat import converter
+        from scratchtocatrobat.converter import converter
         preprocessed_scripts = []
         additional_scripts = []
         for script_number, script in enumerate(self.scripts):
@@ -674,7 +674,7 @@ class ScriptElement(object):
     def from_raw_block(cls, raw_block):
         # replace empty arguments/operands of math functions and math operators
         # (i.e. "" and " ") with 0. This is actually default behavior in Scratch.
-        from scratchtocatrobat import converter
+        from scratchtocatrobat.converter import converter
         if isinstance(raw_block, list) and len(raw_block) > 1 \
         and converter.is_math_function_or_operator(raw_block[0]):
             raw_block[1:] = map(lambda arg: arg if not isinstance(arg, (str, unicode)) \

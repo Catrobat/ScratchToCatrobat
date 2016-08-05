@@ -22,6 +22,7 @@ import sys, os, re
 from urlparse import urlparse
 from scratchtocatrobat import logger
 from tools import helpers
+from tools.helpers import ProgressType
 from collections import namedtuple
 from datetime import datetime
 
@@ -108,8 +109,8 @@ def download_project(project_url, target_dir, progress_bar=None):
 
     project = scratch.RawProject.from_project_folder_path(target_dir)
     if progress_bar != None:
-        progress_bar.num_of_iterations = project.num_of_iterations_of_downloaded_project(progress_bar)
-        progress_bar.update() # update due to download of project.json file
+        progress_bar.expected_progress = project.expected_progress_of_downloaded_project(progress_bar)
+        progress_bar.update(ProgressType.DOWNLOAD_CODE) # update due to download of project.json file
 
     class ResourceDownloadThread(Thread):
         def run(self):
@@ -124,7 +125,8 @@ def download_project(project_url, target_dir, progress_bar=None):
                 raise ScratchWebApiError("Error with {}: '{}'".format(resource_url, e))
             verify_hash = helpers.md5_of_file(resource_file_path)
             assert verify_hash == os.path.splitext(md5_file_name)[0], "MD5 hash of response data not matching"
-            if progress_bar != None: progress_bar.update()
+            if progress_bar != None:
+                progress_bar.update(ProgressType.DOWNLOAD_MEDIA_FILE)
 
     # schedule parallel downloads
     unique_resource_names = project.unique_resource_names

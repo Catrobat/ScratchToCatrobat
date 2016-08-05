@@ -20,6 +20,7 @@
 #  along with this program.  If not, see http://www.gnu.org/licenses/.
 import logging
 import os
+import tempfile
 from scratchtocatrobat import common
 from scratchtocatrobat.tools import helpers
 from java.io import FileOutputStream
@@ -29,9 +30,9 @@ from org.apache.batik.transcoder import TranscoderOutput
 from java.nio.file import Paths
 
 _BATIK_CLI_JAR = "batik-rasterizer.jar"
-
 _log = logging.getLogger(__name__)
 _batik_jar_path = None
+
 
 # TODO: refactor to single mediaconverter class together with wavconverter
 def _checked_batik_jar_path():
@@ -44,10 +45,16 @@ def _checked_batik_jar_path():
     _batik_jar_path = batik_jar_path
     return _batik_jar_path
 
-def convert(input_svg_path):
+def convert(input_svg_path, rotation_x, rotation_y):
     assert isinstance(input_svg_path, (str, unicode))
     assert os.path.splitext(input_svg_path)[1] == ".svg"
-    output_png_path = os.path.splitext(input_svg_path)[0] + ".png"
+
+    input_file_name = os.path.splitext(input_svg_path)[0]
+    output_png_path = "{}_rotX_{}_rotY_{}.png".format(input_file_name, rotation_x, rotation_y)
+    _log.info("      converting '%s' to Pocket Code compatible png '%s'", input_svg_path, output_png_path)
+    if os.path.exists(output_png_path):
+        _log.info("      nothing to do: '%s' already exists", output_png_path)
+        return output_png_path # avoid duplicate conversions!
 
     try:
         # read input SVG document into Transcoder Input (use Java NIO for this purpose)

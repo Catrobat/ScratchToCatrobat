@@ -42,6 +42,7 @@ from scratchtocatrobat import scratch
 from scratchtocatrobat import logger
 from scratchtocatrobat.scratch import JsonKeys as scratchkeys
 from scratchtocatrobat.tools import helpers
+from scratchtocatrobat.tools.helpers import ProgressType
 import mediaconverter
 
 _DEFAULT_BRICK_CLASS = catbricks.WaitBrick
@@ -511,7 +512,8 @@ class _ScratchObjectConverter(object):
 
         for scratch_script in scratch_object.scripts:
             sprite.addScript(self._catrobat_script_from(scratch_script, sprite, sprite_context))
-            if self._progress_bar != None: self._progress_bar.update()
+            if self._progress_bar != None:
+                self._progress_bar.update(ProgressType.CONVERT_SCRIPT)
 
         if self._context is not None:
             self._context.add_sprite_context(sprite_context)
@@ -771,7 +773,10 @@ class ConvertedProject(object):
                 key_image_path = _key_image_path_for(listened_key)
                 shutil.copyfile(key_image_path, os.path.join(images_path, _key_filename_for(listened_key)))
 
-        def download_automatic_screenshot(output_dir, scratch_project):
+        def download_automatic_screenshot_if_available(output_dir, scratch_project):
+            if scratch_project.automatic_screenshot_image_url is None:
+                return
+
             _AUTOMATIC_SCREENSHOT_FILE_NAME = helpers.catrobat_info("automatic_screenshot_file_name")
             download_file_path = os.path.join(output_dir, _AUTOMATIC_SCREENSHOT_FILE_NAME)
             common.download_file(scratch_project.automatic_screenshot_image_url, download_file_path)
@@ -788,8 +793,9 @@ class ConvertedProject(object):
         log.info("  Saving project XML file")
         write_program_source(self.catrobat_program, context)
         log.info("  Downloading and adding automatic screenshot")
-        download_automatic_screenshot(temp_path, self.scratch_project)
-        if progress_bar != None: progress_bar.update(progress_bar.saving_xml_progress_weight)
+        download_automatic_screenshot_if_available(temp_path, self.scratch_project)
+        if progress_bar != None:
+            progress_bar.update(ProgressType.SAVE_XML, progress_bar.saving_xml_progress_weight)
 
 # TODO: could be done with just user_variables instead of project object
 def _add_new_user_variable_with_initialization_value(project, variable_name, variable_value, sprite, sprite_name=None):

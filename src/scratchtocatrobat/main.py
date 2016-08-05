@@ -117,7 +117,7 @@ def run_converter(scratch_project_file_or_url, output_dir,
 
             if is_local_project:
                 project = scratch.RawProject.from_project_folder_path(scratch_project_dir)
-                progress_bar.num_of_iterations = project.num_of_iterations_of_local_project(progress_bar)
+                progress_bar.expected_progress = project.expected_progress_of_local_project(progress_bar)
 
             project = scratch.Project(scratch_project_dir, progress_bar=progress_bar)
             log.info("Converting scratch project '%s' into output folder: %s", project.name, output_dir)

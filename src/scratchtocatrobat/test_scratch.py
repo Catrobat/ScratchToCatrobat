@@ -92,7 +92,8 @@ class TestProjectFunc(unittest.TestCase):
             assert project_id, scratch.Project(project_path).project_id
 
     def test_can_access_md5_name_of_stage_costumes(self):
-        expected_stage_customes_md5_names = set(["510da64cf172d53750dffd23fbf73563.png", "033f926829a446a28970f59302b0572d.png"])
+        expected_stage_customes_md5_names = set(["510da64cf172d53750dffd23fbf73563.png",
+                                                 "033f926829a446a28970f59302b0572d.png"])
         assert set(self.project.background_md5_names) == expected_stage_customes_md5_names
 
     def test_can_access_listened_pressed_keys(self):
@@ -102,7 +103,9 @@ class TestProjectFunc(unittest.TestCase):
     def test_can_access_unused_resources_of_project(self):
         project = scratch.Project(common_testing.get_test_project_path("simple"), name="simple", id_=common_testing.PROJECT_DUMMY_ID)
         assert len(project.unused_resource_paths) > 0
-        assert set(map(os.path.basename, project.unused_resource_paths)) == set(['0.png', '2.wav', '3.png', '4.png', '5.png', '6.png', '8.png'])
+        expected_resources = ['0.png', '1_rotX_47_rotY_55.png', '2.wav', '2_rotX_47_rotY_55.png',
+                              '3.png', '4.png', '5.png', '6.png', '8.png']
+        assert set(map(os.path.basename, project.unused_resource_paths)) == set(expected_resources)
 
 
 _OBJECT_JSON_STR = '''{

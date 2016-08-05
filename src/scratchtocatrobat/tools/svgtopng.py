@@ -65,8 +65,8 @@ def convert(input_svg_path, rotation_x=36, rotation_y=67):
     try:
         # read input SVG document into Transcoder Input (use Java NIO for this purpose)
         svg_URI_input = Paths.get(input_svg_path).toUri().toURL().toString()
-        #print("############# ", svg_URI_input[5:])
-        _checkAndRewriteSVGFile(svg_URI_input[5:])
+
+        _parse_and_rewrite_svg_file(svg_URI_input[5:])
         
         input_svg_image = TranscoderInput(svg_URI_input)
 
@@ -84,12 +84,12 @@ def convert(input_svg_path, rotation_x=36, rotation_y=67):
 
         assert os.path.exists(output_png_path)
         
-        final_image = _process_png_image(output_png_path)
+        final_image = _scale_image(output_png_path)
         
         if final_image is None:
             raise RuntimeError("...")
         
-        final_image = _rescale_png_image(final_image, rotation_x, rotation_y)
+        final_image = _translation_to_rotation_point(final_image, rotation_x, rotation_y)
         
         if final_image is None:
             raise RuntimeError("...")
@@ -112,7 +112,7 @@ def convert(input_svg_path, rotation_x=36, rotation_y=67):
     if error != None:
         raise error
     
-def _rescale_png_image(img, rotation_x, rotation_y):
+def _translation_to_rotation_point(img, rotation_x, rotation_y):
    
     dst_new_width, dst_new_height = None, None
     half_old_width, half_old_height = None, None
@@ -151,7 +151,7 @@ def _rescale_png_image(img, rotation_x, rotation_y):
             
     
     
-def _process_png_image(output_png_path):
+def _scale_image(output_png_path):
     bufferd_image = _create_buffered_image(ImageIcon(output_png_path).getImage())
 
     width, height = bufferd_image.getWidth(), bufferd_image.getHeight()
@@ -207,7 +207,7 @@ def _create_buffered_image(image):
     return result 
 
 
-def _checkAndRewriteSVGFile(svg_file_path):
+def _parse_and_rewrite_svg_file(svg_file_path):
     write_str = ""
 
     file_reader = FileReader(svg_file_path)
@@ -221,8 +221,8 @@ def _checkAndRewriteSVGFile(svg_file_path):
         if read_line is None:
             break
         if "viewBox" in read_line:
-            view_box_content = _getViewBoxContent(read_line)
-            view_box_values = _getViewBoxValues(view_box_content)
+            view_box_content = _get_viewbox_content(read_line)
+            view_box_values = _get_viewbox_values(view_box_content)
             if view_box_values[0] != 0:
                 view_box_values[2] += view_box_values[0]
                 view_box_values[0] = 0
@@ -248,7 +248,7 @@ def _checkAndRewriteSVGFile(svg_file_path):
     file_writer.close()
     
     
-def _getViewBoxValues(view_box_str):
+def _get_viewbox_values(view_box_str):
     view_box_values = []
     
     st = StringTokenizer(view_box_str," ")
@@ -258,7 +258,7 @@ def _getViewBoxValues(view_box_str):
     return view_box_values
     
     
-def _getViewBoxContent(view_box_str):
+def _get_viewbox_content(view_box_str):
     start_view_box = view_box_str.index("viewBox") + 9
     end_view_box = view_box_str.index("\"", start_view_box)
     return view_box_str[start_view_box:end_view_box]

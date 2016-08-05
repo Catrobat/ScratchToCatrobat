@@ -24,7 +24,7 @@ import unittest
 
 from scratchtocatrobat import common
 from scratchtocatrobat import common_testing
-from scratchtocatrobat import converter
+from scratchtocatrobat.converter import converter
 from scratchtocatrobat import main
 from scratchtocatrobat import scratchwebapi
 from scratchtocatrobat.tools import helpers

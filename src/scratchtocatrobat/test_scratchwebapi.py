@@ -32,6 +32,11 @@ TEST_PROJECT_ID_TO_TITLE_MAP = {
     "10132588": "Dance back"
 }
 
+TEST_PROJECT_ID_TO_IMAGE_URL_MAP = {
+    "10205819": "https://cdn2.scratch.mit.edu/get_image/project/10205819_144x108.png?v=1368470695.0",
+    "10132588": "https://cdn2.scratch.mit.edu/get_image/project/10132588_144x108.png?v=1368129031.0"
+}
+
 TEST_PROJECT_ID_TO_OWNER_MAP = {
     "10205819": "jschombs",
     "10132588": "psush09"
@@ -93,6 +98,13 @@ class WebApiTest(common_testing.BaseTestCase):
             assert extracted_project_title is not None
             assert extracted_project_title == expected_project_title, \
                    "'{}' is not equal to '{}'".format(extracted_project_title, expected_project_title)
+
+    def test_can_request_project_image_url_for_id(self):
+        for (project_id, expected_project_image_URL) in TEST_PROJECT_ID_TO_IMAGE_URL_MAP.iteritems():
+            extracted_project_image_URL = scratchwebapi.request_project_image_url_for(project_id)
+            assert extracted_project_image_URL is not None
+            assert extracted_project_image_URL == expected_project_image_URL, \
+                   "'{}' is not equal to '{}'".format(extracted_project_image_URL, expected_project_image_URL)
 
     def test_can_request_project_owner_for_id(self):
         for (project_id, expected_project_owner) in TEST_PROJECT_ID_TO_OWNER_MAP.iteritems():

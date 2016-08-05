@@ -1,5 +1,5 @@
 #  ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
-#  Copyright (C) 2013-2015 The Catrobat Team
+#  Copyright (C) 2013-2016 The Catrobat Team
 #  (<http://developer.catrobat.org/credits>)
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -24,6 +24,8 @@ import ast
 import sys
 import os
 import converterwebapp
+import urllib
+from datetime import datetime as dt, timedelta
 
 from rq import Queue, use_connection #@UnresolvedImport
 from converterjob import convert_scratch_project
@@ -32,7 +34,7 @@ sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "..", 
 from scratchtocatrobat.tools import helpers
 import converterwebsocketprotocol as protocol
 
-SCRATCH_PROJECT_BASE_URL = helpers.config.get("SCRATCH_API", "project_base_url")
+SCRATCH_PROJECT_IMAGE_URL_TEMPLATE = helpers.config.get("SCRATCH_API", "project_image_url_template")
 JOB_TIMEOUT = int(helpers.config.get("CONVERTER_JOB", "timeout"))
 CATROBAT_FILE_EXT = helpers.config.get("CATROBAT", "file_extension")
 REDIS_CLIENT_PROJECT_KEY = "clientsOfProject#{}"
@@ -48,14 +50,20 @@ class Job(object):
         FINISHED = 2
         FAILED = 3
 
-    def __init__(self, jid=0, title=None, status=Status.READY, url=None,
-                 progress=None, output=None):
-        self.jid = jid
+    DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+    CACHE_ENTRY_VALID_FOR = 600
+
+    def __init__(self, job_ID=0, title=None, status=Status.READY, progress=0.0, output=None,
+                 image_url=None, image_width=150, image_height=150, archive_cached_utc_date=None):
+        self.jobID = job_ID
         self.title = title
         self.status = status
-        self.url = url
         self.progress = progress
         self.output = output
+        self.imageURL = image_url
+        self.imageWidth = image_width
+        self.imageHeight = image_height
+        self.archiveCachedUTCDate = archive_cached_utc_date
 
     def save_to_redis(self, redis_connection, key):
         return redis_connection.set(key, self.__dict__)
@@ -74,17 +82,17 @@ class Command(object):
     def execute(self, ctxt, args):
         raise NotImplementedError()
 
-    def is_valid_client_id(self, redis_connection, client_ID):
+    def is_valid_client_ID(self, redis_connection, client_ID):
+        if client_ID is None:
+            return False
         client_ID_string = str(client_ID)
+        if client_ID_string is None or int(client_ID_string) <= 0:
+            return False
         last_client_ID = redis_connection.get("lastClientID")
         return last_client_ID != None and client_ID_string.isdigit() and int(client_ID_string) <= int(last_client_ID)
 
-    def is_valid_scratch_project_url(self, scratch_project_url):
-        if scratch_project_url is None or not isinstance(scratch_project_url, (str, unicode)):
-            return False
-        scratch_project_url = scratch_project_url.replace("http://", "https://")
-        parts = [int(s) for s in scratch_project_url.split("/") if s.isdigit()]
-        return scratch_project_url.startswith(SCRATCH_PROJECT_BASE_URL) and (len(parts) == 1)
+    def is_valid_job_ID(self, job_ID):
+        return str(job_ID).isdigit() and int(job_ID) > 0
 
     def retrieve_new_client_ID(self, ctxt):
         redis_conn = ctxt.redis_connection
@@ -95,22 +103,17 @@ class Command(object):
         ctxt.handler.set_client_ID(new_client_ID) # map client ID to web socket handler
         return new_client_ID
 
-class RetrieveClientIDCommand(Command):
-    def execute(self, ctxt, args):
-        return protocol.ClientIDMessage(self.retrieve_new_client_ID(ctxt))
-
 class SetClientIDCommand(Command):
     def execute(self, ctxt, args):
-        if not self.is_valid_client_id(ctxt.redis_connection, args["clientID"]):
-            return protocol.RenewClientIDMessage(self.retrieve_new_client_ID(ctxt))
+        if not self.is_valid_client_ID(ctxt.redis_connection, args["clientID"]):
+            return protocol.ClientIDMessage(self.retrieve_new_client_ID(ctxt))
         client_ID = int(args["clientID"])
         ctxt.handler.set_client_ID(client_ID) # map client ID to web socket handler
-        update_jobs_info_on_listening_clients(ctxt)
         return protocol.ClientIDMessage(client_ID)
 
 class RetrieveJobsInfoCommand(Command):
     def execute(self, ctxt, args):
-        if not self.is_valid_client_id(ctxt.redis_connection, args["clientID"]):
+        if not self.is_valid_client_ID(ctxt.redis_connection, args["clientID"]):
             return protocol.ErrorMessage("Invalid client ID!")
 
         redis_conn = ctxt.redis_connection
@@ -168,11 +171,12 @@ class ScheduleJobCommand(Command):
             return True
 
         # validate parameters
-        if not self.is_valid_client_id(ctxt.redis_connection, args["clientID"]):
+        if not self.is_valid_client_ID(ctxt.redis_connection, args["clientID"]):
             return protocol.ErrorMessage("Invalid client ID!")
 
-        if not self.is_valid_scratch_project_url(args["url"]):
-            return protocol.ErrorMessage("Invalid URL given!")
+        print args
+        if not self.is_valid_job_ID(args["jobID"]):
+            return protocol.ErrorMessage("Invalid jobID given!")
 
         force = False
         if "force" in args:
@@ -181,60 +185,66 @@ class ScheduleJobCommand(Command):
 
         # parameters
         client_ID_string = str(args["clientID"])
-        scratch_project_url = args["url"].replace("http://", "https://")
+        job_ID = int(args["jobID"])
 
-        # reconstruct URL
-        scratch_project_ID = [int(s) for s in scratch_project_url.split("/") if s.isdigit()][0]
-        scratch_project_url = "%s%d" % (SCRATCH_PROJECT_BASE_URL, scratch_project_ID)
+        verbose = False
+        if "verbose" in args:
+            verbose_param = str(args["verbose"]).lower()
+            verbose = verbose_param == "true" or verbose_param == "1"
 
         # schedule this job
         redis_conn = ctxt.redis_connection
         # TODO: lock.acquire() => use context-handler (i.e. "with"-keyword) and file lock!
-        map_client_to_project(redis_conn, client_ID_string, scratch_project_ID)
-        map_project_to_client(redis_conn, scratch_project_ID, client_ID_string)
-        project_key = REDIS_PROJECT_KEY.format(scratch_project_ID)
+        map_client_to_project(redis_conn, client_ID_string, job_ID)
+        map_project_to_client(redis_conn, job_ID, client_ID_string)
+        project_key = REDIS_PROJECT_KEY.format(job_ID)
         job = Job.from_redis(redis_conn, project_key)
         jobmonitorserver_settings = ctxt.jobmonitorserver_settings
+
         if job != None:
             if job.status == Job.Status.READY or job.status == Job.Status.RUNNING:
                 # TODO: lock.release()
-                _logger.info("Job already scheduled (scratch project with ID: %d)", scratch_project_ID)
-                update_jobs_info_on_listening_clients(ctxt)
-                return protocol.JobAlreadyRunningMessage(scratch_project_ID)
+                _logger.info("Job already scheduled (scratch project with ID: %d)", job_ID)
+                #update_jobs_info_on_listening_clients(ctxt)
+                return protocol.JobAlreadyRunningMessage(job_ID)
             elif job.status == Job.Status.FINISHED and not force:
-                download_dir = ctxt.jobmonitorserver_settings["download_dir"]
-                file_name = str(scratch_project_ID) + CATROBAT_FILE_EXT
-                file_path = "%s/%s" % (download_dir, file_name)
-                if file_name and os.path.exists(file_path):
-                    download_url = "/download?id=" + str(scratch_project_ID)
-                    # TODO: lock.release()
-                    update_jobs_info_on_listening_clients(ctxt)
-                    return protocol.JobDownloadMessage(scratch_project_ID, download_url)
+                assert job.archiveCachedUTCDate is not None
+                archive_cached_utc_date = dt.strptime(job.archiveCachedUTCDate, Job.DATETIME_FORMAT)
+                download_valid_until_utc = archive_cached_utc_date + timedelta(seconds=Job.CACHE_ENTRY_VALID_FOR)
+
+                if dt.utcnow() <= download_valid_until_utc:
+                    file_name = str(job_ID) + CATROBAT_FILE_EXT
+                    file_path = "%s/%s" % (ctxt.jobmonitorserver_settings["download_dir"], file_name)
+                    if file_name and os.path.exists(file_path):
+                        download_url = "/download?id=" + str(job_ID) + "&fname=" + urllib.quote_plus(job.title)
+                        # TODO: lock.release()
+                        #update_jobs_info_on_listening_clients(ctxt)
+                        return protocol.JobDownloadMessage(job_ID, download_url, job.archiveCachedUTCDate)
+
             else:
                 assert job.status == Job.Status.FAILED or force
 
-        job = Job(scratch_project_ID, "-", Job.Status.READY, scratch_project_url, 0.0)
+        job = Job(job_ID, "-", Job.Status.READY)
         if not job.save_to_redis(redis_conn, project_key):
             # TODO: lock.release()
             return protocol.ErrorMessage("Cannot schedule job!")
-        update_jobs_info_on_listening_clients(ctxt)
+        #update_jobs_info_on_listening_clients(ctxt)
 
         use_connection(redis_conn)
         q = Queue(connection=redis_conn)
         host = jobmonitorserver_settings["host"]
         port = jobmonitorserver_settings["port"]
-        _logger.info("Scheduled new job (host: %s, port: %s, scratch project ID: %d)", host, port, scratch_project_ID)
+        _logger.info("Scheduled new job (host: %s, port: %s, scratch project ID: %d)", host, port, job_ID)
         #q.enqueue(convert_scratch_project, scratch_project_ID, host, port)
-        q.enqueue_call(func=convert_scratch_project, args=(scratch_project_ID, host, port,), timeout=JOB_TIMEOUT)
+        q.enqueue_call(func=convert_scratch_project, args=(job_ID, host, port, verbose,), timeout=JOB_TIMEOUT)
         # TODO: lock.release()
-        return protocol.JobReadyMessage(scratch_project_ID)
+        return protocol.JobReadyMessage(job_ID)
 
 class InvalidCommand(Command):
     def execute(self, ctxt, args):
         return protocol.ErrorMessage("Invalid command!")
 
 COMMANDS = {
-    'retrieve_client_ID': RetrieveClientIDCommand(),
     'set_client_ID': SetClientIDCommand(),
     'retrieve_jobs_info': RetrieveJobsInfoCommand(),
     'schedule_job': ScheduleJobCommand()

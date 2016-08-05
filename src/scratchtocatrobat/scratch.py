@@ -30,10 +30,13 @@ import urllib2
 from scratchtocatrobat import common
 from scratchtocatrobat import scratchwebapi
 from string import punctuation
+from scratchtocatrobat.tools import helpers
+from scratchtocatrobat.tools.helpers import ProgressType
+
 
 _log = common.log
 
-_PROJECT_FILE_NAME = "project.json"
+_PROJECT_FILE_NAME = helpers.scratch_info("code_file_name")
 
 class JsonKeys(object):
     BASELAYER_ID = "baseLayerID"
@@ -41,6 +44,11 @@ class JsonKeys(object):
     COSTUME_MD5 = "baseLayerMD5"
     COSTUME_RESOLUTION = "bitmapResolution"
     COSTUME_NAME = "costumeName"
+    COSTUME_TEXT = "text"
+    COSTUME_TEXT_RECT = "textRect"
+    COSTUME_TEXT_COLOR = "textColor"
+    COSTUME_FONT_NAME = "fontName"
+    COSTUME_FONT_SIZE = "fontSize"
     COSTUMES = "costumes"
     INFO = "info"
     PROJECT_ID = 'projectID'
@@ -67,6 +75,16 @@ S2CC_POSITION_Y_VARIABLE_NAME_PREFIX = "S2CC_position_y_"
 ADD_TIMER_SCRIPT_KEY = "add_timer_script_key"
 ADD_TIMER_RESET_SCRIPT_KEY = "add_timer_reset_script_key"
 ADD_POSITION_SCRIPT_TO_OBJECTS_KEY = "add_position_script_to_objects_key"
+
+
+def verify_resources_of_scratch_object(scratch_object, md5_to_resource_path_map, project_base_path):
+    scratch_object_resources = scratch_object.get_sounds() + scratch_object.get_costumes()
+    for res_dict in scratch_object_resources:
+        assert JsonKeys.SOUND_MD5 in res_dict or JsonKeys.COSTUME_MD5 in res_dict
+        md5_file = res_dict[JsonKeys.SOUND_MD5] if JsonKeys.SOUND_NAME in res_dict else res_dict[JsonKeys.COSTUME_MD5]
+        resource_md5 = os.path.splitext(md5_file)[0]
+        if md5_file not in md5_to_resource_path_map:
+            raise ProjectError("Missing resource file at project: {}. Provide resource with md5: {}".format(project_base_path, resource_md5))
 
 # TODO: rename
 class Object(common.DictAccessWrapper):
@@ -257,7 +275,7 @@ class Object(common.DictAccessWrapper):
         ############################################################################################
         # doUntil and doWaitUntil workaround
         ############################################################################################
-        from scratchtocatrobat import converter
+        from scratchtocatrobat.converter import converter
         preprocessed_scripts = []
         additional_scripts = []
         for script_number, script in enumerate(self.scripts):
@@ -402,34 +420,38 @@ class RawProject(Object):
         md5_file_name = raw_resource[JsonKeys.SOUND_MD5] if JsonKeys.SOUND_NAME in raw_resource else raw_resource[JsonKeys.COSTUME_MD5]
         return md5_file_name
 
-    ''' Compute total number of iterations for progress bar
+    ''' Compute total number of iterations and assign to progress bar
         (assuming the resources have to be downloaded via Scratch's WebAPI) '''
-    def num_of_iterations_of_downloaded_project(self, progress_bar):
+    def expected_progress_of_downloaded_project(self, progress_bar):
         unique_resource_names = self.unique_resource_names
         num_total_resources = len(unique_resource_names)
         num_of_additional_downloads = num_total_resources + 1 # includes project.json download
 
         # update progress weight
-        result = self.num_of_iterations_of_local_project(progress_bar) - progress_bar.saving_xml_progress_weight
+        expected_progress = self.expected_progress_of_local_project(progress_bar)
+        result = expected_progress.sum() - progress_bar.saving_xml_progress_weight
         result += num_of_additional_downloads
         percentage = float(progress_bar.SAVING_XML_PROGRESS_WEIGHT_PERCENTAGE)/100.0
         progress_bar.saving_xml_progress_weight = int(round((percentage * float(result))/(1.0-percentage)))
-        return (result + progress_bar.saving_xml_progress_weight)
+        expected_progress.iterations[ProgressType.DOWNLOAD_CODE] = 1
+        expected_progress.iterations[ProgressType.DOWNLOAD_MEDIA_FILE] = num_total_resources
+        expected_progress.iterations[ProgressType.SAVE_XML] = progress_bar.saving_xml_progress_weight
+        return expected_progress
 
-    ''' Compute total number of iterations for progress bar
+    ''' Compute total number of iterations and assign to progress bar
         (assuming all resources already exist locally in a directory) '''
-    def num_of_iterations_of_local_project(self, progress_bar):
+    def expected_progress_of_local_project(self, progress_bar):
         unique_resource_names = self.unique_resource_names
         num_total_unique_resources = len(unique_resource_names)
-        num_of_downloads = 2 # for fetching title and instructions (2 different requests!)
         objects_scripts = [obj.scripts for obj in self.objects]
         all_scripts = reduce(lambda obj1_scripts, obj2_scripts: obj1_scripts + obj2_scripts, objects_scripts)
         num_of_scripts = len(all_scripts)
         num_of_resource_file_conversions = num_total_unique_resources
-        result = num_of_downloads + num_of_scripts + num_of_resource_file_conversions
+        result = num_of_scripts + num_of_resource_file_conversions
         percentage = float(progress_bar.SAVING_XML_PROGRESS_WEIGHT_PERCENTAGE)/100.0
         progress_bar.saving_xml_progress_weight = int(round((percentage * float(result))/(1.0-percentage)))
-        return (result + progress_bar.saving_xml_progress_weight)
+        return helpers.Progress(0, 1, 0, num_of_resource_file_conversions, num_of_scripts,
+                                progress_bar.saving_xml_progress_weight)
 
     @staticmethod
     def raw_project_code_from_project_folder_path(project_folder_path):
@@ -440,7 +462,8 @@ class RawProject(Object):
             try:
                 return json.load(fp)
             except:
-                # guess if binary file, since Scratch 1.x stores data in binary instead of JSON
+                # guess if is binary file, since Scratch 1.x saves project data in a binary file
+                # instead of a JSON file like in 2.x
                 textchars = bytearray({7,8,9,10,12,13,27} | set(range(0x20, 0x100)) - {0x7f})
                 is_binary_string = lambda bytesdata: bool(bytesdata.translate(None, textchars))
                 fp.seek(0, 0) # set file pointer back to the beginning of the file
@@ -475,24 +498,17 @@ class Project(RawProject):
         def read_md5_to_resource_path_mapping():
             md5_to_resource_path_map = {}
             # TODO: clarify that only files with extension are covered
-            for project_file_path in glob.glob(os.path.join(project_base_path, "*.*")):
-                resource_name = common.md5_hash(project_file_path) + os.path.splitext(project_file_path)[1]
-                md5_to_resource_path_map[resource_name] = project_file_path
+            for res_file_path in glob.glob(os.path.join(project_base_path, "*.*")):
+                resource_name = common.md5_hash(res_file_path) + os.path.splitext(res_file_path)[1]
+                md5_to_resource_path_map[resource_name] = res_file_path
             try:
                 # penLayer is no regular resource file
                 del md5_to_resource_path_map[self['penLayerMD5']]
             except KeyError:
                 # TODO: include penLayer download in webapi
                 pass
+            assert self['penLayerMD5'] not in md5_to_resource_path_map
             return md5_to_resource_path_map
-
-        def verify_resources(resources):
-            for res_dict in resources:
-                assert JsonKeys.SOUND_MD5 in res_dict or JsonKeys.COSTUME_MD5 in res_dict
-                md5_file = res_dict[JsonKeys.SOUND_MD5] if JsonKeys.SOUND_NAME in res_dict else res_dict[JsonKeys.COSTUME_MD5]
-                resource_md5 = os.path.splitext(md5_file)[0]
-                if md5_file not in self.md5_to_resource_path_map:
-                    raise ProjectError("Missing resource file at project: {}. Provide resource with md5: {}".format(project_base_path, resource_md5))
 
         super(Project, self).__init__(self.raw_project_code_from_project_folder_path(project_base_path))
         self.project_base_path = project_base_path
@@ -505,22 +521,25 @@ class Project(RawProject):
             self.project_id = "0"
             self.name = name if name is not None else "Untitled"
             self.instructions = self.notes_and_credits = None
+            self.automatic_screenshot_image_url = None
         else:
             self.name = name if name is not None else scratchwebapi.request_project_title_for(self.project_id)
             self.instructions = scratchwebapi.request_project_instructions_for(self.project_id)
             self.notes_and_credits = scratchwebapi.request_project_notes_and_credits_for(self.project_id)
+            self.automatic_screenshot_image_url = scratchwebapi.request_project_image_url_for(self.project_id)
 
-        if progress_bar != None: progress_bar.update() # instructions and notes-and-credits step passed
-        if progress_bar != None: progress_bar.update() # name step passed
+        if progress_bar != None: progress_bar.update(ProgressType.DETAILS) # details step passed
+
+        _log.info("Scratch project: %s%s", self.name,
+                  "(ID: {})".format(self.project_id) if self.project_id > 0 else "")
 
         self.name = self.name.strip() if self.name != None else "Unknown Project"
         self.md5_to_resource_path_map = read_md5_to_resource_path_mapping()
-        assert self['penLayerMD5'] not in self.md5_to_resource_path_map
-        for scratch_object in self.objects:
-            # TODO: rename to verify_object?
-            verify_resources(scratch_object.get_sounds() + scratch_object.get_costumes())
-
         self.global_user_lists = [scratch_obj.get_lists() for scratch_obj in self.objects if scratch_obj.is_stage()][0]
+
+        for scratch_object in self.objects:
+            verify_resources_of_scratch_object(scratch_object, self.md5_to_resource_path_map,
+                                               self.project_base_path)
 
         listened_keys = []
         for scratch_obj in self.objects:
@@ -691,8 +710,7 @@ class ScriptElement(object):
             
             return previous_operator != curr_operator
         
-        from scratchtocatrobat import converter
-  
+        from scratchtocatrobat.converter import converter
         if isinstance(raw_block, list) and len(raw_block) > 1 \
         and converter.is_math_function_or_operator(raw_block[0]):
             raw_block[1:] = map(lambda arg: arg if not isinstance(arg, (str, unicode)) \

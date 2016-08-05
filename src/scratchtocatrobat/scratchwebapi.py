@@ -22,6 +22,7 @@ import sys, os, re
 from urlparse import urlparse
 from scratchtocatrobat import logger
 from tools import helpers
+from tools.helpers import ProgressType
 from collections import namedtuple
 from datetime import datetime
 
@@ -108,8 +109,8 @@ def download_project(project_url, target_dir, progress_bar=None):
 
     project = scratch.RawProject.from_project_folder_path(target_dir)
     if progress_bar != None:
-        progress_bar.num_of_iterations = project.num_of_iterations_of_downloaded_project(progress_bar)
-        progress_bar.update() # update due to download of project.json file
+        progress_bar.expected_progress = project.expected_progress_of_downloaded_project(progress_bar)
+        progress_bar.update(ProgressType.DOWNLOAD_CODE) # update due to download of project.json file
 
     class ResourceDownloadThread(Thread):
         def run(self):
@@ -124,7 +125,8 @@ def download_project(project_url, target_dir, progress_bar=None):
                 raise ScratchWebApiError("Error with {}: '{}'".format(resource_url, e))
             verify_hash = helpers.md5_of_file(resource_file_path)
             assert verify_hash == os.path.splitext(md5_file_name)[0], "MD5 hash of response data not matching"
-            if progress_bar != None: progress_bar.update()
+            if progress_bar != None:
+                progress_bar.update(ProgressType.DOWNLOAD_MEDIA_FILE)
 
     # schedule parallel downloads
     unique_resource_names = project.unique_resource_names
@@ -228,6 +230,9 @@ def request_is_project_available(project_id):
 def request_project_title_for(project_id):
     return extract_project_title_from_document(request_project_page_as_Jsoup_document_for(project_id))
 
+def request_project_image_url_for(project_id):
+    return extract_project_image_url_from_document(request_project_page_as_Jsoup_document_for(project_id))
+
 def request_project_owner_for(project_id):
     return extract_project_owner_from_document(request_project_page_as_Jsoup_document_for(project_id))
 
@@ -258,6 +263,17 @@ def extract_project_title_from_document(document):
     if title.endswith(appended_title_text):
         title = title.split(appended_title_text)[0].strip()
     return title
+
+def extract_project_image_url_from_document(document):
+    if document is None: return None
+
+    extracted_text_list = document.select_attributes_as_text_list("div#scratch > img.image", "src")
+    if extracted_text_list is None or len(extracted_text_list) == 0: return None
+
+    image_url_of_project = unicode(extracted_text_list[0]).strip()
+    if image_url_of_project.startswith("//"):
+        image_url_of_project = image_url_of_project.replace("//", "https://")
+    return image_url_of_project
 
 def extract_project_owner_from_document(document):
     if document is None: return None

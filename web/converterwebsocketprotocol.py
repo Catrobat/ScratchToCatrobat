@@ -25,9 +25,10 @@ class JsonKeys(object):
         ARGS = "args"
 
         ARGS_CLIENT_ID = "clientID"
-        ARGS_URL = "url"
+        ARGS_JOB_ID = "jobID"
         ARGS_FORCE = "force"
-        allowed_arg_keys = [ARGS_CLIENT_ID, ARGS_URL, ARGS_FORCE]
+        ARGS_VERBOSE = "verbose"
+        allowed_arg_keys = [ARGS_CLIENT_ID, ARGS_JOB_ID, ARGS_FORCE, ARGS_VERBOSE]
 
         @classmethod
         def is_valid(cls, data):
@@ -54,7 +55,6 @@ class Message(object):
         JOB_DOWNLOAD = 8
         JOBS_INFO = 9
         CLIENT_ID = 10
-        RENEW_CLIENT_ID = 11
 
     def __init__(self, message_type, data):
         self.type = message_type
@@ -106,10 +106,11 @@ class JobFinishedMessage(Message):
         super(JobFinishedMessage, self).__init__(Message.Type.JOB_FINISHED, { "jobID": job_ID })
 
 class JobDownloadMessage(Message):
-    def __init__(self, job_ID, download_url):
+    def __init__(self, job_ID, download_url, cached_utc_date):
         super(JobDownloadMessage, self).__init__(Message.Type.JOB_DOWNLOAD, {
             "jobID": job_ID,
-            "url": download_url
+            "url": download_url,
+            "cachedUTCDate": cached_utc_date
         })
 
 class JobsInfoMessage(Message):
@@ -119,7 +120,3 @@ class JobsInfoMessage(Message):
 class ClientIDMessage(Message):
     def __init__(self, client_ID):
         super(ClientIDMessage, self).__init__(Message.Type.CLIENT_ID, { "clientID": client_ID })
-
-class RenewClientIDMessage(Message):
-    def __init__(self, client_ID):
-        super(RenewClientIDMessage, self).__init__(Message.Type.RENEW_CLIENT_ID, { "clientID": client_ID })

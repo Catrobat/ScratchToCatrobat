@@ -25,9 +25,9 @@ import tempfile
 from scratchtocatrobat import common
 from scratchtocatrobat.tools import helpers
 from java.io import FileOutputStream
-from org.apache.batik.transcoder.image import PNGTranscoder
-from org.apache.batik.transcoder import TranscoderInput
-from org.apache.batik.transcoder import TranscoderOutput
+from org.apache.batik.transcoder.image import PNGTranscoder #@UnresolvedImport
+from org.apache.batik.transcoder import TranscoderInput #@UnresolvedImport
+from org.apache.batik.transcoder import TranscoderOutput #@UnresolvedImport
 from java.nio.file import Paths
 from java.awt.image import BufferedImage
 from java.awt import Image
@@ -38,6 +38,7 @@ from java.io import FileReader
 from java.io import PrintWriter
 from java.util import StringTokenizer
 from javax.swing import ImageIcon
+from java.awt import Color
 
 
 _BATIK_CLI_JAR = "batik-rasterizer.jar"
@@ -74,7 +75,7 @@ def convert(input_svg_path, rotation_x, rotation_y):
         # read input SVG document into Transcoder Input (use Java NIO for this purpose)
         svg_URI_input = Paths.get(input_svg_path).toUri().toURL().toString()
 
-        _parse_and_rewrite_svg_file(svg_URI_input[5:])
+        _parse_and_rewrite_svg_file(svg_URI_input[5:], svg_URI_input[5:])
         
         input_svg_image = TranscoderInput(svg_URI_input)
 
@@ -92,12 +93,7 @@ def convert(input_svg_path, rotation_x, rotation_y):
 
         assert os.path.exists(output_png_path)
         
-        final_image = _scale_image(output_png_path)
-        
-        if final_image is None:
-            raise RuntimeError("...")
-        
-        final_image = _translation_to_rotation_point(final_image, rotation_x, rotation_y)
+        final_image = _translation(output_png_path, rotation_x, rotation_y)
         
         if final_image is None:
             raise RuntimeError("...")
@@ -119,6 +115,72 @@ def convert(input_svg_path, rotation_x, rotation_y):
 
     if error != None:
         raise error
+
+def _translation(output_png_path, rotation_x, rotation_y):
+    buffered_image = _create_buffered_image(ImageIcon(output_png_path).getImage())
+    #buffered_image = ImageIO.read(new File());
+    width, height = buffered_image.getWidth(), buffered_image.getHeight()
+    
+    buffered_image_matrix = [[buffered_image.getRGB(i, j) for j in xrange(height)] for i in xrange(width)]
+   
+    buffered_image_matrix = _transpose_matrix(buffered_image_matrix)
+
+    x_coords_list, y_coords_list = [], []
+    
+    m, n = len(buffered_image_matrix), len(buffered_image_matrix[0])
+    for y in xrange(m):
+        for x in xrange(n):
+            pixel = buffered_image_matrix[y][x]
+            if (pixel >> 24) != 0x00:
+                x_coords_list.append(x)
+                y_coords_list.append(y)
+    
+    start_x = min(x_coords_list)
+    end_x = max(x_coords_list)
+    start_y = min(y_coords_list)
+    end_y = max(y_coords_list)
+                 
+    if start_x > rotation_x:
+        start_x = rotation_x
+    if end_x < rotation_x:
+        end_x = rotation_x
+    if start_y > rotation_y:
+        start_y = rotation_y
+    if end_y < rotation_y:
+        end_y = rotation_y
+        
+    dst_new_width = end_x * 2
+    dst_new_height = end_y * 2
+            
+    new_buffered_image = BufferedImage(dst_new_width, dst_new_height,BufferedImage.TYPE_INT_ARGB)    
+    g2d = new_buffered_image.createGraphics()
+    g2d.setComposite(AlphaComposite.Clear)
+    g2d.fillRect(0, 0, dst_new_width, dst_new_height)
+            
+    # Rechts Unten
+    for old_row_y, new_row_y in zip(xrange(rotation_y, end_y + 1),xrange(end_y, dst_new_width)):
+        for old_column_x, new_column_x in zip(xrange(rotation_x, end_x + 1),xrange(end_x, dst_new_height)):
+            new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x])
+    
+    # Rechts oben
+    for old_row_y, new_row_y in zip(xrange(rotation_y, start_y - 1, -1),xrange(end_y, -1, -1)):
+        for old_column_x, new_column_x in zip(xrange(rotation_x, end_x + 1),xrange(end_x, dst_new_height)):
+            new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x])
+          
+    # links oben  
+    for old_row_y, new_row_y in zip(xrange(rotation_y, start_y - 1, -1),xrange(end_y, -1, -1)):
+        for old_column_x, new_column_x in zip(xrange(rotation_x, start_x - 1, -1),xrange(end_x, -1, -1)):
+            new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x])
+
+    # links unten
+    for old_row_y, new_row_y in zip(xrange(rotation_y, end_y + 1),xrange(end_y, dst_new_width)):
+        for old_column_x, new_column_x in zip(xrange(rotation_x, start_x - 1, -1),xrange(end_x, -1, -1)):
+            new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x])
+    
+    
+    color = Color.yellow
+    new_buffered_image.setRGB(end_x - 1, end_y - 1, color.getRGB())
+    return new_buffered_image
     
 def _translation_to_rotation_point(img, rotation_x, rotation_y):
    
@@ -215,10 +277,10 @@ def _create_buffered_image(image):
     return result 
 
 
-def _parse_and_rewrite_svg_file(svg_file_path):
+def _parse_and_rewrite_svg_file(svg_file_input_path, svg_output_input_path):
     write_str = ""
 
-    file_reader = FileReader(svg_file_path)
+    file_reader = FileReader(svg_file_input_path)
     
     buffered_reader = BufferedReader(file_reader)
 
@@ -251,7 +313,7 @@ def _parse_and_rewrite_svg_file(svg_file_path):
     buffered_reader.close()
     file_reader.close()
     
-    file_writer = PrintWriter(svg_file_path)
+    file_writer = PrintWriter(svg_output_input_path)
     file_writer.print(write_str)
     file_writer.close()
     

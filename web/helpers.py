@@ -20,8 +20,13 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, sys
+import urllib
 sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "..", "src"))
 from scratchtocatrobat import scratchwebapi
+
+REDIS_JOB_KEY_TEMPLATE = "job#{}"
+REDIS_CLIENT_JOB_KEY_TEMPLATE = "clientsOfJob#{}"
+REDIS_JOB_CLIENT_KEY_TEMPLATE = "jobsOfClient#{}"
 
 
 def extract_width_and_height_from_scratch_image_url(url_string, job_ID):
@@ -31,6 +36,10 @@ def extract_width_and_height_from_scratch_image_url(url_string, job_ID):
         return 150, 150 # default
     width_string, height_string = URL_parts[1].split(".png")[0].split("x")
     return int(width_string), int(height_string)
+
+
+def create_download_url(job_ID, job_title):
+    return "/download?id=" + str(job_ID) + "&fname=" + urllib.quote_plus(job_title)
 
 
 class ResponseBeautifulSoupDocumentWrapper(scratchwebapi.ResponseDocumentWrapper):

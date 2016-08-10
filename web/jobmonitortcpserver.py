@@ -44,7 +44,7 @@ import tornado.ioloop #@UnresolvedImport
 from tornado.tcpserver import TCPServer #@UnresolvedImport
 from tornado import gen #@UnresolvedImport
 from jobmonitorprotocol import Request, Reply, TCPConnection, SERVER, CLIENT, NotificationType
-from converterwebapp import ConverterWebSocketHandler
+from websocketserver.websockethandler import ConverterWebSocketHandler
 import json
 import time
 import datetime

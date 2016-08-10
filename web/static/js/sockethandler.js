@@ -12,13 +12,13 @@ function fetchJobsInfo() {
 }
 
 function startConversion(url, force, finishedConversionCallback) {
-  socketHandler.projectID = getProjectIDFromURL(url);
+  socketHandler.jobID = getProjectIDFromURL(url);
   socketHandler.finishedConversionCallback = finishedConversionCallback;
   var data = {
     "cmd": "schedule_job",
     "args": {
       "clientID": socketHandler.clientID,
-      "jobID": socketHandler.projectID,
+      "jobID": socketHandler.jobID,
       "force": force,
       "verbose": true
     }
@@ -27,7 +27,7 @@ function startConversion(url, force, finishedConversionCallback) {
 }
 
 var socketHandler = {
-    projectID: null,
+    jobID: null,
     socket: null,
     clientID: null,
     finishedConversionCallback: null,
@@ -77,7 +77,7 @@ var socketHandler = {
 
       // JOB_FAILED: { "jobID" }
       if (result.type == notificationTypes["JOB_FAILED"]) {
-        if (result.data["jobID"] != socketHandler.projectID) {
+        if (result.data["jobID"] != socketHandler.jobID) {
           return;
         }
         if ($("#console-container").is(':visible') == false) {
@@ -108,7 +108,7 @@ var socketHandler = {
       // JOB_OUTPUT: { "jobID", "line" }
       if (result.type == notificationTypes["JOB_OUTPUT"]) {
         var consoleLayer = $("#console-container");
-        var projectConsoleID = "console_" + socketHandler.projectID;
+        var projectConsoleID = "console_" + socketHandler.jobID;
         /* if no console for this project already exists create one */
         var projectConsole = null;
         if (consoleLayer.find("#"+projectConsoleID).length == 0) {
@@ -118,18 +118,18 @@ var socketHandler = {
           projectConsole = $("#"+projectConsoleID);
         }
         var consoleForMessage = null;
-        var projectIDForMessage = result.data["jobID"];
-        if (socketHandler.projectID == projectIDForMessage) {
+        var jobIDForMessage = result.data["jobID"];
+        if (socketHandler.jobID == jobIDForMessage) {
           /* case: message is sent to console of this project */
           projectConsole.show(); /* show console of this project */
           consoleLayer.show();
           consoleForMessage = projectConsole;
         } else {
           /* case: message is sent to console of other project */
-          var messageConsoleID = "console_" + projectIDForMessage.projectID;
+          var messageConsoleID = "console_" + jobIDForMessage.jobID;
           /* if no console for this message already exists create one */
           if (consoleLayer.find("#"+messageConsoleID).length == 0) {
-            consoleForMessage = $("<div></div>").attr("id", projectIDForMessage);
+            consoleForMessage = $("<div></div>").attr("id", jobIDForMessage);
             consoleLayer.append(consoleForMessage);
           } else {
             consoleForMessage = $("#"+messageConsoleID);
@@ -192,7 +192,7 @@ var socketHandler = {
 
       // JOB_DOWNLOAD: { "jobID", "url" }
       if (result.type == notificationTypes["JOB_DOWNLOAD"]) {
-        if (result.data["jobID"] != socketHandler.projectID) {
+        if (result.data["jobID"] != socketHandler.jobID) {
           return;
         }
         var download_url = location.protocol + "//" + location.host + result.data["url"];
@@ -221,7 +221,6 @@ var socketHandler = {
         }
         $("a.job_link").on("click", function() {
           var jobID = $(this).attr("id").split("[")[1].split("]")[0]; /* extract job ID */
-          /* assume jobID == scratchProjectID */
           var scratchProjectID = jobID;
           var projectURL = baseProjectURL + scratchProjectID + "/";
           $("#field-url").val(projectURL);

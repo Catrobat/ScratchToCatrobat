@@ -37,9 +37,16 @@
 import logging, ast
 import tornado.escape #@UnresolvedImport
 import tornado.websocket #@UnresolvedImport
+from protocol import protocol
 from protocol.command import command as cmd
 from protocol.job import Job
-from protocol import protocol
+from protocol.message.message import Message
+from protocol.message.job.job_download_message import JobDownloadMessage
+from protocol.message.job.job_failed_message import JobFailedMessage
+from protocol.message.job.job_finished_message import JobFinishedMessage
+from protocol.message.job.job_output_message import JobOutputMessage
+from protocol.message.job.job_progress_message import JobProgressMessage
+from protocol.message.job.job_running_message import JobRunningMessage
 import jobmonitorprotocol as jobmonprot
 from jobmonitorprotocol import NotificationType
 import helpers as webhelpers
@@ -79,9 +86,11 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
         client_job_key = webhelpers.REDIS_CLIENT_JOB_KEY_TEMPLATE.format(job_ID)
         job = Job.from_redis(_redis_conn, job_key)
         #old_status = job.status
+
         if job == None:
             _logger.error("Cannot find job #{}".format(job_ID))
             return
+
         if msg_type == NotificationType.JOB_STARTED:
             imageURL = args[jobmonprot.Request.ARGS_IMAGE_URL]
             job.title = args[jobmonprot.Request.ARGS_TITLE]
@@ -129,18 +138,18 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
 
         for socket_handlers in listening_clients:
             if msg_type == NotificationType.JOB_STARTED:
-                message = protocol.JobRunningMessage(job_ID)
+                message = JobRunningMessage(job_ID)
             elif msg_type == NotificationType.JOB_OUTPUT:
-                message = protocol.JobOutputMessage(job_ID, args[jobmonprot.Request.ARGS_LINES])
+                message = JobOutputMessage(job_ID, args[jobmonprot.Request.ARGS_LINES])
             elif msg_type == NotificationType.JOB_PROGRESS:
-                message = protocol.JobProgressMessage(job_ID, args[jobmonprot.Request.ARGS_PROGRESS])
+                message = JobProgressMessage(job_ID, args[jobmonprot.Request.ARGS_PROGRESS])
             elif msg_type == NotificationType.JOB_FINISHED:
-                message = protocol.JobFinishedMessage(job_ID)
+                message = JobFinishedMessage(job_ID)
             elif msg_type == NotificationType.FILE_TRANSFER_FINISHED:
                 download_url = webhelpers.create_download_url(job_ID, job.title)
-                message = protocol.JobDownloadMessage(job_ID, download_url, None)
+                message = JobDownloadMessage(job_ID, download_url, None)
             elif msg_type == NotificationType.JOB_FAILED:
-                message = protocol.JobFailedMessage(job_ID)
+                message = JobFailedMessage(job_ID)
             else:
                 _logger.warn("IGNORING UNKNOWN MESSAGE")
                 return
@@ -149,7 +158,7 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
 
     def on_close(self):
         cls = self.__class__
-        _logger.info("Closing websocket")
+        _logger.info("Closing WebSocket")
         for (client_ID, open_sockets) in cls.client_ID_open_sockets_map.iteritems():
             if self in open_sockets:
                 open_sockets.remove(self)
@@ -157,11 +166,11 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
                     del cls.client_ID_open_sockets_map[client_ID]
                 else:
                     cls.client_ID_open_sockets_map[client_ID] = open_sockets
-                _logger.info("Found websocket and closed it")
+                _logger.info("Found WebSocket and closed it")
                 return # break out of loop => limit is 1 socket/clientID
 
     def send_message(self, message):
-        assert isinstance(message, protocol.Message)
+        assert isinstance(message, Message)
         _logger.debug("Sending %s %r to %d", message.__class__.__name__,
                       message.as_dict(), id(self))
         try:

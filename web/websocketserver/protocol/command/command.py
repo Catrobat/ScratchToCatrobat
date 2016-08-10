@@ -19,27 +19,31 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging
-from websocketserver.protocol import protocol
+from websocketserver.protocol.message.base.error_message import ErrorMessage
 
-_logger = logging.getLogger(__name__)
+COMMAND_SET_CLIENT_ID = "set_client_ID"
+COMMAND_RETRIEVE_JOBS_INFO = "retrieve_jobs_info"
+COMMAND_SCHEDULE_JOB = "schedule_job"
 
 
 class Command(object):
+    class Arguments(object):
+        CLIENT_ID = "clientID"
+        JOB_ID    = "jobID"
+        FORCE     = "force"
+        VERBOSE   = "verbose"
+
     def execute(self, ctxt, args):
         raise NotImplementedError()
 
     def is_valid_client_ID(self, redis_connection, client_ID):
-        if client_ID is None:
-            return False
-        client_ID_string = str(client_ID)
-        if client_ID_string is None or int(client_ID_string) <= 0:
+        if client_ID is None or not isinstance(client_ID, int) or client_ID <= 0:
             return False
         last_client_ID = redis_connection.get("lastClientID")
-        return last_client_ID != None and client_ID_string.isdigit() and int(client_ID_string) <= int(last_client_ID)
+        return last_client_ID is not None and client_ID <= int(last_client_ID)
 
     def is_valid_job_ID(self, job_ID):
-        return str(job_ID).isdigit() and int(job_ID) > 0
+        return job_ID is not None and isinstance(job_ID, int) and job_ID > 0
 
     def retrieve_new_client_ID(self, ctxt):
         redis_conn = ctxt.redis_connection
@@ -63,18 +67,14 @@ def update_jobs_info_on_listening_clients(ctxt):
 
 class InvalidCommand(Command):
     def execute(self, ctxt, args):
-        return protocol.ErrorMessage("Invalid command!")
+        return ErrorMessage("Invalid command!")
 
 
 def get_command(name):
     import set_client_id, schedule_job, retrieve_jobs_info
     COMMANDS = {
-        'set_client_ID': set_client_id.SetClientIDCommand(),
-        'retrieve_jobs_info': retrieve_jobs_info.RetrieveJobsInfoCommand(),
-        'schedule_job': schedule_job.ScheduleJobCommand()
+        COMMAND_SET_CLIENT_ID:        set_client_id.SetClientIDCommand(),
+        COMMAND_RETRIEVE_JOBS_INFO:   retrieve_jobs_info.RetrieveJobsInfoCommand(),
+        COMMAND_SCHEDULE_JOB:         schedule_job.ScheduleJobCommand()
     }
-    if not isinstance(name, (str, unicode)) or name not in COMMANDS:
-        command = InvalidCommand()
-    else:
-        command = COMMANDS[name]
-    return command
+    return COMMANDS[name] if isinstance(name, (str, unicode)) and name in COMMANDS else InvalidCommand()

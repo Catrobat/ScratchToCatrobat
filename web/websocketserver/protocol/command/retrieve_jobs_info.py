@@ -20,24 +20,25 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-import command
 import ast
-from websocketserver.protocol import protocol
+from command import Command
+from websocketserver.protocol.message.base.error_message import ErrorMessage
+from websocketserver.protocol.message.base.jobs_info_message import JobsInfoMessage
 from websocketserver.protocol.job import Job
 import helpers as webhelpers
 
 _logger = logging.getLogger(__name__)
 
 
-class RetrieveJobsInfoCommand(command.Command):
+class RetrieveJobsInfoCommand(Command):
 
     def execute(self, ctxt, args):
-        if not self.is_valid_client_ID(ctxt.redis_connection, args["clientID"]):
-            return protocol.ErrorMessage("Invalid client ID!")
+        client_ID = args[Command.Arguments.CLIENT_ID]
+        if not self.is_valid_client_ID(ctxt.redis_connection, client_ID):
+            return ErrorMessage("Invalid client ID!")
 
         redis_conn = ctxt.redis_connection
-        client_ID_string = str(args["clientID"])
-        job_client_key = webhelpers.REDIS_JOB_CLIENT_KEY_TEMPLATE.format(client_ID_string)
+        job_client_key = webhelpers.REDIS_JOB_CLIENT_KEY_TEMPLATE.format(client_ID)
         jobs_of_client = redis_conn.get(job_client_key)
         jobs_of_client = ast.literal_eval(jobs_of_client) if jobs_of_client != None else []
         assert isinstance(jobs_of_client, list)
@@ -51,4 +52,4 @@ class RetrieveJobsInfoCommand(command.Command):
             info = job.__dict__
             del info["output"]
             jobs_info += [info]
-        return protocol.JobsInfoMessage(jobs_info)
+        return JobsInfoMessage(jobs_info)

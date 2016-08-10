@@ -20,15 +20,18 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-import command
 import os
 import ast
 from datetime import datetime as dt, timedelta
 from rq import Queue, use_connection #@UnresolvedImport
 from converterjob import convert_scratch_project
-from websocketserver.protocol import protocol
+from command import Command
 from websocketserver.protocol.job import Job
 from scratchtocatrobat.tools import helpers
+from websocketserver.protocol.message.base.error_message import ErrorMessage
+from websocketserver.protocol.message.job.job_already_running_message import JobAlreadyRunningMessage
+from websocketserver.protocol.message.job.job_ready_message import JobReadyMessage
+from websocketserver.protocol.message.job.job_download_message import JobDownloadMessage
 import helpers as webhelpers
 
 CATROBAT_FILE_EXT = helpers.config.get("CATROBAT", "file_extension")
@@ -50,55 +53,54 @@ def assign_client_to_job(redis_connection, client_ID, job_ID):
     return True
 
 
-def assign_job_to_client(redis_connection, scratch_project_ID, client_ID):
+def assign_job_to_client(redis_connection, job_ID, client_ID):
     job_client_key = webhelpers.REDIS_JOB_CLIENT_KEY_TEMPLATE.format(client_ID)
     jobs_of_client = redis_connection.get(job_client_key)
     jobs_of_client = ast.literal_eval(jobs_of_client) if jobs_of_client != None else []
 
     assert isinstance(jobs_of_client, list)
-    if scratch_project_ID not in jobs_of_client:
-        jobs_of_client.append(scratch_project_ID)
+    if job_ID not in jobs_of_client:
+        jobs_of_client.append(job_ID)
         return redis_connection.set(job_client_key, jobs_of_client)
     return True
 
 
-class ScheduleJobCommand(command.Command):
+class ScheduleJobCommand(Command):
+
     def execute(self, ctxt, args):
         # validate parameters
-        if not self.is_valid_client_ID(ctxt.redis_connection, args["clientID"]):
-            return protocol.ErrorMessage("Invalid client ID!")
+        client_ID = args[Command.Arguments.CLIENT_ID]
+        job_ID = args[Command.Arguments.JOB_ID]
 
-        if not self.is_valid_job_ID(args["jobID"]):
-            return protocol.ErrorMessage("Invalid jobID given!")
+        if not self.is_valid_client_ID(ctxt.redis_connection, client_ID):
+            return ErrorMessage("Invalid client ID!")
+
+        if not self.is_valid_job_ID(job_ID):
+            return ErrorMessage("Invalid jobID given!")
 
         force = False
-        if "force" in args:
-            force_param = str(args["force"]).lower()
-            force = force_param == "true" or force_param == "1"
-
-        # parameters
-        client_ID_string = str(args["clientID"])
-        job_ID = int(args["jobID"])
+        if Command.Arguments.FORCE in args:
+            force_param_str = str(args[Command.Arguments.FORCE]).lower()
+            force = force_param_str == "true" or force_param_str == "1"
 
         verbose = False
-        if "verbose" in args:
-            verbose_param = str(args["verbose"]).lower()
-            verbose = verbose_param == "true" or verbose_param == "1"
+        if Command.Arguments.VERBOSE in args:
+            verbose_param_str = str(args[Command.Arguments.VERBOSE]).lower()
+            verbose = verbose_param_str == "true" or verbose_param_str == "1"
 
         # schedule this job
         redis_conn = ctxt.redis_connection
         # TODO: lock.acquire() => use context-handler (i.e. "with"-keyword) and file lock!
-        assign_client_to_job(redis_conn, client_ID_string, job_ID)
-        assign_job_to_client(redis_conn, job_ID, client_ID_string)
+        assign_client_to_job(redis_conn, client_ID, job_ID)
+        assign_job_to_client(redis_conn, job_ID, client_ID)
         job_key = webhelpers.REDIS_JOB_KEY_TEMPLATE.format(job_ID)
         job = Job.from_redis(redis_conn, job_key)
-        jobmonitorserver_settings = ctxt.jobmonitorserver_settings
 
         if job != None:
             if job.status == Job.Status.READY or job.status == Job.Status.RUNNING:
                 # TODO: lock.release()
                 _logger.info("Job already scheduled (scratch project with ID: %d)", job_ID)
-                return protocol.JobAlreadyRunningMessage(job_ID)
+                return JobAlreadyRunningMessage(job_ID)
             elif job.status == Job.Status.FINISHED and not force:
                 assert job.archiveCachedUTCDate is not None
                 archive_cached_utc_date = dt.strptime(job.archiveCachedUTCDate, Job.DATETIME_FORMAT)
@@ -110,7 +112,7 @@ class ScheduleJobCommand(command.Command):
                     if file_name and os.path.exists(file_path):
                         download_url = webhelpers.create_download_url(job_ID, job.title)
                         # TODO: lock.release()
-                        return protocol.JobDownloadMessage(job_ID, download_url, job.archiveCachedUTCDate)
+                        return JobDownloadMessage(job_ID, download_url, job.archiveCachedUTCDate)
 
             else:
                 assert job.status == Job.Status.FAILED or force
@@ -118,13 +120,13 @@ class ScheduleJobCommand(command.Command):
         job = Job(job_ID, "-", Job.Status.READY)
         if not job.save_to_redis(redis_conn, job_key):
             # TODO: lock.release()
-            return protocol.ErrorMessage("Cannot schedule job!")
+            return ErrorMessage("Cannot schedule job!")
 
         use_connection(redis_conn)
         q = Queue(connection=redis_conn)
-        host, port = jobmonitorserver_settings["host"], jobmonitorserver_settings["port"]
+        host, port = ctxt.jobmonitorserver_settings["host"], ctxt.jobmonitorserver_settings["port"]
         _logger.info("Scheduled new job (host: %s, port: %s, scratch project ID: %d)", host, port, job_ID)
         #q.enqueue(convert_scratch_project, scratch_project_ID, host, port)
         q.enqueue_call(func=convert_scratch_project, args=(job_ID, host, port, verbose,), timeout=JOB_TIMEOUT)
         # TODO: lock.release()
-        return protocol.JobReadyMessage(job_ID)
+        return JobReadyMessage(job_ID)

@@ -24,7 +24,7 @@ function getProjectIDFromURL(projectURL) {
     if (projectID == "") {
       projectID = urlParts[urlParts.length - 2];
     }
-    return projectID;
+    return parseInt(projectID);
 }
 
 function updateAndShowProjectDetails(projectID) {

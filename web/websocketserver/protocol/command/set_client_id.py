@@ -20,15 +20,15 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from command import Command
-from websocketserver.protocol import protocol
+from websocketserver.protocol.message.base.client_id_message import ClientIDMessage
 
 
 class SetClientIDCommand(Command):
 
     def execute(self, ctxt, args):
-        if not self.is_valid_client_ID(ctxt.redis_connection, args["clientID"]):
-            return protocol.ClientIDMessage(self.retrieve_new_client_ID(ctxt))
+        client_ID = args[Command.Arguments.CLIENT_ID]
+        if not self.is_valid_client_ID(ctxt.redis_connection, client_ID):
+            return ClientIDMessage(self.retrieve_new_client_ID(ctxt))
 
-        client_ID = int(args["clientID"])
         ctxt.handler.set_client_ID(client_ID) # map client ID to web socket handler
-        return protocol.ClientIDMessage(client_ID)
+        return ClientIDMessage(client_ID)

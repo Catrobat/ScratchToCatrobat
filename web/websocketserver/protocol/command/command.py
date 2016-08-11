@@ -57,10 +57,10 @@ class Command(object):
 
 # TODO: create new packet for this and only send updates...
 def update_jobs_info_on_listening_clients(ctxt):
-    import retrieve_jobs_info
+    from websocketserver.protocol.command import retrieve_jobs_info_command
     from websocketserver import websockethandler
     for client_ID, handler_list in websockethandler.ConverterWebSocketHandler.client_ID_open_sockets_map.iteritems():
-        message = retrieve_jobs_info.RetrieveJobsInfoCommand().execute(ctxt, { "clientID": str(client_ID) })
+        message = retrieve_jobs_info_command.RetrieveJobsInfoCommand().execute(ctxt, { "clientID": str(client_ID) })
         for handler in handler_list:
             handler.send_message(message)
 
@@ -71,10 +71,12 @@ class InvalidCommand(Command):
 
 
 def get_command(name):
-    import set_client_id, schedule_job, retrieve_jobs_info
+    from websocketserver.protocol.command import set_client_id_command
+    from websocketserver.protocol.command import schedule_job_command
+    from websocketserver.protocol.command import retrieve_jobs_info_command
     COMMANDS = {
-        COMMAND_SET_CLIENT_ID:        set_client_id.SetClientIDCommand(),
-        COMMAND_RETRIEVE_JOBS_INFO:   retrieve_jobs_info.RetrieveJobsInfoCommand(),
-        COMMAND_SCHEDULE_JOB:         schedule_job.ScheduleJobCommand()
+        COMMAND_SET_CLIENT_ID:        set_client_id_command.SetClientIDCommand(),
+        COMMAND_RETRIEVE_JOBS_INFO:   retrieve_jobs_info_command.RetrieveJobsInfoCommand(),
+        COMMAND_SCHEDULE_JOB:         schedule_job_command.ScheduleJobCommand()
     }
     return COMMANDS[name] if isinstance(name, (str, unicode)) and name in COMMANDS else InvalidCommand()

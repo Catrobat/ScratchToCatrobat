@@ -57,7 +57,7 @@ var socketHandler = {
       var result = JSON.parse(event.data);
       var baseNotificationType = {
         "ERROR":                0,
-        "JOBS_INFO":            1,
+        "INFO":                 1,
         "CLIENT_ID":            2
       };
       var jobNotificationType = {
@@ -78,8 +78,8 @@ var socketHandler = {
           alert("ERROR: " + result.data["msg"]);
           return;
 
-        } else if (result.type == baseNotificationType["JOBS_INFO"]) {
-          // JOBS_INFO: { "jobsInfo" }
+        } else if (result.type == baseNotificationType["INFO"]) {
+          // INFO: { "jobsInfo" }
           var statusText = ["Ready", "Running", "Finished", "Failed"];
           $("#jobs_info_table").children().remove();
           for (var index in result.data["jobsInfo"]) {

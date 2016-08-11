@@ -51,8 +51,14 @@ from scratchtocatrobat import scratchwebapi
 from scratchtocatrobat.scratchwebapi import ScratchProjectVisibiltyState
 from scratchtocatrobat.tools import helpers
 import helpers as webhelpers
+from websocketserver.protocol.command.schedule_job_command import remove_client_from_download_list_if_exists,\
+    remove_client_from_download_list_if_exists
+import redis #@UnresolvedImport
 
 _logger = logging.getLogger(__name__)
+
+# TODO: check if redis is available => error!
+REDIS_CONNECTION = redis.Redis() #'127.0.0.1', 6789) #, password='secret')
 
 CATROBAT_FILE_EXT = helpers.config.get("CATROBAT", "file_extension")
 CONVERTER_API_SETTINGS = helpers.config.items_as_dict("CONVERTER_API")
@@ -72,15 +78,25 @@ class _MainHandler(tornado.web.RequestHandler):
 
 class _DownloadHandler(tornado.web.RequestHandler):
     def get(self):
-        # TODO: support head request!
-        scratch_project_id_string = self.get_query_argument("id", default=None)
-        if scratch_project_id_string == None or not scratch_project_id_string.isdigit():
+        job_ID_string = self.get_query_argument("job_id", default=None)
+        client_ID_string = self.get_query_argument("client_id", default=None)
+
+        # TODO: use validation function instead...
+        if job_ID_string == None or not job_ID_string.isdigit() \
+        or client_ID_string == None or not client_ID_string.isdigit():
             raise HTTPError(404)
+
+        job_ID = int(job_ID_string)
+        client_ID = int(client_ID_string)
+
         file_dir = self.application.settings["jobmonitorserver"]["download_dir"]
-        file_name = scratch_project_id_string + CATROBAT_FILE_EXT
+        file_name = job_ID_string + CATROBAT_FILE_EXT
         file_path = "%s/%s" % (file_dir, file_name)
+
         if not file_name or not os.path.exists(file_path):
             raise HTTPError(404)
+
+        remove_client_from_download_list_if_exists(REDIS_CONNECTION, job_ID, client_ID)
         file_size = os.path.getsize(file_path)
         self.set_header('Content-Type', 'application/zip')
         self.set_header('Content-Disposition', 'attachment; filename="%s"' % file_name)
@@ -208,6 +224,7 @@ class ConverterWebApp(tornado.web.Application):
     def __init__(self, **settings):
         from websocketserver import websockethandler
         self.settings = settings
+        websockethandler.ConverterWebSocketHandler.REDIS_CONNECTION = REDIS_CONNECTION
         handlers = [
             (r"/", _MainHandler),
             (r"/download", _DownloadHandler),

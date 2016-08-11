@@ -25,7 +25,8 @@ sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "..", 
 from scratchtocatrobat import scratchwebapi
 
 REDIS_JOB_KEY_TEMPLATE = "job#{}"
-REDIS_CLIENT_JOB_KEY_TEMPLATE = "clientsOfJob#{}"
+REDIS_LISTENING_CLIENT_JOB_KEY_TEMPLATE = "listeningClientsOfJob#{}"
+REDIS_CLIENTS_NOT_YET_DOWNLOADED_JOB_KEY_TEMPLATE = "clientsNotYetDownloadedJob#{}"
 REDIS_JOB_CLIENT_KEY_TEMPLATE = "jobsOfClient#{}"
 
 
@@ -38,8 +39,9 @@ def extract_width_and_height_from_scratch_image_url(url_string, job_ID):
     return int(width_string), int(height_string)
 
 
-def create_download_url(job_ID, job_title):
-    return "/download?id=" + str(job_ID) + "&fname=" + urllib.quote_plus(job_title)
+def create_download_url(job_ID, client_ID, job_title):
+    return "/download?job_id={}&client_id={}&fname={}" \
+           .format(job_ID, client_ID, urllib.quote_plus(job_title))
 
 
 class ResponseBeautifulSoupDocumentWrapper(scratchwebapi.ResponseDocumentWrapper):

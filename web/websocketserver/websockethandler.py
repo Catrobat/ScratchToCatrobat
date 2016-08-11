@@ -39,6 +39,7 @@ import tornado.escape #@UnresolvedImport
 import tornado.websocket #@UnresolvedImport
 from protocol import protocol
 from protocol.command import command as cmd
+from protocol.command.schedule_job_command import remove_all_listening_clients_from_job, add_clients_to_download_list
 from protocol.job import Job
 from protocol.message.message import Message
 from protocol.message.job.job_download_message import JobDownloadMessage
@@ -50,12 +51,9 @@ from protocol.message.job.job_running_message import JobRunningMessage
 from jobmonitorserver import jobmonitorprotocol as jobmonprot
 from jobmonitorserver.jobmonitorprotocol import NotificationType
 import helpers as webhelpers
-import redis #@UnresolvedImport
 from datetime import datetime as dt
 
 _logger = logging.getLogger(__name__)
-# TODO: check if redis is available => error!
-_redis_conn = redis.Redis() #'127.0.0.1', 6789) #, password='secret')
 
 
 class Context(object):
@@ -67,12 +65,14 @@ class Context(object):
 
 class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
 
+    REDIS_CONNECTION = None
     client_ID_open_sockets_map = {}
 
     def get_compression_options(self):
         return {} # Non-None enables compression with default options.
 
     def set_client_ID(self, client_ID):
+        assert isinstance(client_ID, int)
         cls = self.__class__
         if client_ID not in cls.client_ID_open_sockets_map:
             cls.client_ID_open_sockets_map[client_ID] = []
@@ -80,12 +80,10 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
 
     @classmethod
     def notify(cls, msg_type, args):
-        # Note: jobID is always equivalent to scratch project ID
+        # Note: jobID is equivalent to scratch project ID by definition!
         job_ID = args[jobmonprot.Request.ARGS_JOB_ID]
         job_key = webhelpers.REDIS_JOB_KEY_TEMPLATE.format(job_ID)
-        client_job_key = webhelpers.REDIS_CLIENT_JOB_KEY_TEMPLATE.format(job_ID)
-        job = Job.from_redis(_redis_conn, job_key)
-        #old_status = job.status
+        job = Job.from_redis(cls.REDIS_CONNECTION, job_key)
 
         if job == None:
             _logger.error("Cannot find job #{}".format(job_ID))
@@ -112,31 +110,40 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
             job.progress = 100.0
             job.status = Job.Status.FINISHED
             job.archiveCachedUTCDate = dt.utcnow().strftime(Job.DATETIME_FORMAT)
-        if not job.save_to_redis(_redis_conn, job_key):
-            _logger.info("Unable to update job status!")
-            return
-
-        # inform all clients if status or progress changed
-        # TODO: refactor this!
-        #if old_status != job.status or msg_type == NotificationType.JOB_PROGRESS:
-        #    update_jobs_info_on_listening_clients(Context(None, _redis_conn, None))
 
         # find listening clients
         # TODO: cache this...
-        clients_of_project = _redis_conn.get(client_job_key)
-        if clients_of_project == None:
+        listening_client_job_key = webhelpers.REDIS_LISTENING_CLIENT_JOB_KEY_TEMPLATE.format(job_ID)
+        all_listening_client_IDs = cls.REDIS_CONNECTION.get(listening_client_job_key)
+        if all_listening_client_IDs == None:
             _logger.warn("WTH?! No listening clients stored!")
+            if not job.save_to_redis(cls.REDIS_CONNECTION, job_key):
+                _logger.info("Unable to update job status!")
             return
 
-        clients_of_project = ast.literal_eval(clients_of_project)
-        num_clients_of_project = len(clients_of_project)
+        all_listening_client_IDs = ast.literal_eval(all_listening_client_IDs)
+        num_clients_of_project = len(all_listening_client_IDs)
         _logger.debug("There %s %d registered client%s." % \
                       ("is" if num_clients_of_project == 1 else "are", \
                        num_clients_of_project, "s" if num_clients_of_project != 1 else ""))
-        listening_clients = [cls.client_ID_open_sockets_map[int(client_ID)] for client_ID in clients_of_project if int(client_ID) in cls.client_ID_open_sockets_map]
-        _logger.debug("There are %d active clients listening on this job." % len(listening_clients))
 
-        for socket_handlers in listening_clients:
+        if msg_type in (NotificationType.FILE_TRANSFER_FINISHED, NotificationType.JOB_FAILED):
+            # Job completely finished or failed -> remove all listeners from database
+            #                                      before updating job status in database
+            remove_all_listening_clients_from_job(cls.REDIS_CONNECTION, job_ID)
+            # append clients to download-list
+            add_clients_to_download_list(cls.REDIS_CONNECTION, job_ID, all_listening_client_IDs)
+
+        # update job status in database
+        if not job.save_to_redis(cls.REDIS_CONNECTION, job_key):
+            _logger.info("Unable to update job status!")
+            return
+
+        currently_listening_client_IDs = filter(lambda client_ID: client_ID in cls.client_ID_open_sockets_map, all_listening_client_IDs)
+        currently_listening_client_sockets = map(lambda client_ID: cls.client_ID_open_sockets_map[client_ID], currently_listening_client_IDs)
+        _logger.debug("There are %d active clients listening on this job." % len(currently_listening_client_sockets))
+
+        for idx, socket_handlers in enumerate(currently_listening_client_sockets):
             if msg_type == NotificationType.JOB_STARTED:
                 message = JobRunningMessage(job_ID)
             elif msg_type == NotificationType.JOB_OUTPUT:
@@ -146,7 +153,8 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
             elif msg_type == NotificationType.JOB_FINISHED:
                 message = JobFinishedMessage(job_ID)
             elif msg_type == NotificationType.FILE_TRANSFER_FINISHED:
-                download_url = webhelpers.create_download_url(job_ID, job.title)
+                client_ID = currently_listening_client_IDs[idx]
+                download_url = webhelpers.create_download_url(job_ID, client_ID, job.title)
                 message = JobDownloadMessage(job_ID, download_url, None)
             elif msg_type == NotificationType.JOB_FAILED:
                 message = JobFailedMessage(job_ID)
@@ -186,8 +194,8 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
             args = protocol.JsonKeys.Request.extract_allowed_args(data[protocol.JsonKeys.Request.ARGS])
         else:
             command = cmd.InvalidCommand()
+
         # TODO: when client ID is given => check if it belongs to socket handler!
-        redis_conn = _redis_conn
-        ctxt = Context(self, redis_conn, self.application.settings["jobmonitorserver"])
+        ctxt = Context(self, self.__class__.REDIS_CONNECTION, self.application.settings["jobmonitorserver"])
         _logger.info("Executing command %s", command.__class__.__name__)
         self.send_message(command.execute(ctxt, args))

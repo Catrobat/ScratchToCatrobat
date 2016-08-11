@@ -33,6 +33,7 @@ from websocketserver.protocol.message.job.job_already_running_message import Job
 from websocketserver.protocol.message.job.job_ready_message import JobReadyMessage
 from websocketserver.protocol.message.job.job_download_message import JobDownloadMessage
 import helpers as webhelpers
+from websocketserver.protocol.message.job.job_failed_message import JobFailedMessage
 
 CATROBAT_FILE_EXT = helpers.config.get("CATROBAT", "file_extension")
 SCRATCH_PROJECT_IMAGE_URL_TEMPLATE = helpers.config.get("SCRATCH_API", "project_image_url_template")
@@ -41,8 +42,8 @@ JOB_TIMEOUT = int(helpers.config.get("CONVERTER_JOB", "timeout"))
 _logger = logging.getLogger(__name__)
 
 
-def assign_client_to_job(redis_connection, client_ID, job_ID):
-    client_job_key = webhelpers.REDIS_CLIENT_JOB_KEY_TEMPLATE.format(job_ID)
+def add_listening_client_to_job(redis_connection, client_ID, job_ID):
+    client_job_key = webhelpers.REDIS_LISTENING_CLIENT_JOB_KEY_TEMPLATE.format(job_ID)
     clients_of_job = redis_connection.get(client_job_key)
     clients_of_job = ast.literal_eval(clients_of_job) if clients_of_job != None else []
 
@@ -51,6 +52,37 @@ def assign_client_to_job(redis_connection, client_ID, job_ID):
         clients_of_job.append(client_ID)
         return redis_connection.set(client_job_key, clients_of_job)
     return True
+
+
+def remove_all_listening_clients_from_job(redis_connection, job_ID):
+    client_job_key = webhelpers.REDIS_LISTENING_CLIENT_JOB_KEY_TEMPLATE.format(job_ID)
+    return redis_connection.delete(client_job_key)
+
+
+def add_clients_to_download_list(redis_connection, job_ID, new_client_IDs):
+    assert isinstance(new_client_IDs, list)
+    for client_ID in new_client_IDs:
+        assert isinstance(client_ID, int)
+
+    client_download_job_key = webhelpers.REDIS_CLIENTS_NOT_YET_DOWNLOADED_JOB_KEY_TEMPLATE.format(job_ID)
+    existing_client_IDs = redis_connection.get(client_download_job_key)
+    existing_client_IDs = ast.literal_eval(existing_client_IDs) if existing_client_IDs != None else []
+    assert isinstance(existing_client_IDs, list)
+    existing_client_IDs += new_client_IDs
+    return redis_connection.set(client_download_job_key, existing_client_IDs)
+
+
+def remove_client_from_download_list_if_exists(redis_connection, job_ID, client_ID):
+    assert isinstance(client_ID, int)
+    client_download_job_key = webhelpers.REDIS_CLIENTS_NOT_YET_DOWNLOADED_JOB_KEY_TEMPLATE.format(job_ID)
+    existing_client_IDs = redis_connection.get(client_download_job_key)
+    existing_client_IDs = ast.literal_eval(existing_client_IDs) if existing_client_IDs != None else []
+    assert isinstance(existing_client_IDs, list)
+
+    if client_ID not in existing_client_IDs:
+        return False
+    existing_client_IDs.remove(client_ID)
+    return redis_connection.set(client_download_job_key, existing_client_IDs)
 
 
 def assign_job_to_client(redis_connection, job_ID, client_ID):
@@ -92,8 +124,7 @@ class ScheduleJobCommand(Command):
 
         # schedule this job
         redis_conn = ctxt.redis_connection
-        # TODO: lock.acquire() => use context-handler (i.e. "with"-keyword) and file lock!
-        assign_client_to_job(redis_conn, client_ID, job_ID)
+        # TODO: lock.acquire() => use python's context-handler (i.e. "with"-keyword) and file lock!
         assign_job_to_client(redis_conn, job_ID, client_ID)
         job_key = webhelpers.REDIS_JOB_KEY_TEMPLATE.format(job_ID)
         job = Job.from_redis(redis_conn, job_key)
@@ -102,7 +133,11 @@ class ScheduleJobCommand(Command):
             if job.status == Job.Status.READY or job.status == Job.Status.RUNNING:
                 # TODO: lock.release()
                 _logger.info("Job already scheduled (scratch project with ID: %d)", job_ID)
+                remove_client_from_download_list_if_exists(redis_conn, job_ID, client_ID)
+                if not add_listening_client_to_job(redis_conn, client_ID, job_ID):
+                    return JobFailedMessage(job_ID, "Cannot add client as listener to job!")
                 return JobAlreadyRunningMessage(job_ID)
+
             elif job.status == Job.Status.FINISHED and not force:
                 assert job.archiveCachedUTCDate is not None
                 archive_cached_utc_date = dt.strptime(job.archiveCachedUTCDate, Job.DATETIME_FORMAT)
@@ -112,7 +147,7 @@ class ScheduleJobCommand(Command):
                     file_name = str(job_ID) + CATROBAT_FILE_EXT
                     file_path = "%s/%s" % (ctxt.jobmonitorserver_settings["download_dir"], file_name)
                     if file_name and os.path.exists(file_path):
-                        download_url = webhelpers.create_download_url(job_ID, job.title)
+                        download_url = webhelpers.create_download_url(job_ID, client_ID, job.title)
                         # TODO: lock.release()
                         return JobDownloadMessage(job_ID, download_url, job.archiveCachedUTCDate)
 
@@ -122,7 +157,11 @@ class ScheduleJobCommand(Command):
         job = Job(job_ID, "-", Job.Status.READY)
         if not job.save_to_redis(redis_conn, job_key):
             # TODO: lock.release()
-            return ErrorMessage("Cannot schedule job!")
+            return JobFailedMessage(job_ID, "Cannot schedule job!")
+
+        remove_client_from_download_list_if_exists(redis_conn, job_ID, client_ID)
+        if not add_listening_client_to_job(redis_conn, client_ID, job_ID):
+            return JobFailedMessage(job_ID, "Cannot add client as listener to job!")
 
         use_connection(redis_conn)
         q = Queue(connection=redis_conn)

@@ -171,8 +171,7 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
 
     def send_message(self, message):
         assert isinstance(message, Message)
-        _logger.debug("Sending %s %r to %d", message.__class__.__name__,
-                      message.as_dict(), id(self))
+        _logger.debug("Sending %s %r to %d", message.__class__.__name__, message.as_dict(), id(self))
         try:
             self.write_message(tornado.escape.json_encode(message.as_dict()))
         except:

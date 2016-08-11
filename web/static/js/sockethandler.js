@@ -55,28 +55,77 @@ var socketHandler = {
 
     receiveMessageHandler: function(event) {
       var result = JSON.parse(event.data);
-      var notificationTypes = {
-        "ERROR": 0,
-        "JOB_FAILED": 1,
-        "JOB_RUNNING": 2,
-        "JOB_ALREADY_RUNNING": 3,
-        "JOB_READY": 4,
-        "JOB_OUTPUT": 5,
-        "JOB_PROGRESS": 6,
-        "JOB_FINISHED": 7,
-        "JOB_DOWNLOAD": 8,
-        "JOBS_INFO": 9,
-        "CLIENT_ID": 10
+      var baseNotificationType = {
+        "ERROR":                0,
+        "JOBS_INFO":            1,
+        "CLIENT_ID":            2
+      };
+      var jobNotificationType = {
+        "JOB_FAILED":           0,
+        "JOB_RUNNING":          1,
+        "JOB_ALREADY_RUNNING":  2,
+        "JOB_READY":            3,
+        "JOB_OUTPUT":           4,
+        "JOB_PROGRESS":         5,
+        "JOB_FINISHED":         6,
+        "JOB_DOWNLOAD":         7
       };
 
-      // ERROR: { "msg" }
-      if (result.type == notificationTypes["ERROR"]) {
-        alert("ERROR: " + result.data["msg"]);
+      // CASE: BASE-MESSAGE
+      if (result.category == 0) {
+        if (result.type == baseNotificationType["ERROR"]) {
+          // ERROR: { "msg" }
+          alert("ERROR: " + result.data["msg"]);
+          return;
+
+        } else if (result.type == baseNotificationType["JOBS_INFO"]) {
+          // JOBS_INFO: { "jobsInfo" }
+          var statusText = ["Ready", "Running", "Finished", "Failed"];
+          $("#jobs_info_table").children().remove();
+          for (var index in result.data["jobsInfo"]) {
+            var jobInfo = result.data["jobsInfo"][index];
+            var tr = $("<tr></tr>");
+            var jobID = jobInfo.jobID;
+            var projectURL = baseProjectURL + jobID + "/"
+            var statusLink = $("<a></a>").attr("href", "#").attr("id", "job_ID[" + jobInfo.jobID + "]").addClass("job_link").text(statusText[jobInfo.status]);
+            tr.append($("<td></td>").append(statusLink));
+            var scratchProjectLink = $("<a></a>").attr("href", projectURL).attr("target", "_blank").text(projectURL);
+            var scratchProjectLinkLayer = $("<div></div>").append(scratchProjectLink);
+            tr.append($("<td></td>").append($("<div></div>").text(jobInfo.title)).append(scratchProjectLinkLayer));
+            tr.append($("<td></td>").text(jobInfo.progress + "%"));
+            $("#jobs_info_table").append(tr);
+          }
+          $("a.job_link").on("click", function() {
+            var jobID = $(this).attr("id").split("[")[1].split("]")[0]; /* extract job ID */
+            var scratchProjectID = jobID;
+            var projectURL = baseProjectURL + scratchProjectID + "/";
+            $("#field-url").val(projectURL);
+            updateAndShowProjectDetails(scratchProjectID);
+            $("#cli-messages").hide();
+            $("#web-convert-modal").modal();
+            $("#converter_form").submit();
+            event.preventDefault();
+            return false;
+          });
+          return;
+
+        } else if (result.type == baseNotificationType["CLIENT_ID"]) {
+          // CLIENT_ID: { "clientID" }
+          socketHandler.clientID = result.data["clientID"];
+          if (typeof(Storage) !== "undefined") {
+            localStorage.setItem("clientID", socketHandler.clientID);
+          }
+
+        } else {
+          alert("Base-message of invalid/unsupported type received: " + result.data);
+        }
+
         return;
       }
 
+      // CASE: JOB-MESSAGE
       // JOB_FAILED: { "jobID" }
-      if (result.type == notificationTypes["JOB_FAILED"]) {
+      if (result.type == jobNotificationType["JOB_FAILED"]) {
         if (result.data["jobID"] != socketHandler.jobID) {
           return;
         }
@@ -91,22 +140,22 @@ var socketHandler = {
       }
 
       // JOB_RUNNING: { "jobID" }
-      if (result.type == notificationTypes["JOB_RUNNING"]) {
+      if (result.type == jobNotificationType["JOB_RUNNING"]) {
         $("#status").text("Job running...");
       }
 
       // JOB_ALREADY_RUNNING: { "jobID" }
-      if (result.type == notificationTypes["JOB_ALREADY_RUNNING"]) {
+      if (result.type == jobNotificationType["JOB_ALREADY_RUNNING"]) {
         $("#status").text("Job already running...");
       }
 
       // JOB_READY: { "jobID" }
-      if (result.type == notificationTypes["JOB_READY"]) {
+      if (result.type == jobNotificationType["JOB_READY"]) {
         $("#status").text("Waiting for worker to process this job...");
       }
 
       // JOB_OUTPUT: { "jobID", "line" }
-      if (result.type == notificationTypes["JOB_OUTPUT"]) {
+      if (result.type == jobNotificationType["JOB_OUTPUT"]) {
         var consoleLayer = $("#console-container");
         var projectConsoleID = "console_" + socketHandler.jobID;
         /* if no console for this project already exists create one */
@@ -148,7 +197,7 @@ var socketHandler = {
       }
 
       // JOB_PROGRESS: { "jobID", "progress" }
-      if (result.type == notificationTypes["JOB_PROGRESS"]) {
+      if (result.type == jobNotificationType["JOB_PROGRESS"]) {
         var progress = result.data["progress"];
         var roundedProgress = Math.round(progress);
         $("#progress-bar").attr("aria-valuenow", progress).css("width", roundedProgress + "%");
@@ -186,12 +235,12 @@ var socketHandler = {
       }
 
       // JOB_FINISHED: { "jobID" }
-      if (result.type == notificationTypes["JOB_FINISHED"]) {
+      if (result.type == jobNotificationType["JOB_FINISHED"]) {
         $("#status").text("Job finished!");
       }
 
       // JOB_DOWNLOAD: { "jobID", "url" }
-      if (result.type == notificationTypes["JOB_DOWNLOAD"]) {
+      if (result.type == jobNotificationType["JOB_DOWNLOAD"]) {
         if (result.data["jobID"] != socketHandler.jobID) {
           return;
         }
@@ -200,46 +249,6 @@ var socketHandler = {
           socketHandler.finishedConversionCallback(download_url);
         }
         return;
-      }
-
-      // JOBS_INFO: { "jobsInfo" }
-      if (result.type == notificationTypes["JOBS_INFO"]) {
-        var statusText = ["Ready", "Running", "Finished", "Failed"];
-        $("#jobs_info_table").children().remove();
-        for (var index in result.data["jobsInfo"]) {
-          var jobInfo = result.data["jobsInfo"][index];
-          var tr = $("<tr></tr>");
-          var jobID = jobInfo.jobID;
-          var projectURL = baseProjectURL + jobID + "/"
-          var statusLink = $("<a></a>").attr("href", "#").attr("id", "job_ID[" + jobInfo.jobID + "]").addClass("job_link").text(statusText[jobInfo.status]);
-          tr.append($("<td></td>").append(statusLink));
-          var scratchProjectLink = $("<a></a>").attr("href", projectURL).attr("target", "_blank").text(projectURL);
-          var scratchProjectLinkLayer = $("<div></div>").append(scratchProjectLink);
-          tr.append($("<td></td>").append($("<div></div>").text(jobInfo.title)).append(scratchProjectLinkLayer));
-          tr.append($("<td></td>").text(jobInfo.progress + "%"));
-          $("#jobs_info_table").append(tr);
-        }
-        $("a.job_link").on("click", function() {
-          var jobID = $(this).attr("id").split("[")[1].split("]")[0]; /* extract job ID */
-          var scratchProjectID = jobID;
-          var projectURL = baseProjectURL + scratchProjectID + "/";
-          $("#field-url").val(projectURL);
-          updateAndShowProjectDetails(scratchProjectID);
-          $("#cli-messages").hide();
-          $("#web-convert-modal").modal();
-          $("#converter_form").submit();
-          event.preventDefault();
-          return false;
-        });
-        return;
-      }
-
-      // CLIENT_ID: { "clientID" }
-      if (result.type == notificationTypes["CLIENT_ID"]) {
-        socketHandler.clientID = result.data["clientID"];
-        if (typeof(Storage) !== "undefined") {
-          localStorage.setItem("clientID", socketHandler.clientID);
-        }
       }
 
     }

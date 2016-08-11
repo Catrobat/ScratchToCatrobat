@@ -25,7 +25,6 @@ from job_message import JobMessage
 class JobProgressMessage(JobMessage):
 
     def __init__(self, job_ID, progress):
-        super(JobProgressMessage, self).__init__(JobMessage.Type.JOB_PROGRESS, {
-            "jobID": job_ID,
-            "progress": progress
+        super(JobProgressMessage, self).__init__(JobMessage.MessageType.JOB_PROGRESS, job_ID, {
+            JobMessage.ArgumentType.PROGRESS: progress
         })

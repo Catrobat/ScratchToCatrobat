@@ -25,6 +25,4 @@ from job_message import JobMessage
 class JobFinishedMessage(JobMessage):
 
     def __init__(self, job_ID):
-        super(JobFinishedMessage, self).__init__(JobMessage.Type.JOB_FINISHED, {
-            "jobID": job_ID
-        })
+        super(JobFinishedMessage, self).__init__(JobMessage.MessageType.JOB_FINISHED, job_ID)

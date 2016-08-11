@@ -25,7 +25,6 @@ from job_message import JobMessage
 class JobOutputMessage(JobMessage):
 
     def __init__(self, job_ID, lines):
-        super(JobOutputMessage, self).__init__(JobMessage.Type.JOB_OUTPUT, {
-            "jobID": job_ID,
-            "lines": lines
+        super(JobOutputMessage, self).__init__(JobMessage.MessageType.JOB_OUTPUT, job_ID, {
+            JobMessage.ArgumentType.LINES: lines
         })

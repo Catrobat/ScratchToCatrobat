@@ -25,6 +25,4 @@ from job_message import JobMessage
 class JobFailedMessage(JobMessage):
 
     def __init__(self, job_ID):
-        super(JobFailedMessage, self).__init__(JobMessage.Type.JOB_FAILED, {
-            "jobID": job_ID
-        })
+        super(JobFailedMessage, self).__init__(JobMessage.MessageType.JOB_FAILED, job_ID)

@@ -25,8 +25,7 @@ from job_message import JobMessage
 class JobDownloadMessage(JobMessage):
 
     def __init__(self, job_ID, download_url, cached_utc_date):
-        super(JobDownloadMessage, self).__init__(JobMessage.Type.JOB_DOWNLOAD, {
-            "jobID": job_ID,
-            "url": download_url,
-            "cachedUTCDate": cached_utc_date
+        super(JobDownloadMessage, self).__init__(JobMessage.MessageType.JOB_DOWNLOAD, job_ID, {
+            JobMessage.ArgumentType.URL:              download_url,
+            JobMessage.ArgumentType.CACHED_UTC_DATE:  cached_utc_date
         })

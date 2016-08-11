@@ -25,6 +25,5 @@ from job_message import JobMessage
 class JobAlreadyRunningMessage(JobMessage):
 
     def __init__(self, job_ID):
-        super(JobAlreadyRunningMessage, self).__init__(JobMessage.Type.JOB_ALREADY_RUNNING, {
-            "jobID": job_ID
-        })
+        super(JobAlreadyRunningMessage, self).__init__(JobMessage.MessageType.JOB_ALREADY_RUNNING,
+                                                       job_ID)

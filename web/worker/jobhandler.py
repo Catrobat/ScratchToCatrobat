@@ -21,11 +21,12 @@
 
 import tornado.tcpclient #@UnresolvedImport
 from tornado import gen #@UnresolvedImport
-from jobmonitorprotocol import Request, Reply, TCPConnection, SERVER, CLIENT
+from jobmonitorserver.jobmonitorprotocol import Request, Reply, TCPConnection, SERVER, CLIENT
 import logging
 import json
 
 _logger = logging.getLogger(__name__)
+
 
 class JobTCPClient(tornado.tcpclient.TCPClient):
     pass

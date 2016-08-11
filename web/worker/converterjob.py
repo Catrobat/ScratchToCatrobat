@@ -37,9 +37,9 @@ import hashlib
 import json
 import socket
 import urllib2
-import jobhandler
+from worker import jobhandler
 from httplib import BadStatusLine
-from jobmonitorprotocol import Request, Reply, SERVER, CLIENT
+from jobmonitorserver.jobmonitorprotocol import Request, Reply, SERVER, CLIENT
 sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "..", "src"))
 import helpers as webhelpers
 from scratchtocatrobat.tools import helpers

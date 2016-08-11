@@ -24,7 +24,7 @@ import os
 import ast
 from datetime import datetime as dt, timedelta
 from rq import Queue, use_connection #@UnresolvedImport
-from converterjob import convert_scratch_project
+from worker.converterjob import convert_scratch_project
 from command import Command
 from websocketserver.protocol.job import Job
 from scratchtocatrobat.tools import helpers

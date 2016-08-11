@@ -43,7 +43,7 @@ import logging
 import tornado.ioloop #@UnresolvedImport
 from tornado.tcpserver import TCPServer #@UnresolvedImport
 from tornado import gen #@UnresolvedImport
-from jobmonitorprotocol import Request, Reply, TCPConnection, SERVER, CLIENT, NotificationType
+from jobmonitorserver.jobmonitorprotocol import Request, Reply, TCPConnection, SERVER, CLIENT, NotificationType
 from websocketserver.websockethandler import ConverterWebSocketHandler
 import json
 import time
@@ -56,6 +56,7 @@ from scratchtocatrobat.tools import helpers
 CATROBAT_FILE_EXT = helpers.config.get("CATROBAT", "file_extension")
 
 _logger = logging.getLogger(__name__)
+
 
 class TCPConnectionException(Exception):
     def __init__(self, message, context):

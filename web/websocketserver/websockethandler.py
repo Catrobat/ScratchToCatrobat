@@ -47,8 +47,8 @@ from protocol.message.job.job_finished_message import JobFinishedMessage
 from protocol.message.job.job_output_message import JobOutputMessage
 from protocol.message.job.job_progress_message import JobProgressMessage
 from protocol.message.job.job_running_message import JobRunningMessage
-import jobmonitorprotocol as jobmonprot
-from jobmonitorprotocol import NotificationType
+from jobmonitorserver import jobmonitorprotocol as jobmonprot
+from jobmonitorserver.jobmonitorprotocol import NotificationType
 import helpers as webhelpers
 import redis #@UnresolvedImport
 from datetime import datetime as dt

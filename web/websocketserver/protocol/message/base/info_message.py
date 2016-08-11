@@ -22,9 +22,10 @@
 from base_message import BaseMessage
 
 
-class JobsInfoMessage(BaseMessage):
+class InfoMessage(BaseMessage):
 
-    def __init__(self, jobs_info):
-        super(JobsInfoMessage, self).__init__(BaseMessage.MessageType.JOBS_INFO, {
+    def __init__(self, catrobat_language_version, jobs_info):
+        super(InfoMessage, self).__init__(BaseMessage.MessageType.INFO, {
+            BaseMessage.ArgumentType.CATROBAT_LANGUAGE_VERSION: catrobat_language_version,
             BaseMessage.ArgumentType.JOBS_INFO: jobs_info
         })

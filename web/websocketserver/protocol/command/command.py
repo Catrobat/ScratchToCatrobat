@@ -21,9 +21,9 @@
 
 from websocketserver.protocol.message.base.error_message import ErrorMessage
 
-COMMAND_SET_CLIENT_ID = "set_client_ID"
-COMMAND_RETRIEVE_JOBS_INFO = "retrieve_jobs_info"
-COMMAND_SCHEDULE_JOB = "schedule_job"
+COMMAND_SET_CLIENT_ID  = "set_client_ID"
+COMMAND_RETRIEVE_INFO  = "retrieve_info"
+COMMAND_SCHEDULE_JOB   = "schedule_job"
 
 
 class Command(object):
@@ -57,10 +57,10 @@ class Command(object):
 
 # TODO: create new packet for this and only send updates...
 def update_jobs_info_on_listening_clients(ctxt):
-    from websocketserver.protocol.command import retrieve_jobs_info_command
+    from websocketserver.protocol.command import retrieve_info_command
     from websocketserver import websockethandler
     for client_ID, handler_list in websockethandler.ConverterWebSocketHandler.client_ID_open_sockets_map.iteritems():
-        message = retrieve_jobs_info_command.RetrieveJobsInfoCommand().execute(ctxt, { "clientID": str(client_ID) })
+        message = retrieve_info_command.RetrieveInfoCommand().execute(ctxt, { "clientID": str(client_ID) })
         for handler in handler_list:
             handler.send_message(message)
 
@@ -73,10 +73,10 @@ class InvalidCommand(Command):
 def get_command(name):
     from websocketserver.protocol.command import set_client_id_command
     from websocketserver.protocol.command import schedule_job_command
-    from websocketserver.protocol.command import retrieve_jobs_info_command
+    from websocketserver.protocol.command import retrieve_info_command
     COMMANDS = {
-        COMMAND_SET_CLIENT_ID:        set_client_id_command.SetClientIDCommand(),
-        COMMAND_RETRIEVE_JOBS_INFO:   retrieve_jobs_info_command.RetrieveJobsInfoCommand(),
-        COMMAND_SCHEDULE_JOB:         schedule_job_command.ScheduleJobCommand()
+        COMMAND_SET_CLIENT_ID:   set_client_id_command.SetClientIDCommand(),
+        COMMAND_RETRIEVE_INFO:   retrieve_info_command.RetrieveInfoCommand(),
+        COMMAND_SCHEDULE_JOB:    schedule_job_command.ScheduleJobCommand()
     }
     return COMMANDS[name] if isinstance(name, (str, unicode)) and name in COMMANDS else InvalidCommand()

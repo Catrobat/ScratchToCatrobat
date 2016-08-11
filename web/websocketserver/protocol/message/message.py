@@ -22,14 +22,15 @@
 
 class Message(object):
     class ArgumentType(object):
-        MSG              = "msg"
-        JOB_ID           = "jobID"
-        LINES            = "lines"
-        PROGRESS         = "progress"
-        URL              = "url"
-        CACHED_UTC_DATE  = "cachedUTCDate"
-        JOBS_INFO        = "jobsInfo"
-        CLIENT_ID        = "clientID"
+        MSG                        = "msg"
+        JOB_ID                     = "jobID"
+        LINES                      = "lines"
+        PROGRESS                   = "progress"
+        URL                        = "url"
+        CACHED_UTC_DATE            = "cachedUTCDate"
+        CATROBAT_LANGUAGE_VERSION  = "catLangVers"
+        JOBS_INFO                  = "jobsInfo"
+        CLIENT_ID                  = "clientID"
 
     class CategoryType(object):
         BASE             =  0

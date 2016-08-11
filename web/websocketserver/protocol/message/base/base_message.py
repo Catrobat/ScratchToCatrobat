@@ -25,7 +25,7 @@ from websocketserver.protocol.message import message
 class BaseMessage(message.Message):
     class MessageType(object):
         ERROR      =  0
-        JOBS_INFO  =  1
+        INFO       =  1
         CLIENT_ID  =  2
 
         @classmethod

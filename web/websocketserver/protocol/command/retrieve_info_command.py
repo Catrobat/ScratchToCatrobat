@@ -23,14 +23,17 @@ import logging
 import ast
 from command import Command
 from websocketserver.protocol.message.base.error_message import ErrorMessage
-from websocketserver.protocol.message.base.jobs_info_message import JobsInfoMessage
+from websocketserver.protocol.message.base.info_message import InfoMessage
 from websocketserver.protocol.job import Job
 import helpers as webhelpers
+from scratchtocatrobat.tools import helpers
 
 _logger = logging.getLogger(__name__)
 
+CATROBAT_LANGUAGE_VERSION = float(helpers.catrobat_info("catrobat_language_version"))
 
-class RetrieveJobsInfoCommand(Command):
+
+class RetrieveInfoCommand(Command):
 
     def execute(self, ctxt, args):
         client_ID = args[Command.ArgumentType.CLIENT_ID]
@@ -50,6 +53,17 @@ class RetrieveJobsInfoCommand(Command):
                 _logger.warn("Ignoring missing job for scratch project ID {}".format(job_ID))
                 continue
             info = job.__dict__
+            info["alreadyDownloaded"] = self._job_already_downloaded_by_client(redis_conn, job_ID, client_ID)
+            info["downloadUrl"] = webhelpers.create_download_url(job_ID, client_ID, job.title)
             del info["output"]
             jobs_info += [info]
-        return JobsInfoMessage(jobs_info)
+        return InfoMessage(CATROBAT_LANGUAGE_VERSION, jobs_info)
+
+
+    def _job_already_downloaded_by_client(self, redis_connection, job_ID, client_ID):
+        assert isinstance(client_ID, int)
+        client_download_job_key = webhelpers.REDIS_CLIENTS_NOT_YET_DOWNLOADED_JOB_KEY_TEMPLATE.format(job_ID)
+        existing_client_IDs = redis_connection.get(client_download_job_key)
+        existing_client_IDs = ast.literal_eval(existing_client_IDs) if existing_client_IDs != None else []
+        assert isinstance(existing_client_IDs, list)
+        return client_ID not in existing_client_IDs

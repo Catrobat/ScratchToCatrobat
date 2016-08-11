@@ -24,5 +24,7 @@ from job_message import JobMessage
 
 class JobFailedMessage(JobMessage):
 
-    def __init__(self, job_ID):
-        super(JobFailedMessage, self).__init__(JobMessage.MessageType.JOB_FAILED, job_ID)
+    def __init__(self, job_ID, message=None):
+        super(JobFailedMessage, self).__init__(JobMessage.MessageType.JOB_FAILED, job_ID, {
+            JobMessage.ArgumentType.MSG: message
+        })

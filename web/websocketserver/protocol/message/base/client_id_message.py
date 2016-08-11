@@ -25,6 +25,6 @@ from base_message import BaseMessage
 class ClientIDMessage(BaseMessage):
 
     def __init__(self, client_ID):
-        super(ClientIDMessage, self).__init__(BaseMessage.Type.CLIENT_ID, {
-            "clientID": client_ID
+        super(ClientIDMessage, self).__init__(BaseMessage.MessageType.CLIENT_ID, {
+            BaseMessage.ArgumentType.CLIENT_ID: client_ID
         })

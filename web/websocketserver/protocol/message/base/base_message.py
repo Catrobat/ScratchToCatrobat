@@ -23,4 +23,16 @@ from websocketserver.protocol.message import message
 
 
 class BaseMessage(message.Message):
-    pass
+    class MessageType(object):
+        ERROR      =  0
+        JOBS_INFO  =  1
+        CLIENT_ID  =  2
+
+        @classmethod
+        def is_valid(cls, message_type):
+            return message_type >= cls.ERROR and message_type <= cls.CLIENT_ID
+
+    def __init__(self, message_type, data={}):
+        assert isinstance(message_type, int) and BaseMessage.MessageType.is_valid(message_type)
+        assert isinstance(data, dict)
+        super(BaseMessage, self).__init__(message_type, data)

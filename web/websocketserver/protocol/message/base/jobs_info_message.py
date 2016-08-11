@@ -25,6 +25,6 @@ from base_message import BaseMessage
 class JobsInfoMessage(BaseMessage):
 
     def __init__(self, jobs_info):
-        super(JobsInfoMessage, self).__init__(BaseMessage.Type.JOBS_INFO, {
-            "jobsInfo": jobs_info
+        super(JobsInfoMessage, self).__init__(BaseMessage.MessageType.JOBS_INFO, {
+            BaseMessage.ArgumentType.JOBS_INFO: jobs_info
         })

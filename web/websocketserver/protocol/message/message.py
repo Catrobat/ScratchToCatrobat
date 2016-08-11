@@ -21,20 +21,37 @@
 
 
 class Message(object):
-    class Type(object):
-        ERROR = 0
-        JOB_FAILED = 1
-        JOB_RUNNING = 2
-        JOB_ALREADY_RUNNING = 3
-        JOB_READY = 4
-        JOB_OUTPUT = 5
-        JOB_PROGRESS = 6
-        JOB_FINISHED = 7
-        JOB_DOWNLOAD = 8
-        JOBS_INFO = 9
-        CLIENT_ID = 10
+    class ArgumentType(object):
+        MSG              = "msg"
+        JOB_ID           = "jobID"
+        LINES            = "lines"
+        PROGRESS         = "progress"
+        URL              = "url"
+        CACHED_UTC_DATE  = "cachedUTCDate"
+        JOBS_INFO        = "jobsInfo"
+        CLIENT_ID        = "clientID"
 
-    def __init__(self, message_type, data):
+    class CategoryType(object):
+        BASE             =  0
+        JOB              =  1
+
+        @classmethod
+        def category_for_type(cls, message_obj):
+            from websocketserver.protocol.message.base.base_message import BaseMessage
+            from websocketserver.protocol.message.job.job_message import JobMessage
+            category_type_map = {
+                BaseMessage: cls.BASE,
+                JobMessage:  cls.JOB,
+            }
+            for category_class, category in category_type_map.iteritems():
+                if isinstance(message_obj, category_class):
+                    return category
+            raise RuntimeError("Unknown type of message: " + message_obj.__class__.__name__)
+
+    def __init__(self, message_type, data={}):
+        assert isinstance(message_type, int)
+        assert isinstance(data, dict)
+        self.category = Message.CategoryType.category_for_type(self)
         self.type = message_type
         self.data = data
 

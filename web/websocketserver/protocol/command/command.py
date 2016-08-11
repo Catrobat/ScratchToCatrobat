@@ -27,7 +27,7 @@ COMMAND_SCHEDULE_JOB = "schedule_job"
 
 
 class Command(object):
-    class Arguments(object):
+    class ArgumentType(object):
         CLIENT_ID = "clientID"
         JOB_ID    = "jobID"
         FORCE     = "force"

@@ -69,23 +69,25 @@ class ScheduleJobCommand(Command):
 
     def execute(self, ctxt, args):
         # validate parameters
-        client_ID = args[Command.Arguments.CLIENT_ID]
-        job_ID = args[Command.Arguments.JOB_ID]
+        client_ID = args[Command.ArgumentType.CLIENT_ID]
+        job_ID = args[Command.ArgumentType.JOB_ID]
 
         if not self.is_valid_client_ID(ctxt.redis_connection, client_ID):
+            _logger.error("Invalid client ID!")
             return ErrorMessage("Invalid client ID!")
 
         if not self.is_valid_job_ID(job_ID):
+            _logger.error("Invalid jobID given!")
             return ErrorMessage("Invalid jobID given!")
 
         force = False
-        if Command.Arguments.FORCE in args:
-            force_param_str = str(args[Command.Arguments.FORCE]).lower()
+        if Command.ArgumentType.FORCE in args:
+            force_param_str = str(args[Command.ArgumentType.FORCE]).lower()
             force = force_param_str == "true" or force_param_str == "1"
 
         verbose = False
-        if Command.Arguments.VERBOSE in args:
-            verbose_param_str = str(args[Command.Arguments.VERBOSE]).lower()
+        if Command.ArgumentType.VERBOSE in args:
+            verbose_param_str = str(args[Command.ArgumentType.VERBOSE]).lower()
             verbose = verbose_param_str == "true" or verbose_param_str == "1"
 
         # schedule this job

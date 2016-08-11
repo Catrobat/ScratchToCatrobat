@@ -26,7 +26,7 @@ from websocketserver.protocol.message.base.client_id_message import ClientIDMess
 class SetClientIDCommand(Command):
 
     def execute(self, ctxt, args):
-        client_ID = args[Command.Arguments.CLIENT_ID]
+        client_ID = args[Command.ArgumentType.CLIENT_ID]
         if not self.is_valid_client_ID(ctxt.redis_connection, client_ID):
             return ClientIDMessage(self.retrieve_new_client_ID(ctxt))
 

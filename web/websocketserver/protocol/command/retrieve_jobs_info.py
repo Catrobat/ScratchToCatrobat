@@ -33,7 +33,7 @@ _logger = logging.getLogger(__name__)
 class RetrieveJobsInfoCommand(Command):
 
     def execute(self, ctxt, args):
-        client_ID = args[Command.Arguments.CLIENT_ID]
+        client_ID = args[Command.ArgumentType.CLIENT_ID]
         if not self.is_valid_client_ID(ctxt.redis_connection, client_ID):
             return ErrorMessage("Invalid client ID!")
 

@@ -26,14 +26,15 @@ from websocketserver.protocol.message.base.client_id_message import ClientIDMess
 _logger = logging.getLogger(__name__)
 
 
-class SetClientIDCommand(Command):
+class AuthenticateCommand(Command):
 
     def execute(self, ctxt, args):
-        client_ID = int(args[Command.ArgumentType.CLIENT_ID])
+        client_ID = args[Command.ArgumentType.CLIENT_ID]
         if not self.is_valid_client_ID(ctxt.redis_connection, client_ID):
             _logger.info("New client ID is: %d", client_ID)
             return ClientIDMessage(self.retrieve_new_client_ID(ctxt))
 
         _logger.info("Used client ID is: %d", client_ID)
         ctxt.handler.set_client_ID(client_ID) # map client ID to web socket handler
+        assert ctxt.handler.get_client_ID() == client_ID
         return ClientIDMessage(client_ID)

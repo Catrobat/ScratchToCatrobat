@@ -21,9 +21,10 @@
 
 from websocketserver.protocol.message.base.error_message import ErrorMessage
 
-COMMAND_SET_CLIENT_ID  = "set_client_ID"
-COMMAND_RETRIEVE_INFO  = "retrieve_info"
-COMMAND_SCHEDULE_JOB   = "schedule_job"
+COMMAND_AUTHENTICATE    = 0
+COMMAND_RETRIEVE_INFO   = 1
+COMMAND_SCHEDULE_JOB    = 2
+COMMAND_CANCEL_DOWNLOAD = 3
 
 
 class Command(object):
@@ -70,13 +71,15 @@ class InvalidCommand(Command):
         return ErrorMessage("Invalid command!")
 
 
-def get_command(name):
-    from websocketserver.protocol.command import set_client_id_command
+def get_command(typeID):
+    from websocketserver.protocol.command import authenticate_command
     from websocketserver.protocol.command import schedule_job_command
     from websocketserver.protocol.command import retrieve_info_command
+    from websocketserver.protocol.command import cancel_download_command
     COMMANDS = {
-        COMMAND_SET_CLIENT_ID:   set_client_id_command.SetClientIDCommand(),
+        COMMAND_AUTHENTICATE:   authenticate_command.AuthenticateCommand(),
         COMMAND_RETRIEVE_INFO:   retrieve_info_command.RetrieveInfoCommand(),
-        COMMAND_SCHEDULE_JOB:    schedule_job_command.ScheduleJobCommand()
+        COMMAND_SCHEDULE_JOB:    schedule_job_command.ScheduleJobCommand(),
+        COMMAND_CANCEL_DOWNLOAD: cancel_download_command.CancelDownloadCommand()
     }
-    return COMMANDS[name] if isinstance(name, (str, unicode)) and name in COMMANDS else InvalidCommand()
+    return COMMANDS[typeID] if isinstance(typeID, int) and typeID in COMMANDS else InvalidCommand()

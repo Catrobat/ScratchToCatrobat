@@ -91,23 +91,21 @@ def assign_job_to_client(redis_connection, job_ID, client_ID):
     jobs_of_client = ast.literal_eval(jobs_of_client) if jobs_of_client != None else []
 
     assert isinstance(jobs_of_client, list)
-    if job_ID not in jobs_of_client:
-        jobs_of_client.append(job_ID)
-        return redis_connection.set(job_client_key, jobs_of_client)
-    return True
+    if job_ID in jobs_of_client:
+        jobs_of_client.remove(job_ID)
+
+    jobs_of_client.insert(0, job_ID)
+    return redis_connection.set(job_client_key, jobs_of_client)
 
 
 class ScheduleJobCommand(Command):
 
     def execute(self, ctxt, args):
-        # validate parameters
-        client_ID = args[Command.ArgumentType.CLIENT_ID]
+        client_ID = ctxt.handler.get_client_ID()
+        assert self.is_valid_client_ID(ctxt.redis_connection, client_ID)
+
+        # validate job_ID
         job_ID = args[Command.ArgumentType.JOB_ID]
-
-        if not self.is_valid_client_ID(ctxt.redis_connection, client_ID):
-            _logger.error("Invalid client ID!")
-            return ErrorMessage("Invalid client ID!")
-
         if not self.is_valid_job_ID(job_ID):
             _logger.error("Invalid jobID given!")
             return ErrorMessage("Invalid jobID given!")

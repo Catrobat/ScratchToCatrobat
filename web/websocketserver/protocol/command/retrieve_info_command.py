@@ -36,9 +36,8 @@ CATROBAT_LANGUAGE_VERSION = float(helpers.catrobat_info("catrobat_language_versi
 class RetrieveInfoCommand(Command):
 
     def execute(self, ctxt, args):
-        client_ID = args[Command.ArgumentType.CLIENT_ID]
-        if not self.is_valid_client_ID(ctxt.redis_connection, client_ID):
-            return ErrorMessage("Invalid client ID!")
+        client_ID = ctxt.handler.get_client_ID()
+        assert self.is_valid_client_ID(ctxt.redis_connection, client_ID)
 
         redis_conn = ctxt.redis_connection
         job_client_key = webhelpers.REDIS_JOB_CLIENT_KEY_TEMPLATE.format(client_ID)

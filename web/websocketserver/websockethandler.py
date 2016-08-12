@@ -71,12 +71,22 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
     def get_compression_options(self):
         return {} # Non-None enables compression with default options.
 
+
     def set_client_ID(self, client_ID):
         assert isinstance(client_ID, int)
         cls = self.__class__
         if client_ID not in cls.client_ID_open_sockets_map:
             cls.client_ID_open_sockets_map[client_ID] = []
         cls.client_ID_open_sockets_map[client_ID].append(self)
+
+
+    def get_client_ID(self):
+        cls = self.__class__
+        for (client_ID, open_sockets) in cls.client_ID_open_sockets_map.iteritems():
+            if self in open_sockets:
+                return client_ID # 1 clientID per socket
+        return None
+
 
     @classmethod
     def notify(cls, msg_type, args):
@@ -139,8 +149,10 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
             _logger.info("Unable to update job status!")
             return
 
-        currently_listening_client_IDs = filter(lambda client_ID: client_ID in cls.client_ID_open_sockets_map, all_listening_client_IDs)
-        currently_listening_client_sockets = map(lambda client_ID: cls.client_ID_open_sockets_map[client_ID], currently_listening_client_IDs)
+        currently_listening_client_IDs = filter(lambda client_ID: client_ID in cls.client_ID_open_sockets_map,
+                                                all_listening_client_IDs)
+        currently_listening_client_sockets = map(lambda client_ID: cls.client_ID_open_sockets_map[client_ID],
+                                                 currently_listening_client_IDs)
         _logger.debug("There are %d active clients listening on this job." % len(currently_listening_client_sockets))
 
         for idx, socket_handlers in enumerate(currently_listening_client_sockets):
@@ -164,6 +176,7 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
             for handler in socket_handlers:
                 handler.send_message(message)
 
+
     def on_close(self):
         cls = self.__class__
         _logger.info("Closing WebSocket")
@@ -175,7 +188,8 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
                 else:
                     cls.client_ID_open_sockets_map[client_ID] = open_sockets
                 _logger.info("Found WebSocket and closed it")
-                return # break out of loop => limit is 1 socket/clientID
+                return # break out of loop => since there can be no more than 1 clientID per socket
+
 
     def send_message(self, message):
         assert isinstance(message, Message)
@@ -184,6 +198,7 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
             self.write_message(tornado.escape.json_encode(message.as_dict()))
         except:
             _logger.error("Error sending message", exc_info=True)
+
 
     def on_message(self, message):
         _logger.debug("Received message %r", message)
@@ -198,4 +213,7 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
         # TODO: when client ID is given => check if it belongs to socket handler!
         ctxt = Context(self, self.__class__.REDIS_CONNECTION, self.application.settings["jobmonitorserver"])
         _logger.info("Executing command %s", command.__class__.__name__)
-        self.send_message(command.execute(ctxt, args))
+        reply_message = command.execute(ctxt, args)
+        if reply_message is not None:
+            self.send_message(reply_message)
+

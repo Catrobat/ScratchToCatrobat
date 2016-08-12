@@ -29,17 +29,20 @@ from datetime import datetime
 
 TEST_PROJECT_ID_TO_TITLE_MAP = {
     "10205819": "Dancin' in the Castle",
-    "10132588": "Dance back"
+    "10132588": "Dance back",
+    "2365565" : u"Fußball Kapfenstein"
 }
 
 TEST_PROJECT_ID_TO_IMAGE_URL_MAP = {
     "10205819": "https://cdn2.scratch.mit.edu/get_image/project/10205819_144x108.png?v=1368470695.0",
-    "10132588": "https://cdn2.scratch.mit.edu/get_image/project/10132588_144x108.png?v=1368129031.0"
+    "10132588": "https://cdn2.scratch.mit.edu/get_image/project/10132588_144x108.png?v=1368129031.0",
+    "2365565" : "https://cdn2.scratch.mit.edu/get_image/project/2365565_144x108.png?v=1368072082.0"
 }
 
 TEST_PROJECT_ID_TO_OWNER_MAP = {
     "10205819": "jschombs",
-    "10132588": "psush09"
+    "10132588": "psush09",
+    "2365565" : "hej_wickie_hej"
 }
 
 TEST_PROJECT_ID_TO_REMIXES_MAP = {
@@ -49,22 +52,26 @@ TEST_PROJECT_ID_TO_REMIXES_MAP = {
         'image': 'https://cdn2.scratch.mit.edu/get_image/project/10211023_144x108.png?v=1368486334.0',
         'title': "Dancin' in the Castle remake"
     }],
-    "10132588": []
+    "10132588": [],
+    "2365565" : [],
 }
 
 TEST_PROJECT_ID_TO_TAGS_MAP = {
     "10205819": ['animations', 'castle'],
-    "10132588": ['music', 'simulations', 'animations']
+    "10132588": ['music', 'simulations', 'animations'],
+    "2365565" : [],
 }
 
 TEST_PROJECT_ID_TO_INSTRUCTIONS_MAP = {
     "10205819": "Click the flag to run the stack. Click the space bar to change it up!",
-    "10132588": "D,4,8 for the animals to move.C,A for background."
+    "10132588": "D,4,8 for the animals to move.C,A for background.",
+    "2365565" : None
 }
 
 TEST_PROJECT_ID_TO_NOTES_AND_CREDITS_MAP = {
     "10205819": "First project on Scratch! This was great.",
-    "10132588": ""
+    "10132588": "",
+    "2365565" : "None"
 }
 
 class WebApiTest(common_testing.BaseTestCase):
@@ -116,7 +123,6 @@ class WebApiTest(common_testing.BaseTestCase):
     def test_can_request_project_instructions_for_id(self):
         for (project_id, expected_project_instructions) in TEST_PROJECT_ID_TO_INSTRUCTIONS_MAP.iteritems():
             extracted_project_instructions = scratchwebapi.request_project_instructions_for(project_id)
-            assert extracted_project_instructions is not None
             assert extracted_project_instructions == expected_project_instructions, \
                    "'{}' is not equal to '{}'".format(extracted_project_instructions, expected_project_instructions)
 
@@ -145,12 +151,10 @@ class WebApiTest(common_testing.BaseTestCase):
             assert extracted_project_info.owner is not None
             assert extracted_project_info.owner == TEST_PROJECT_ID_TO_OWNER_MAP[project_id], \
                    "'{}' is not equal to '{}'".format(extracted_project_info.owner, TEST_PROJECT_ID_TO_OWNER_MAP[project_id])
-            assert extracted_project_info.instructions is not None
             assert extracted_project_info.instructions == TEST_PROJECT_ID_TO_INSTRUCTIONS_MAP[project_id], \
-                   "'{}' is not equal to '{}'".format(extracted_project_info.owner, TEST_PROJECT_ID_TO_INSTRUCTIONS_MAP[project_id])
-            assert extracted_project_info.notes_and_credits is not None
+                   "'{}' is not equal to '{}'".format(extracted_project_info.instructions, TEST_PROJECT_ID_TO_INSTRUCTIONS_MAP[project_id])
             assert extracted_project_info.notes_and_credits == TEST_PROJECT_ID_TO_NOTES_AND_CREDITS_MAP[project_id], \
-                   "'{}' is not equal to '{}'".format(extracted_project_info.owner, TEST_PROJECT_ID_TO_NOTES_AND_CREDITS_MAP[project_id])
+                   "'{}' is not equal to '{}'".format(extracted_project_info.notes_and_credits, TEST_PROJECT_ID_TO_NOTES_AND_CREDITS_MAP[project_id])
             assert extracted_project_info.tags is not None
             assert extracted_project_info.tags == TEST_PROJECT_ID_TO_TAGS_MAP[project_id], \
                    "'{}' is not equal to '{}'".format(extracted_project_info.tags, TEST_PROJECT_ID_TO_TAGS_MAP[project_id])

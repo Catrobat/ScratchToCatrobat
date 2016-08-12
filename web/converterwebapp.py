@@ -51,8 +51,7 @@ from scratchtocatrobat import scratchwebapi
 from scratchtocatrobat.scratchwebapi import ScratchProjectVisibiltyState
 from scratchtocatrobat.tools import helpers
 import helpers as webhelpers
-from websocketserver.protocol.command.schedule_job_command import remove_client_from_download_list_if_exists,\
-    remove_client_from_download_list_if_exists
+from websocketserver.protocol.command.schedule_job_command import remove_client_from_download_list_if_exists
 import redis #@UnresolvedImport
 
 _logger = logging.getLogger(__name__)
@@ -61,7 +60,6 @@ _logger = logging.getLogger(__name__)
 REDIS_CONNECTION = redis.Redis() #'127.0.0.1', 6789) #, password='secret')
 
 CATROBAT_FILE_EXT = helpers.config.get("CATROBAT", "file_extension")
-CONVERTER_API_SETTINGS = helpers.config.items_as_dict("CONVERTER_API")
 HTTP_RETRIES = int(helpers.config.get("SCRATCH_API", "http_retries"))
 HTTP_BACKOFF = int(helpers.config.get("SCRATCH_API", "http_backoff"))
 HTTP_DELAY = int(helpers.config.get("SCRATCH_API", "http_delay"))
@@ -160,7 +158,7 @@ class _ProjectHandler(tornado.web.RequestHandler):
         # ------------------------------------------------------------------------------------------
         if project_id is None:
             # TODO: automatically update featured projects...
-            self.write({ "results": CONVERTER_API_SETTINGS["featured_projects"] })
+            self.write({ "results": webhelpers.FEATURED_SCRATCH_PROGRAMS })
             return
 
         # ------------------------------------------------------------------------------------------
@@ -194,7 +192,11 @@ class _ProjectHandler(tornado.web.RequestHandler):
             self.write(ProjectDataResponse().as_dict())
             return
 
-        #body = re.sub("(.*" + re.escape("<li>") + r'\s*' + re.escape("<div class=\"project thumb\">") + r'.*' + re.escape("<span class=\"owner\">") + r'.*' + re.escape("</span>") + r'\s*' + ")" + "(" + re.escape("</li>.*") + ")", r'\1</div>\2', http_response.body)
+        #body = re.sub("(.*" + re.escape("<li>") + r'\s*'
+        #     + re.escape("<div class=\"project thumb\">")
+        #     + r'.*' + re.escape("<span class=\"owner\">") + r'.*'
+        #     + re.escape("</span>") + r'\s*' + ")" + "(" + re.escape("</li>.*")
+        #     + ")", r'\1</div>\2', http_response.body)
         document = webhelpers.ResponseBeautifulSoupDocumentWrapper(BeautifulSoup(http_response.body, b'html5lib'))
         visibility_state = scratchwebapi.extract_project_visibilty_state_from_document(document)
         response = ProjectDataResponse()

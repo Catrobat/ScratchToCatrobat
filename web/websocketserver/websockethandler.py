@@ -42,7 +42,6 @@ from protocol.command import command as cmd
 from protocol.command.schedule_job_command import remove_all_listening_clients_from_job, add_clients_to_download_list
 from protocol.job import Job
 from protocol.message.message import Message
-from protocol.message.job.job_download_message import JobDownloadMessage
 from protocol.message.job.job_failed_message import JobFailedMessage
 from protocol.message.job.job_finished_message import JobFinishedMessage
 from protocol.message.job.job_output_message import JobOutputMessage
@@ -114,9 +113,10 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
                 job.output += line
         elif msg_type == NotificationType.JOB_PROGRESS:
             job.progress = args[jobmonprot.Request.ARGS_PROGRESS]
-        elif msg_type == NotificationType.JOB_FINISHED:
+        elif msg_type == NotificationType.JOB_CONVERSION_FINISHED:
             _logger.info("Job #{} finished, waiting for file transfer".format(job_ID))
-        elif msg_type == NotificationType.FILE_TRANSFER_FINISHED:
+            return
+        elif msg_type == NotificationType.JOB_FINISHED:
             job.progress = 100.0
             job.status = Job.Status.FINISHED
             job.archiveCachedUTCDate = dt.utcnow().strftime(Job.DATETIME_FORMAT)
@@ -137,7 +137,7 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
                       ("is" if num_clients_of_project == 1 else "are", \
                        num_clients_of_project, "s" if num_clients_of_project != 1 else ""))
 
-        if msg_type in (NotificationType.FILE_TRANSFER_FINISHED, NotificationType.JOB_FAILED):
+        if msg_type in (NotificationType.JOB_FINISHED, NotificationType.JOB_FAILED):
             # Job completely finished or failed -> remove all listeners from database
             #                                      before updating job status in database
             remove_all_listening_clients_from_job(cls.REDIS_CONNECTION, job_ID)
@@ -163,8 +163,6 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
             elif msg_type == NotificationType.JOB_PROGRESS:
                 message = JobProgressMessage(job_ID, args[jobmonprot.Request.ARGS_PROGRESS])
             elif msg_type == NotificationType.JOB_FINISHED:
-                message = JobFinishedMessage(job_ID)
-            elif msg_type == NotificationType.FILE_TRANSFER_FINISHED:
                 client_ID = currently_listening_client_IDs[idx]
                 download_url = webhelpers.create_download_url(job_ID, client_ID, job.title)
                 message = JobFinishedMessage(job_ID, download_url, None)

@@ -136,11 +136,11 @@ class JobHandler(object):
 #         _logger.info('[%s]: "%s"' % (SERVER, reply.msg))
 
     @gen.coroutine
-    def send_job_finished_notification(self, job_ID, exit_code):
+    def send_job_conversion_finished_notification(self, job_ID, exit_code):
         # Job finished (request)
         _logger.debug('[%s]: Sending job finished notification' % CLIENT)
         args = { Request.ARGS_JOB_ID: job_ID, Request.ARGS_RESULT: exit_code, Request.ARGS_MSG: "Job finished" }
-        yield self._connection.send_message(Request(Request.Command.JOB_FINISHED_NOTIFICATION, args))
+        yield self._connection.send_message(Request(Request.Command.JOB_CONVERSION_FINISHED_NOTIFICATION, args))
 
         # Job finished (reply)
         data = json.loads((yield self._connection.read_message()).rstrip())

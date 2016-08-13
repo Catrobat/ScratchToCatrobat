@@ -148,8 +148,8 @@ class TCPConnectionHandler(object):
         ConverterWebSocketHandler.notify(NotificationType.JOB_PROGRESS, request.args)
 
     @gen.coroutine
-    def handle_job_finished_notification(self, data):
-        if data == None or not Request.is_valid(data, Request.Command.JOB_FINISHED_NOTIFICATION):
+    def handle_job_conversion_finished_notification(self, data):
+        if data == None or not Request.is_valid(data, Request.Command.JOB_CONVERSION_FINISHED_NOTIFICATION):
             raise TCPConnectionException("Invalid data given!")
         request = Request.request_from_data(data)
         _logger.info("[%s]: Received job finished notification" % SERVER)
@@ -161,12 +161,12 @@ class TCPConnectionHandler(object):
 
         _logger.debug("[%s]: Reply: Accepted!" % SERVER)
         yield self.send_message(Reply(result=True, msg="ACK"))
-        ConverterWebSocketHandler.notify(NotificationType.JOB_FINISHED, request.args)
+        ConverterWebSocketHandler.notify(NotificationType.JOB_CONVERSION_FINISHED, request.args)
 
     @gen.coroutine
-    def handle_file_transfer(self):
+    def handle_job_finished(self):
         data = json.loads((yield self.read_message()).rstrip())
-        if not Request.is_valid(data, Request.Command.FILE_TRANSFER):
+        if not Request.is_valid(data, Request.Command.JOB_FINISHED):
             if Request.is_valid(data, Request.Command.JOB_FAILED):
                 _logger.warn("[%s] Job failed!" % CLIENT)
                 request = Request.request_from_data(data)
@@ -210,7 +210,7 @@ class TCPConnectionHandler(object):
         _logger.info("OK! Hash is equal to computed hash value. Finished file transfer!")
         yield self.send_message(Reply(result=True, msg="OK! Hash is equal to computed " \
                                       "hash value. Finished file transfer!"))
-        ConverterWebSocketHandler.notify(NotificationType.FILE_TRANSFER_FINISHED, request.args)
+        ConverterWebSocketHandler.notify(NotificationType.JOB_FINISHED, request.args)
 
     @gen.coroutine
     def handle_exception(self, exception, msg):
@@ -262,7 +262,7 @@ class TCPConnectionHandler(object):
         try:
             while True:
                 data = json.loads((yield self.read_message()).rstrip())
-                if Request.is_valid(data, Request.Command.JOB_FINISHED_NOTIFICATION):
+                if Request.is_valid(data, Request.Command.JOB_CONVERSION_FINISHED_NOTIFICATION):
                     break
                 elif Request.is_valid(data, Request.Command.JOB_OUTPUT_NOTIFICATION):
                     yield self.handle_job_output_notification(data)
@@ -279,7 +279,7 @@ class TCPConnectionHandler(object):
 
         # (V) Expecting job finished notification
         try:
-            yield self.handle_job_finished_notification(data)
+            yield self.handle_job_conversion_finished_notification(data)
         except Exception as e:
             self.handle_exception(e, "Processing job finished notification failed")
             return
@@ -289,7 +289,7 @@ class TCPConnectionHandler(object):
 
         # (V) Expecting file transfer
         try:
-            yield self.handle_file_transfer()
+            yield self.handle_job_finished()
         except Exception as e:
             self.handle_exception(e, "File transfer failed")
             return

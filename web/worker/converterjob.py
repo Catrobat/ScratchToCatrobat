@@ -114,7 +114,7 @@ class ConverterJobHandler(jobhandler.JobHandler):
         _logger.info("[%s]: Exit code is: %d" % (CLIENT, exit_code))
 
         # NOTE: exit-code is evaluated by TCP server
-        yield self.send_job_finished_notification(job_ID, exit_code)
+        yield self.send_job_conversion_finished_notification(job_ID, exit_code)
 
     @gen.coroutine
     def post_processing(self, args):
@@ -134,7 +134,7 @@ class ConverterJobHandler(jobhandler.JobHandler):
                 Request.ARGS_FILE_SIZE: file_size,
                 Request.ARGS_FILE_HASH: file_hash
             }
-            yield self._connection.send_message(Request(Request.Command.FILE_TRANSFER, args))
+            yield self._connection.send_message(Request(Request.Command.JOB_FINISHED, args))
 
             # File transfer ready (reply)
             data = json.loads((yield self._connection.read_message()).rstrip())

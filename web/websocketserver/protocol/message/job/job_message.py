@@ -30,12 +30,11 @@ class JobMessage(message.Message):
         JOB_READY           =  3
         JOB_OUTPUT          =  4
         JOB_PROGRESS        =  5
-        JOB_FINISHED        =  6
-        JOB_DOWNLOAD        =  7
+        JOB_CONVERSION_FINISHED        =  6
 
         @classmethod
         def is_valid(cls, message_type):
-            return message_type >= cls.JOB_FAILED and message_type <= cls.JOB_DOWNLOAD
+            return message_type >= cls.JOB_FAILED and message_type <= cls.JOB_CONVERSION_FINISHED
 
     def __init__(self, message_type, job_ID, data={}):
         assert isinstance(message_type, int) and JobMessage.MessageType.is_valid(message_type)

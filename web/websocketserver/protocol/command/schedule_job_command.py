@@ -28,12 +28,12 @@ from worker.converterjob import convert_scratch_project
 from command import Command
 from websocketserver.protocol.job import Job
 from scratchtocatrobat.tools import helpers
+import helpers as webhelpers
 from websocketserver.protocol.message.base.error_message import ErrorMessage
 from websocketserver.protocol.message.job.job_already_running_message import JobAlreadyRunningMessage
-from websocketserver.protocol.message.job.job_ready_message import JobReadyMessage
-from websocketserver.protocol.message.job.job_download_message import JobDownloadMessage
-import helpers as webhelpers
+from websocketserver.protocol.message.job.job_finished_message import JobFinishedMessage
 from websocketserver.protocol.message.job.job_failed_message import JobFailedMessage
+from websocketserver.protocol.message.job.job_ready_message import JobReadyMessage
 
 CATROBAT_FILE_EXT = helpers.config.get("CATROBAT", "file_extension")
 SCRATCH_PROJECT_IMAGE_URL_TEMPLATE = helpers.config.get("SCRATCH_API", "project_image_url_template")
@@ -147,7 +147,7 @@ class ScheduleJobCommand(Command):
                     if file_name and os.path.exists(file_path):
                         download_url = webhelpers.create_download_url(job_ID, client_ID, job.title)
                         # TODO: lock.release()
-                        return JobDownloadMessage(job_ID, download_url, job.archiveCachedUTCDate)
+                        return JobFinishedMessage(job_ID, download_url, job.archiveCachedUTCDate)
 
             else:
                 assert job.status == Job.Status.FAILED or force

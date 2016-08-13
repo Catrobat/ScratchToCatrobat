@@ -1,11 +1,18 @@
+var commandType = {
+  "authenticate":         0,
+  "retrieve_info":        1,
+  "schedule_job":         2,
+  "cancel_download":      3
+};
+
 // fetch jobs info if client ID is set
 function fetchJobsInfo() {
   // fetch jobs info if client ID is set
   socketHandler.openedSockedCallback = function() {
     if (typeof(Storage) !== "undefined") {
-      socketHandler.clientID = localStorage.getItem("clientID");
+      socketHandler.clientID = parseInt(localStorage.getItem("clientID"));
     }
-    var data = { "cmd": "set_client_ID", "args": { "clientID": socketHandler.clientID } };
+    var data = { "cmd": commandType["authenticate"], "args": { "clientID": socketHandler.clientID } };
     socketHandler.socket.send(JSON.stringify(data));
   };
   socketHandler.start();
@@ -15,9 +22,8 @@ function startConversion(url, force, finishedConversionCallback) {
   socketHandler.jobID = getProjectIDFromURL(url);
   socketHandler.finishedConversionCallback = finishedConversionCallback;
   var data = {
-    "cmd": "schedule_job",
+    "cmd": commandType["schedule_job"],
     "args": {
-      "clientID": socketHandler.clientID,
       "jobID": socketHandler.jobID,
       "force": force,
       "verbose": true
@@ -67,8 +73,7 @@ var socketHandler = {
         "JOB_READY":            3,
         "JOB_OUTPUT":           4,
         "JOB_PROGRESS":         5,
-        "JOB_FINISHED":         6,
-        "JOB_DOWNLOAD":         7
+        "JOB_FINISHED":         6
       };
 
       // CASE: BASE-MESSAGE
@@ -234,13 +239,9 @@ var socketHandler = {
         socketHandler.lastProgressCheck = now;
       }
 
-      // JOB_FINISHED: { "jobID" }
+      // JOB_FINISHED: { "jobID", "url" }
       if (result.type == jobNotificationType["JOB_FINISHED"]) {
         $("#status").text("Job finished!");
-      }
-
-      // JOB_DOWNLOAD: { "jobID", "url" }
-      if (result.type == jobNotificationType["JOB_DOWNLOAD"]) {
         if (result.data["jobID"] != socketHandler.jobID) {
           return;
         }

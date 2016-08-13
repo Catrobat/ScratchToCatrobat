@@ -167,7 +167,7 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
             elif msg_type == NotificationType.FILE_TRANSFER_FINISHED:
                 client_ID = currently_listening_client_IDs[idx]
                 download_url = webhelpers.create_download_url(job_ID, client_ID, job.title)
-                message = JobDownloadMessage(job_ID, download_url, None)
+                message = JobFinishedMessage(job_ID, download_url, None)
             elif msg_type == NotificationType.JOB_FAILED:
                 message = JobFailedMessage(job_ID)
             else:
@@ -210,7 +210,6 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
         else:
             command = cmd.InvalidCommand()
 
-        # TODO: when client ID is given => check if it belongs to socket handler!
         ctxt = Context(self, self.__class__.REDIS_CONNECTION, self.application.settings["jobmonitorserver"])
         _logger.info("Executing command %s", command.__class__.__name__)
         reply_message = command.execute(ctxt, args)

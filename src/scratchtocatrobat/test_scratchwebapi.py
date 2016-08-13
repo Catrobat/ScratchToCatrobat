@@ -151,6 +151,9 @@ class WebApiTest(common_testing.BaseTestCase):
             assert extracted_project_info.owner is not None
             assert extracted_project_info.owner == TEST_PROJECT_ID_TO_OWNER_MAP[project_id], \
                    "'{}' is not equal to '{}'".format(extracted_project_info.owner, TEST_PROJECT_ID_TO_OWNER_MAP[project_id])
+            assert extracted_project_info.image_url is not None
+            assert extracted_project_info.image_url == TEST_PROJECT_ID_TO_IMAGE_URL_MAP[project_id], \
+                   "'{}' is not equal to '{}'".format(extracted_project_info.image_url, TEST_PROJECT_ID_TO_IMAGE_URL_MAP[project_id])
             assert extracted_project_info.instructions == TEST_PROJECT_ID_TO_INSTRUCTIONS_MAP[project_id], \
                    "'{}' is not equal to '{}'".format(extracted_project_info.instructions, TEST_PROJECT_ID_TO_INSTRUCTIONS_MAP[project_id])
             assert extracted_project_info.notes_and_credits == TEST_PROJECT_ID_TO_NOTES_AND_CREDITS_MAP[project_id], \

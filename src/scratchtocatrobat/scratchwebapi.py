@@ -18,6 +18,7 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see http://www.gnu.org/licenses/.
+
 import sys, os, re
 from urlparse import urlparse
 from scratchtocatrobat import logger
@@ -37,7 +38,7 @@ _log = logger.log
 _cached_jsoup_documents = {}
 
 
-class ScratchProjectInfo(namedtuple("ScratchProjectInfo", "title owner instructions " \
+class ScratchProjectInfo(namedtuple("ScratchProjectInfo", "title owner image_url instructions " \
                                     "notes_and_credits tags views favorites loves modified_date " \
                                     "shared_date remixes")):
     def as_dict(self):
@@ -45,8 +46,10 @@ class ScratchProjectInfo(namedtuple("ScratchProjectInfo", "title owner instructi
                                    if isinstance(getattr(self, s), datetime) else getattr(self, s)),
                         self._fields))
 
+
     def __str__(self):
         return str(self.as_dict())
+
 
 class ScratchProjectVisibiltyState(object):
     # Note: never change these values here.
@@ -345,6 +348,9 @@ def extract_project_details_from_document(document):
     owner = extract_project_owner_from_document(document)
     if owner is None: return None
 
+    image_url = extract_project_image_url_from_document(document)
+    if image_url is None: return None
+
     instructions = extract_project_instructions_from_document(document)
     notes_and_credits = extract_project_notes_and_credits_from_document(document)
     tags = document.select_all_as_text_list("div#project-tags div.tag-box span.tag") or []
@@ -374,7 +380,9 @@ def extract_project_details_from_document(document):
     remixes = extract_project_remixes_from_document(document)
     if remixes is None: return None
 
-    return ScratchProjectInfo(title = title, owner = owner, instructions = instructions,
-                              notes_and_credits = notes_and_credits, tags = tags, views = views,
-                              favorites = favorites, loves = loves, modified_date = modified_date,
-                              shared_date = shared_date, remixes = remixes)
+    return ScratchProjectInfo(title = title, owner = owner, image_url = image_url,
+                              instructions = instructions, notes_and_credits = notes_and_credits,
+                              tags = tags, views = views, favorites = favorites, loves = loves,
+                              modified_date = modified_date, shared_date = shared_date,
+                              remixes = remixes)
+

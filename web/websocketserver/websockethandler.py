@@ -157,7 +157,7 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
 
         for idx, socket_handlers in enumerate(currently_listening_client_sockets):
             if msg_type == NotificationType.JOB_STARTED:
-                message = JobRunningMessage(job_ID)
+                message = JobRunningMessage(job_ID, job.title)
             elif msg_type == NotificationType.JOB_OUTPUT:
                 message = JobOutputMessage(job_ID, args[jobmonprot.Request.ARGS_LINES])
             elif msg_type == NotificationType.JOB_PROGRESS:

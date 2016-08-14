@@ -24,6 +24,7 @@ class Message(object):
     class ArgumentType(object):
         MSG                        = "msg"
         JOB_ID                     = "jobID"
+        JOB_TITLE                  = "jobTitle"
         LINES                      = "lines"
         PROGRESS                   = "progress"
         URL                        = "url"

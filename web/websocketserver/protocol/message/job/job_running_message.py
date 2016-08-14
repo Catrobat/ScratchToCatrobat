@@ -24,5 +24,7 @@ from job_message import JobMessage
 
 class JobRunningMessage(JobMessage):
 
-    def __init__(self, job_ID):
-        super(JobRunningMessage, self).__init__(JobMessage.MessageType.JOB_RUNNING, job_ID)
+    def __init__(self, job_ID, job_title):
+        super(JobRunningMessage, self).__init__(JobMessage.MessageType.JOB_RUNNING, job_ID, {
+            JobMessage.ArgumentType.JOB_TITLE: job_title
+        })

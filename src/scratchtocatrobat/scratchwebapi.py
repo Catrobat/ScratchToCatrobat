@@ -370,12 +370,18 @@ def extract_project_details_from_document(document):
     extracted_text = document.select_first_as_text("div#fixed div.dates span.date-updated")
     if extracted_text is None: return None
     modified_date_str = unicode(extracted_text).replace("Modified:", "").strip()
-    modified_date = datetime.strptime(modified_date_str, '%d %b %Y')
+    try:
+        modified_date = datetime.strptime(modified_date_str, '%d %b %Y')
+    except:
+        modified_date = None
 
     extracted_text = document.select_first_as_text("div#fixed div.dates span.date-shared")
     if extracted_text is None: return None
     shared_date_str = unicode(extracted_text).replace("Shared:", "").strip()
-    shared_date = datetime.strptime(shared_date_str, '%d %b %Y')
+    try:
+        shared_date = datetime.strptime(shared_date_str, '%d %b %Y')
+    except:
+        shared_date = None
 
     remixes = extract_project_remixes_from_document(document)
     if remixes is None: return None
@@ -385,4 +391,3 @@ def extract_project_details_from_document(document):
                               tags = tags, views = views, favorites = favorites, loves = loves,
                               modified_date = modified_date, shared_date = shared_date,
                               remixes = remixes)
-

@@ -102,13 +102,12 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
             imageURL = args[jobmonprot.Request.ARGS_IMAGE_URL]
             job.title = args[jobmonprot.Request.ARGS_TITLE]
             job.imageURL = imageURL
-            job.width, job.height = webhelpers.extract_width_and_height_from_scratch_image_url(imageURL, job_ID)
             job.status = Job.Status.RUNNING
         elif msg_type == NotificationType.JOB_FAILED:
             _logger.warn("Job failed! Exception Args: %s", args)
             job.status = Job.Status.FAILED
         elif msg_type == NotificationType.JOB_OUTPUT:
-            if job.output == None: job.output = ""
+            job.output = job.output if job.output != None else ""
             for line in args[jobmonprot.Request.ARGS_LINES]:
                 job.output += line
         elif msg_type == NotificationType.JOB_PROGRESS:
@@ -157,7 +156,7 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
 
         for idx, socket_handlers in enumerate(currently_listening_client_sockets):
             if msg_type == NotificationType.JOB_STARTED:
-                message = JobRunningMessage(job_ID, job.title)
+                message = JobRunningMessage(job_ID, job.title, job.imageURL)
             elif msg_type == NotificationType.JOB_OUTPUT:
                 message = JobOutputMessage(job_ID, args[jobmonprot.Request.ARGS_LINES])
             elif msg_type == NotificationType.JOB_PROGRESS:

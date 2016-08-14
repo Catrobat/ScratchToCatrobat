@@ -25,6 +25,7 @@ class Message(object):
         MSG                        = "msg"
         JOB_ID                     = "jobID"
         JOB_TITLE                  = "jobTitle"
+        JOB_IMAGE_URL              = "jobImageUrl"
         LINES                      = "lines"
         PROGRESS                   = "progress"
         URL                        = "url"

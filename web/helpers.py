@@ -120,14 +120,6 @@ FEATURED_SCRATCH_PROGRAMS = [{
     }
 }]
 
-def extract_width_and_height_from_scratch_image_url(url_string, job_ID):
-    # example: https://cdn2.scratch.mit.edu/get_image/project/82443924_144x108.png?v=1467378495.35
-    URL_parts = url_string.split(str(job_ID) + "_")
-    if len(URL_parts) != 2:
-        return 150, 150 # default
-    width_string, height_string = URL_parts[1].split(".png")[0].split("x")
-    return int(width_string), int(height_string)
-
 
 def create_download_url(job_ID, client_ID, job_title):
     return "/download?job_id={}&client_id={}&fname={}" \

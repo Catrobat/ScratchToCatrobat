@@ -24,7 +24,8 @@ from job_message import JobMessage
 
 class JobRunningMessage(JobMessage):
 
-    def __init__(self, job_ID, job_title):
+    def __init__(self, job_ID, job_title, job_image_url):
         super(JobRunningMessage, self).__init__(JobMessage.MessageType.JOB_RUNNING, job_ID, {
-            JobMessage.ArgumentType.JOB_TITLE: job_title
+            JobRunningMessage.ArgumentType.JOB_TITLE: job_title,
+            JobRunningMessage.ArgumentType.JOB_IMAGE_URL: job_image_url
         })

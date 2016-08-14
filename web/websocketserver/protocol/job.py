@@ -36,19 +36,19 @@ class Job(object):
     CACHE_ENTRY_VALID_FOR = 600
 
     def __init__(self, job_ID=0, title=None, status=Status.READY, progress=0.0, output=None,
-                 image_url=None, image_width=150, image_height=150, archive_cached_utc_date=None):
+                 image_url=None, archive_cached_utc_date=None):
         self.jobID = job_ID
         self.title = title
         self.status = status
         self.progress = progress
         self.output = output
         self.imageURL = image_url
-        self.imageWidth = image_width
-        self.imageHeight = image_height
         self.archiveCachedUTCDate = archive_cached_utc_date
+
 
     def save_to_redis(self, redis_connection, key):
         return redis_connection.set(key, self.__dict__)
+
 
     @classmethod
     def from_redis(cls, redis_connection, key):

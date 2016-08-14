@@ -134,7 +134,7 @@ class ScheduleJobCommand(Command):
                 remove_client_from_download_list_if_exists(redis_conn, job_ID, client_ID)
                 if not add_listening_client_to_job(redis_conn, client_ID, job_ID):
                     return JobFailedMessage(job_ID, "Cannot add client as listener to job!")
-                return JobAlreadyRunningMessage(job_ID, job.title)
+                return JobAlreadyRunningMessage(job_ID, job.title, job.imageURL)
 
             elif job.status == Job.Status.FINISHED and not force:
                 assert job.archiveCachedUTCDate is not None

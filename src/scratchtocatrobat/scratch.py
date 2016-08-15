@@ -109,84 +109,84 @@ class Object(common.DictAccessWrapper):
         ############################################################################################
         # user-defined function workaround
         ############################################################################################
-        def check_list_for_getParam_blocks(scratch_function_header, block_list, all_param_variable_names):
-            for block in block_list:
-                if not isinstance(block, list):
-                    continue
-                if 'getParam' == block[0]:
-                    assert isinstance(block[1], (str, unicode))
-                    assert block[1] in param_names
-                    block[0] = "readVariable"
-                    block[1] = "S2CC_param_" + scratch_function_header + "_" + str(param_names.index(block[1]))
-                    assert block[1] not in all_param_variable_names
-                    all_param_variable_names += [block[1]]
-                    del block[2:]
-                else:
-                    check_list_for_getParam_blocks(scratch_function_header, block, all_param_variable_names)
-
-        def check_list_for_call_blocks(block_list):
-            new_block_list = []
-            for block in block_list:
-                if isinstance(block, list):
-                    if 'call' == block[0]:
-                        assert isinstance(block[1], (str, unicode))
-                        scratch_function_header = block[1]
-                        var_blocks = []
-                        for param_index, param_value in enumerate(block[2:]):
-                            var_name = "S2CC_param_" + scratch_function_header + "_" + str(param_index)
-                            var_blocks += [["setVar:to:", var_name, param_value]]
-                        new_block_list += var_blocks
-                        broadcast_message = "S2CC_msg_" + scratch_function_header
-                        new_block_list += [["doBroadcastAndWait", broadcast_message]]
-                    else:
-                        new_block_list += [check_list_for_call_blocks(block)]
-                else:
-                    new_block_list += [block]
-            return new_block_list
-
-        all_headers = []
-        all_param_variable_names = []
-        for script in self.scripts:
-            if script.get_type() == "procDef":
-                # ["procDef", "Function1 %n string: %s", ["number1", "string1"], [1, ""], true]
-                assert len(script.arguments) == 4
-                scratch_function_header = script.arguments[0]
-
-                if scratch_function_header in all_headers:
-                    continue # ignore duplicates
-                all_headers += [scratch_function_header]
-                # filter all % characters
-
-                filtered_scratch_function_header = scratch_function_header.replace("\\%", "")
-                num_of_params = filtered_scratch_function_header.count("%")
-                param_names = script.arguments[1]
-                assert len(script.arguments[1]) == num_of_params
-                start_index = 0
-                param_types = []
-                for _ in range(num_of_params):
-                    start_index = filtered_scratch_function_header.find("%", start_index) + 1
-                    param_type = filtered_scratch_function_header[start_index:(start_index + 1)]
-                    assert len(param_type) == 1
-                    param_types += [param_type]
-
-                check_list_for_getParam_blocks(scratch_function_header, script.blocks, all_param_variable_names)
-
-                script.type = SCRIPT_RECEIVE
-                script.arguments = ["S2CC_msg_" + scratch_function_header]
-                script.raw_script = [[script.type] + script.arguments] + script.blocks
-                assert isinstance(script.script_element, BlockList)
-
-            script.blocks = check_list_for_call_blocks(script.blocks)
-            # parse again ScriptElement tree
-            script.script_element = ScriptElement.from_raw_block(script.blocks)
-
-        # add new variables
-        for param_variable_name in all_param_variable_names:
-            self._dict_object["variables"].append({
-                "name": param_variable_name,
-                "value": 0,
-                "isPersistent": False
-            })
+#         def check_list_for_getParam_blocks(scratch_function_header, block_list, all_param_variable_names):
+#             for block in block_list:
+#                 if not isinstance(block, list):
+#                     continue
+#                 if 'getParam' == block[0]:
+#                     assert isinstance(block[1], (str, unicode))
+#                     assert block[1] in param_names
+#                     block[0] = "readVariable"
+#                     block[1] = "S2CC_param_" + scratch_function_header + "_" + str(param_names.index(block[1]))
+#                     assert block[1] not in all_param_variable_names
+#                     all_param_variable_names += [block[1]]
+#                     del block[2:]
+#                 else:
+#                     check_list_for_getParam_blocks(scratch_function_header, block, all_param_variable_names)
+# 
+#         def check_list_for_call_blocks(block_list):
+#             new_block_list = []
+#             for block in block_list:
+#                 if isinstance(block, list):
+#                     if 'call' == block[0]:
+#                         assert isinstance(block[1], (str, unicode))
+#                         scratch_function_header = block[1]
+#                         var_blocks = []
+#                         for param_index, param_value in enumerate(block[2:]):
+#                             var_name = "S2CC_param_" + scratch_function_header + "_" + str(param_index)
+#                             var_blocks += [["setVar:to:", var_name, param_value]]
+#                         new_block_list += var_blocks
+#                         broadcast_message = "S2CC_msg_" + scratch_function_header
+#                         new_block_list += [["doBroadcastAndWait", broadcast_message]]
+#                     else:
+#                         new_block_list += [check_list_for_call_blocks(block)]
+#                 else:
+#                     new_block_list += [block]
+#             return new_block_list
+# 
+#         all_headers = []
+#         all_param_variable_names = []
+#         for script in self.scripts:
+#             if script.get_type() == "procDef":
+#                 # ["procDef", "Function1 %n string: %s", ["number1", "string1"], [1, ""], true]
+#                 assert len(script.arguments) == 4
+#                 scratch_function_header = script.arguments[0]
+# 
+#                 if scratch_function_header in all_headers:
+#                     continue # ignore duplicates
+#                 all_headers += [scratch_function_header]
+#                 # filter all % characters
+# 
+#                 filtered_scratch_function_header = scratch_function_header.replace("\\%", "")
+#                 num_of_params = filtered_scratch_function_header.count("%")
+#                 param_names = script.arguments[1]
+#                 assert len(script.arguments[1]) == num_of_params
+#                 start_index = 0
+#                 param_types = []
+#                 for _ in range(num_of_params):
+#                     start_index = filtered_scratch_function_header.find("%", start_index) + 1
+#                     param_type = filtered_scratch_function_header[start_index:(start_index + 1)]
+#                     assert len(param_type) == 1
+#                     param_types += [param_type]
+# 
+#                 check_list_for_getParam_blocks(scratch_function_header, script.blocks, all_param_variable_names)
+# 
+#                 script.type = SCRIPT_RECEIVE
+#                 script.arguments = ["S2CC_msg_" + scratch_function_header]
+#                 script.raw_script = [[script.type] + script.arguments] + script.blocks
+#                 assert isinstance(script.script_element, BlockList)
+# 
+#             script.blocks = check_list_for_call_blocks(script.blocks)
+#             # parse again ScriptElement tree
+#             script.script_element = ScriptElement.from_raw_block(script.blocks)
+# 
+#         # add new variables
+#         for param_variable_name in all_param_variable_names:
+#             self._dict_object["variables"].append({
+#                 "name": param_variable_name,
+#                 "value": 0,
+#                 "isPersistent": False
+#             })
 
         ############################################################################################
         # timer and timerReset workaround

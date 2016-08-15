@@ -454,8 +454,8 @@ class ProgressBar(object):
                                               % progress_type)
                 return
 
-            percentage = float(iterations_counter + increment) / float(expected_iterations) * 100.0
             self._iterations.iterations[progress_type] += increment
+            percentage = float(self._iterations.sum()) / float(self.expected_progress.sum()) * 100.0
 
             if not self.web_mode:
                 self.pbar.update(int(round(percentage)))

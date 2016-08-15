@@ -18,6 +18,7 @@ local.properties
 
 *.pyc
 *.key
+/.idea
 /web/downloads
 /pyenv
 /test-reports

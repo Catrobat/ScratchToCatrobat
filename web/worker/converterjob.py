@@ -37,9 +37,9 @@ import hashlib
 import json
 import socket
 import urllib2
-import jobhandler
+from worker import jobhandler
 from httplib import BadStatusLine
-from jobmonitorprotocol import Request, Reply, SERVER, CLIENT
+from jobmonitorserver.jobmonitorprotocol import Request, Reply, SERVER, CLIENT
 sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "..", "src"))
 import helpers as webhelpers
 from scratchtocatrobat.tools import helpers
@@ -114,7 +114,7 @@ class ConverterJobHandler(jobhandler.JobHandler):
         _logger.info("[%s]: Exit code is: %d" % (CLIENT, exit_code))
 
         # NOTE: exit-code is evaluated by TCP server
-        yield self.send_job_finished_notification(job_ID, exit_code)
+        yield self.send_job_conversion_finished_notification(job_ID, exit_code)
 
     @gen.coroutine
     def post_processing(self, args):
@@ -134,7 +134,7 @@ class ConverterJobHandler(jobhandler.JobHandler):
                 Request.ARGS_FILE_SIZE: file_size,
                 Request.ARGS_FILE_HASH: file_hash
             }
-            yield self._connection.send_message(Request(Request.Command.FILE_TRANSFER, args))
+            yield self._connection.send_message(Request(Request.Command.JOB_FINISHED, args))
 
             # File transfer ready (reply)
             data = json.loads((yield self._connection.read_message()).rstrip())
@@ -239,6 +239,8 @@ def convert_scratch_project(job_ID, host, port, verbose):
         # log error and continue without updating title and/or image URL!
         _logger.error("Unexpected error for URL: {}, {}".format(scratch_project_url, \
                                                                 sys.exc_info()[0]))
+
+    _logger.info("Project title is: {}".format(title))
 
     args = {
         "url": scratch_project_url,

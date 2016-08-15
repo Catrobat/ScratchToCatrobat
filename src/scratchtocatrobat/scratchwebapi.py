@@ -18,6 +18,7 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see http://www.gnu.org/licenses/.
+
 import sys, os, re
 from urlparse import urlparse
 from scratchtocatrobat import logger
@@ -37,7 +38,7 @@ _log = logger.log
 _cached_jsoup_documents = {}
 
 
-class ScratchProjectInfo(namedtuple("ScratchProjectInfo", "title owner instructions " \
+class ScratchProjectInfo(namedtuple("ScratchProjectInfo", "title owner image_url instructions " \
                                     "notes_and_credits tags views favorites loves modified_date " \
                                     "shared_date remixes")):
     def as_dict(self):
@@ -45,8 +46,10 @@ class ScratchProjectInfo(namedtuple("ScratchProjectInfo", "title owner instructi
                                    if isinstance(getattr(self, s), datetime) else getattr(self, s)),
                         self._fields))
 
+
     def __str__(self):
         return str(self.as_dict())
+
 
 class ScratchProjectVisibiltyState(object):
     # Note: never change these values here.
@@ -262,7 +265,7 @@ def extract_project_title_from_document(document):
     appended_title_text = "on Scratch"
     if title.endswith(appended_title_text):
         title = title.split(appended_title_text)[0].strip()
-    return title
+    return title.encode('utf-8')
 
 def extract_project_image_url_from_document(document):
     if document is None: return None
@@ -278,17 +281,17 @@ def extract_project_image_url_from_document(document):
 def extract_project_owner_from_document(document):
     if document is None: return None
     extracted_text = document.select_first_as_text("span#owner")
-    return unicode(extracted_text).replace("by ", "").strip() if extracted_text != None else None
+    return unicode(extracted_text).replace("by ", "").strip().encode('utf-8') if extracted_text != None else None
 
 def extract_project_instructions_from_document(document):
     if document is None: return None
     extracted_text = document.select_first_as_text("div#instructions > div.viewport > div.overview")
-    return unicode(extracted_text).strip() if extracted_text != None else None
+    return unicode(extracted_text).strip().encode('utf-8') if extracted_text != None else None
 
 def extract_project_notes_and_credits_from_document(document):
     if document is None: return None
     extracted_text = document.select_first_as_text("div#description > div.viewport > div.overview")
-    return unicode(extracted_text).strip() if extracted_text != None else None
+    return unicode(extracted_text).strip().encode('utf-8') if extracted_text != None else None
 
 def extract_project_remixes_from_document(document):
     if document is None: return None
@@ -321,8 +324,8 @@ def extract_project_remixes_from_document(document):
         resource_name_paths = url_parts[len(url_parts) - 1].split("_")
         assert len(resource_name_paths) == 2
         data["id"] = int(resource_name_paths[0])
-        data["title"] = title
-        data["owner"] = owners_of_remixed_projects[index]
+        data["title"] = unicode(title).strip().encode('utf-8')
+        data["owner"] = unicode(owners_of_remixed_projects[index]).strip()
         data["image"] = image_url
         remixed_project_info += [data]
     return remixed_project_info
@@ -345,8 +348,11 @@ def extract_project_details_from_document(document):
     owner = extract_project_owner_from_document(document)
     if owner is None: return None
 
-    instructions = extract_project_instructions_from_document(document) or ""
-    notes_and_credits = extract_project_notes_and_credits_from_document(document) or ""
+    image_url = extract_project_image_url_from_document(document)
+    if image_url is None: return None
+
+    instructions = extract_project_instructions_from_document(document)
+    notes_and_credits = extract_project_notes_and_credits_from_document(document)
     tags = document.select_all_as_text_list("div#project-tags div.tag-box span.tag") or []
 
     extracted_text = document.select_first_as_text("div#total-views > span.views")
@@ -364,17 +370,24 @@ def extract_project_details_from_document(document):
     extracted_text = document.select_first_as_text("div#fixed div.dates span.date-updated")
     if extracted_text is None: return None
     modified_date_str = unicode(extracted_text).replace("Modified:", "").strip()
-    modified_date = datetime.strptime(modified_date_str, '%d %b %Y')
+    try:
+        modified_date = datetime.strptime(modified_date_str, '%d %b %Y')
+    except:
+        modified_date = None
 
     extracted_text = document.select_first_as_text("div#fixed div.dates span.date-shared")
     if extracted_text is None: return None
     shared_date_str = unicode(extracted_text).replace("Shared:", "").strip()
-    shared_date = datetime.strptime(shared_date_str, '%d %b %Y')
+    try:
+        shared_date = datetime.strptime(shared_date_str, '%d %b %Y')
+    except:
+        shared_date = None
 
     remixes = extract_project_remixes_from_document(document)
     if remixes is None: return None
 
-    return ScratchProjectInfo(title = title, owner = owner, instructions = instructions,
-                              notes_and_credits = notes_and_credits, tags = tags, views = views,
-                              favorites = favorites, loves = loves, modified_date = modified_date,
-                              shared_date = shared_date, remixes = remixes)
+    return ScratchProjectInfo(title = title, owner = owner, image_url = image_url,
+                              instructions = instructions, notes_and_credits = notes_and_credits,
+                              tags = tags, views = views, favorites = favorites, loves = loves,
+                              modified_date = modified_date, shared_date = shared_date,
+                              remixes = remixes)

@@ -438,10 +438,19 @@ class Converter(object):
 
         sep_line = "\n" + "-" * 40 + "\n"
         description = sep_line
-        if scratch_project_instructions is not None:
-            description += "Instructions:\n" + scratch_project_instructions + sep_line
-        if scratch_project_notes_and_credits is not None:
-            description += "Description:\n" + scratch_project_notes_and_credits + sep_line
+        try:
+            if scratch_project_instructions is not None:
+                description += "Instructions:\n" + scratch_project_instructions + sep_line
+        except:
+            # TODO: FIX ASCII issue!!
+            pass
+
+        try:
+            if scratch_project_notes_and_credits is not None:
+                description += "Description:\n" + scratch_project_notes_and_credits + sep_line
+        except:
+            # TODO: FIX ASCII issue!!
+            pass
 
         description += "\nMade with {} version {}.\nOriginal Scratch project => {}".format( \
                          helpers.application_info("name"), \
@@ -524,7 +533,10 @@ class _ScratchObjectConverter(object):
             args = [self._catrobat_project, scratch_variable["name"], scratch_variable["value"], sprite]
             if not scratch_object.is_stage():
                 args += [sprite.getName()]
-            _assign_initialization_value_to_user_variable(*args)
+            try:
+                _assign_initialization_value_to_user_variable(*args)
+            except:
+                log.error("Cannot assign initialization value {} to user variable {}".format(scratch_variable["name"], scratch_variable["value"]))
 
         log.info('')
         return sprite

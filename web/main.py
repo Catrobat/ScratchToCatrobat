@@ -41,7 +41,7 @@ import tornado.ioloop #@UnresolvedImport
 from tornado.options import define, options #@UnresolvedImport, @UnusedImport
 import converterhttpserver
 import converterwebapp
-import jobmonitortcpserver
+from jobmonitorserver import jobmonitortcpserver
 import sys
 import os.path
 import signal

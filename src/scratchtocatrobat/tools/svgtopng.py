@@ -75,9 +75,9 @@ def convert(input_svg_path, rotation_x, rotation_y):
         # read input SVG document into Transcoder Input (use Java NIO for this purpose)
         svg_URI_input = Paths.get(input_svg_path).toUri().toURL().toString()
 
-        _parse_and_rewrite_svg_file(svg_URI_input[5:], svg_URI_input[5:])
+        _parse_and_rewrite_svg_file(svg_URI_input[5:], svg_URI_input[5:] + "_new")
         
-        input_svg_image = TranscoderInput(svg_URI_input)
+        input_svg_image = TranscoderInput(svg_URI_input + "_new")
 
         # define OutputStream to PNG Image and attach to TranscoderOutputSc    
         png_ostream = FileOutputStream(output_png_path)
@@ -156,15 +156,16 @@ def _translation(output_png_path, rotation_x, rotation_y):
     g2d = new_buffered_image.createGraphics()
     g2d.setComposite(AlphaComposite.Clear)
     g2d.fillRect(0, 0, dst_new_width, dst_new_height)
+
             
     # Rechts Unten
-    for old_row_y, new_row_y in zip(xrange(rotation_y, end_y + 1),xrange(end_y, dst_new_width)):
-        for old_column_x, new_column_x in zip(xrange(rotation_x, end_x + 1),xrange(end_x, dst_new_height)):
+    for old_row_y, new_row_y in zip(xrange(rotation_y, end_y + 1),xrange(end_y, dst_new_height)):
+        for old_column_x, new_column_x in zip(xrange(rotation_x, end_x + 1),xrange(end_x, dst_new_width)):
             new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x])
     
     # Rechts oben
     for old_row_y, new_row_y in zip(xrange(rotation_y, start_y - 1, -1),xrange(end_y, -1, -1)):
-        for old_column_x, new_column_x in zip(xrange(rotation_x, end_x + 1),xrange(end_x, dst_new_height)):
+        for old_column_x, new_column_x in zip(xrange(rotation_x, end_x + 1),xrange(end_x, dst_new_width)):
             new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x])
           
     # links oben  
@@ -173,13 +174,13 @@ def _translation(output_png_path, rotation_x, rotation_y):
             new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x])
 
     # links unten
-    for old_row_y, new_row_y in zip(xrange(rotation_y, end_y + 1),xrange(end_y, dst_new_width)):
+    for old_row_y, new_row_y in zip(xrange(rotation_y, end_y + 1),xrange(end_y, dst_new_height)):
         for old_column_x, new_column_x in zip(xrange(rotation_x, start_x - 1, -1),xrange(end_x, -1, -1)):
             new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x])
     
     
-    color = Color.yellow
-    new_buffered_image.setRGB(end_x - 1, end_y - 1, color.getRGB())
+    #color = Color.yellow
+    #new_buffered_image.setRGB(end_x - 1, end_y - 1, color.getRGB())
     return new_buffered_image
     
 def _translation_to_rotation_point(img, rotation_x, rotation_y):
@@ -207,9 +208,6 @@ def _translation_to_rotation_point(img, rotation_x, rotation_y):
     img_matrix = [[img.getRGB(row_index, column_index) for column_index in xrange(img.getHeight())] for row_index in xrange(img.getWidth())]
     
     transposed_img_matrix = _transpose_matrix(img_matrix)
-    
-    #System.out.println(start_x + "|" + start_y + "\t" + start_x + "|" + end_y);
-    #System.out.println(end_x + "|" + start_y + "\t" + end_x + "|" + end_y);
 
     for row_index, old_row_index in zip(xrange(start_x, end_x + 1), xrange(len(transposed_img_matrix))):
         for column_index, old_column_index in zip(xrange(start_y, end_y + 1), xrange(len(transposed_img_matrix[0]))):

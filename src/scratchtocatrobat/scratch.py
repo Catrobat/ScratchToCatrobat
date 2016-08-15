@@ -741,6 +741,7 @@ class ScriptElement(object):
         else:
             block_name = raw_block
             Class = BlockValue
+            
         return Class(block_name, arguments=block_arguments)
 
 

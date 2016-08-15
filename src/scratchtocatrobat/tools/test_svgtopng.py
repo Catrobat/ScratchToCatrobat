@@ -41,60 +41,25 @@ class SvgToPngTest(common_testing.BaseTestCase):
 
     #        assert os.path.exists(output_png_path) 
     #        assert imghdr.what(output_png_path) == "png"
-            
-    def test_first_true_cut_of_png(self):
-        img_proc_dir = os.path.join(helpers.APP_PATH, "test", "res", "img_proc_png")
-        input_png_path = os.path.join(img_proc_dir, "1.png")
-        output_png_path = os.path.join(img_proc_dir, "cat_test_result.png")
-        expected_image_path = os.path.join(img_proc_dir, "expected_cat.png")
-        
-        assert os.path.exists(input_png_path)
-
-        final_image = svgtopng._scale_image(input_png_path)
-        
-        from javax.imageio import ImageIO
-        from java.io import File      
-        ImageIO.write(final_image, "PNG", File(output_png_path))
-        assert os.path.exists(output_png_path)
-        assert imghdr.what(output_png_path) == "png"
-        
-        from javax.swing import ImageIcon
-        bufferd_image = svgtopng._create_buffered_image(ImageIcon(output_png_path).getImage())
-        width, height = bufferd_image.getWidth(), bufferd_image.getHeight()
-        output_image_matrix = [[bufferd_image.getRGB(i, j) for j in xrange(height)] for i in xrange(width)]
-        
-        bufferd_image = svgtopng._create_buffered_image(ImageIcon(expected_image_path).getImage())
-        width, height = bufferd_image.getWidth(), bufferd_image.getHeight()
-        expected_image_matrix = [[bufferd_image.getRGB(i, j) for j in xrange(height)] for i in xrange(width)]
-        
-        for i in xrange(width):
-            for j in xrange(height):
-                exp_rgb_val = expected_image_matrix[i][j]
-                result_rgb_val = output_image_matrix[i][j]
-                assert exp_rgb_val == result_rgb_val
                 
-    def test_second_true_cut_of_png(self):
+    def test_parse_svgfile_and_convert_to_png_cape(self):
         img_proc_dir = os.path.join(helpers.APP_PATH, "test", "res", "img_proc_png")
-        input_png_path = os.path.join(img_proc_dir, "input_cape.png")
-        output_png_path = os.path.join(img_proc_dir, "cape_test_result.png")
+        input_svg_path = os.path.join(img_proc_dir, "input_cape.svg")
         expected_image_path = os.path.join(img_proc_dir, "expected_cape.png")
         
-        assert os.path.exists(input_png_path)
-
-        final_image = svgtopng._scale_image(input_png_path)
+        assert os.path.exists(input_svg_path)
+        
+        rotation_x, rotation_y = 36, 67
+        
+        output_png_path = svgtopng.convert(input_svg_path, rotation_x, rotation_y)
         
         from javax.imageio import ImageIO
-        from java.io import File      
-        ImageIO.write(final_image, "PNG", File(output_png_path))
-        assert os.path.exists(output_png_path)
-        assert imghdr.what(output_png_path) == "png"
-        
-        from javax.swing import ImageIcon
-        bufferd_image = svgtopng._create_buffered_image(ImageIcon(output_png_path).getImage())
+        from java.io import File
+        bufferd_image = ImageIO.read(File(output_png_path))
         width, height = bufferd_image.getWidth(), bufferd_image.getHeight()
         output_image_matrix = [[bufferd_image.getRGB(i, j) for j in xrange(height)] for i in xrange(width)]
         
-        bufferd_image = svgtopng._create_buffered_image(ImageIcon(expected_image_path).getImage())
+        bufferd_image = ImageIO.read(File(expected_image_path))
         width, height = bufferd_image.getWidth(), bufferd_image.getHeight()
         expected_image_matrix = [[bufferd_image.getRGB(i, j) for j in xrange(height)] for i in xrange(width)]
         
@@ -104,53 +69,52 @@ class SvgToPngTest(common_testing.BaseTestCase):
                 result_rgb_val = output_image_matrix[i][j]
                 assert exp_rgb_val == result_rgb_val
                 
-    def test_parse_svgfile_and_convert_to_png(self):
-        from java.io import FileOutputStream
-        from org.apache.batik.transcoder.image import PNGTranscoder
-        from org.apache.batik.transcoder import TranscoderInput
-        from org.apache.batik.transcoder import TranscoderOutput
-        from java.nio.file import Paths
+    def test_parse_svgfile_and_convert_to_png_background(self):
+        img_proc_dir = os.path.join(helpers.APP_PATH, "test", "res", "img_proc_png")
+        input_svg_path = os.path.join(img_proc_dir, "input_background.svg")
+        expected_image_path = os.path.join(img_proc_dir, "expected_background.png")
         
+        assert os.path.exists(input_svg_path)
+        
+        rotation_x, rotation_y = 255, 180
+        
+        output_png_path = svgtopng.convert(input_svg_path, rotation_x, rotation_y)
+        
+        from javax.imageio import ImageIO
+        from java.io import File
+        bufferd_image = ImageIO.read(File(output_png_path))
+        width, height = bufferd_image.getWidth(), bufferd_image.getHeight()
+        output_image_matrix = [[bufferd_image.getRGB(i, j) for j in xrange(height)] for i in xrange(width)]
+        
+        bufferd_image = ImageIO.read(File(expected_image_path))
+        width, height = bufferd_image.getWidth(), bufferd_image.getHeight()
+        expected_image_matrix = [[bufferd_image.getRGB(i, j) for j in xrange(height)] for i in xrange(width)]
+        
+        for i in xrange(width):
+            for j in xrange(height):
+                exp_rgb_val = expected_image_matrix[i][j]
+                result_rgb_val = output_image_matrix[i][j]
+                assert exp_rgb_val == result_rgb_val
+                
+    def test_parse_svgfile_and_convert_to_png_antenna(self):
         img_proc_dir = os.path.join(helpers.APP_PATH, "test", "res", "img_proc_png")
         input_svg_path = os.path.join(img_proc_dir, "input_antenna.svg")
-        output_svg_path = os.path.join(img_proc_dir, "output_antenna.svg")
-        output_png_path = os.path.join(img_proc_dir, "antenna_test_result.png")
         expected_image_path = os.path.join(img_proc_dir, "expected_antenna.png")
         
         assert os.path.exists(input_svg_path)
         
-        svgtopng._parse_and_rewrite_svg_file(input_svg_path, output_svg_path)
+        rotation_x, rotation_y = 53, 43
         
-        svg_URI_input = Paths.get(output_svg_path).toUri().toURL().toString()
-        
-        input_svg_image = TranscoderInput(svg_URI_input)
-
-        # define OutputStream to PNG Image and attach to TranscoderOutputSc    
-        png_ostream = FileOutputStream(output_png_path)
-        
-        output_png_image = TranscoderOutput(png_ostream)
-        
-        my_converter = PNGTranscoder()
-
-        my_converter.transcode(input_svg_image, output_png_image)
-
-        final_image = svgtopng._scale_image(output_png_path)
+        output_png_path = svgtopng.convert(input_svg_path, rotation_x, rotation_y)
         
         from javax.imageio import ImageIO
-        from java.io import File      
-        ImageIO.write(final_image, "PNG", File(output_png_path))
-        #assert os.path.exists(output_png_path)
-        #assert imghdr.what(output_png_path) == "png"
-        
-        from javax.swing import ImageIcon
-        bufferd_image = svgtopng._create_buffered_image(ImageIcon(output_png_path).getImage()) #final_image
+        from java.io import File
+        bufferd_image = ImageIO.read(File(output_png_path))
         width, height = bufferd_image.getWidth(), bufferd_image.getHeight()
-        print width, "   ", height
         output_image_matrix = [[bufferd_image.getRGB(i, j) for j in xrange(height)] for i in xrange(width)]
         
-        bufferd_image = svgtopng._create_buffered_image(ImageIcon(expected_image_path).getImage())
+        bufferd_image = ImageIO.read(File(expected_image_path))
         width, height = bufferd_image.getWidth(), bufferd_image.getHeight()
-        print width, "   ", height
         expected_image_matrix = [[bufferd_image.getRGB(i, j) for j in xrange(height)] for i in xrange(width)]
         
         for i in xrange(width):
@@ -159,7 +123,32 @@ class SvgToPngTest(common_testing.BaseTestCase):
                 result_rgb_val = output_image_matrix[i][j]
                 assert exp_rgb_val == result_rgb_val
                 
+    def test_parse_svgfile_and_convert_to_png_hat(self):
+        img_proc_dir = os.path.join(helpers.APP_PATH, "test", "res", "img_proc_png")
+        input_svg_path = os.path.join(img_proc_dir, "input_hat.svg")
+        expected_image_path = os.path.join(img_proc_dir, "expected_hat.png")
+        
+        assert os.path.exists(input_svg_path)
+        
+        rotation_x, rotation_y = 97, 51
+        
+        output_png_path = svgtopng.convert(input_svg_path, rotation_x, rotation_y)
 
+        from javax.imageio import ImageIO
+        from java.io import File
+        bufferd_image = ImageIO.read(File(output_png_path))
+        width, height = bufferd_image.getWidth(), bufferd_image.getHeight()
+        output_image_matrix = [[bufferd_image.getRGB(i, j) for j in xrange(height)] for i in xrange(width)]
+        
+        bufferd_image = ImageIO.read(File(expected_image_path))
+        width, height = bufferd_image.getWidth(), bufferd_image.getHeight()
+        expected_image_matrix = [[bufferd_image.getRGB(i, j) for j in xrange(height)] for i in xrange(width)]
+        
+        for i in xrange(width):
+            for j in xrange(height):
+                exp_rgb_val = expected_image_matrix[i][j]
+                result_rgb_val = output_image_matrix[i][j]
+                assert exp_rgb_val == result_rgb_val
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']

@@ -723,7 +723,7 @@ class ScriptElement(object):
                 assert(not isinstance(current_operator, list))
 
             cls.math_stack.append(current_operator)
-        elif isinstance(raw_block, list) and not isinstance(raw_block[0], list) and common.int_or_float(raw_block[0]):
+        elif isinstance(raw_block, list) and len(raw_block) > 0 and not isinstance(raw_block[0], list) and common.int_or_float(raw_block[0]):
             cls.math_stack = []
 
         # recursively create ScriptElement tree

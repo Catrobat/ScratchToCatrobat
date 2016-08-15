@@ -98,9 +98,9 @@ class JobHandler(object):
     @gen.coroutine
     def send_job_progress_notification(self, job_ID, progress):
         # Job progress (request)
-        if not isinstance(progress, float):
-            _logger.warn("[%s]: Cannot send progress notification! Given progress is "\
-                         "no valid float: '%s'" % (CLIENT, progress))
+        if not isinstance(progress, int):
+            _logger.warn("[{}]: Cannot send progress notification! Given progress is "\
+                         "no valid int: '{}'".format(CLIENT, progress))
             return
 
         _logger.debug('[%s]: (%d%%) Sending job progress notification' % (CLIENT, progress))

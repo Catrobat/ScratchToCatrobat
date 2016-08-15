@@ -99,10 +99,10 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
             return
 
         if msg_type == NotificationType.JOB_STARTED:
-            imageURL = args[jobmonprot.Request.ARGS_IMAGE_URL]
             job.title = args[jobmonprot.Request.ARGS_TITLE]
-            job.imageURL = imageURL
             job.status = Job.Status.RUNNING
+            job.progress = 0
+            job.imageURL = args[jobmonprot.Request.ARGS_IMAGE_URL]
         elif msg_type == NotificationType.JOB_FAILED:
             _logger.warn("Job failed! Exception Args: %s", args)
             job.status = Job.Status.FAILED
@@ -111,13 +111,15 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
             for line in args[jobmonprot.Request.ARGS_LINES]:
                 job.output += line
         elif msg_type == NotificationType.JOB_PROGRESS:
-            job.progress = args[jobmonprot.Request.ARGS_PROGRESS]
+            progress = args[jobmonprot.Request.ARGS_PROGRESS]
+            isinstance(progress, int)
+            job.progress = progress
         elif msg_type == NotificationType.JOB_CONVERSION_FINISHED:
             _logger.info("Job #{} finished, waiting for file transfer".format(job_ID))
             return
         elif msg_type == NotificationType.JOB_FINISHED:
-            job.progress = 100.0
             job.status = Job.Status.FINISHED
+            job.progress = 100
             job.archiveCachedUTCDate = dt.utcnow().strftime(Job.DATETIME_FORMAT)
 
         # find listening clients
@@ -160,7 +162,7 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
             elif msg_type == NotificationType.JOB_OUTPUT:
                 message = JobOutputMessage(job_ID, args[jobmonprot.Request.ARGS_LINES])
             elif msg_type == NotificationType.JOB_PROGRESS:
-                message = JobProgressMessage(job_ID, args[jobmonprot.Request.ARGS_PROGRESS])
+                message = JobProgressMessage(job_ID, job.progress)
             elif msg_type == NotificationType.JOB_FINISHED:
                 client_ID = currently_listening_client_IDs[idx]
                 download_url = webhelpers.create_download_url(job_ID, client_ID, job.title)

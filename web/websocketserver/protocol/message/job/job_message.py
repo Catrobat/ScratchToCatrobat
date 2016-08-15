@@ -24,17 +24,19 @@ from websocketserver.protocol.message import message
 
 class JobMessage(message.Message):
     class MessageType(object):
-        JOB_FAILED          =  0
-        JOB_RUNNING         =  1
-        JOB_ALREADY_RUNNING =  2
-        JOB_READY           =  3
-        JOB_OUTPUT          =  4
-        JOB_PROGRESS        =  5
-        JOB_CONVERSION_FINISHED        =  6
+        JOB_FAILED               =  0
+        JOB_RUNNING              =  1
+        JOB_ALREADY_RUNNING      =  2
+        JOB_READY                =  3
+        JOB_OUTPUT               =  4
+        JOB_PROGRESS             =  5
+        JOB_CONVERSION_FINISHED  =  6
+
 
         @classmethod
         def is_valid(cls, message_type):
             return message_type >= cls.JOB_FAILED and message_type <= cls.JOB_CONVERSION_FINISHED
+
 
     def __init__(self, message_type, job_ID, data={}):
         assert isinstance(message_type, int) and JobMessage.MessageType.is_valid(message_type)

@@ -53,7 +53,7 @@ class RetrieveInfoCommand(Command):
                 continue
             info = job.__dict__
             info["alreadyDownloaded"] = self._job_already_downloaded_by_client(redis_conn, job_ID, client_ID)
-            info["downloadUrl"] = webhelpers.create_download_url(job_ID, client_ID, job.title)
+            info["downloadURL"] = webhelpers.create_download_url(job_ID, client_ID, job.title)
             del info["output"]
             jobs_info += [info]
         return InfoMessage(CATROBAT_LANGUAGE_VERSION, jobs_info)

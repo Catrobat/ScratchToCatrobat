@@ -25,7 +25,7 @@ class Message(object):
         MSG                        = "msg"
         JOB_ID                     = "jobID"
         JOB_TITLE                  = "jobTitle"
-        JOB_IMAGE_URL              = "jobImageUrl"
+        JOB_IMAGE_URL              = "jobImageURL"
         LINES                      = "lines"
         PROGRESS                   = "progress"
         URL                        = "url"
@@ -33,6 +33,7 @@ class Message(object):
         CATROBAT_LANGUAGE_VERSION  = "catLangVers"
         JOBS_INFO                  = "jobsInfo"
         CLIENT_ID                  = "clientID"
+
 
     class CategoryType(object):
         BASE             =  0
@@ -51,6 +52,7 @@ class Message(object):
                     return category
             raise RuntimeError("Unknown type of message: " + message_obj.__class__.__name__)
 
+
     def __init__(self, message_type, data={}):
         assert isinstance(message_type, int)
         assert isinstance(data, dict)
@@ -58,5 +60,7 @@ class Message(object):
         self.type = message_type
         self.data = data
 
+
     def as_dict(self):
         return self.__dict__
+

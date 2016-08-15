@@ -75,9 +75,9 @@ def convert(input_svg_path, rotation_x, rotation_y):
         # read input SVG document into Transcoder Input (use Java NIO for this purpose)
         svg_URI_input = Paths.get(input_svg_path).toUri().toURL().toString()
 
-        _parse_and_rewrite_svg_file(svg_URI_input[5:], svg_URI_input[5:] + "_new")
+        _parse_and_rewrite_svg_file(svg_URI_input[5:], svg_URI_input[5:])
         
-        input_svg_image = TranscoderInput(svg_URI_input + "_new")
+        input_svg_image = TranscoderInput(svg_URI_input)
 
         # define OutputStream to PNG Image and attach to TranscoderOutputSc    
         png_ostream = FileOutputStream(output_png_path)

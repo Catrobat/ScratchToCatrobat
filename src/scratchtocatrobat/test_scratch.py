@@ -105,6 +105,9 @@ class TestProjectFunc(unittest.TestCase):
         assert len(project.unused_resource_paths) > 0
         expected_resources = ['0.png', '1_rotX_47_rotY_55.png', '2.wav', '2_rotX_47_rotY_55.png',
                               '3.png', '4.png', '5.png', '6.png', '8.png']
+        
+        for a in set(map(os.path.basename, project.unused_resource_paths)):
+            print (a + "\n")
         assert set(map(os.path.basename, project.unused_resource_paths)) == set(expected_resources)
 
 

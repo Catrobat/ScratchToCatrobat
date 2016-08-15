@@ -95,7 +95,7 @@ class ConverterJobHandler(jobhandler.JobHandler):
                 progress = int(float(progress))
                 progress_difference = progress - old_progress
                 old_progress = progress
-                if progress_difference >= 1:
+                if progress_difference > 0:
                     _logger.debug("[{}]: {}".format(CLIENT, progress))
                     yield self.send_job_progress_notification(job_ID, progress)
                 continue

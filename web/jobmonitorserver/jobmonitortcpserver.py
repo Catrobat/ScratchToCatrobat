@@ -141,7 +141,7 @@ class TCPConnectionHandler(object):
         request = Request.request_from_data(data)
         if not isinstance(request.args[Request.ARGS_PROGRESS], int):
             raise TCPConnectionException("Progress parameter must be of type int!")
-        _logger.debug("[%s]: Received job progress notification (Progress: %f%%)"
+        _logger.debug("[%s]: Received job progress notification (Progress: %d%%)"
                       % (SERVER, request.args[Request.ARGS_PROGRESS]))
 
 #         _logger.debug("[%s]: Reply: Accepted!" % SERVER)

@@ -37,6 +37,7 @@ from websocketserver.protocol.message.job.job_ready_message import JobReadyMessa
 
 CATROBAT_FILE_EXT = helpers.config.get("CATROBAT", "file_extension")
 SCRATCH_PROJECT_IMAGE_URL_TEMPLATE = helpers.config.get("SCRATCH_API", "project_image_url_template")
+MAX_NUM_SCHEDULED_JOBS_PER_CLIENT = int(helpers.config.get("CONVERTER_JOB", "max_num_scheduled_jobs_per_client"))
 JOB_TIMEOUT = int(helpers.config.get("CONVERTER_JOB", "timeout"))
 
 _logger = logging.getLogger(__name__)
@@ -98,6 +99,24 @@ def assign_job_to_client(redis_connection, job_ID, client_ID):
     return redis_connection.set(job_client_key, jobs_of_client)
 
 
+def get_jobs_of_client(redis_connection, client_ID):
+    job_client_key = webhelpers.REDIS_JOB_CLIENT_KEY_TEMPLATE.format(client_ID)
+    jobs_of_client = redis_connection.get(job_client_key)
+    jobs_of_client = ast.literal_eval(jobs_of_client) if jobs_of_client != None else []
+    assert isinstance(jobs_of_client, list)
+
+    jobs = []
+    for job_ID in jobs_of_client:
+        project_key = webhelpers.REDIS_JOB_KEY_TEMPLATE.format(job_ID)
+        job = Job.from_redis(redis_connection, project_key)
+        if job == None:
+            _logger.warn("Ignoring missing job for scratch project ID {}".format(job_ID))
+            continue
+
+        jobs.append(job)
+    return jobs
+
+
 class ScheduleJobCommand(Command):
 
     def execute(self, ctxt, args):
@@ -120,8 +139,13 @@ class ScheduleJobCommand(Command):
             verbose_param_str = str(args[Command.ArgumentType.VERBOSE]).lower()
             verbose = verbose_param_str == "true" or verbose_param_str == "1"
 
-        # schedule this job
         redis_conn = ctxt.redis_connection
+        jobs_of_client = get_jobs_of_client(redis_conn, client_ID)
+        jobs_of_client_in_progress = filter(lambda job: job.is_in_progress(), jobs_of_client)
+        if len(jobs_of_client_in_progress) >= MAX_NUM_SCHEDULED_JOBS_PER_CLIENT:
+            return ErrorMessage("Maximum number of jobs per client limit exceeded: {}"
+                                .format(MAX_NUM_SCHEDULED_JOBS_PER_CLIENT))
+
         # TODO: lock.acquire() => use python's context-handler (i.e. "with"-keyword) and file lock!
         assign_job_to_client(redis_conn, job_ID, client_ID)
         job_key = webhelpers.REDIS_JOB_KEY_TEMPLATE.format(job_ID)

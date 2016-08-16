@@ -40,7 +40,7 @@ FEATURED_SCRATCH_PROGRAMS = [{
       "id": 119198,
       "username": "Scratchteam"
     },
-    "image": "https:\/\/cdn2.scratch.mit.edu\/get_image\/project\/11656680_480x360.png",
+    "image": "https://cdn2.scratch.mit.edu/get_image/project/11656680_480x360.png",
     "history": {
       "created": "2013-07-30T20:06:50.000Z",
       "modified": "2015-09-14T15:07:04.000Z",

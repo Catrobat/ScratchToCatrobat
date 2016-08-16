@@ -128,7 +128,7 @@ class ScheduleJobCommand(Command):
         job = Job.from_redis(redis_conn, job_key)
 
         if job != None:
-            if job.status == Job.Status.READY or job.status == Job.Status.RUNNING:
+            if job.state == Job.State.READY or job.state == Job.State.RUNNING:
                 # TODO: lock.release()
                 _logger.info("Job already scheduled (scratch project with ID: %d)", job_ID)
                 remove_client_from_download_list_if_exists(redis_conn, job_ID, client_ID)
@@ -136,7 +136,7 @@ class ScheduleJobCommand(Command):
                     return JobFailedMessage(job_ID, "Cannot add client as listener to job!")
                 return JobAlreadyRunningMessage(job_ID, job.title, job.imageURL)
 
-            elif job.status == Job.Status.FINISHED and not force:
+            elif job.state == Job.State.FINISHED and not force:
                 assert job.archiveCachedUTCDate is not None
                 archive_cached_utc_date = dt.strptime(job.archiveCachedUTCDate, Job.DATETIME_FORMAT)
                 download_valid_until_utc = archive_cached_utc_date + timedelta(seconds=Job.CACHE_ENTRY_VALID_FOR)
@@ -150,9 +150,9 @@ class ScheduleJobCommand(Command):
                         return JobFinishedMessage(job_ID, download_url, job.archiveCachedUTCDate)
 
             else:
-                assert job.status == Job.Status.FAILED or force
+                assert job.state == Job.State.FAILED or force
 
-        job = Job(job_ID, "-", Job.Status.READY)
+        job = Job(job_ID, "-", Job.State.READY)
         if not job.save_to_redis(redis_conn, job_key):
             # TODO: lock.release()
             return JobFailedMessage(job_ID, "Cannot schedule job!")
@@ -161,6 +161,7 @@ class ScheduleJobCommand(Command):
         if not add_listening_client_to_job(redis_conn, client_ID, job_ID):
             return JobFailedMessage(job_ID, "Cannot add client as listener to job!")
 
+        # schedule this job
         use_connection(redis_conn)
         q = Queue(connection=redis_conn)
         host, port = ctxt.jobmonitorserver_settings["host"], ctxt.jobmonitorserver_settings["port"]

@@ -100,12 +100,12 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
 
         if msg_type == NotificationType.JOB_STARTED:
             job.title = args[jobmonprot.Request.ARGS_TITLE]
-            job.status = Job.Status.RUNNING
+            job.state = Job.State.RUNNING
             job.progress = 0
             job.imageURL = args[jobmonprot.Request.ARGS_IMAGE_URL]
         elif msg_type == NotificationType.JOB_FAILED:
             _logger.warn("Job failed! Exception Args: %s", args)
-            job.status = Job.Status.FAILED
+            job.state = Job.State.FAILED
         elif msg_type == NotificationType.JOB_OUTPUT:
             job.output = job.output if job.output != None else ""
             for line in args[jobmonprot.Request.ARGS_LINES]:
@@ -118,7 +118,7 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
             _logger.info("Job #{} finished, waiting for file transfer".format(job_ID))
             return
         elif msg_type == NotificationType.JOB_FINISHED:
-            job.status = Job.Status.FINISHED
+            job.state = Job.State.FINISHED
             job.progress = 100
             job.archiveCachedUTCDate = dt.utcnow().strftime(Job.DATETIME_FORMAT)
 
@@ -129,7 +129,7 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
         if all_listening_client_IDs == None:
             _logger.warn("WTH?! No listening clients stored!")
             if not job.save_to_redis(cls.REDIS_CONNECTION, job_key):
-                _logger.info("Unable to update job status!")
+                _logger.info("Unable to update job state!")
             return
 
         all_listening_client_IDs = ast.literal_eval(all_listening_client_IDs)
@@ -140,14 +140,14 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
 
         if msg_type in (NotificationType.JOB_FINISHED, NotificationType.JOB_FAILED):
             # Job completely finished or failed -> remove all listeners from database
-            #                                      before updating job status in database
+            #                                      before updating job state in database
             remove_all_listening_clients_from_job(cls.REDIS_CONNECTION, job_ID)
             # append clients to download-list
             add_clients_to_download_list(cls.REDIS_CONNECTION, job_ID, all_listening_client_IDs)
 
-        # update job status in database
+        # update job state in database
         if not job.save_to_redis(cls.REDIS_CONNECTION, job_key):
-            _logger.info("Unable to update job status!")
+            _logger.info("Unable to update job state!")
             return
 
         currently_listening_client_IDs = filter(lambda client_ID: client_ID in cls.client_ID_open_sockets_map,
@@ -213,5 +213,7 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
         _logger.info("Executing command %s", command.__class__.__name__)
         reply_message = command.execute(ctxt, args)
         if reply_message is not None:
+            _logger.info("Sending reply %s %r to %d", reply_message.__class__.__name__,
+                         reply_message.as_dict(), id(self))
             self.send_message(reply_message)
 

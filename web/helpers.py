@@ -32,28 +32,28 @@ REDIS_JOB_CLIENT_KEY_TEMPLATE = "jobsOfClient#{}"
 
 # TODO: remove theses data of default programs and fetch/update dynamically
 FEATURED_SCRATCH_PROGRAMS = [{
-    "id": 10205819,
-    "title": "Dancin' in the Castle",
-    "description": "First project on Scratch! This was great.",
-    "instructions": "Click the flag to run the stack. Click the space bar to change it up!",
+    "id": 11656680,
+    "title": "Dress Up Tera",
+    "description": "Remixed from ttseng's Halloween Scratch Cat project--she works here at MIT with Scratch Team. ",
+    "instructions": "Remix this project by adding your own accessories, colors, or new sprites!",
     "author": {
-      "id": 2377748,
-      "username": "jschombs"
+      "id": 119198,
+      "username": "Scratchteam"
     },
-    "image": "https://cdn2.scratch.mit.edu/get_image/project/10205819_480x360.png",
+    "image": "https:\/\/cdn2.scratch.mit.edu\/get_image\/project\/11656680_480x360.png",
     "history": {
-      "created": "2013-05-13T18:04:20.000Z",
-      "modified": "2013-05-13T18:48:30.000Z",
-      "shared": "2013-05-13T18:49:03.000Z"
+      "created": "2013-07-30T20:06:50.000Z",
+      "modified": "2015-09-14T15:07:04.000Z",
+      "shared": "2013-07-31T19:50:19.000Z"
     },
     "stats": {
-      "views": 96,
-      "loves": 0,
-      "favorites": 0,
+      "views": 323619,
+      "loves": 2283,
+      "favorites": 1540,
       "comments": 0
     },
     "remix": {
-      "root": None
+      "root": 10007164
     }
 }, {
     "id": 82443924,

@@ -46,17 +46,22 @@ class WavConverterTest(common_testing.BaseTestCase):
         saved_path_env = os.environ[_ENV_PATH]
         os.environ[_ENV_PATH] = ""
         dummy_wav = self.adpcm_wavfile_paths()[0]
+        output_path = None
         try:
             wavconverter.is_android_compatible_wav(dummy_wav)
             self.fail("Expected exception 'EnvironmentError' not thrown")
         except EnvironmentError:
             try:
-                wavconverter.convert_to_android_compatible_wav(dummy_wav, "dummy.wav")
+                output_path = wavconverter.convert_to_android_compatible_wav(dummy_wav)
                 self.fail("Expected exception 'EnvironmentError' not thrown")
             except EnvironmentError:
                 pass
             finally:
-                assert not os.path.exists("dummy.wav")
+                if output_path is not None:
+                    output_file_exists = os.path.exists(output_path)
+                    if output_file_exists:
+                        os.remove(output_path)
+                    assert not output_file_exists
         finally:
             os.environ[_ENV_PATH] = saved_path_env
 
@@ -71,11 +76,9 @@ class WavConverterTest(common_testing.BaseTestCase):
     def test_can_convert_android_incompatible_to_compatible_wav_file(self):
         for wav_path in self.adpcm_wavfile_paths():
             assert not wavconverter.is_android_compatible_wav(wav_path)
-            converted_wav_path = os.path.join(self._testresult_folder_path, os.path.basename(wav_path))
-
-            wavconverter.convert_to_android_compatible_wav(wav_path, converted_wav_path)
-
+            converted_wav_path = wavconverter.convert_to_android_compatible_wav(wav_path)
             assert wavconverter.is_android_compatible_wav(converted_wav_path)
+            os.remove(converted_wav_path)
 
 
 if __name__ == "__main__":

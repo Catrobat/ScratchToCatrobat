@@ -375,15 +375,44 @@ def md5_of_file(file_path):
             file_hash.update(chunk)
     return file_hash.hexdigest()
 
+
+class ProgressType(object):
+    DOWNLOAD_CODE = 1
+    DOWNLOAD_MEDIA_FILE = 2
+    DETAILS = 3
+    CONVERT_MEDIA_FILE = 4
+    CONVERT_SCRIPT = 5
+    SAVE_XML = 6
+
+class Progress(object):
+    def __init__(self, download_code_iterations=0, details_iterations=0,
+                 download_media_file_iterations=0, convert_media_file_iterations=0,
+                 convert_script_iterations=0, save_xml_iterations=0):
+        self.iterations = {
+            ProgressType.DOWNLOAD_CODE:          download_code_iterations,
+            ProgressType.DETAILS:                details_iterations,
+            ProgressType.DOWNLOAD_MEDIA_FILE:    download_media_file_iterations,
+            ProgressType.CONVERT_MEDIA_FILE:     convert_media_file_iterations,
+            ProgressType.CONVERT_SCRIPT:         convert_script_iterations,
+            ProgressType.SAVE_XML:               save_xml_iterations
+        }
+
+    def sum(self):
+        return sum(self.iterations.values())
+
+    def __str__(self):
+        return str(self.iterations)
+
+
 class ProgressBar(object):
 
     SAVING_XML_PROGRESS_WEIGHT_PERCENTAGE = 3
     START_PROGRESS_INDICATOR = "#__("
     END_PROGRESS_INDICATOR = "%)__"
 
-    def __init__(self, num_of_iterations, web_mode=False, output_stream=sys.stdout):
-        self._iterations_counter = 0
-        self.num_of_iterations = num_of_iterations
+    def __init__(self, expected_progress, web_mode=False, output_stream=sys.stdout):
+        self._iterations = Progress()
+        self.expected_progress = expected_progress
         self._output_stream = output_stream
         self.lock = threading.RLock()
         self.saving_xml_progress_weight = 0
@@ -405,22 +434,28 @@ class ProgressBar(object):
 
     def is_full(self):
         with self.lock:
-            return (self._iterations_counter == self.num_of_iterations)
+            return self._iterations.sum() == self.expected_progress.sum()
 
-    def update(self, increment=1):
+    def update(self, progress_type, increment=1):
         with self.lock:
-            if self.num_of_iterations == None:
-                if self._output_stream != None:
-                    self._output_stream.write("[WARNING] Number of iterations not set!")
+            if increment == 0:
                 return
 
-            if self._iterations_counter + increment > self.num_of_iterations:
+            if self.expected_progress == None:
                 if self._output_stream != None:
-                    self._output_stream.write("[WARNING] Progress counter overflow!")
+                    self._output_stream.write("[WARNING] Iterations not set!")
                 return
 
-            self._iterations_counter = self._iterations_counter + increment
-            percentage = float(self._iterations_counter)/float(self.num_of_iterations)*100.0
+            iterations_counter = self._iterations.iterations[progress_type]
+            expected_iterations = self.expected_progress.iterations[progress_type]
+            if iterations_counter + increment > expected_iterations:
+                if self._output_stream != None:
+                    self._output_stream.write("[WARNING] Progress counter overflow for type %d!"
+                                              % progress_type)
+                return
+
+            self._iterations.iterations[progress_type] += increment
+            percentage = float(self._iterations.sum()) / float(self.expected_progress.sum()) * 100.0
 
             if not self.web_mode:
                 self.pbar.update(int(round(percentage)))

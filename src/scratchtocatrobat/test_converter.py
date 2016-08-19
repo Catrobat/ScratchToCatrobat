@@ -31,7 +31,7 @@ from scratchtocatrobat import catrobat
 from scratchtocatrobat import common
 from scratchtocatrobat import common_testing
 from scratchtocatrobat import scratch
-from scratchtocatrobat import converter
+from scratchtocatrobat.converter import converter
 
 
 def create_catrobat_sprite_stub(name=None):

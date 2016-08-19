@@ -41,7 +41,7 @@ function setupUIEventHandlers() {
     return false;
   });
   $("#btn-reconvert").on("click", function () {
-    var jobID = $("#download-url").val().split("=")[1]; /* extract job ID */
+    var jobID = $("#download-url").val().split("=")[1].split("&")[0]; /* extract job ID */
     /* assume jobID == scratchProjectID */
     var scratchProjectID = jobID;
     var projectURL = baseProjectURL + scratchProjectID + "/";

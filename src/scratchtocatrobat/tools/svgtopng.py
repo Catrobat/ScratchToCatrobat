@@ -103,9 +103,13 @@ def convert(input_svg_path, rotation_x, rotation_y):
         ImageIO.write(final_image, "PNG", File(output_png_path))
         
         return output_png_path
-    except:
+    except BaseException as err:
+        import traceback
         import sys
         exc_info = sys.exc_info()
+        _log.error(err)
+        _log.error(traceback.format_exc())
+        _log.error(exc_info)
         error = common.ScratchtobatError("PNG to SVG conversion call failed for: %s" % input_svg_path)
     finally:
         # free resources
@@ -134,12 +138,17 @@ def _translation(output_png_path, rotation_x, rotation_y):
             if (pixel >> 24) != 0x00:
                 x_coords_list.append(x)
                 y_coords_list.append(y)
-    
+
+    _log.info("-" * 80)
+    _log.info("Output path: {}".format(output_png_path))
+    _log.info("height, weight: ({}, {})".format(m, n))
     start_x = min(x_coords_list)
     end_x = max(x_coords_list)
     start_y = min(y_coords_list)
     end_y = max(y_coords_list)
                  
+    _log.info("end y, end x: ({}, {})".format(end_y, end_x))
+
     if start_x > rotation_x:
         start_x = rotation_x
     if end_x < rotation_x:
@@ -148,7 +157,10 @@ def _translation(output_png_path, rotation_x, rotation_y):
         start_y = rotation_y
     if end_y < rotation_y:
         end_y = rotation_y
-        
+
+    _log.info("end y, end x: ({}, {})".format(end_y, end_x))
+    _log.info("-" * 80)
+
     dst_new_width = end_x * 2
     dst_new_height = end_y * 2
             
@@ -158,110 +170,121 @@ def _translation(output_png_path, rotation_x, rotation_y):
     g2d.fillRect(0, 0, dst_new_width, dst_new_height)
 
             
-    # Rechts Unten
-    for old_row_y, new_row_y in zip(xrange(rotation_y, end_y + 1),xrange(end_y, dst_new_height)):
-        for old_column_x, new_column_x in zip(xrange(rotation_x, end_x + 1),xrange(end_x, dst_new_width)):
-            new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x])
-    
-    # Rechts oben
-    for old_row_y, new_row_y in zip(xrange(rotation_y, start_y - 1, -1),xrange(end_y, -1, -1)):
-        for old_column_x, new_column_x in zip(xrange(rotation_x, end_x + 1),xrange(end_x, dst_new_width)):
-            new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x])
-          
-    # links oben  
-    for old_row_y, new_row_y in zip(xrange(rotation_y, start_y - 1, -1),xrange(end_y, -1, -1)):
-        for old_column_x, new_column_x in zip(xrange(rotation_x, start_x - 1, -1),xrange(end_x, -1, -1)):
-            new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x])
+    # bottom right
+    for old_row_y, new_row_y in zip(xrange(rotation_y, end_y + 1), xrange(end_y, dst_new_height)):
+        for old_column_x, new_column_x in zip(xrange(rotation_x, end_x + 1), xrange(end_x, dst_new_width)):
+            if old_row_y < len(buffered_image_matrix) and old_column_x < len(buffered_image_matrix[old_row_y]):
+                colored_pixel = buffered_image_matrix[old_row_y][old_column_x]
+            else:
+                colored_pixel = 0
+            new_buffered_image.setRGB(new_column_x, new_row_y, colored_pixel)
 
-    # links unten
+    # upper right
+    for old_row_y, new_row_y in zip(xrange(rotation_y, start_y - 1, -1), xrange(end_y, -1, -1)):
+        for old_column_x, new_column_x in zip(xrange(rotation_x, end_x + 1), xrange(end_x, dst_new_width)):
+            if old_row_y < len(buffered_image_matrix) and old_column_x < len(buffered_image_matrix[old_row_y]):
+                colored_pixel = buffered_image_matrix[old_row_y][old_column_x]
+            else:
+                colored_pixel = 0
+            new_buffered_image.setRGB(new_column_x, new_row_y, colored_pixel)
+
+    # upper left
+    for old_row_y, new_row_y in zip(xrange(rotation_y, start_y - 1, -1),xrange(end_y, -1, -1)):
+        for old_column_x, new_column_x in zip(xrange(rotation_x, start_x - 1, -1),xrange(end_x, -1, -1)):
+            if old_row_y < len(buffered_image_matrix) and old_column_x < len(buffered_image_matrix[old_row_y]):
+                colored_pixel = buffered_image_matrix[old_row_y][old_column_x]
+            else:
+                colored_pixel = 0
+            new_buffered_image.setRGB(new_column_x, new_row_y, colored_pixel)
+
+    # bottom left
     for old_row_y, new_row_y in zip(xrange(rotation_y, end_y + 1),xrange(end_y, dst_new_height)):
         for old_column_x, new_column_x in zip(xrange(rotation_x, start_x - 1, -1),xrange(end_x, -1, -1)):
-            new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x])
-    
-    
+            if old_row_y < len(buffered_image_matrix) and old_column_x < len(buffered_image_matrix[old_row_y]):
+                colored_pixel = buffered_image_matrix[old_row_y][old_column_x]
+            else:
+                colored_pixel = 0
+            new_buffered_image.setRGB(new_column_x,new_row_y, colored_pixel)
+
     #color = Color.yellow
     #new_buffered_image.setRGB(end_x - 1, end_y - 1, color.getRGB())
     return new_buffered_image
     
-def _translation_to_rotation_point(img, rotation_x, rotation_y):
-   
-    dst_new_width, dst_new_height = None, None
-    half_old_width, half_old_height = None, None
-    while True:
-        dst_new_width, dst_new_height = rotation_x * 2, rotation_y * 2
-        half_old_width, half_old_height = img.getWidth() / 2, img.getHeight() / 2
-        start_x, start_y = rotation_x - half_old_height, rotation_y - half_old_width
-        end_x, end_y = rotation_x + img.getHeight() - half_old_height, rotation_y + img.getWidth() - half_old_width
-    
-        if start_x >= 0 and start_y >= 0 and end_x >= 0 and end_y >= 0:
-            break
-        else:
-            rotation_x *= 2
-            rotation_y *= 2
-            
-            
-    bufferedImage = BufferedImage(dst_new_height, dst_new_width, BufferedImage.TYPE_INT_ARGB)
-    g2d = bufferedImage.createGraphics()
-    g2d.setComposite(AlphaComposite.Clear)
-    g2d.fillRect(0, 0, dst_new_width, dst_new_height)
-    
-    img_matrix = [[img.getRGB(row_index, column_index) for column_index in xrange(img.getHeight())] for row_index in xrange(img.getWidth())]
-    
-    transposed_img_matrix = _transpose_matrix(img_matrix)
-
-    for row_index, old_row_index in zip(xrange(start_x, end_x + 1), xrange(len(transposed_img_matrix))):
-        for column_index, old_column_index in zip(xrange(start_y, end_y + 1), xrange(len(transposed_img_matrix[0]))):
-            bufferedImage.setRGB(column_index, row_index, transposed_img_matrix[old_row_index][old_column_index])
-
-    return bufferedImage
-            
-            
-            
-    
-    
-def _scale_image(output_png_path):
-    bufferd_image = _create_buffered_image(ImageIcon(output_png_path).getImage())
-
-    width, height = bufferd_image.getWidth(), bufferd_image.getHeight()
-    
-    bufferd_image_matrix = [[bufferd_image.getRGB(i, j) for j in xrange(height)] for i in xrange(width)]
-   
-    bufferd_image_matrix = _transpose_matrix(bufferd_image_matrix)
-
-    x_coords_list, y_coords_list = [], []
-    
-    m, n = len(bufferd_image_matrix), len(bufferd_image_matrix[0])
-    for y in xrange(m):
-        for x in xrange(n):
-            pixel = bufferd_image_matrix[y][x]
-            if (pixel >> 24) != 0x00:
-                x_coords_list.append(x)
-                y_coords_list.append(y)
-    
-    if len(x_coords_list) == 0 or len(y_coords_list) == 0:
-        return
-
-    start_x, start_y = min(x_coords_list), min(y_coords_list)
-    max_x, max_y = max(x_coords_list), max(y_coords_list)  
-
-    m, n = (max_y - start_y + 1), (max_x + 1)
-    
-    old_y_limit = len(bufferd_image_matrix)
-    old_x_limit = len(bufferd_image_matrix[0])
-    
-    new_image_matrix = [[bufferd_image_matrix[old_y][old_x]for _, old_x in zip(xrange(n), xrange(start_x, old_x_limit))] for _, old_y in zip(xrange(m),xrange(start_y,old_y_limit))]
-    
-    new_image_matrix = _transpose_matrix(new_image_matrix)        
-    
-    m, n = len(new_image_matrix), len(new_image_matrix[0])
-
-    final_image = BufferedImage(m, n, bufferd_image.getType())
-    
-    for x in xrange(m):
-        for y in xrange(n):
-            final_image.setRGB(x, y, new_image_matrix[x][y])
-    
-    return final_image
+# def _translation_to_rotation_point(img, rotation_x, rotation_y):
+#    
+#     dst_new_width, dst_new_height = None, None
+#     half_old_width, half_old_height = None, None
+#     while True:
+#         dst_new_width, dst_new_height = rotation_x * 2, rotation_y * 2
+#         half_old_width, half_old_height = img.getWidth() / 2, img.getHeight() / 2
+#         start_x, start_y = rotation_x - half_old_height, rotation_y - half_old_width
+#         end_x, end_y = rotation_x + img.getHeight() - half_old_height, rotation_y + img.getWidth() - half_old_width
+#     
+#         if start_x >= 0 and start_y >= 0 and end_x >= 0 and end_y >= 0:
+#             break
+#         else:
+#             rotation_x *= 2
+#             rotation_y *= 2
+#             
+#             
+#     bufferedImage = BufferedImage(dst_new_height, dst_new_width, BufferedImage.TYPE_INT_ARGB)
+#     g2d = bufferedImage.createGraphics()
+#     g2d.setComposite(AlphaComposite.Clear)
+#     g2d.fillRect(0, 0, dst_new_width, dst_new_height)
+#     
+#     img_matrix = [[img.getRGB(row_index, column_index) for column_index in xrange(img.getHeight())] for row_index in xrange(img.getWidth())]
+#     
+#     transposed_img_matrix = _transpose_matrix(img_matrix)
+# 
+#     for row_index, old_row_index in zip(xrange(start_x, end_x + 1), xrange(len(transposed_img_matrix))):
+#         for column_index, old_column_index in zip(xrange(start_y, end_y + 1), xrange(len(transposed_img_matrix[0]))):
+#             bufferedImage.setRGB(column_index, row_index, transposed_img_matrix[old_row_index][old_column_index])
+# 
+#     return bufferedImage
+# 
+# def _scale_image(output_png_path):
+#     bufferd_image = _create_buffered_image(ImageIcon(output_png_path).getImage())
+# 
+#     width, height = bufferd_image.getWidth(), bufferd_image.getHeight()
+#     
+#     bufferd_image_matrix = [[bufferd_image.getRGB(i, j) for j in xrange(height)] for i in xrange(width)]
+#    
+#     bufferd_image_matrix = _transpose_matrix(bufferd_image_matrix)
+# 
+#     x_coords_list, y_coords_list = [], []
+#     
+#     m, n = len(bufferd_image_matrix), len(bufferd_image_matrix[0])
+#     for y in xrange(m):
+#         for x in xrange(n):
+#             pixel = bufferd_image_matrix[y][x]
+#             if (pixel >> 24) != 0x00:
+#                 x_coords_list.append(x)
+#                 y_coords_list.append(y)
+#     
+#     if len(x_coords_list) == 0 or len(y_coords_list) == 0:
+#         return
+# 
+#     start_x, start_y = min(x_coords_list), min(y_coords_list)
+#     max_x, max_y = max(x_coords_list), max(y_coords_list)  
+# 
+#     m, n = (max_y - start_y + 1), (max_x + 1)
+#     
+#     old_y_limit = len(bufferd_image_matrix)
+#     old_x_limit = len(bufferd_image_matrix[0])
+#     
+#     new_image_matrix = [[bufferd_image_matrix[old_y][old_x]for _, old_x in zip(xrange(n), xrange(start_x, old_x_limit))] for _, old_y in zip(xrange(m),xrange(start_y,old_y_limit))]
+#     
+#     new_image_matrix = _transpose_matrix(new_image_matrix)        
+#     
+#     m, n = len(new_image_matrix), len(new_image_matrix[0])
+# 
+#     final_image = BufferedImage(m, n, bufferd_image.getType())
+#     
+#     for x in xrange(m):
+#         for y in xrange(n):
+#             final_image.setRGB(x, y, new_image_matrix[x][y])
+#     
+#     return final_image
 
 def _transpose_matrix(matrix):
     m, n = len(matrix), len(matrix[0])

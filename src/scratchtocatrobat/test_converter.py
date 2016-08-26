@@ -1110,14 +1110,20 @@ class TestConvertProjects(common_testing.ProjectTestCase):
             tempdir = common.TemporaryDirectory()
             scratch_project_dir = tempdir.name
             self.addCleanup(tempdir.cleanup)
-            common.extract(common_testing.get_test_project_packed_file(project_name), scratch_project_dir)
+            common.extract(common_testing.get_test_project_packed_file(project_name),
+                           scratch_project_dir)
         else:
             scratch_project_dir = common_testing.get_test_project_path(project_name)
-        scratch_project = scratch.Project(scratch_project_dir, name=project_name, id_=common_testing.PROJECT_DUMMY_ID)
+            print 'Scratch Project Directory: ' + scratch_project_dir
+
+        scratch_project = scratch.Project(scratch_project_dir, name=project_name,
+                                          id_=common_testing.PROJECT_DUMMY_ID)
+
         context = converter.Context()
         converted_project = converter.converted(scratch_project, None, context)
         catrobat_zip_file_name = converted_project.save_as_catrobat_package_to(self._testresult_folder_path)
-        self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, project_name, unused_scratch_resources=scratch_project.unused_resource_names)
+        self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, project_name,
+                                                          unused_scratch_resources=scratch_project.unused_resource_names)
         return converted_project.catrobat_program
 
     # full_test_no_var
@@ -1131,8 +1137,9 @@ class TestConvertProjects(common_testing.ProjectTestCase):
 
     # keys_pressed
     def test_can_convert_project_with_keys(self):
-        for project_name in ["keys_pressed", ]:
+        for project_name in ("keys_pressed", ):
             self._test_project(project_name)
+            
 
     def test_can_convert_project_with_mediafiles(self):
         scratch_project_to_sound_to_sound_length_map = {

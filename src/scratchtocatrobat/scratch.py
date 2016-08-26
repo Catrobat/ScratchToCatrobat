@@ -84,7 +84,8 @@ def verify_resources_of_scratch_object(scratch_object, md5_to_resource_path_map,
         md5_file = res_dict[JsonKeys.SOUND_MD5] if JsonKeys.SOUND_NAME in res_dict else res_dict[JsonKeys.COSTUME_MD5]
         resource_md5 = os.path.splitext(md5_file)[0]
         if md5_file not in md5_to_resource_path_map:
-            raise ProjectError("Missing resource file at project: {}. Provide resource with md5: {}".format(project_base_path, resource_md5))
+            raise ProjectError("Missing resource file at project: {}. Provide resource with md5: {}"
+                               .format(project_base_path, resource_md5))
 
 # TODO: rename
 class Object(common.DictAccessWrapper):
@@ -548,19 +549,24 @@ class Project(RawProject):
                     assert len(script.arguments) == 1
                     listened_keys += script.arguments
         self.listened_keys = set(listened_keys)
+
         # TODO: rename
         self.background_md5_names = set([costume[JsonKeys.COSTUME_MD5] for costume in self.get_costumes()])
-        self.unused_resource_names, self.unused_resource_paths = common.pad(zip(*self.find_unused_resources_name_and_filepath()), 2, [])
+        [self.unused_resource_names, self.unused_resource_paths] = self.find_unused_resources_name_and_filepath()
         for unused_path in self.unused_resource_paths:
-            _log.warning("Project folder contains unused resource file: '%s'. These will be omitted for Catrobat project.", os.path.basename(unused_path))
+            _log.warning("Project folder contains unused resource file: '%s'. These " \
+                         "will be omitted for Catrobat project.",
+                         os.path.basename(unused_path))
 
     def find_unused_resources_name_and_filepath(self):
         # TODO: remove duplication with __init__
+        result = []
         for file_path in glob.glob(os.path.join(self.project_base_path, "*.*")):
             md5_resource_filename = common.md5_hash(file_path) + os.path.splitext(file_path)[1]
             if md5_resource_filename not in self.resource_names:
                 if os.path.basename(file_path) != _PROJECT_FILE_NAME:
-                    yield md5_resource_filename, file_path
+                    result += [(md5_resource_filename, file_path)]
+        return map(list, zip(*result))
 
     def find_all_resource_names_for(self, resource_unique_id):
         resource_names = set()

@@ -65,43 +65,39 @@ def convert(input_svg_path, rotation_x, rotation_y):
     input_file_name = os.path.splitext(input_svg_path)[0]
     output_png_path = "{}_rotX_{}_rotY_{}.png".format(input_file_name, rotation_x, rotation_y)
     _log.info("      converting '%s' to Pocket Code compatible png '%s'", input_svg_path, output_png_path)
+
+    input_svg_URI = Paths.get(input_svg_path).toUri().toURL().toString()
+    output_svg_path = input_svg_path.replace(".svg", "_modified.svg")
+
     if os.path.exists(output_png_path):
         _log.info("      nothing to do: '%s' already exists", output_png_path)
+        # remove temporary files
+        if os.path.exists(output_svg_path):
+            os.remove(output_svg_path)
         return output_png_path # avoid duplicate conversions!
 
     png_ostream = None
     error = None
     try:
-        # read input SVG document into Transcoder Input (use Java NIO for this purpose)
-        svg_URI_input = Paths.get(input_svg_path).toUri().toURL().toString()
+        _parse_and_rewrite_svg_file(input_svg_path, output_svg_path)
+        input_svg_image = TranscoderInput(input_svg_URI)
 
-        _parse_and_rewrite_svg_file(svg_URI_input[5:], svg_URI_input[5:])
-        
-        input_svg_image = TranscoderInput(svg_URI_input)
+        output_png_image = TranscoderOutput(FileOutputStream(output_png_path))
 
-        # define OutputStream to PNG Image and attach to TranscoderOutputSc    
-        png_ostream = FileOutputStream(output_png_path)
-        
-        output_png_image = TranscoderOutput(png_ostream)
-
-        # Convert and Write output
-        _log.info("      converting '%s' to Pocket Code compatible png '%s'", input_svg_path, output_png_path)
-        
-        my_converter = PNGTranscoder()
-
-        my_converter.transcode(input_svg_image, output_png_image)
-
+        _log.info("      converting '%s' to Pocket Code compatible png '%s'",
+                  input_svg_path, output_png_path)
+        png_converter = PNGTranscoder()
+        png_converter.transcode(input_svg_image, output_png_image)
         assert os.path.exists(output_png_path)
-        
+
         final_image = _translation(output_png_path, rotation_x, rotation_y)
-        
+
         if final_image is None:
             raise RuntimeError("...")
 
         from javax.imageio import ImageIO
-        from java.io import File      
+        from java.io import File
         ImageIO.write(final_image, "PNG", File(output_png_path))
-        
         return output_png_path
     except BaseException as err:
         import traceback
@@ -116,6 +112,9 @@ def convert(input_svg_path, rotation_x, rotation_y):
         if png_ostream != None:
             png_ostream.flush()
             png_ostream.close()
+        # remove temporary files
+        if os.path.exists(output_svg_path):
+            os.remove(output_svg_path)
 
     if error != None:
         raise error
@@ -298,47 +297,47 @@ def _create_buffered_image(image):
     return result 
 
 
-def _parse_and_rewrite_svg_file(svg_file_input_path, svg_output_input_path):
+def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
     write_str = ""
-
-    file_reader = FileReader(svg_file_input_path)
-    
+    file_reader = FileReader(svg_input_path)
     buffered_reader = BufferedReader(file_reader)
-
     read_line = ""
 
     while True:
         read_line = buffered_reader.readLine()
+
         if read_line is None:
             break
+
         if "viewBox" in read_line:
             view_box_content = _get_viewbox_content(read_line)
             view_box_values = _get_viewbox_values(view_box_content)
             if view_box_values[0] != 0:
                 view_box_values[2] += view_box_values[0]
                 view_box_values[0] = 0
-            
+
             if view_box_values[1] != 0:
                 view_box_values[3] += view_box_values[1]
                 view_box_values[1] = 0
-            
-            new_view_box = str(view_box_values[0]) + " " + str(view_box_values[1]) + " " + str(view_box_values[2]) + " " + str(view_box_values[3])
-      
-            read_line = re.sub(r"viewBox=\"[\-|0-9| ]+\"", "viewBox=\""+ new_view_box + "\"", read_line, 1)
-            read_line = re.sub(r"width=\"[0-9]+\"", "width=\""+ str(view_box_values[2]) + "\"", read_line, 1)
-            read_line = re.sub(r"height=\"[0-9]+\"", "height=\""+ str(view_box_values[3]) + "\"", read_line, 1)
-        
+
+            new_view_box = str(view_box_values[0]) + " " + str(view_box_values[1]) + " " + \
+                           str(view_box_values[2]) + " " + str(view_box_values[3])
+            read_line = re.sub(r"viewBox=\"[\-|0-9| ]+\"", "viewBox=\""
+                               + new_view_box + "\"", read_line, 1)
+            read_line = re.sub(r"width=\"[0-9]+\"", "width=\""+ str(view_box_values[2]) + "\"",
+                               read_line, 1)
+            read_line = re.sub(r"height=\"[0-9]+\"", "height=\""+ str(view_box_values[3]) + "\"",
+                               read_line, 1)
+
         write_str += read_line + "\n"
-    
 
     buffered_reader.close()
     file_reader.close()
-    
-    file_writer = PrintWriter(svg_output_input_path)
+    file_writer = PrintWriter(svg_output_path)
     file_writer.print(write_str)
     file_writer.close()
-    
-    
+
+
 def _get_viewbox_values(view_box_str):
     view_box_values = []
     

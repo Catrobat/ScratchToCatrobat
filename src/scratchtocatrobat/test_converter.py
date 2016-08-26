@@ -1114,7 +1114,6 @@ class TestConvertProjects(common_testing.ProjectTestCase):
                            scratch_project_dir)
         else:
             scratch_project_dir = common_testing.get_test_project_path(project_name)
-            print 'Scratch Project Directory: ' + scratch_project_dir
 
         scratch_project = scratch.Project(scratch_project_dir, name=project_name,
                                           id_=common_testing.PROJECT_DUMMY_ID)

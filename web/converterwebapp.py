@@ -149,7 +149,7 @@ class ProjectDataResponse(object):
 
 class _ProjectHandler(tornado.web.RequestHandler):
     response_cache = {}
-    CACHE_ENTRY_VALID_FOR = 600 # 10 minutes (in seconds)
+    CACHE_ENTRY_VALID_FOR = 1800 # 30 minutes (in seconds)
 
     @tornado.gen.coroutine
     def get(self, project_id = None):

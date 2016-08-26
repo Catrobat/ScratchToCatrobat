@@ -139,9 +139,10 @@ class TCPConnectionHandler(object):
         if not Request.is_valid(data, Request.Command.JOB_PROGRESS_NOTIFICATION):
             raise TCPConnectionException("Invalid data given!")
         request = Request.request_from_data(data)
-        if not isinstance(request.args[Request.ARGS_PROGRESS], float):
-            raise TCPConnectionException("Progress parameter must be of type float!")
-        _logger.debug("[%s]: Received job progress notification (Progress: %f%%)" % (SERVER, request.args[Request.ARGS_PROGRESS]))
+        if not isinstance(request.args[Request.ARGS_PROGRESS], int):
+            raise TCPConnectionException("Progress parameter must be of type int!")
+        _logger.debug("[%s]: Received job progress notification (Progress: %d%%)"
+                      % (SERVER, request.args[Request.ARGS_PROGRESS]))
 
 #         _logger.debug("[%s]: Reply: Accepted!" % SERVER)
 #         yield self.send_message(Reply(result=True, msg="ACK"))

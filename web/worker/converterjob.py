@@ -78,7 +78,7 @@ class ConverterJobHandler(jobhandler.JobHandler):
         start_progr_indicator = helpers.ProgressBar.START_PROGRESS_INDICATOR
         end_progr_indicator = helpers.ProgressBar.END_PROGRESS_INDICATOR
         line_buffer = []
-        old_progress = 0.0
+        old_progress = 0
         while True:
             line = process.stdout.readline()
             if line == '': break
@@ -91,13 +91,13 @@ class ConverterJobHandler(jobhandler.JobHandler):
                     _logger.warn("[%s]: Ignoring line! Parsed progress is no valid float: '%s'"
                                  % (CLIENT, progress))
                     continue
-                progress = float(progress)
-                progress = round(progress)
+
+                progress = int(float(progress))
                 progress_difference = progress - old_progress
                 old_progress = progress
-                if progress_difference >= 1.0:
+                if progress_difference > 0:
+                    _logger.debug("[{}]: {}".format(CLIENT, progress))
                     yield self.send_job_progress_notification(job_ID, progress)
-                _logger.debug("[%s]: %d" % (CLIENT, progress))
                 continue
 
             # case: console output

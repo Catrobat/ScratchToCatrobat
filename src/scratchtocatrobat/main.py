@@ -27,6 +27,10 @@ from docopt import docopt
 from scratchtocatrobat import logger
 from scratchtocatrobat.tools import helpers
 
+# TODO: not best solution!
+reload(sys)
+sys.setdefaultencoding('utf-8') #@UndefinedVariable
+
 logger.setup_logging()
 log = logging.getLogger("scratchtocatrobat.main")
 __version__ = helpers.application_info("version")

@@ -26,7 +26,7 @@ _logger = logging.getLogger(__name__)
 
 
 class Job(object):
-    class Status:
+    class State:
         READY = 0
         RUNNING = 1
         FINISHED = 2
@@ -35,15 +35,19 @@ class Job(object):
     DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
     CACHE_ENTRY_VALID_FOR = 600
 
-    def __init__(self, job_ID=0, title=None, status=Status.READY, progress=0.0, output=None,
+    def __init__(self, job_ID=0, title=None, state=State.READY, progress=0, output=None,
                  image_url=None, archive_cached_utc_date=None):
         self.jobID = job_ID
         self.title = title
-        self.status = status
+        self.state = state
         self.progress = progress
         self.output = output
         self.imageURL = image_url
         self.archiveCachedUTCDate = archive_cached_utc_date
+
+
+    def is_in_progress(self):
+        return self.state in (Job.State.READY, Job.State.RUNNING)
 
 
     def save_to_redis(self, redis_connection, key):

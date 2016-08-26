@@ -527,7 +527,10 @@ class _ScratchObjectConverter(object):
         if self._context is not None:
             self._context.add_sprite_context(sprite_context)
 
-        self._add_default_behaviour_to(sprite, self._catrobat_project, scratch_object, self._scratch_project, costume_resolution)
+        try:
+            self._add_default_behaviour_to(sprite, self._catrobat_project, scratch_object, self._scratch_project, costume_resolution)
+        except:
+            log.error("Cannot add default behaviour to sprite object {}".format(sprite_name))
 
         for scratch_variable in scratch_object.get_variables():
             args = [self._catrobat_project, scratch_variable["name"], scratch_variable["value"], sprite]

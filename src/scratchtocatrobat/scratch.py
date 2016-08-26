@@ -552,7 +552,11 @@ class Project(RawProject):
 
         # TODO: rename
         self.background_md5_names = set([costume[JsonKeys.COSTUME_MD5] for costume in self.get_costumes()])
-        [self.unused_resource_names, self.unused_resource_paths] = self.find_unused_resources_name_and_filepath()
+
+        result = self.find_unused_resources_name_and_filepath()
+        self.unused_resource_names = result[0] if len(result) > 0 else []
+        self.unused_resource_paths = result[1] if len(result) > 0 else []
+
         for unused_path in self.unused_resource_paths:
             _log.warning("Project folder contains unused resource file: '%s'. These " \
                          "will be omitted for Catrobat project.",

@@ -103,11 +103,7 @@ class TestProjectFunc(unittest.TestCase):
     def test_can_access_unused_resources_of_project(self):
         project = scratch.Project(common_testing.get_test_project_path("simple"), name="simple", id_=common_testing.PROJECT_DUMMY_ID)
         assert len(project.unused_resource_paths) > 0
-        expected_resources = ['0.png', '1_rotX_47_rotY_55.png', '2.wav', '2_rotX_47_rotY_55.png',
-                              '3.png', '4.png', '5.png', '6.png', '8.png']
-        
-        for a in set(map(os.path.basename, project.unused_resource_paths)):
-            print (a + "\n")
+        expected_resources = ['0.png', '2.wav', '3.png', '4.png', '5.png', '6.png', '8.png']
         assert set(map(os.path.basename, project.unused_resource_paths)) == set(expected_resources)
 
 

@@ -45,6 +45,7 @@ from scratchtocatrobat.tools import helpers
 from scratchtocatrobat.tools.helpers import ProgressType
 import mediaconverter
 
+
 _DEFAULT_BRICK_CLASS = catbricks.WaitBrick
 _DEFAULT_FORMULA_ELEMENT = catformula.FormulaElement(catElementType.NUMBER, str(00001), None)  # @UndefinedVariable (valueOf)
 

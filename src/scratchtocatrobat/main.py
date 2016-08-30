@@ -69,7 +69,7 @@ def run_converter(scratch_project_file_or_url, output_dir,
         catrobat_language_version_from_config = float(helpers.catrobat_info("catrobat_language_version"))
         if catrobat_language_version_from_config != catrobat.CATROBAT_LANGUAGE_VERSION:
             raise RuntimeError("Wrong Catrobat Language version set in config-file! " \
-                               "Catrobat language version is %.2f but should be %.2f! Please update!"
+                               "Catrobat language version is %.3f but should be %.3f! Please update!"
                                % (catrobat_language_version_from_config, catrobat.CATROBAT_LANGUAGE_VERSION))
 
         tag_name = helpers.tag_name_of_used_catroid_hierarchy()

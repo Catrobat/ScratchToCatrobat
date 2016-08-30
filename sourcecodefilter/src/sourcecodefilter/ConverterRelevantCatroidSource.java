@@ -1,6 +1,6 @@
 /*
  * ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
- * Copyright (C) 2013-2015 The Catrobat Team
+ * Copyright (C) 2013-2016 The Catrobat Team
  * (http://developer.catrobat.org/credits)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -26,7 +26,6 @@ package sourcecodefilter;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -64,9 +63,14 @@ public class ConverterRelevantCatroidSource {
 		return qualifiedClassName;
 	}
 
+    public String getPackageName() {
+    	final int indexOfLastDotOccurence = qualifiedClassName.lastIndexOf(".");
+		return qualifiedClassName.substring(0, indexOfLastDotOccurence);
+	}
+
 	static class FilteringProject {
         private File projectInputDir;
-        private File projectOutputDir;;
+        private File projectOutputDir;
         private Map<String, ConverterRelevantCatroidSource> relevantCatroidSources = new HashMap<>();
 
         public FilteringProject(File projectInputDir, File projectOutputDir) {
@@ -105,7 +109,7 @@ public class ConverterRelevantCatroidSource {
     private ConverterRelevantCatroidSource(
     		File sourcePath,
     		FilteringProject project,
-    		Boolean isSerializationClass,
+    		boolean isSerializationClass,
             Set<String> fieldsToPreserve,
             Set<String> fieldsToRemove,
             Set<String> methodsToPreserve,
@@ -135,10 +139,9 @@ public class ConverterRelevantCatroidSource {
         this.qualifiedClassName = sourceAst.getPackage().getName().getFullyQualifiedName()
         		+ "." + Files.getNameWithoutExtension(sourcePath.getName());
         this.project = project;
-        project.addClass(this);
     }
 
-    public Boolean isSerializationClass() {
+    public boolean isSerializationClass() {
         return isSerializationClass;
     }
 
@@ -181,13 +184,6 @@ public class ConverterRelevantCatroidSource {
             try {
             	// replace text
             	String generatedCode = internalSource.get();
-            	/* targetFile.getName().equals("CatroidFieldKeySorter.java") */
-            	if (generatedCode.length() > 0) {
-//            		generatedCode = generatedCode.replaceAll("Log\\.e\\((.|\\s)+\\);", generatedCode);
-            		generatedCode = generatedCode.replace("Log.e(", "System.out.println(");
-            		generatedCode = generatedCode.replace("internFormula =", "// internFormula =");
-            		generatedCode = generatedCode.replace("@SuppressLint(\"UseSparseArrays\")", "");
-            	}
                 FileUtils.write(targetFile, generatedCode);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -239,7 +235,9 @@ public class ConverterRelevantCatroidSource {
                 String className = Files.getNameWithoutExtension(sourcePath.getName());
                 boolean isSerializationSource = serializationTargetClassNames.contains(className);
                 boolean isHelperSource = SourceCodeFilter.ADDITIONAL_HELPER_CLASSES.contains(className);
-                boolean isRemovedClass = SourceCodeFilter.REMOVED_CLASSES.contains(className);
+                boolean isRemovedClass = SourceCodeFilter.REMOVE_CLASSES.contains(className);
+
+                //boolean isClassOfRemovedPackage = SourceCodeFilter.packagesToBeRemoved.contains(className);
                 if ((! isRemovedClass) && (isSerializationSource || isHelperSource)) {
                     ConverterRelevantCatroidSource catroidSource = new ConverterRelevantCatroidSource(
                         sourcePath,
@@ -251,6 +249,12 @@ public class ConverterRelevantCatroidSource {
                         SourceCodeFilter.classToPreservedMethodsMapping.get(className),
                         SourceCodeFilter.removeMethodsMapping.get(className)
                     );
+
+                    if (isInRemovedPackage(catroidSource)) {
+                    	continue;
+                    }
+
+                    project.addClass(catroidSource);
                     relevantSources.add(catroidSource);
                 }
             } else {
@@ -263,5 +267,14 @@ public class ConverterRelevantCatroidSource {
             System.out.println();
         }
         return relevantSources;
+    }
+
+    private static boolean isInRemovedPackage(ConverterRelevantCatroidSource catroidSource) {
+        for (String packageToBeRemoved : SourceCodeFilter.PACKAGES_TO_BE_REMOVED) {
+        	if (catroidSource.getPackageName().startsWith(packageToBeRemoved)) {
+        		return true;
+        	}
+        }
+        return false;
     }
 }

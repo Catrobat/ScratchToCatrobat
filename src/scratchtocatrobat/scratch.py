@@ -25,11 +25,9 @@ import itertools
 import json
 import os
 import sys
-import urllib2
 
 from scratchtocatrobat import common
 from scratchtocatrobat import scratchwebapi
-from string import punctuation
 from scratchtocatrobat.tools import helpers
 from scratchtocatrobat.tools.helpers import ProgressType
 
@@ -274,7 +272,7 @@ class Object(common.DictAccessWrapper):
         workaround_info[ADD_POSITION_SCRIPT_TO_OBJECTS_KEY] = positions_needed_for_sprite_names
 
         ############################################################################################
-        # doUntil and doWaitUntil workaround
+        # doUntil workaround
         ############################################################################################
         from scratchtocatrobat.converter import converter
         preprocessed_scripts = []
@@ -285,7 +283,7 @@ class Object(common.DictAccessWrapper):
             for block_number, block in enumerate(blocks_iterator):
                 block_name, block_parameters = block[0], block[1:]
                 # WORKAROUND: as long there are no equivalent Catrobat bricks
-                if block_name in {"doUntil", "doWaitUntil"}:
+                if block_name in {"doUntil"}:
                     do_until_condition, [do_until_blocks] = block_parameters[0], block_parameters[1:] if block_name == "doUntil" else [["wait:elapsed:from:", 0.0001]]
                     loop_done_variable = converter.generated_variable_name("_".join([self['objName'], block_name, str(script_number), str(block_number)]))
                     broadcast_msg = loop_done_variable + "_msg"

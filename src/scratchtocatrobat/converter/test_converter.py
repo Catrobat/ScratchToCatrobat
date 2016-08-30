@@ -605,16 +605,6 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         #assert isinstance(catr_brick, catbricks.NoteBrick)
         assert isinstance(catr_brick, converter.UnmappedBlock)
 
-    # doRepeat
-    def test_can_convert_loop_blocks(self):
-        scratch_do_loop = ["doRepeat", 10, [[u'forward:', 10], [u'playDrum', 1, 0.2], [u'forward:', -10], [u'playDrum', 1, 0.2]]]
-        catr_do_loop = self.block_converter._catrobat_bricks_from(scratch_do_loop, DUMMY_CATR_SPRITE)
-        assert isinstance(catr_do_loop, list)
-        # 1 loop start + 4 inner loop bricks +2 inner note bricks (playDrum not supported) + 1 loop end = 8
-        assert len(catr_do_loop) == 8
-        expected_brick_classes = [catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.LoopEndBrick]
-        assert [_.__class__ for _ in catr_do_loop] == expected_brick_classes
-
     # doIf
     def test_can_convert_if_block(self):
         expected_value_left_operand = "1"
@@ -653,7 +643,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert formula_right_child.leftChild is None
         assert formula_right_child.rightChild is None
 
-    # doIf
+    # doIfElse
     def test_can_convert_if_else_block(self):
         expected_value_left_operand = "1"
         expected_value_right_operand = "2"
@@ -684,6 +674,41 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         formula_tree_value = if_logic_begin_brick.getFormulaWithBrickField(catbasebrick.BrickField.IF_CONDITION).formulaTree # @UndefinedVariable
         assert formula_tree_value.type == catformula.FormulaElement.ElementType.OPERATOR
         assert formula_tree_value.value == catformula.Operators.EQUAL.toString() # @UndefinedVariable
+        assert formula_tree_value.leftChild is not None
+        assert formula_tree_value.rightChild is not None
+
+        formula_left_child = formula_tree_value.leftChild
+        assert formula_left_child.type == catformula.FormulaElement.ElementType.NUMBER
+        assert expected_value_left_operand == formula_left_child.value
+        assert formula_left_child.leftChild is None
+        assert formula_left_child.rightChild is None
+
+        formula_right_child = formula_tree_value.rightChild
+        assert formula_right_child.type == catformula.FormulaElement.ElementType.NUMBER
+        assert expected_value_right_operand == formula_right_child.value
+        assert formula_right_child.leftChild is None
+        assert formula_right_child.rightChild is None
+
+    # doRepeat
+    def test_can_convert_loop_blocks(self):
+        scratch_do_loop = ["doRepeat", 10, [[u'forward:', 10], [u'playDrum', 1, 0.2], [u'forward:', -10], [u'playDrum', 1, 0.2]]]
+        catr_do_loop = self.block_converter._catrobat_bricks_from(scratch_do_loop, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_do_loop, list)
+        # 1 loop start + 4 inner loop bricks +2 inner note bricks (playDrum not supported) + 1 loop end = 8
+        assert len(catr_do_loop) == 8
+        expected_brick_classes = [catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.LoopEndBrick]
+        assert [_.__class__ for _ in catr_do_loop] == expected_brick_classes
+
+    # doWaitUntil
+    def test_can_convert_do_wait_until_block(self):
+        expected_value_left_operand = "1"
+        expected_value_right_operand = "2"
+        scratch_block = ["doWaitUntil", ["<", expected_value_left_operand, expected_value_right_operand]]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.WaitUntilBrick)
+        formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.IF_CONDITION).formulaTree # @UndefinedVariable
+        assert formula_tree_value.type == catformula.FormulaElement.ElementType.OPERATOR
+        assert formula_tree_value.value == catformula.Operators.SMALLER_THAN.toString() # @UndefinedVariable
         assert formula_tree_value.leftChild is not None
         assert formula_tree_value.rightChild is not None
 

@@ -182,8 +182,8 @@ class _ScratchToCatrobat(object):
         "doIf": None,
         "doIfElse": None,
         "doRepeat": catbricks.RepeatBrick,
-        "doUntil": None,
-        "doWaitUntil": None,
+        "doUntil": None, # TODO: before you start implementing this -> remove workaround in scratch.py!
+        "doWaitUntil": lambda condition: catbricks.WaitUntilBrick(catformula.Formula(condition)),
 
         "turnRight:": catbricks.TurnRightBrick,
         "turnLeft:": catbricks.TurnLeftBrick,

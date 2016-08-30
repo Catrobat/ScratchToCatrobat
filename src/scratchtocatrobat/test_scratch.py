@@ -103,8 +103,7 @@ class TestProjectFunc(unittest.TestCase):
     def test_can_access_unused_resources_of_project(self):
         project = scratch.Project(common_testing.get_test_project_path("simple"), name="simple", id_=common_testing.PROJECT_DUMMY_ID)
         assert len(project.unused_resource_paths) > 0
-        expected_resources = ['0.png', '1_rotX_47_rotY_55.png', '2.wav', '2_rotX_47_rotY_55.png',
-                              '3.png', '4.png', '5.png', '6.png', '8.png']
+        expected_resources = ['0.png', '2.wav', '3.png', '4.png', '5.png', '6.png', '8.png']
         assert set(map(os.path.basename, project.unused_resource_paths)) == set(expected_resources)
 
 
@@ -303,92 +302,92 @@ class TestBlockInit(unittest.TestCase):
             assert all(isinstance(block, scratch.ScriptElement) for block in nested_blocks)
             assert [len(block.children) for block in nested_blocks] == list(expected_block_children_number)
 
-class TestBlockNewFunctionWorkaround(unittest.TestCase):
-    NEW_FUNCTION_HELPER_OBJECT_DATA = {
-        "objName": "Sprite1",
-        "variables": [{"name": "var1", "value": 0, "isPersistent": False}],
-        "scripts": [
-            [148, 82, [["whenGreenFlag"],
-                ["setVar:to:", "var1", 0],
-                ["call", "Function1 %n", 1],
-                ["call", "Function1 %n", 1]]],
-            [515.75, 87.85, [["procDef", "Function1 %n", ["number1"], [1], True],
-                ["playSound:", "Aufnahme1"],
-                ["wait:elapsed:from:", ["+", ["readVariable", "var1"], ["getParam", "number1", "r"]]]]],
-        ]
-    }
-
-    def setUp(self):
-        cls = self.__class__
-        unittest.TestCase.setUp(self)
-        self.script_object = create_user_defined_function_workaround_scratch_object(cls.NEW_FUNCTION_HELPER_OBJECT_DATA)
-
-    def test_new_function_brick(self):
-        cls = self.__class__
-        expected_scripts = [
-            [148, 82, [["whenGreenFlag"],
-                ["setVar:to:", "var1", 0],
-                ['setVar:to:', u'S2CC_param_Function1 %n_0', 1],
-                ['doBroadcastAndWait', u'S2CC_msg_Function1 %n'],
-                ['setVar:to:', u'S2CC_param_Function1 %n_0', 1],
-                ['doBroadcastAndWait', u'S2CC_msg_Function1 %n']]],
-            [515.75, 87.85, [["whenIReceive", "S2CC_msg_Function1 %n"],
-                ["playSound:", "Aufnahme1"],
-                [u'wait:elapsed:from:',
-                [u'+',
-                  [u'readVariable', u'var1'],
-                  ['readVariable', u'S2CC_param_Function1 %n_0']
-                ]
-              ]
-            ]]
-        ]
-
-        self.script_object.preprocess_object([cls.NEW_FUNCTION_HELPER_OBJECT_DATA["objName"]])
-        for (index, script) in enumerate(self.script_object.scripts):
-            expected_script = scratch.Script(expected_scripts[index])
-            assert script == expected_script, "Scripts are not equal!"
-        
-class TestMoreComplexBlockNewFunctionWorkaround(unittest.TestCase):  
-    NEW_FUNCTION_COMPLEX_HELPER_OBJECT_DATA = {
-        "objName": "Sprite1",
-        "scripts": [[27, 80,
-            [["whenGreenFlag"], ["call", "function %n", 6]]],
-            [171.6, 78.2, [["procDef", "function %n", ["number"], [1], False],
-                ["doIf", [">", ["getParam", "number", "r"], " 5 "], ["call", "another_function %n", 3]]]],
-            [678.45, 79.3, [["procDef", "destination_function", [], [], False], ["playSound:", "meow"]]],
-            [404.65, 80.45, [["procDef", "another_function %n", ["value"], [1], False],
-                ["doIf", [">", ["getParam", "value", "r"], " 5 "], ["call", "destination_function"]]]]],
-    }
-
-    def setUp(self):
-        cls = self.__class__
-        unittest.TestCase.setUp(self)
-        self.script_object = create_user_defined_function_workaround_scratch_object(cls.NEW_FUNCTION_COMPLEX_HELPER_OBJECT_DATA)
-
-    def test_more_complicated_function_brick(self):
-        cls = self.__class__
-        expected_scripts = [
-            [27, 80, [["whenGreenFlag"],
-                ['setVar:to:', u'S2CC_param_function %n_0', 6],
-                ['doBroadcastAndWait', u'S2CC_msg_function %n']]],
-            [171.6, 78.2,
-                [["whenIReceive", "S2CC_msg_function %n"],
-                    [u'doIf', [u'>', ['readVariable', u'S2CC_param_function %n_0'], u' 5 '], 
-                        ['setVar:to:', u'S2CC_param_another_function %n_0', 3], 
-                        ['doBroadcastAndWait', u'S2CC_msg_another_function %n']]]],
-            [678.45, 79.3,
-                [["whenIReceive", "S2CC_msg_destination_function"],
-                    [u'playSound:', u'meow']]],
-            [404.65, 80.45,
-                [["whenIReceive", "S2CC_msg_another_function %n"],
-                    [u'doIf', [u'>', ['readVariable', u'S2CC_param_another_function %n_0'], u' 5 '],
-                        ['doBroadcastAndWait', u'S2CC_msg_destination_function']]]]
-        ]
-
-        self.script_object.preprocess_object([TestBlockNewFunctionWorkaround.NEW_FUNCTION_HELPER_OBJECT_DATA["objName"]])
-        for (index, script) in enumerate(self.script_object.scripts):
-            expected_script = scratch.Script(expected_scripts[index])
-            assert script == expected_script, "Scripts are not equal!"
+# class TestBlockNewFunctionWorkaround(unittest.TestCase):
+#     NEW_FUNCTION_HELPER_OBJECT_DATA = {
+#         "objName": "Sprite1",
+#         "variables": [{"name": "var1", "value": 0, "isPersistent": False}],
+#         "scripts": [
+#             [148, 82, [["whenGreenFlag"],
+#                 ["setVar:to:", "var1", 0],
+#                 ["call", "Function1 %n", 1],
+#                 ["call", "Function1 %n", 1]]],
+#             [515.75, 87.85, [["procDef", "Function1 %n", ["number1"], [1], True],
+#                 ["playSound:", "Aufnahme1"],
+#                 ["wait:elapsed:from:", ["+", ["readVariable", "var1"], ["getParam", "number1", "r"]]]]],
+#         ]
+#     }
+# 
+#     def setUp(self):
+#         cls = self.__class__
+#         unittest.TestCase.setUp(self)
+#         self.script_object = create_user_defined_function_workaround_scratch_object(cls.NEW_FUNCTION_HELPER_OBJECT_DATA)
+# 
+#     def test_new_function_brick(self):
+#         cls = self.__class__
+#         expected_scripts = [
+#             [148, 82, [["whenGreenFlag"],
+#                 ["setVar:to:", "var1", 0],
+#                 ['setVar:to:', u'S2CC_param_Function1 %n_0', 1],
+#                 ['doBroadcastAndWait', u'S2CC_msg_Function1 %n'],
+#                 ['setVar:to:', u'S2CC_param_Function1 %n_0', 1],
+#                 ['doBroadcastAndWait', u'S2CC_msg_Function1 %n']]],
+#             [515.75, 87.85, [["whenIReceive", "S2CC_msg_Function1 %n"],
+#                 ["playSound:", "Aufnahme1"],
+#                 [u'wait:elapsed:from:',
+#                 [u'+',
+#                   [u'readVariable', u'var1'],
+#                   ['readVariable', u'S2CC_param_Function1 %n_0']
+#                 ]
+#               ]
+#             ]]
+#         ]
+# 
+#         self.script_object.preprocess_object([cls.NEW_FUNCTION_HELPER_OBJECT_DATA["objName"]])
+#         for (index, script) in enumerate(self.script_object.scripts):
+#             expected_script = scratch.Script(expected_scripts[index])
+#             assert script == expected_script, "Scripts are not equal!"
+#         
+# class TestMoreComplexBlockNewFunctionWorkaround(unittest.TestCase):  
+#     NEW_FUNCTION_COMPLEX_HELPER_OBJECT_DATA = {
+#         "objName": "Sprite1",
+#         "scripts": [[27, 80,
+#             [["whenGreenFlag"], ["call", "function %n", 6]]],
+#             [171.6, 78.2, [["procDef", "function %n", ["number"], [1], False],
+#                 ["doIf", [">", ["getParam", "number", "r"], " 5 "], ["call", "another_function %n", 3]]]],
+#             [678.45, 79.3, [["procDef", "destination_function", [], [], False], ["playSound:", "meow"]]],
+#             [404.65, 80.45, [["procDef", "another_function %n", ["value"], [1], False],
+#                 ["doIf", [">", ["getParam", "value", "r"], " 5 "], ["call", "destination_function"]]]]],
+#     }
+# 
+#     def setUp(self):
+#         cls = self.__class__
+#         unittest.TestCase.setUp(self)
+#         self.script_object = create_user_defined_function_workaround_scratch_object(cls.NEW_FUNCTION_COMPLEX_HELPER_OBJECT_DATA)
+# 
+#     def test_more_complicated_function_brick(self):
+#         cls = self.__class__
+#         expected_scripts = [
+#             [27, 80, [["whenGreenFlag"],
+#                 ['setVar:to:', u'S2CC_param_function %n_0', 6],
+#                 ['doBroadcastAndWait', u'S2CC_msg_function %n']]],
+#             [171.6, 78.2,
+#                 [["whenIReceive", "S2CC_msg_function %n"],
+#                     [u'doIf', [u'>', ['readVariable', u'S2CC_param_function %n_0'], u' 5 '], 
+#                         ['setVar:to:', u'S2CC_param_another_function %n_0', 3], 
+#                         ['doBroadcastAndWait', u'S2CC_msg_another_function %n']]]],
+#             [678.45, 79.3,
+#                 [["whenIReceive", "S2CC_msg_destination_function"],
+#                     [u'playSound:', u'meow']]],
+#             [404.65, 80.45,
+#                 [["whenIReceive", "S2CC_msg_another_function %n"],
+#                     [u'doIf', [u'>', ['readVariable', u'S2CC_param_another_function %n_0'], u' 5 '],
+#                         ['doBroadcastAndWait', u'S2CC_msg_destination_function']]]]
+#         ]
+# 
+#         self.script_object.preprocess_object([TestBlockNewFunctionWorkaround.NEW_FUNCTION_HELPER_OBJECT_DATA["objName"]])
+#         for (index, script) in enumerate(self.script_object.scripts):
+#             expected_script = scratch.Script(expected_scripts[index])
+#             assert script == expected_script, "Scripts are not equal!"
 
 class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
     TIMER_HELPER_OBJECTS_DATA_TEMPLATE = {
@@ -1049,6 +1048,10 @@ class TestDistanceBlockWorkaround(unittest.TestCase):
         assert global_variables[1] == { "name": position_y_var_name2, "value": 0, "isPersistent": False }
         assert global_variables[2] == { "name": position_x_var_name1, "value": 0, "isPersistent": False }
         assert global_variables[3] == { "name": position_y_var_name1, "value": 0, "isPersistent": False }
+        
+class TestInsertBrackets(unittest.TestCase):
+    def test_can_extract_project(self):
+        pass
 
 
 if __name__ == "__main__":

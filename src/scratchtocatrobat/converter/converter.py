@@ -45,6 +45,7 @@ from scratchtocatrobat.tools import helpers
 from scratchtocatrobat.tools.helpers import ProgressType
 import mediaconverter
 
+
 _DEFAULT_BRICK_CLASS = catbricks.WaitBrick
 _DEFAULT_FORMULA_ELEMENT = catformula.FormulaElement(catElementType.NUMBER, str(00001), None)  # @UndefinedVariable (valueOf)
 
@@ -121,15 +122,13 @@ class _ScratchToCatrobat(object):
         "rounded": catformula.Functions.ROUND,
         "randomFrom:to:": catformula.Functions.RAND,
         "%": catformula.Functions.MOD,
-
-        #  TODO: replace "dummy" keyword by corresponding Catrobat function as soon as Catrobat supports this...
-        "10 ^": "dummy",
+        "10 ^": None,
         "floor": catformula.Functions.FLOOR,
         "ceiling": catformula.Functions.CEIL,
     }
 
     math_unary_operators_mapping = {
-        "()": "dummy", # this operator is only used internally and not part of Scratch
+        "()": None, # this operator is only used internally and not part of Scratch
         "not": catformula.Operators.LOGICAL_NOT,
     }
 
@@ -180,12 +179,11 @@ class _ScratchToCatrobat(object):
 
         # conditionals
         "doForever": catbricks.ForeverBrick,
-        # FIXME: dummy value
-        "doIf": "dummy",  # [catbricks.IfLogicBeginBrick, catbricks.IfLogicEndBrick],
-        "doIfElse": "dummy",  # [catbricks.IfLogicBeginBrick, catbricks.IfLogicElseBrick, catbricks.IfLogicEndBrick],
+        "doIf": None,
+        "doIfElse": None,
         "doRepeat": catbricks.RepeatBrick,
-        "doUntil": "dummy",
-        "doWaitUntil": "dummy",
+        "doUntil": None, # TODO: before you start implementing this -> remove workaround in scratch.py!
+        "doWaitUntil": lambda condition: catbricks.WaitUntilBrick(catformula.Formula(condition)),
 
         "turnRight:": catbricks.TurnRightBrick,
         "turnLeft:": catbricks.TurnLeftBrick,
@@ -254,6 +252,10 @@ class _ScratchToCatrobat(object):
         "size": catformula.Sensors.OBJECT_SIZE,
 
         # sensors
+        "mousePressed": catformula.Sensors.FINGER_TOUCHED,
+        "mouseX": catformula.Sensors.FINGER_X,
+        "mouseY": catformula.Sensors.FINGER_Y,
+
         # WORKAROUND: using ROUND for Catrobat float => Scratch int
         "soundLevel": lambda *_args: catrobat.formula_element_for(catformula.Functions.ROUND, arguments=[catrobat.formula_element_for(catformula.Sensors.LOUDNESS)]),  # @UndefinedVariable
     }.items() + math_function_block_parameters_mapping.items() \
@@ -1114,17 +1116,18 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         background_sprite.addScript(broadcast_script)
         return [broadcast_brick]
 
-    @_register_handler(_block_name_to_handler_map, "doIf", "doIfElse")
+    @_register_handler(_block_name_to_handler_map, "doIf")
     def _convert_if_block(self):
-        # TODO: does not work for certain doIfs e.g. "./run.py https://scratch.mit.edu/projects/11806234/ --no-temp-rm"
-#         print(self.arguments)
-#         for arg in self.arguments:
-#             print("  * {0}".format(type(arg)))
-#         print("----------------------")
-#         temp = catrobat.simple_name_for(self.arguments[0].block_and_args)
-#         for test in temp:
-#             print("-> There we go: " + test)
-        assert 2 <= len(self.arguments) <= 3
+        assert len(self.arguments) == 2
+        if_begin_brick = catbricks.IfThenLogicBeginBrick(catformula.Formula(self.arguments[0]))
+        if_end_brick = catbricks.IfThenLogicEndBrick(if_begin_brick)
+        if_bricks = self.arguments[1] or []
+        assert isinstance(if_bricks, list)
+        return [if_begin_brick] + if_bricks + [if_end_brick]
+
+    @_register_handler(_block_name_to_handler_map, "doIfElse")
+    def _convert_if_else_block(self):
+        assert len(self.arguments) == 3
         if_begin_brick = catbricks.IfLogicBeginBrick(catformula.Formula(self.arguments[0]))
         if_else_brick = catbricks.IfLogicElseBrick(if_begin_brick)
         if_end_brick = catbricks.IfLogicEndBrick(if_else_brick, if_begin_brick)

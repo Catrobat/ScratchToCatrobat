@@ -1,6 +1,6 @@
 /*
  * ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
- * Copyright (C) 2013-2015 The Catrobat Team
+ * Copyright (C) 2013-2016 The Catrobat Team
  * (http://developer.catrobat.org/credits)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -25,24 +25,17 @@ package sourcecodefilter;
 
 import java.io.Closeable;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
-import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
 import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;

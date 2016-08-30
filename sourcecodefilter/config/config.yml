@@ -1,11 +1,11 @@
 #==================================================================================================
 # Define and update parameters here
 #==================================================================================================
-catroid_version: v0.9.23
-xstream_class_name: XStreamToSupportCatrobatLanguageVersion099AndBefore
+catroid_version: v0.9.24
+xstream_class_name: XStreamToSupportCatrobatLanguageVersion0991AndBefore
 archive_extension: "zip"
-URL: "https://github.com/Catrobat/Catroid/archive/master.%{archive_extension}"
-#URL: "https://github.com/Catrobat/Catroid/archive/%{catroid_version}.%{archive_extension}"
+#URL: "https://github.com/Catrobat/Catroid/archive/master.%{archive_extension}"
+URL: "https://github.com/Catrobat/Catroid/archive/%{catroid_version}.%{archive_extension}"
 xstream_version: "1.4.7"
 xstream_lib_extension: "jar"
 xstream_download_URL: "http://repo.maven.apache.org/maven2/com/thoughtworks/xstream/xstream/%{xstream_version}/xstream-%{xstream_version}.%{xstream_lib_extension}"
@@ -17,9 +17,9 @@ relative_code_source_path: "catroid/src"
 
 
 #==================================================================================================
-# Include/exclude settings
+# Include/exclude rules
 #==================================================================================================
-removed_classes: [
+remove_classes: [
     # legoNXT bricks
     LegoNXTSetting, LegoNxtMotorMoveBrick, LegoNxtMotorStopBrick,
     LegoNxtMotorTurnAngleBrick, LegoNxtPlayToneBrick,
@@ -51,10 +51,192 @@ removed_classes: [
     TurnLeftSpeedBrick, TurnRightSpeedBrick
 ]
 
-removed_method_invocations:
+remove_method_invocations:
     ["Log.*", "MessageContainer.*", "setBounds", "setOrigin", "setScale",
      "setRotation", "setTouchable", "addListeners", "createCatroidRoot",
-     "Utils.updateScreenWidthAndHeight", "setDeviceData", "prepareBackpackGson"]
+     "Utils.updateScreenWidthAndHeight", "setDeviceData", "prepareBackpackGson",
+     "context.getString"]
+
+remove_method_invocations_with_parameter_mapping:
+    org.catrobat.catroid.content.Project:
+        - background.look.setZIndex(0)
+        - addSprite(background)
+    org.catrobat.catroid.io.StorageHandler:
+        - xstream.alias("nfcTag",NfcTagData.class)
+        - xstream.alias("script",WhenNfcScript.class)
+        - xstream.alias("script",RaspiInterruptScript.class)
+        - xstream.alias("brick",LegoNxtMotorMoveBrick.class)
+        - xstream.alias("brick",LegoNxtMotorStopBrick.class)
+        - xstream.alias("brick",LegoNxtMotorTurnAngleBrick.class)
+        - xstream.alias("brick",LegoNxtPlayToneBrick.class)
+        - xstream.alias("brick",WhenNfcBrick.class)
+        - xstream.alias("brick",DronePlayLedAnimationBrick.class)
+        - xstream.alias("brick",DroneFlipBrick.class)
+        - xstream.alias("brick",DroneTakeOffLandBrick.class)
+        - xstream.alias("brick",DroneMoveForwardBrick.class)
+        - xstream.alias("brick",DroneMoveBackwardBrick.class)
+        - xstream.alias("brick",DroneMoveUpBrick.class)
+        - xstream.alias("brick",DroneMoveDownBrick.class)
+        - xstream.alias("brick",DroneMoveLeftBrick.class)
+        - xstream.alias("brick",DroneMoveRightBrick.class)
+        - xstream.alias("brick",DroneTurnLeftBrick.class)
+        - xstream.alias("brick",DroneTurnRightBrick.class)
+        - xstream.alias("brick",DroneSwitchCameraBrick.class)
+        - xstream.alias("brick",DroneEmergencyBrick.class)
+        - xstream.alias("brick",PhiroMotorMoveBackwardBrick.class)
+        - xstream.alias("brick",PhiroMotorMoveForwardBrick.class)
+        - xstream.alias("brick",PhiroMotorStopBrick.class)
+        - xstream.alias("brick",PhiroPlayToneBrick.class)
+        - xstream.alias("brick",PhiroRGBLightBrick.class)
+        - xstream.alias("brick",PhiroIfLogicBeginBrick.class)
+        - xstream.alias("brick",ArduinoSendPWMValueBrick.class)
+        - xstream.alias("brick",ArduinoSendDigitalValueBrick.class)
+        - xstream.alias("brick",RaspiSendDigitalValueBrick.class)
+        - xstream.alias("brick",RaspiIfLogicBeginBrick.class)
+        - xstream.alias("brick",RaspiPwmBrick.class)
+        - xstream.alias("script",CollisionScript.class)
+        - xstream.alias("brick",CollisionReceiverBrick.class)
+        - xstream.alias("brick",SetBounceBrick.class)
+        - xstream.alias("brick",SetFrictionBrick.class)
+        - xstream.alias("brick",SetGravityBrick.class)
+        - xstream.alias("brick",SetMassBrick.class)
+        - xstream.alias("brick",SetPhysicsObjectTypeBrick.class)
+        - xstream.alias("brick",SetVelocityBrick.class)
+        - xstream.alias("brick",TurnLeftSpeedBrick.class)
+        - xstream.alias("brick",TurnRightSpeedBrick.class)
+        - xstream.alias("setting",LegoNXTSetting.class)
+        - xstream.alias("nxtPort",LegoNXTSetting.NXTPort.class)
+        - xstream.aliasAttribute(LegoNXTSetting.NXTPort.class,"number","number")
+
+    org.catrobat.catroid.io.XStreamToSupportCatrobatLanguageVersion0991AndBefore:
+        - brickInfo.addBrickFieldToMap("speed",BrickField.LEGO_NXT_SPEED)
+        - brickInfoMap.put("legoNxtMotorMoveBrick",brickInfo)
+        - brickInfoMap.put("legoNxtMotorStopBrick",brickInfo)
+        - brickInfo.addBrickFieldToMap("degrees",BrickField.LEGO_NXT_DEGREES)
+        - brickInfoMap.put("legoNxtMotorTurnAngleBrick",brickInfo)
+        - brickInfo.addBrickFieldToMap("frequency",BrickField.LEGO_NXT_FREQUENCY)
+        - brickInfo.addBrickFieldToMap("durationInSeconds",BrickField.LEGO_NXT_DURATION_IN_SECONDS)
+        - brickInfoMap.put("legoNxtPlayToneBrick",brickInfo)
+        - brickInfo.addBrickFieldToMap("speed",BrickField.PHIRO_SPEED)
+        - brickInfoMap.put("phiroMotorMoveForwardBrick",brickInfo)
+        - brickInfo.addBrickFieldToMap("speed",BrickField.PHIRO_SPEED)
+        - brickInfoMap.put("phiroMotorMoveBackwardBrick",brickInfo)
+        - brickInfoMap.put("phiroMotorStopBrick",brickInfo)
+        - brickInfo.addBrickFieldToMap("durationInSeconds",BrickField.PHIRO_DURATION_IN_SECONDS)
+        - brickInfoMap.put("phiroPlayToneBrick",brickInfo)
+        - brickInfo.addBrickFieldToMap("light",BrickField.PHIRO_LIGHT_RED)
+        - brickInfo.addBrickFieldToMap("light",BrickField.PHIRO_LIGHT_GREEN)
+        - brickInfo.addBrickFieldToMap("light",BrickField.PHIRO_LIGHT_BLUE)
+        - brickInfoMap.put("phiroRGBLightBrick",brickInfo)
+        - brickInfo.addBrickFieldToMap("ifPhiroSensorCondition",BrickField.IF_PHIRO_SENSOR_CONDITION)
+        - brickInfoMap.put("phiroSensorBrick",brickInfo)
+        - brickInfoMap.put("phiroSensorElseBrick",brickInfo)
+        - brickInfoMap.put("phiroSensorEndBrick",brickInfo)
+        - brickInfo.addBrickFieldToMap("digitalPinNumber",BrickField.ARDUINO_DIGITAL_PIN_NUMBER)
+        - brickInfo.addBrickFieldToMap("digitalPinValue",BrickField.ARDUINO_DIGITAL_PIN_VALUE)
+        - brickInfo.addBrickFieldToMap("digitalPinValue",BrickField.RASPI_DIGITAL_PIN_VALUE)
+        - brickInfoMap.put("arduinoSendDigitalValueBrick",brickInfo)
+        - brickInfo.addBrickFieldToMap("pwmPinNumber",BrickField.ARDUINO_ANALOG_PIN_NUMBER)
+        - brickInfo.addBrickFieldToMap("pwmPinValue",BrickField.ARDUINO_ANALOG_PIN_VALUE)
+        - brickInfoMap.put("arduinoSendPWMValueBrick",brickInfo)
+        - brickInfoMap.put("raspiSendDigitalValueBrick",brickInfo)
+        - brickInfo.addBrickFieldToMap("digitalPinNumber",BrickField.RASPI_DIGITAL_PIN_NUMBER)
+        - brickInfo.addBrickFieldToMap("pwmFrequency",BrickField.RASPI_PWM_FREQUENCY)
+        - brickInfo.addBrickFieldToMap("pwmPercentage",BrickField.RASPI_PWM_PERCENTAGE)
+        - brickInfoMap.put("raspiPwmBrick",brickInfo)
+        - brickInfo.addBrickFieldToMap("digitalPinNumber",BrickField.IF_CONDITION)
+        - brickInfoMap.put("raspiIfLogicBeginBrick",brickInfo)
+        - brickInfoMap.put("whenNfcBrick",brickInfo)
+        - brickInfoMap.put("dronePlayLedAnimationBrick",brickInfo)
+        - brickInfoMap.put("droneFlipBrick",brickInfo)
+        - brickInfoMap.put("droneGoEmergencyBrick",brickInfo)
+        - brickInfoMap.put("droneTakeOffBrick",brickInfo)
+        - brickInfo.addBrickFieldToMap("timeToFlyInSeconds",BrickField.DRONE_TIME_TO_FLY_IN_SECONDS)
+        - brickInfo.addBrickFieldToMap("powerInPercent",BrickField.DRONE_POWER_IN_PERCENT)
+        - brickInfoMap.put("droneTurnLeftBrick",brickInfo)
+        - brickInfoMap.put("droneTurnRightBrick",brickInfo)
+        - brickInfoMap.put("droneMoveForwardBrick",brickInfo)
+        - brickInfoMap.put("droneMoveBackwardBrick",brickInfo)
+        - brickInfoMap.put("droneMoveUpBrick",brickInfo)
+        - brickInfoMap.put("droneMoveDownBrick",brickInfo)
+        - brickInfoMap.put("droneMoveLeftBrick",brickInfo)
+        - brickInfoMap.put("droneMoveRightBrick",brickInfo)
+        - brickInfoMap.put("droneSwitchCameraBrick",brickInfo)
+        - brickInfoMap.put("DroneEmergencyBrick",brickInfo)
+        - brickInfoMap.put("collisionReceiverBrick",brickInfo)
+        - brickInfo.addBrickFieldToMap("bounceFactor",BrickField.PHYSICS_BOUNCE_FACTOR)
+        - brickInfoMap.put("setBounceBrick",brickInfo)
+        - brickInfo.addBrickFieldToMap("friction",BrickField.PHYSICS_FRICTION)
+        - brickInfoMap.put("setFrictionBrick",brickInfo)
+        - brickInfo.addBrickFieldToMap("gravityX",BrickField.PHYSICS_GRAVITY_X)
+        - brickInfo.addBrickFieldToMap("gravityY",BrickField.PHYSICS_GRAVITY_Y)
+        - brickInfoMap.put("setGravityBrick",brickInfo)
+        - brickInfo.addBrickFieldToMap("mass",BrickField.PHYSICS_MASS)
+        - brickInfoMap.put("setMassBrick",brickInfo)
+        - brickInfoMap.put("setPhysicsObjectTypeBrick",brickInfo)
+        - brickInfo.addBrickFieldToMap("velocityX",BrickField.PHYSICS_VELOCITY_X)
+        - brickInfo.addBrickFieldToMap("velocityY",BrickField.PHYSICS_VELOCITY_Y)
+        - brickInfoMap.put("setVelocityBrick",brickInfo)
+        - brickInfo.addBrickFieldToMap("turnLeftSpeed",BrickField.PHYSICS_TURN_LEFT_SPEED)
+        - brickInfoMap.put("turnLeftSpeedBrick",brickInfo)
+        - brickInfo.addBrickFieldToMap("turnRightSpeed",BrickField.PHYSICS_TURN_RIGHT_SPEED)
+        - brickInfoMap.put("turnRightSpeedBrick",brickInfo)
+        - scriptInfoMap.put("raspiInterruptScript",RaspiInterruptScript.class.getSimpleName())
+        - scriptInfoMap.put("whenNfcScript",WhenNfcScript.class.getSimpleName())
+        - scriptInfoMap.put("collisionScript",CollisionScript.class.getSimpleName())
+
+remove_assignments_mapping:
+    org.catrobat.catroid.formulaeditor.Formula:
+        - internFormula=new InternFormula(formulaTree.getInternTokenList())
+    org.catrobat.catroid.content.Project:
+        - Sprite background=new Sprite(context.getString(R.string.background))
+    org.catrobat.catroid.io.XStreamToSupportCatrobatLanguageVersion0991AndBefore:
+        - brickInfo=new BrickInfo(LegoNxtMotorMoveBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(LegoNxtMotorStopBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(LegoNxtMotorTurnAngleBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(LegoNxtPlayToneBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(PhiroMotorMoveForwardBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(PhiroMotorMoveBackwardBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(PhiroMotorStopBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(PhiroPlayToneBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(PhiroRGBLightBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(PhiroIfLogicBeginBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(ArduinoSendDigitalValueBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(ArduinoSendPWMValueBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(RaspiSendDigitalValueBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(RaspiPwmBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(WhenNfcBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(DronePlayLedAnimationBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(DroneFlipBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(DroneEmergencyBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(DroneTakeOffLandBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(DroneMoveForwardBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(DroneMoveBackwardBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(DroneMoveUpBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(DroneMoveDownBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(DroneMoveLeftBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(DroneMoveRightBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(DroneTurnLeftBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(DroneTurnRightBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(DroneSwitchCameraBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(DroneEmergencyBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(CollisionReceiverBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(SetBounceBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(SetFrictionBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(SetGravityBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(SetMassBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(SetPhysicsObjectTypeBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(SetVelocityBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(TurnLeftSpeedBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(TurnRightSpeedBrick.class.getSimpleName())
+
+remove_if_else_blocks_mapping:
+    org.catrobat.catroid.io.StorageHandler:
+        - "!Utils.externalStorageAvailable()"
+
+inject_inline_classes_to_existing_class:
+    org.catrobat.catroid.content.Project:
+        - "public class Context {}"
 
 additional_serialization_classes:
     - AllowedAfterDeadEndBrick
@@ -68,7 +250,6 @@ additional_serialization_classes:
     - FormulaElement
     - Functions
     - Operators
-    - NestingBrick
     - ScreenModes
     - ScreenValues
     - ScriptBrick
@@ -79,6 +260,8 @@ additional_serialization_classes:
     - ProjectManager
     - UserListBrick
     - UserVariableBrick
+    - IfThenLogicEndBrick
+    - WhenTouchDownBrick
 
 preserved_interfaces:
     [Brick, BroadcastMessage, Converter, LoopBeginBrick, MindstormsSensor,
@@ -103,6 +286,7 @@ additional_helper_classes:
     - LoadingProjectException
     - OutdatedVersionProjectException
     - FileChecksumContainer
+    - InterpretationException
 
 class_to_preserved_fields_mapping:
     BroadcastReceiverBrick:
@@ -133,9 +317,15 @@ class_to_preserved_fields_mapping:
         [ifBeginBrick, ifEndBrick]
     IfLogicEndBrick:
         [ifBeginBrick, ifElseBrick]
+    IfThenLogicBeginBrick:
+        [ifEndBrick]
+    IfThenLogicEndBrick:
+        [ifBeginBrick]
     ForeverBrick:
         - loopEndBrick
     RepeatBrick:
+        - loopEndBrick
+    RepeatUntilBrick:
         - loopEndBrick
     LoopEndBrick:
         - loopBeginBrick
@@ -153,6 +343,8 @@ class_to_preserved_fields_mapping:
         - defaultPrototypeToken
 
 class_to_preserved_methods_mapping:
+    Brick:
+        - getRequiredResources
     Functions:
         - isFunction
         - getFunctionByValue
@@ -160,10 +352,19 @@ class_to_preserved_methods_mapping:
         - setBroadcastMessage
         - getBroadcastMessage
         - getScriptBrick
+    Script:
+        - updateUserBricksIfNecessary
+        - getRequiredResources
+        - setIfBrickReferences
+        - setIfThenBrickReferences
+        - setLoopBrickReferences
     StartScript:
         - getScriptBrick
     WhenScript:
         - getScriptBrick
+    WhenTouchDownScript:
+        - getScriptBrick
+        - getRequiredResources
     Project:
         - ifLandscapeSwitchWidthAndHeight
         - ifPortraitSwitchWidthAndHeight
@@ -192,8 +393,8 @@ class_to_preserved_methods_mapping:
         - setXstreamAliases
         - getXMLStringOfAProject
         - setProgramXstreamAliases
-    ScriptBrick:
-        - getScriptSafe
+    BrickBaseType:
+        - getRequiredResources
     Sprite:
         - getLookDataList
         - getScript
@@ -201,6 +402,8 @@ class_to_preserved_methods_mapping:
         - getNumberOfScripts
         - getUserBrickList
         - addScript
+        - updateUserVariableReferencesInUserVariableBricks
+        - getListWithAllBricks
     UserVariablesContainer:
         - addSpriteUserVariableToSprite
         - getOrCreateVariableListForSprite
@@ -208,6 +411,7 @@ class_to_preserved_methods_mapping:
         - addAllowedBrickField
         - getFormulaWithBrickField
         - setFormulaWithBrickField
+        - getFormulas
     DataContainer:
         - addUserBrickVariable
         - addUserBrickUserVariableToUserBrick
@@ -228,6 +432,7 @@ class_to_preserved_methods_mapping:
         - findUserList
         - getUserList
         - existSpriteList
+        - getCurrentUserBrick
     AddItemToUserListBrick:
         - initializeBrickFields
     ChangeTransparencyByNBrick:
@@ -263,8 +468,12 @@ class_to_preserved_methods_mapping:
         - initializeBrickFields
     GoNStepsBackBrick:
         - initializeBrickFields
+    RepeatUntilBrick:
+        - initializeBrickFields
     IfLogicBeginBrick:
         - initializeBrickFields
+    IfThenLogicBeginBrick:
+        - setIfThenEndBrick
     MoveNStepsBrick:
         - initializeBrickFields
     NoteBrick:
@@ -309,18 +518,16 @@ class_to_preserved_methods_mapping:
         - initializeBrickFields
     UserBrick:
         - getUserScriptDefinitionBrickElements
+        - getUserBrickParameterByUserBrickElement
         - copyFormulasMatchingNames
+        - updateUserBrickParametersAndVariables
+        - updateUserVariableValues
+        - updateUserBrickParameters
     UserScriptDefinitionBrick:
         - setUserBrick
-        - getScriptSafe
-    UserScriptDefinitionBrickElements:
+    UserScriptDefinitionBrickElement:
         - getUserScriptDefinitionBrickElementList
-    WhenBrick:
-        - getScriptSafe
-    BroadcastReceiverBrick:
-        - getScriptSafe
-    WhenStartedBrick:
-        - getScriptSafe
+        - isVariable
     ProjectManager:
         - getInstance
         - addSprite
@@ -346,11 +553,23 @@ remove_fields_mapping:
         - backPackedData
 
 remove_methods_mapping:
+    XStreamToSupportCatrobatLanguageVersion0991AndBefore:
+        - updateCollisionReceiverBrickMessage
+    UserScriptDefinitionBrick:
+        - appendBrickToScript
+    Sprite:
+        - cloneUserBricks
+    Script:
+        - setIfBrickReferences
+        - setIfThenBrickReferences
+        - setLoopBrickReferences
     ProjectManager:
         [uploadProject, loadProject, cancelLoadProject, canLoadProject, saveProject,
         initializeDefaultProject, initializeDroneProject, initializeNewProject,
         deleteCurrentProject, checkCurrentSprite, checkCurrentScript, deleteProject, renameProject, addSprite,
         addScript]
+    XmlHeader:
+        - setTags
     Look:
         [copyLookForSprite, createBrightnessContrastShader, checkImageChanged, setWhenParallelAction]
     NXTSensor:
@@ -358,3 +577,10 @@ remove_methods_mapping:
         updateLastSensorValue, getLastSensorValue]
     StorageHandler:
         - prepareBackpackGson
+
+remove_packages_mapping:
+    - android
+    - junit
+    - org.catrobat.catroid.R
+    - org.catrobat.catroid.common.Constants.DEFAULT_ROOT
+    - org.catrobat.catroid.pocketmusic

@@ -25,12 +25,12 @@ import itertools
 import json
 import os
 import sys
-import urllib2
 
 from scratchtocatrobat import common
 from scratchtocatrobat import scratchwebapi
 from scratchtocatrobat.tools import helpers
 from scratchtocatrobat.tools.helpers import ProgressType
+
 
 _log = common.log
 
@@ -82,7 +82,8 @@ def verify_resources_of_scratch_object(scratch_object, md5_to_resource_path_map,
         md5_file = res_dict[JsonKeys.SOUND_MD5] if JsonKeys.SOUND_NAME in res_dict else res_dict[JsonKeys.COSTUME_MD5]
         resource_md5 = os.path.splitext(md5_file)[0]
         if md5_file not in md5_to_resource_path_map:
-            raise ProjectError("Missing resource file at project: {}. Provide resource with md5: {}".format(project_base_path, resource_md5))
+            raise ProjectError("Missing resource file at project: {}. Provide resource with md5: {}"
+                               .format(project_base_path, resource_md5))
 
 # TODO: rename
 class Object(common.DictAccessWrapper):
@@ -271,7 +272,7 @@ class Object(common.DictAccessWrapper):
         workaround_info[ADD_POSITION_SCRIPT_TO_OBJECTS_KEY] = positions_needed_for_sprite_names
 
         ############################################################################################
-        # doUntil and doWaitUntil workaround
+        # doUntil workaround
         ############################################################################################
         from scratchtocatrobat.converter import converter
         preprocessed_scripts = []
@@ -282,7 +283,7 @@ class Object(common.DictAccessWrapper):
             for block_number, block in enumerate(blocks_iterator):
                 block_name, block_parameters = block[0], block[1:]
                 # WORKAROUND: as long there are no equivalent Catrobat bricks
-                if block_name in {"doUntil", "doWaitUntil"}:
+                if block_name in {"doUntil"}:
                     do_until_condition, [do_until_blocks] = block_parameters[0], block_parameters[1:] if block_name == "doUntil" else [["wait:elapsed:from:", 0.0001]]
                     loop_done_variable = converter.generated_variable_name("_".join([self['objName'], block_name, str(script_number), str(block_number)]))
                     broadcast_msg = loop_done_variable + "_msg"
@@ -546,19 +547,28 @@ class Project(RawProject):
                     assert len(script.arguments) == 1
                     listened_keys += script.arguments
         self.listened_keys = set(listened_keys)
+
         # TODO: rename
         self.background_md5_names = set([costume[JsonKeys.COSTUME_MD5] for costume in self.get_costumes()])
-        self.unused_resource_names, self.unused_resource_paths = common.pad(zip(*self.find_unused_resources_name_and_filepath()), 2, [])
+
+        result = self.find_unused_resources_name_and_filepath()
+        self.unused_resource_names = result[0] if len(result) > 0 else []
+        self.unused_resource_paths = result[1] if len(result) > 0 else []
+
         for unused_path in self.unused_resource_paths:
-            _log.warning("Project folder contains unused resource file: '%s'. These will be omitted for Catrobat project.", os.path.basename(unused_path))
+            _log.warning("Project folder contains unused resource file: '%s'. These " \
+                         "will be omitted for Catrobat project.",
+                         os.path.basename(unused_path))
 
     def find_unused_resources_name_and_filepath(self):
         # TODO: remove duplication with __init__
+        result = []
         for file_path in glob.glob(os.path.join(self.project_base_path, "*.*")):
             md5_resource_filename = common.md5_hash(file_path) + os.path.splitext(file_path)[1]
             if md5_resource_filename not in self.resource_names:
                 if os.path.basename(file_path) != _PROJECT_FILE_NAME:
-                    yield md5_resource_filename, file_path
+                    result += [(md5_resource_filename, file_path)]
+        return map(list, zip(*result))
 
     def find_all_resource_names_for(self, resource_unique_id):
         resource_names = set()
@@ -580,6 +590,7 @@ class Script(object):
             _log.debug("Empty script: %s", script_input)
         self.script_element = ScriptElement.from_raw_block(self.blocks)
         assert isinstance(self.script_element, BlockList)
+        assert len(self.script_element.math_stack) == 0
         self.type, self.arguments = script_block[0], script_block[1:]
         # FIXME: never reached as is_valid_script_input() fails before
         if self.type not in SCRIPTS:
@@ -658,7 +669,7 @@ class Script(object):
         return True
 
 class ScriptElement(object):
-
+    math_stack = []
     def __init__(self, name=None, arguments=None):
         if arguments is None:
             arguments = []
@@ -690,11 +701,38 @@ class ScriptElement(object):
     def from_raw_block(cls, raw_block):
         # replace empty arguments/operands of math functions and math operators
         # (i.e. "" and " ") with 0. This is actually default behavior in Scratch.
+        def _has_previous_operator_higher_priority(previous_operator, curr_operator):
+            if previous_operator == curr_operator:
+                return False
+            line_operators = ["+", "-"]
+            punctuation_operators = ["*", "/"]
+            logic_operators = ["|","&", "not"]
+            comparison_operator = ["<", ">", "="]
+            
+            if previous_operator in punctuation_operators:
+                if curr_operator in line_operators:
+                    return True
+            
+            if (previous_operator == "%") or (previous_operator in comparison_operator) or (previous_operator in logic_operators):
+                return True
+            
+            return previous_operator != curr_operator
+        
         from scratchtocatrobat.converter import converter
         if isinstance(raw_block, list) and len(raw_block) > 1 \
         and converter.is_math_function_or_operator(raw_block[0]):
             raw_block[1:] = map(lambda arg: arg if not isinstance(arg, (str, unicode)) \
-                                or arg.strip() != '' else 0, raw_block[1:])
+                        or arg.strip() != '' else 0, raw_block[1:])
+            current_operator = raw_block[0]
+            if len(cls.math_stack) > 0:
+                previous_operator = cls.math_stack[len(cls.math_stack) - 1]
+                if _has_previous_operator_higher_priority(previous_operator, current_operator):
+                    raw_block = ["()", raw_block]
+                assert(not isinstance(current_operator, list))
+
+            cls.math_stack.append(current_operator)
+        elif isinstance(raw_block, list) and len(raw_block) > 0 and not isinstance(raw_block[0], list) and common.int_or_float(raw_block[0]):
+            cls.math_stack = []
 
         # recursively create ScriptElement tree
         block_name = None
@@ -711,11 +749,15 @@ class ScriptElement(object):
         else:
             block_name = raw_block
             Class = BlockValue
+            
         return Class(block_name, arguments=block_arguments)
 
 
 class Block(ScriptElement):
-    pass
+    
+    def __init__(self, *args, **kwargs):
+        ScriptElement.math_stack = []
+        super(Block, self).__init__(*args, **kwargs)
 
 
 class BlockList(ScriptElement):

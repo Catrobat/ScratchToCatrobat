@@ -378,8 +378,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     # 10 ^
     def test_can_convert_pow_of_10_block(self):
-        exponent = 6
-        base = 10
+        exponent, base = 6, 10
         scratch_block = ["10 ^", exponent]
         [rounded_result_formula_element] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(rounded_result_formula_element, catformula.FormulaElement)
@@ -506,8 +505,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     # letter:of:
     def test_can_convert_letter_of_number_block(self):
-        index = 1
-        value = 31.12
+        index, value = 1, 31.12
         scratch_block = ["letter:of:", index, value]
         [catr_formula_element] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
 
@@ -529,8 +527,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     # letter:of:
     def test_can_convert_letter_of_string_block(self):
-        index = 1
-        value = "dummyString"
+        index, value = 1, "dummyString"
         scratch_block = ["letter:of:", index, value]
         [catr_formula_element] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
 
@@ -575,8 +572,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     # concatenate:with:
     def test_can_convert_concatenate_two_numbers_block(self):
-        value1 = 1
-        value2 = 2
+        value1, value2 = 1, 2
         scratch_block = ["concatenate:with:", value1, value2]
         [catr_formula_element] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
 
@@ -609,6 +605,91 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         #assert isinstance(catr_brick, catbricks.NoteBrick)
         assert isinstance(catr_brick, converter.UnmappedBlock)
 
+    # doIf
+    def test_can_convert_if_block(self):
+        expected_value_left_operand = "1"
+        expected_value_right_operand = "2"
+        scratch_do_if = ["doIf", ["=", expected_value_left_operand, expected_value_right_operand],
+                         [["wait:elapsed:from:", 1], ["wait:elapsed:from:", 2]]]
+        catr_do_if = self.block_converter._catrobat_bricks_from(scratch_do_if, DUMMY_CATR_SPRITE)
+
+        assert isinstance(scratch_do_if, list)
+        assert len(catr_do_if) == 4
+        expected_brick_classes = [catbricks.IfThenLogicBeginBrick, catbricks.WaitBrick,
+                                  catbricks.WaitBrick, catbricks.IfThenLogicEndBrick]
+        assert [_.__class__ for _ in catr_do_if] == expected_brick_classes
+
+        if_then_logic_begin_brick = catr_do_if[0]
+        if_then_logic_end_brick = catr_do_if[3]
+
+        assert if_then_logic_begin_brick.ifEndBrick == if_then_logic_end_brick
+        assert if_then_logic_end_brick.ifBeginBrick == if_then_logic_begin_brick
+
+        formula_tree_value = if_then_logic_begin_brick.getFormulaWithBrickField(catbasebrick.BrickField.IF_CONDITION).formulaTree # @UndefinedVariable
+        assert formula_tree_value.type == catformula.FormulaElement.ElementType.OPERATOR
+        assert formula_tree_value.value == catformula.Operators.EQUAL.toString() # @UndefinedVariable
+        assert formula_tree_value.leftChild is not None
+        assert formula_tree_value.rightChild is not None
+
+        formula_left_child = formula_tree_value.leftChild
+        assert formula_left_child.type == catformula.FormulaElement.ElementType.NUMBER
+        assert expected_value_left_operand == formula_left_child.value
+        assert formula_left_child.leftChild is None
+        assert formula_left_child.rightChild is None
+
+        formula_right_child = formula_tree_value.rightChild
+        assert formula_right_child.type == catformula.FormulaElement.ElementType.NUMBER
+        assert expected_value_right_operand == formula_right_child.value
+        assert formula_right_child.leftChild is None
+        assert formula_right_child.rightChild is None
+
+    # doIfElse
+    def test_can_convert_if_else_block(self):
+        expected_value_left_operand = "1"
+        expected_value_right_operand = "2"
+        scratch_do_if = ["doIfElse", ["=", expected_value_left_operand, expected_value_right_operand],
+                         [["wait:elapsed:from:", 1]], [["wait:elapsed:from:", 2]]]
+        catr_do_if = self.block_converter._catrobat_bricks_from(scratch_do_if, DUMMY_CATR_SPRITE)
+
+        assert isinstance(scratch_do_if, list)
+        assert len(catr_do_if) == 5
+        expected_brick_classes = [catbricks.IfLogicBeginBrick, catbricks.WaitBrick,
+                                  catbricks.IfLogicElseBrick, catbricks.WaitBrick,
+                                  catbricks.IfLogicEndBrick]
+        assert [_.__class__ for _ in catr_do_if] == expected_brick_classes
+
+        if_logic_begin_brick = catr_do_if[0]
+        if_logic_else_brick = catr_do_if[2]
+        if_logic_end_brick = catr_do_if[4]
+
+        assert if_logic_begin_brick.getIfElseBrick() == if_logic_else_brick
+        assert if_logic_begin_brick.getIfEndBrick() == if_logic_end_brick
+
+        assert if_logic_else_brick.getIfBeginBrick() == if_logic_begin_brick
+        assert if_logic_else_brick.getIfEndBrick() == if_logic_end_brick
+
+        assert if_logic_end_brick.getIfBeginBrick() == if_logic_begin_brick
+        assert if_logic_end_brick.getIfElseBrick() == if_logic_else_brick
+
+        formula_tree_value = if_logic_begin_brick.getFormulaWithBrickField(catbasebrick.BrickField.IF_CONDITION).formulaTree # @UndefinedVariable
+        assert formula_tree_value.type == catformula.FormulaElement.ElementType.OPERATOR
+        assert formula_tree_value.value == catformula.Operators.EQUAL.toString() # @UndefinedVariable
+        assert formula_tree_value.leftChild is not None
+        assert formula_tree_value.rightChild is not None
+
+        formula_left_child = formula_tree_value.leftChild
+        assert formula_left_child.type == catformula.FormulaElement.ElementType.NUMBER
+        assert expected_value_left_operand == formula_left_child.value
+        assert formula_left_child.leftChild is None
+        assert formula_left_child.rightChild is None
+
+        formula_right_child = formula_tree_value.rightChild
+        assert formula_right_child.type == catformula.FormulaElement.ElementType.NUMBER
+        assert expected_value_right_operand == formula_right_child.value
+        assert formula_right_child.leftChild is None
+        assert formula_right_child.rightChild is None
+
+    # doRepeat
     def test_can_convert_loop_blocks(self):
         scratch_do_loop = ["doRepeat", 10, [[u'forward:', 10], [u'playDrum', 1, 0.2], [u'forward:', -10], [u'playDrum', 1, 0.2]]]
         catr_do_loop = self.block_converter._catrobat_bricks_from(scratch_do_loop, DUMMY_CATR_SPRITE)
@@ -617,6 +698,31 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert len(catr_do_loop) == 8
         expected_brick_classes = [catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.LoopEndBrick]
         assert [_.__class__ for _ in catr_do_loop] == expected_brick_classes
+
+    # doWaitUntil
+    def test_can_convert_do_wait_until_block(self):
+        expected_value_left_operand = "1"
+        expected_value_right_operand = "2"
+        scratch_block = ["doWaitUntil", ["<", expected_value_left_operand, expected_value_right_operand]]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.WaitUntilBrick)
+        formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.IF_CONDITION).formulaTree # @UndefinedVariable
+        assert formula_tree_value.type == catformula.FormulaElement.ElementType.OPERATOR
+        assert formula_tree_value.value == catformula.Operators.SMALLER_THAN.toString() # @UndefinedVariable
+        assert formula_tree_value.leftChild is not None
+        assert formula_tree_value.rightChild is not None
+
+        formula_left_child = formula_tree_value.leftChild
+        assert formula_left_child.type == catformula.FormulaElement.ElementType.NUMBER
+        assert expected_value_left_operand == formula_left_child.value
+        assert formula_left_child.leftChild is None
+        assert formula_left_child.rightChild is None
+
+        formula_right_child = formula_tree_value.rightChild
+        assert formula_right_child.type == catformula.FormulaElement.ElementType.NUMBER
+        assert expected_value_right_operand == formula_right_child.value
+        assert formula_right_child.leftChild is None
+        assert formula_right_child.rightChild is None
 
     # broadcast:
     def test_can_convert_broadcast_block(self):
@@ -803,8 +909,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     # insert:at:ofList:
     def test_can_convert_insert_numeric_value_at_numeric_index_in_list_block(self):
-        index = 2
-        value = "1.23"
+        index, value = 2, "1.23"
         scratch_block = ["insert:at:ofList:", value, index, self._name_of_test_list]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.InsertItemIntoUserListBrick)
@@ -935,8 +1040,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     # setLine:ofList:to:
     def test_can_convert_set_line_via_str_index_of_list_to_block(self):
-        index = "2"
-        value = "1"
+        index, value = "2", "1"
         scratch_block = ["setLine:ofList:to:", index, self._name_of_test_list, value]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.ReplaceItemInUserListBrick)
@@ -955,8 +1059,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     # setLine:ofList:to:
     def test_can_convert_set_line_via_numeric_index_of_list_to_block(self):
-        index = 2
-        value = "1"
+        index, value = 2, "1"
         scratch_block = ["setLine:ofList:to:", index, self._name_of_test_list, value]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.ReplaceItemInUserListBrick)
@@ -1085,6 +1188,36 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert int(float(xDestinationFormula.formulaTree.getValue())) == glide_x
         assert -1 * int(float(yDestinationFormula.formulaTree.rightChild.getValue())) == glide_y
 
+    # mousePressed
+    def test_can_convert_mouse_pressed_block(self):
+        scratch_block = ["mousePressed"]
+        [catr_formula_element] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_formula_element, catformula.FormulaElement)
+        assert catr_formula_element.type == catformula.FormulaElement.ElementType.SENSOR
+        assert catr_formula_element.value == catformula.Sensors.FINGER_TOUCHED.toString() # @UndefinedVariable
+        assert catr_formula_element.leftChild == None
+        assert catr_formula_element.rightChild == None
+
+    # mouseX
+    def test_can_convert_mouse_x_block(self):
+        scratch_block = ["mouseX"]
+        [catr_formula_element] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_formula_element, catformula.FormulaElement)
+        assert catr_formula_element.type == catformula.FormulaElement.ElementType.SENSOR
+        assert catr_formula_element.value == catformula.Sensors.FINGER_X.toString() # @UndefinedVariable
+        assert catr_formula_element.leftChild == None
+        assert catr_formula_element.rightChild == None
+
+    # mouseY
+    def test_can_convert_mouse_y_block(self):
+        scratch_block = ["mouseY"]
+        [catr_formula_element] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_formula_element, catformula.FormulaElement)
+        assert catr_formula_element.type == catformula.FormulaElement.ElementType.SENSOR
+        assert catr_formula_element.value == catformula.Sensors.FINGER_Y.toString() # @UndefinedVariable
+        assert catr_formula_element.leftChild == None
+        assert catr_formula_element.rightChild == None
+
     # startScene
     def test_can_convert_startscene_block(self):
         scratch_block = _, look_name = ["startScene", "look1"]
@@ -1110,14 +1243,19 @@ class TestConvertProjects(common_testing.ProjectTestCase):
             tempdir = common.TemporaryDirectory()
             scratch_project_dir = tempdir.name
             self.addCleanup(tempdir.cleanup)
-            common.extract(common_testing.get_test_project_packed_file(project_name), scratch_project_dir)
+            common.extract(common_testing.get_test_project_packed_file(project_name),
+                           scratch_project_dir)
         else:
             scratch_project_dir = common_testing.get_test_project_path(project_name)
-        scratch_project = scratch.Project(scratch_project_dir, name=project_name, id_=common_testing.PROJECT_DUMMY_ID)
+
+        scratch_project = scratch.Project(scratch_project_dir, name=project_name,
+                                          id_=common_testing.PROJECT_DUMMY_ID)
+
         context = converter.Context()
         converted_project = converter.converted(scratch_project, None, context)
         catrobat_zip_file_name = converted_project.save_as_catrobat_package_to(self._testresult_folder_path)
-        self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, project_name, unused_scratch_resources=scratch_project.unused_resource_names)
+        self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, project_name,
+                                                          unused_scratch_resources=scratch_project.unused_resource_names)
         return converted_project.catrobat_program
 
     # full_test_no_var
@@ -1131,8 +1269,9 @@ class TestConvertProjects(common_testing.ProjectTestCase):
 
     # keys_pressed
     def test_can_convert_project_with_keys(self):
-        for project_name in ["keys_pressed", ]:
+        for project_name in ("keys_pressed", ):
             self._test_project(project_name)
+            
 
     def test_can_convert_project_with_mediafiles(self):
         scratch_project_to_sound_to_sound_length_map = {

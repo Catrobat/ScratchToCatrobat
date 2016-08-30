@@ -252,6 +252,10 @@ class _ScratchToCatrobat(object):
         "size": catformula.Sensors.OBJECT_SIZE,
 
         # sensors
+        "mousePressed": catformula.Sensors.FINGER_TOUCHED,
+        "mouseX": catformula.Sensors.FINGER_X,
+        "mouseY": catformula.Sensors.FINGER_Y,
+
         # WORKAROUND: using ROUND for Catrobat float => Scratch int
         "soundLevel": lambda *_args: catrobat.formula_element_for(catformula.Functions.ROUND, arguments=[catrobat.formula_element_for(catformula.Sensors.LOUDNESS)]),  # @UndefinedVariable
     }.items() + math_function_block_parameters_mapping.items() \

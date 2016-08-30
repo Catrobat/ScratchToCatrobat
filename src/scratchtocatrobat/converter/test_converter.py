@@ -1163,6 +1163,36 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert int(float(xDestinationFormula.formulaTree.getValue())) == glide_x
         assert -1 * int(float(yDestinationFormula.formulaTree.rightChild.getValue())) == glide_y
 
+    # mousePressed
+    def test_can_convert_mouse_pressed_block(self):
+        scratch_block = ["mousePressed"]
+        [catr_formula_element] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_formula_element, catformula.FormulaElement)
+        assert catr_formula_element.type == catformula.FormulaElement.ElementType.SENSOR
+        assert catr_formula_element.value == catformula.Sensors.FINGER_TOUCHED.toString() # @UndefinedVariable
+        assert catr_formula_element.leftChild == None
+        assert catr_formula_element.rightChild == None
+
+    # mouseX
+    def test_can_convert_mouse_x_block(self):
+        scratch_block = ["mouseX"]
+        [catr_formula_element] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_formula_element, catformula.FormulaElement)
+        assert catr_formula_element.type == catformula.FormulaElement.ElementType.SENSOR
+        assert catr_formula_element.value == catformula.Sensors.FINGER_X.toString() # @UndefinedVariable
+        assert catr_formula_element.leftChild == None
+        assert catr_formula_element.rightChild == None
+
+    # mouseY
+    def test_can_convert_mouse_y_block(self):
+        scratch_block = ["mouseY"]
+        [catr_formula_element] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_formula_element, catformula.FormulaElement)
+        assert catr_formula_element.type == catformula.FormulaElement.ElementType.SENSOR
+        assert catr_formula_element.value == catformula.Sensors.FINGER_Y.toString() # @UndefinedVariable
+        assert catr_formula_element.leftChild == None
+        assert catr_formula_element.rightChild == None
+
     # startScene
     def test_can_convert_startscene_block(self):
         scratch_block = _, look_name = ["startScene", "look1"]

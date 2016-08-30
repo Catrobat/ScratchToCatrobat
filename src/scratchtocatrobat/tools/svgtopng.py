@@ -141,11 +141,11 @@ def _translation(output_png_path, rotation_x, rotation_y):
     _log.info("-" * 80)
     _log.info("Output path: {}".format(output_png_path))
     _log.info("height, weight: ({}, {})".format(m, n))
-    start_x = min(x_coords_list)
-    end_x = max(x_coords_list)
-    start_y = min(y_coords_list)
-    end_y = max(y_coords_list)
-                 
+    start_x = min(x_coords_list) if len(x_coords_list) > 0 else 0
+    end_x = max(x_coords_list) if len(x_coords_list) > 0 else 0
+    start_y = min(y_coords_list) if len(y_coords_list) > 0 else 0
+    end_y = max(y_coords_list) if len(y_coords_list) > 0 else 0
+
     _log.info("end y, end x: ({}, {})".format(end_y, end_x))
 
     if start_x > rotation_x:

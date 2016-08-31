@@ -95,7 +95,7 @@ class Object(common.DictAccessWrapper):
             if key not in object_data:
                 object_data[key] = []
         super(Object, self).__init__(object_data)
-        self.scripts = [Script(_) for _ in self.get_scripts() if Script.is_valid_script_input(_)]
+        self.scripts = [Script(script) for script in self.get_scripts() if Script.is_valid_script_input(script)]
         number_of_ignored_scripts = len(self.get_scripts()) - len(self.scripts)
         if number_of_ignored_scripts > 0:
             _log.debug("Ignored %s scripts", number_of_ignored_scripts)
@@ -305,7 +305,7 @@ class Object(common.DictAccessWrapper):
 
     @classmethod
     def is_valid_class_input(cls, object_data):
-        return 'objName' in object_data
+        return JsonKeys.OBJECT_NAME in object_data
 
     def is_stage(self):
         # TODO: extend and consolidate with verify in RawProject
@@ -511,6 +511,7 @@ class Project(RawProject):
 
         super(Project, self).__init__(self.raw_project_code_from_project_folder_path(project_base_path))
         self.project_base_path = project_base_path
+
         if id_ != None:
             self.project_id = id_
         else:
@@ -534,7 +535,7 @@ class Project(RawProject):
 
         self.name = self.name.strip() if self.name != None else "Unknown Project"
         self.md5_to_resource_path_map = read_md5_to_resource_path_mapping()
-        self.global_user_lists = [scratch_obj.get_lists() for scratch_obj in self.objects if scratch_obj.is_stage()][0]
+        self.global_user_lists = self.objects[0].get_lists()
 
         for scratch_object in self.objects:
             verify_resources_of_scratch_object(scratch_object, self.md5_to_resource_path_map,
@@ -742,15 +743,15 @@ class ScriptElement(object):
             if not is_block_list:
                 block_name, block_arguments = raw_block[0], raw_block[1:]
                 assert isinstance(block_name, (str, unicode)), "Raw block: %s" % raw_block
-                Class = Block
+                clazz = Block
             else:
                 block_arguments = raw_block
-                Class = BlockList
+                clazz = BlockList
         else:
             block_name = raw_block
-            Class = BlockValue
+            clazz = BlockValue
             
-        return Class(block_name, arguments=block_arguments)
+        return clazz(block_name, arguments=block_arguments)
 
 
 class Block(ScriptElement):

@@ -699,6 +699,39 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         expected_brick_classes = [catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.LoopEndBrick]
         assert [_.__class__ for _ in catr_do_loop] == expected_brick_classes
 
+    # doUntil
+    def test_can_convert_do_until_block(self):
+        expected_value_left_operand = "1"
+        expected_value_right_operand = "2"
+        scratch_block = ["doUntil", ["<", expected_value_left_operand, expected_value_right_operand],
+                         [["forward:", 10], ["wait:elapsed:from:", 1]]]
+        catr_do_until_loop = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_do_until_loop, list)
+        assert len(catr_do_until_loop) == 4
+        expected_brick_classes = [catbricks.RepeatUntilBrick, catbricks.MoveNStepsBrick,
+                                  catbricks.WaitBrick, catbricks.LoopEndBrick]
+        assert [_.__class__ for _ in catr_do_until_loop] == expected_brick_classes
+
+        repeat_until_brick = catr_do_until_loop[0]
+        assert isinstance(repeat_until_brick, catbricks.RepeatUntilBrick)
+        formula_tree_value = repeat_until_brick.getFormulaWithBrickField(catbasebrick.BrickField.REPEAT_UNTIL_CONDITION).formulaTree # @UndefinedVariable
+        assert formula_tree_value.type == catformula.FormulaElement.ElementType.OPERATOR
+        assert formula_tree_value.value == catformula.Operators.SMALLER_THAN.toString() # @UndefinedVariable
+        assert formula_tree_value.leftChild is not None
+        assert formula_tree_value.rightChild is not None
+
+        formula_left_child = formula_tree_value.leftChild
+        assert formula_left_child.type == catformula.FormulaElement.ElementType.NUMBER
+        assert expected_value_left_operand == formula_left_child.value
+        assert formula_left_child.leftChild is None
+        assert formula_left_child.rightChild is None
+
+        formula_right_child = formula_tree_value.rightChild
+        assert formula_right_child.type == catformula.FormulaElement.ElementType.NUMBER
+        assert expected_value_right_operand == formula_right_child.value
+        assert formula_right_child.leftChild is None
+        assert formula_right_child.rightChild is None
+
     # doWaitUntil
     def test_can_convert_do_wait_until_block(self):
         expected_value_left_operand = "1"

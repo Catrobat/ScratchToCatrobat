@@ -182,7 +182,7 @@ class _ScratchToCatrobat(object):
         "doIf": None,
         "doIfElse": None,
         "doRepeat": catbricks.RepeatBrick,
-        "doUntil": None, # TODO: before you start implementing this -> remove workaround in scratch.py!
+        "doUntil": catbricks.RepeatUntilBrick,
         "doWaitUntil": lambda condition: catbricks.WaitUntilBrick(catformula.Formula(condition)),
 
         "turnRight:": catbricks.TurnRightBrick,
@@ -1082,7 +1082,6 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "doRepeat", "doForever")
     def _convert_loop_blocks(self):
         brick_arguments = self.arguments
-        self.block_name = self.block_name
         if self.block_name == 'doRepeat':
             times_value, nested_bricks = brick_arguments
             catr_loop_start_brick = self.CatrobatClass(catformula.Formula(times_value))
@@ -1091,6 +1090,12 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             [nested_bricks] = brick_arguments
             catr_loop_start_brick = self.CatrobatClass()
         return [catr_loop_start_brick] + nested_bricks + [catbricks.LoopEndBrick(catr_loop_start_brick)]
+
+    @_register_handler(_block_name_to_handler_map, "doUntil")
+    def _convert_do_until_block(self):
+        condition, nested_bricks = self.arguments
+        repeat_until_brick = self.CatrobatClass(catformula.Formula(condition))
+        return [repeat_until_brick] + nested_bricks + [catbricks.LoopEndBrick(repeat_until_brick)]
 
     @_register_handler(_block_name_to_handler_map, "startScene")
     def _convert_scene_block(self):
@@ -1304,7 +1309,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         [variable_name, value] = self.arguments
         user_variable = self.project.getDataContainer().getUserVariable(variable_name, self.sprite)
         if user_variable is None:
-            # WORKAROUND: for generated variables added in preprocessing step (e.g doUntil rewrite)
+            # WORKAROUND: for generated variables added in preprocessing step
             # must be generated user variable, otherwise the variable must have already been added at this stage!
             assert(_is_generated(variable_name))
             catrobat.add_user_variable(self.project, variable_name, self.sprite, self.sprite.getName())

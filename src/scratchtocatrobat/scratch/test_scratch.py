@@ -1,5 +1,5 @@
 #  ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
-#  Copyright (C) 2013-2015 The Catrobat Team
+#  Copyright (C) 2013-2016 The Catrobat Team
 #  (http://developer.catrobat.org/credits)
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -46,8 +46,58 @@ EASY_SCRIPTS = [
 
 TEST_PROJECT_FOLDER = "dancing_castle"
 
+_OBJECT_JSON_STR = '''{
+    "objName": "Sprite1",
+    $keys
+    "currentCostumeIndex": 0,
+    "scratchX": 45,
+    "scratchY": -102,
+    "scale": 1,
+    "direction": 90,
+    "rotationStyle": "normal"
+}'''
+_SCRIPT_JSON_STR = '[30, 355, [["whenKeyPressed", "space"], ["dummy_block"]]]'
+_SOUND_JSON_STR = '''{
+    "soundName": "meow",
+    "soundID": 0,
+    "md5": "83c36d806dc92327b9e7049a565c6bff.wav",
+    "sampleCount": 18688,
+    "rate": 22050,
+    "format": ""
+}'''
+_COSTUME_JSON_STR = '''{
+    "costumeName": "backdrop1",
+    "baseLayerID": 7,
+    "baseLayerMD5": "510da64cf172d53750dffd23fbf73563.png",
+    "bitmapResolution": 1,
+    "rotationCenterX": 240,
+    "rotationCenterY": 180
+}'''
+_VARIABLE_JSON_STR = '''{
+    "name": "variable",
+    "value": 0,
+    "isPersistent": false
+}'''
+
+
+def _object_json_str(**kwargs):
+    keys = []
+    for key, values in kwargs.iteritems():
+        if len(values) > 0:
+            keys += ["\"%s\": [%s]" % (key, ",".join(values))]
+    # to add trailing comma
+    if len(keys) > 0:
+        keys += [""]
+    return string.Template(_OBJECT_JSON_STR).safe_substitute(keys=",\n".join(keys))
+
+
+def _default_object_json_str(number_of_scripts=2, number_of_sounds=2, number_of_costumes=2, number_of_variables=2):
+    return _object_json_str(scripts=[_SCRIPT_JSON_STR] * number_of_scripts, sounds=[_SOUND_JSON_STR] * number_of_sounds, costumes=[_COSTUME_JSON_STR] * number_of_costumes, variables=[_VARIABLE_JSON_STR] * number_of_variables)
+
+
 def create_user_defined_function_workaround_scratch_object(object_data):
     return scratch.Object(object_data)
+
 
 class ProjectExtractionTest(common_testing.BaseTestCase):
     def test_can_extract_project(self):
@@ -106,55 +156,6 @@ class TestProjectFunc(unittest.TestCase):
         assert len(project.unused_resource_paths) > 0
         expected_resources = ['0.png', '2.wav', '3.png', '4.png', '5.png', '6.png', '8.png']
         assert set(map(os.path.basename, project.unused_resource_paths)) == set(expected_resources)
-
-
-_OBJECT_JSON_STR = '''{
-    "objName": "Sprite1",
-    $keys
-    "currentCostumeIndex": 0,
-    "scratchX": 45,
-    "scratchY": -102,
-    "scale": 1,
-    "direction": 90,
-    "rotationStyle": "normal"
-}'''
-_SCRIPT_JSON_STR = '[30, 355, [["whenKeyPressed", "space"], ["dummy_block"]]]'
-_SOUND_JSON_STR = '''{
-    "soundName": "meow",
-    "soundID": 0,
-    "md5": "83c36d806dc92327b9e7049a565c6bff.wav",
-    "sampleCount": 18688,
-    "rate": 22050,
-    "format": ""
-}'''
-_COSTUME_JSON_STR = '''{
-    "costumeName": "backdrop1",
-    "baseLayerID": 7,
-    "baseLayerMD5": "510da64cf172d53750dffd23fbf73563.png",
-    "bitmapResolution": 1,
-    "rotationCenterX": 240,
-    "rotationCenterY": 180
-}'''
-_VARIABLE_JSON_STR = '''{
-    "name": "variable",
-    "value": 0,
-    "isPersistent": false
-}'''
-
-
-def _object_json_str(**kwargs):
-    keys = []
-    for key, values in kwargs.iteritems():
-        if len(values) > 0:
-            keys += ["\"%s\": [%s]" % (key, ",".join(values))]
-    # to add trailing comma
-    if len(keys) > 0:
-        keys += [""]
-    return string.Template(_OBJECT_JSON_STR).safe_substitute(keys=",\n".join(keys))
-
-
-def _default_object_json_str(number_of_scripts=2, number_of_sounds=2, number_of_costumes=2, number_of_variables=2):
-    return _object_json_str(scripts=[_SCRIPT_JSON_STR] * number_of_scripts, sounds=[_SOUND_JSON_STR] * number_of_sounds, costumes=[_COSTUME_JSON_STR] * number_of_costumes, variables=[_VARIABLE_JSON_STR] * number_of_variables)
 
 
 class TestRawProjectInit(unittest.TestCase):
@@ -300,6 +301,121 @@ class TestBlockInit(unittest.TestCase):
             nested_blocks = blocks.children
             assert all(isinstance(block, scratch.ScriptElement) for block in nested_blocks)
             assert [len(block.children) for block in nested_blocks] == list(expected_block_children_number)
+
+
+class TestScriptElementTree(common_testing.BaseTestCase):
+
+    def test_verify_simple_formula_in_script_element_tree(self):
+        script_data = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["randomFrom:to:", -100, 100]]]]
+        expected_raw_script_data = [["whenGreenFlag"], ["wait:elapsed:from:", ["randomFrom:to:", -100, 100]]]
+
+        script = scratch.Script(script_data)
+        assert script.type == scratch.SCRIPT_GREEN_FLAG
+        assert len(script.arguments) == 0
+        assert script.raw_script == expected_raw_script_data
+        assert script.blocks == expected_raw_script_data[1:]
+        assert isinstance(script.script_element, scratch.BlockList)
+        assert script.script_element.name == '<LIST>'
+        assert len(script.script_element.children) == 1
+
+        script_element_child = script.script_element.children[0]
+        assert script_element_child.name == 'wait:elapsed:from:'
+        assert len(script_element_child.children) == 1
+
+        script_element_child = script_element_child.children[0]
+        assert script_element_child.name == 'randomFrom:to:'
+        assert len(script_element_child.children) == 2
+
+        left_child = script_element_child.children[0]
+        right_child = script_element_child.children[1]
+        assert left_child.name == -100
+        assert len(left_child.children) == 0
+        assert right_child.name == 100
+        assert len(right_child.children) == 0
+
+    def test_verify_complex_formula_in_script_element_tree(self):
+        script_data = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["+", \
+                        0, ["randomFrom:to:", 0, 100]]]]]
+        expected_raw_script_data = [["whenGreenFlag"], ["wait:elapsed:from:", ["+", \
+                        0, ["randomFrom:to:", 0, 100]]]]
+
+        script = scratch.Script(script_data)
+        assert script.type == scratch.SCRIPT_GREEN_FLAG
+        assert len(script.arguments) == 0
+        assert script.raw_script == expected_raw_script_data
+        assert script.blocks == expected_raw_script_data[1:]
+        assert isinstance(script.script_element, scratch.BlockList)
+        assert script.script_element.name == '<LIST>'
+        assert len(script.script_element.children) == 1
+
+        script_element_child = script.script_element.children[0]
+        assert script_element_child.name == 'wait:elapsed:from:'
+        assert len(script_element_child.children) == 1
+
+        script_element_child = script_element_child.children[0]
+        assert script_element_child.name == '+'
+        assert len(script_element_child.children) == 2
+
+        left_child = script_element_child.children[0]
+        right_child = script_element_child.children[1]
+        assert left_child.name == 0
+        assert len(left_child.children) == 0
+        assert right_child.name == 'randomFrom:to:'
+        assert len(right_child.children) == 2
+
+        left_child = right_child.children[0]
+        right_child = right_child.children[1]
+        assert left_child.name == 0
+        assert len(left_child.children) == 0
+        assert right_child.name == 100
+        assert len(right_child.children) == 0
+
+    def test_verify_complex_script_element_tree(self):
+        script_data = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["+", \
+                        0, ["randomFrom:to:", 0, 100]]], ['changeVar:by:', "temp", 0.1]]]
+        expected_raw_script_data = [["whenGreenFlag"], ["wait:elapsed:from:", ["+", \
+                        0, ["randomFrom:to:", 0, 100]]], ['changeVar:by:', "temp", 0.1]]
+
+        script = scratch.Script(script_data)
+        assert script.type == scratch.SCRIPT_GREEN_FLAG
+        assert len(script.arguments) == 0
+        assert script.raw_script == expected_raw_script_data
+        assert script.blocks == expected_raw_script_data[1:]
+        assert isinstance(script.script_element, scratch.BlockList)
+        assert script.script_element.name == '<LIST>'
+        assert len(script.script_element.children) == 2
+
+        script_element_child = script.script_element.children[0]
+        assert script_element_child.name == 'wait:elapsed:from:'
+        assert len(script_element_child.children) == 1
+        script_element_child = script_element_child.children[0]
+        assert script_element_child.name == '+'
+        assert len(script_element_child.children) == 2
+
+        left_child = script_element_child.children[0]
+        right_child = script_element_child.children[1]
+        assert left_child.name == 0
+        assert len(left_child.children) == 0
+        assert right_child.name == 'randomFrom:to:'
+        assert len(right_child.children) == 2
+
+        left_child = right_child.children[0]
+        right_child = right_child.children[1]
+        assert left_child.name == 0
+        assert len(left_child.children) == 0
+        assert right_child.name == 100
+        assert len(right_child.children) == 0
+
+        script_element_child = script.script_element.children[1]
+        assert script_element_child.name == 'changeVar:by:'
+        assert len(script_element_child.children) == 2
+
+        left_child = script_element_child.children[0]
+        right_child = script_element_child.children[1]
+        assert left_child.name == 'temp'
+        assert len(left_child.children) == 0
+        assert right_child.name == 0.1
+        assert len(right_child.children) == 0
 
 
 class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
@@ -566,128 +682,6 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
         global_variables = background_object._dict_object["variables"]
         assert len(global_variables) == 1
         assert global_variables[0] == { "name": scratch.S2CC_TIMER_VARIABLE_NAME, "value": 0, "isPersistent": False }
-
-
-class TestEmptyParamsInMathFunctionsAndOperators(unittest.TestCase):
-
-    def setUp(self):
-        unittest.TestCase.setUp(self)
-
-    def test_non_empty_params_as_math_operand_arguments(self):
-        script_data = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["+", 1, 0]]]]
-        expected_raw_script_data = [["whenGreenFlag"], ["wait:elapsed:from:", ["+", 1, 0]]]
-
-        script = scratch.Script(script_data)
-        assert script.type == scratch.SCRIPT_GREEN_FLAG
-        assert len(script.arguments) == 0
-        assert script.raw_script == expected_raw_script_data
-        assert script.blocks == expected_raw_script_data[1:]
-        assert isinstance(script.script_element, scratch.BlockList)
-        assert script.script_element.name == '<LIST>'
-        assert len(script.script_element.children) == 1
-        script_element_child = script.script_element.children[0]
-        assert script_element_child.name == 'wait:elapsed:from:'
-        assert len(script_element_child.children) == 1
-        script_element_child = script_element_child.children[0]
-        assert script_element_child.name == '+'
-        assert len(script_element_child.children) == 2
-        left_child = script_element_child.children[0]
-        right_child = script_element_child.children[1]
-        assert left_child.name == 1
-        assert len(left_child.children) == 0
-        assert right_child.name == 0
-        assert len(right_child.children) == 0
-
-    def test_non_empty_params_as_math_function_arguments(self):
-        script_data = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["randomFrom:to:", -100, 100]]]]
-        expected_raw_script_data = [["whenGreenFlag"], ["wait:elapsed:from:", ["randomFrom:to:", -100, 100]]]
-
-        script = scratch.Script(script_data)
-        assert script.type == scratch.SCRIPT_GREEN_FLAG
-        assert len(script.arguments) == 0
-        assert script.raw_script == expected_raw_script_data
-        assert script.blocks == expected_raw_script_data[1:]
-        assert isinstance(script.script_element, scratch.BlockList)
-        assert script.script_element.name == '<LIST>'
-        assert len(script.script_element.children) == 1
-        script_element_child = script.script_element.children[0]
-        assert script_element_child.name == 'wait:elapsed:from:'
-        assert len(script_element_child.children) == 1
-        script_element_child = script_element_child.children[0]
-        assert script_element_child.name == 'randomFrom:to:'
-        assert len(script_element_child.children) == 2
-        left_child = script_element_child.children[0]
-        right_child = script_element_child.children[1]
-        assert left_child.name == -100
-        assert len(left_child.children) == 0
-        assert right_child.name == 100
-        assert len(right_child.children) == 0
-
-    def test_empty_params_as_math_operand_arguments(self):
-        script_data = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["+", \
-                        "", ["randomFrom:to:", -100, 100]]]]]
-        expected_raw_script_data = [["whenGreenFlag"], ["wait:elapsed:from:", ["+", \
-                        0, ["randomFrom:to:", -100, 100]]]]
-
-        script = scratch.Script(script_data)
-        assert script.type == scratch.SCRIPT_GREEN_FLAG
-        assert len(script.arguments) == 0
-        assert script.raw_script == expected_raw_script_data
-        assert script.blocks == expected_raw_script_data[1:]
-        assert isinstance(script.script_element, scratch.BlockList)
-        assert script.script_element.name == '<LIST>'
-        assert len(script.script_element.children) == 1
-        script_element_child = script.script_element.children[0]
-        assert script_element_child.name == 'wait:elapsed:from:'
-        assert len(script_element_child.children) == 1
-        script_element_child = script_element_child.children[0]
-        assert script_element_child.name == '+'
-        assert len(script_element_child.children) == 2
-        left_child = script_element_child.children[0]
-        right_child = script_element_child.children[1]
-        assert left_child.name == 0
-        assert len(left_child.children) == 0
-        assert right_child.name == 'randomFrom:to:'
-        assert len(right_child.children) == 2
-        left_child = right_child.children[0]
-        right_child = right_child.children[1]
-        assert left_child.name == -100
-        assert len(left_child.children) == 0
-        assert right_child.name == 100
-        assert len(right_child.children) == 0
-
-    def test_empty_params_as_math_function_arguments(self):
-        script_data = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["+", \
-                        0, ["randomFrom:to:", " ", 100]]]]]
-        expected_raw_script_data = [["whenGreenFlag"], ["wait:elapsed:from:", ["+", \
-                        0, ["randomFrom:to:", 0, 100]]]]
-
-        script = scratch.Script(script_data)
-        assert script.type == scratch.SCRIPT_GREEN_FLAG
-        assert len(script.arguments) == 0
-        assert script.raw_script == expected_raw_script_data
-        assert script.blocks == expected_raw_script_data[1:]
-        assert isinstance(script.script_element, scratch.BlockList)
-        assert script.script_element.name == '<LIST>'
-        assert len(script.script_element.children) == 1
-        script_element_child = script.script_element.children[0]
-        assert script_element_child.name == 'wait:elapsed:from:'
-        assert len(script_element_child.children) == 1
-        script_element_child = script_element_child.children[0]
-        assert script_element_child.name == '+'
-        assert len(script_element_child.children) == 2
-        left_child = script_element_child.children[0]
-        right_child = script_element_child.children[1]
-        assert left_child.name == 0
-        assert len(left_child.children) == 0
-        assert right_child.name == 'randomFrom:to:'
-        assert len(right_child.children) == 2
-        left_child = right_child.children[0]
-        right_child = right_child.children[1]
-        assert left_child.name == 0
-        assert len(left_child.children) == 0
-        assert right_child.name == 100
-        assert len(right_child.children) == 0
 
 
 class TestDistanceBlockWorkaround(unittest.TestCase):
@@ -961,10 +955,6 @@ class TestDistanceBlockWorkaround(unittest.TestCase):
         assert global_variables[1] == { "name": position_y_var_name2, "value": 0, "isPersistent": False }
         assert global_variables[2] == { "name": position_x_var_name1, "value": 0, "isPersistent": False }
         assert global_variables[3] == { "name": position_y_var_name1, "value": 0, "isPersistent": False }
-        
-class TestInsertBrackets(unittest.TestCase):
-    def test_can_extract_project(self):
-        pass
 
 
 if __name__ == "__main__":

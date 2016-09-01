@@ -21,9 +21,8 @@
 
 import sys, os, re
 from urlparse import urlparse
-from scratchtocatrobat.tools import logger
-from tools import helpers
-from tools.helpers import ProgressType
+from scratchtocatrobat.tools import logger, helpers
+from scratchtocatrobat.tools.helpers import ProgressType
 from collections import namedtuple
 from datetime import datetime
 
@@ -94,7 +93,7 @@ def download_project_code(project_id, target_dir):
     project_file_path = os.path.join(target_dir, scratch._PROJECT_FILE_NAME)
     try:
         common.download_file(project_code_url, project_file_path)
-    except common.ScratchtobatHTTP404Error as e:
+    except common.ScratchtobatHTTP404Error as _:
         _log.error("This seems to be an old Scratch program! Scratch 1.x programs are not supported!")
 
 def download_project(project_url, target_dir, progress_bar=None):

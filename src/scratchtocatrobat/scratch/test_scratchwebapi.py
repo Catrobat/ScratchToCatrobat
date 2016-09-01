@@ -21,10 +21,10 @@
 import unittest
 import os
 
-from scratchtocatrobat import common
-from scratchtocatrobat import common_testing
-from scratchtocatrobat import scratch
-from scratchtocatrobat import scratchwebapi
+from scratchtocatrobat.tools import common
+from scratchtocatrobat.tools import common_testing
+from scratchtocatrobat.scratch import scratch
+from scratchtocatrobat.scratch import scratchwebapi
 from datetime import datetime
 
 TEST_PROJECT_ID_TO_TITLE_MAP = {

@@ -21,7 +21,7 @@
 import os
 import unittest
 
-from scratchtocatrobat import common_testing
+from scratchtocatrobat.tools import common_testing
 from scratchtocatrobat.tools import wavconverter
 
 _ENV_PATH = "PATH"

@@ -24,7 +24,7 @@ import subprocess
 from distutils.spawn import find_executable
 from java.lang import System
 
-from scratchtocatrobat import logger
+from scratchtocatrobat.tools import logger
 
 _log = logger.log
 

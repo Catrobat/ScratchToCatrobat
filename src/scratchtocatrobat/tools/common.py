@@ -33,14 +33,14 @@ from org.python.core import PyReflectedField  #@UnresolvedImport
 from itertools import chain
 from itertools import repeat
 from itertools import islice
-from scratchtocatrobat import logger
+from scratchtocatrobat.tools import logger
 from scratchtocatrobat.tools import helpers
 
 log = logger.log
 
 # TODO: move into common_testing
 def get_project_base_path():
-    return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 
 
 def is_unix_platform():

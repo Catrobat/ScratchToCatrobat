@@ -22,7 +22,7 @@
 import os, sys
 import urllib
 sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "..", "src"))
-from scratchtocatrobat import scratchwebapi
+from scratchtocatrobat.scratch import scratchwebapi
 
 REDIS_JOB_KEY_TEMPLATE = "job#{}"
 REDIS_LISTENING_CLIENT_JOB_KEY_TEMPLATE = "listeningClientsOfJob#{}"

@@ -22,8 +22,8 @@
 import os
 import unittest
 
-from scratchtocatrobat import common
-from scratchtocatrobat import common_testing
+from scratchtocatrobat.tools import common
+from scratchtocatrobat.tools import common_testing
 
 
 class TestDictAccessWrapper(common.DictAccessWrapper):

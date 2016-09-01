@@ -24,7 +24,7 @@ import logging
 import os
 import sys
 from docopt import docopt
-from scratchtocatrobat import logger
+from scratchtocatrobat.tools import logger
 from scratchtocatrobat.tools import helpers
 
 # TODO: not best solution!
@@ -59,8 +59,10 @@ def run_converter(scratch_project_file_or_url, output_dir,
         return helpers.ExitCode.FAILURE
 
     # nested import to be able to check for Jython interpreter first
-    from scratchtocatrobat import catrobat, common, scratch, scratchwebapi, tools
-    from scratchtocatrobat.converter import converter
+    from scratchtocatrobat import tools
+    from scratchtocatrobat.tools import common
+    from scratchtocatrobat.converter import converter, catrobat
+    from scratchtocatrobat.scratch import scratchwebapi, scratch
 
     try:
         check_base_environment()

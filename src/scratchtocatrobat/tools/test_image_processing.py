@@ -21,7 +21,7 @@
 import os
 import unittest
 
-from scratchtocatrobat import common_testing
+from scratchtocatrobat.tools import common_testing
 from scratchtocatrobat.tools import image_processing as img_proc
 import java.awt.Font
 from java.awt import Color

@@ -37,8 +37,8 @@ import org.catrobat.catroid.content as catbase
 import org.catrobat.catroid.io as catio
 import org.catrobat.catroid.formulaeditor as catformula
 
-from scratchtocatrobat import catrobat
-from scratchtocatrobat import common
+from scratchtocatrobat.converter import catrobat
+from scratchtocatrobat.tools import common
 from scratchtocatrobat.converter import converter
 
 assert System.getProperty("python.security.respectJavaAccessibility") == 'false', "Jython registry property 'python.security.respectJavaAccessibility' must be set to 'false'"

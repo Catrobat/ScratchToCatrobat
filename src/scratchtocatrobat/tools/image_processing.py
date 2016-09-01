@@ -27,7 +27,7 @@ from java.awt.image import BufferedImage
 from java.awt import Font
 from java.awt import Color
 import imghdr
-from scratchtocatrobat import common
+from scratchtocatrobat.tools import common
 
 log = logging.getLogger(__name__)
 _supported_image_file_types = ['gif', 'jpeg', 'png']

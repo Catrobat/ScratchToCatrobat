@@ -23,7 +23,7 @@ import os
 import shutil
 import unittest
 
-from scratchtocatrobat import common_testing
+from scratchtocatrobat.tools import common_testing
 from scratchtocatrobat.tools import svgtopng
 from scratchtocatrobat.tools import helpers
 

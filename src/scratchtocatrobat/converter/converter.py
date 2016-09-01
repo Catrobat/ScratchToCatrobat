@@ -36,13 +36,14 @@ import org.catrobat.catroid.formulaeditor as catformula
 import org.catrobat.catroid.formulaeditor.FormulaElement.ElementType as catElementType
 import org.catrobat.catroid.io as catio
 
-from scratchtocatrobat import catrobat
-from scratchtocatrobat import common
-from scratchtocatrobat import scratch
-from scratchtocatrobat import logger
-from scratchtocatrobat.scratch import JsonKeys as scratchkeys
+from scratchtocatrobat.tools import common
+from scratchtocatrobat.scratch import scratch
+from scratchtocatrobat.tools import logger
+from scratchtocatrobat.scratch.scratch import JsonKeys as scratchkeys
 from scratchtocatrobat.tools import helpers
 from scratchtocatrobat.tools.helpers import ProgressType
+
+import catrobat
 import mediaconverter
 
 
@@ -100,7 +101,12 @@ def _sec_to_msec(duration):
 def is_math_function_or_operator(key):
     cls = _ScratchToCatrobat
     all_keys = cls.math_function_block_parameters_mapping.keys() \
-             + cls.math_unary_operators_mapping.keys() + cls.math_operators_mapping.keys()
+             + cls.math_unary_operators_mapping.keys() + cls.math_binary_operators_mapping.keys()
+    return key in all_keys
+
+def is_math_operator(key):
+    cls = _ScratchToCatrobat
+    all_keys = cls.math_unary_operators_mapping.keys() + cls.math_binary_operators_mapping.keys()
     return key in all_keys
 
 # note: for Scratch blocks without mapping placeholder Catrobat bricks will be added
@@ -132,7 +138,7 @@ class _ScratchToCatrobat(object):
         "not": catformula.Operators.LOGICAL_NOT,
     }
 
-    math_operators_mapping = {
+    math_binary_operators_mapping = {
         "+": catformula.Operators.PLUS,
         "-": catformula.Operators.MINUS,
         "*": catformula.Operators.MULT,
@@ -259,7 +265,7 @@ class _ScratchToCatrobat(object):
         # WORKAROUND: using ROUND for Catrobat float => Scratch int
         "soundLevel": lambda *_args: catrobat.formula_element_for(catformula.Functions.ROUND, arguments=[catrobat.formula_element_for(catformula.Sensors.LOUDNESS)]),  # @UndefinedVariable
     }.items() + math_function_block_parameters_mapping.items() \
-              + math_unary_operators_mapping.items() + math_operators_mapping.items() \
+              + math_unary_operators_mapping.items() + math_binary_operators_mapping.items() \
               + user_list_block_parameters_mapping.items() \
               + string_function_block_parameters_mapping.items())
 

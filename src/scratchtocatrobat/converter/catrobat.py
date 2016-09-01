@@ -22,7 +22,7 @@ import itertools
 import numbers
 import java
 
-from scratchtocatrobat import common
+from scratchtocatrobat.tools import common
 
 import org.catrobat.catroid.common as catcommon
 import org.catrobat.catroid.content as catbase

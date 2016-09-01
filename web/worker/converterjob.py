@@ -43,7 +43,7 @@ from jobmonitorserver.jobmonitorprotocol import Request, Reply, SERVER, CLIENT
 sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "..", "src"))
 import helpers as webhelpers
 from scratchtocatrobat.tools import helpers
-from scratchtocatrobat import scratchwebapi
+from scratchtocatrobat.scratch import scratchwebapi
 from bs4 import BeautifulSoup #@UnresolvedImport
 from tornado.ioloop import IOLoop #@UnresolvedImport
 from tornado import gen #@UnresolvedImport

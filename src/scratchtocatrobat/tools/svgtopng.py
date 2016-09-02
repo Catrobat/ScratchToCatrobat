@@ -161,22 +161,26 @@ def _translation(output_png_path, rotation_x, rotation_y):
     # Rechts Unten
     for old_row_y, new_row_y in zip(xrange(rotation_y, end_y + 1),xrange(end_y, dst_new_height)):
         for old_column_x, new_column_x in zip(xrange(rotation_x, end_x + 1),xrange(end_x, dst_new_width)):
-            new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x])
+            if(old_row_y >= 0 and old_column_x >= 0 and old_row_y < buffered_image_matrix.length and old_column_x < buffered_image_matrix[old_row_y].length):
+                new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x]);
     
     # Rechts oben
     for old_row_y, new_row_y in zip(xrange(rotation_y, start_y - 1, -1),xrange(end_y, -1, -1)):
         for old_column_x, new_column_x in zip(xrange(rotation_x, end_x + 1),xrange(end_x, dst_new_width)):
-            new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x])
+            if(old_row_y >= 0 and old_column_x >= 0 and old_row_y < buffered_image_matrix.length and old_column_x < buffered_image_matrix[old_row_y].length):
+                new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x])
           
     # links oben  
     for old_row_y, new_row_y in zip(xrange(rotation_y, start_y - 1, -1),xrange(end_y, -1, -1)):
         for old_column_x, new_column_x in zip(xrange(rotation_x, start_x - 1, -1),xrange(end_x, -1, -1)):
-            new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x])
+            if(old_row_y >= 0 and old_column_x >= 0 and old_row_y < buffered_image_matrix.length and old_column_x < buffered_image_matrix[old_row_y].length):
+                new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x])
 
     # links unten
     for old_row_y, new_row_y in zip(xrange(rotation_y, end_y + 1),xrange(end_y, dst_new_height)):
         for old_column_x, new_column_x in zip(xrange(rotation_x, start_x - 1, -1),xrange(end_x, -1, -1)):
-            new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x])
+            if(old_row_y >= 0 and old_column_x >= 0 and old_row_y < buffered_image_matrix.length and old_column_x < buffered_image_matrix[old_row_y].length):
+                new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x])
     
     
     #color = Color.yellow

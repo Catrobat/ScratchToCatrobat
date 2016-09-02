@@ -184,13 +184,6 @@ class ProjectTestCase(BaseTestCase):
                 assert nomedia_file in set(zip_fp.namelist())
             for unused_scratch_resource in unused_scratch_resources:
                 for zip_filepath in zip_fp.namelist():
-                    if os.path.splitext(unused_scratch_resource)[0] in zip_filepath:
-                        print os.path.splitext(unused_scratch_resource)[0]
-                        print zip_filepath
-                    print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-                    print zip_filepath
-                    print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-                    print os.path.splitext(unused_scratch_resource)[0]
                     assert os.path.splitext(unused_scratch_resource)[0] not in zip_filepath
             zip_fp.extractall(package_extraction_dir)
         self.assertValidCatrobatProgramStructure(package_extraction_dir, project_name)

@@ -36,9 +36,7 @@ class SvgToPngTest(common_testing.BaseTestCase):
     #    shutil.copy(regular_svg_path, svg_path_with_fileext)
     #    for input_svg_path in [regular_svg_path, svg_path_with_fileext]:
     #        assert os.path.exists(input_svg_path)
-
-     #       output_png_path = svgtopng.convert(input_svg_path)
-
+    #       output_png_path = svgtopng.convert(input_svg_path)
     #        assert os.path.exists(output_png_path) 
     #        assert imghdr.what(output_png_path) == "png"
                 

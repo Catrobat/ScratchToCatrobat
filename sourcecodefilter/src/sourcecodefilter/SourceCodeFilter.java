@@ -1,6 +1,6 @@
 /*
  * ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
- * Copyright (C) 2013-2015 The Catrobat Team
+ * Copyright (C) 2013-2016 The Catrobat Team
  * (http://developer.catrobat.org/credits)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -25,12 +25,9 @@ package sourcecodefilter;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -44,18 +41,15 @@ import java.util.regex.Pattern;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.BodyDeclaration;
-import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnumDeclaration;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IExtendedModifier;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
-import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.Statement;
@@ -65,6 +59,10 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.yaml.snakeyaml.Yaml;
 
 import sourcecodefilter.ConverterRelevantCatroidSource.FilteringProject;
+import sourcecodefilter.filter.AssignmentFilter;
+import sourcecodefilter.filter.IfElseFilter;
+import sourcecodefilter.filter.MethodInvocationFilter;
+import sourcecodefilter.inject.InlineClassInjector;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
@@ -76,11 +74,16 @@ class ExitCode {
 
 public class SourceCodeFilter {
 
-	public static Set<String> REMOVED_CLASSES = null;
-	private static Set<String> REMOVED_METHOD_INVOCATIONS = null;
+	public static Set<String> REMOVE_CLASSES = null;
+	private static Set<String> REMOVE_METHOD_INVOCATIONS = null;
+	private static Map<String, Set<String>> REMOVE_METHOD_INVOCATIONS_WITH_PARAMETER = null;
+	private static Map<String, Set<String>> REMOVE_ASSIGNMENTS = null;
+	private static Map<String, Set<String>> REMOVE_IF_ELSE_BLOCKS = null;
+	private static Map<String, Set<String>> INJECT_INLINE_CLASSES_TO_EXISTING_CLASS = null;
     private static Set<String> ADDITIONAL_SERIALIZATION_CLASSES = null;
     private static Set<String> PRESERVED_INTERFACES = null;
     public static Set<String> ADDITIONAL_HELPER_CLASSES = null;
+    public static Set<String> PACKAGES_TO_BE_REMOVED = null;
     public static Map<String, Set<String>> classToPreservedFieldsMapping = null;
     public static Map<String, Set<String>> classToPreservedMethodsMapping = null;
     public static Map<String, Set<String>> removeFieldsMapping = null;
@@ -136,7 +139,7 @@ public class SourceCodeFilter {
     }
 
     @SuppressWarnings("unchecked")
-	private static boolean isRelatedToTransientFields(final String methodName, Set<FieldDeclaration> transientFields) {
+	private static boolean isRelatedToNonTransientFields(final String methodName, Set<FieldDeclaration> transientFields) {
         for (FieldDeclaration fieldDeclaration : transientFields) {
             for (VariableDeclarationFragment varDeclFrgmt : ((List<VariableDeclarationFragment>)fieldDeclaration.fragments())) {
                 String fieldName = varDeclFrgmt.getName().getIdentifier();
@@ -174,20 +177,39 @@ public class SourceCodeFilter {
 		Iterator<ImportDeclaration> iterator = catroidSource.getSourceAst().imports().iterator(); iterator.hasNext();) {
             ImportDeclaration importDecl = iterator.next();
             String importName = importDecl.getName().getFullyQualifiedName();
+
             if (importName.contains("android") || importName.startsWith("com.") || importName.endsWith(".R")
                     || importName.contains("catroid.ui")) {
                 if (!(importName.startsWith("com.thoughtworks"))) {
                     iterator.remove();
                 }
-            } else if (importName.startsWith("org.catrobat")) {
-                if (!(project.isRelevantClass(importName))) {
-                    System.out.println("DEBUG:     import to delete: " + importName);
-                    iterator.remove();
-                } else {
-                    System.out.println("DEBUG:     relevant import: " + importName);
-                }
+                continue;
             }
+
+            if (importName.startsWith("org.catrobat") && !project.isRelevantClass(importName)) {
+                System.out.println("DEBUG:     import to delete: " + importName);
+                iterator.remove();
+                continue;
+            }
+
+            // if import is from a package that will be removed according to rules
+            // -> remove that import statement too
+            if (isImportOfRemovedPackage(importName)) {
+    			iterator.remove();
+    			continue;
+            }
+
+        	System.out.println("DEBUG:     relevant import: " + importName);
         }
+    }
+
+    private static boolean isImportOfRemovedPackage(String importName) {
+    	for (String packageToBeRemoved : PACKAGES_TO_BE_REMOVED) {
+    		if (importName.startsWith(packageToBeRemoved)) {
+    			return true;
+    		}
+    	}
+    	return false;
     }
 
     @SuppressWarnings("unchecked")
@@ -229,127 +251,12 @@ public class SourceCodeFilter {
                         } else if (source.isRemovedMethod(methodName)) {
                             methodDeclaration.delete();
                         } else if (!(source.isPreservedMethod(methodName))) {
-                            if (!(isRelatedToTransientFields(methodName, nonTransientFields)) || isOverriding(methodDeclaration)) {
+                            if (!(isRelatedToNonTransientFields(methodName, nonTransientFields)) || isOverriding(methodDeclaration)) {
                                 methodDeclaration.delete();
                             }
                         }
                     }
                 }
-            }
-        }
-    }
-
-    private static final ASTVisitor visitor = new ASTVisitor() {
-    	/*public boolean visit(SimpleName node) {
-    		System.out.println(">>> " + node);
-    		return false;
-    	}
-
-    	public boolean visit(final PrefixExpression node) {
-    		System.out.println(">>> " + node);
-			return false;
-    	}
-    	public boolean visit(final PostfixExpression node) {
-    		System.out.println(">>> " + node);
-    		return false;
-    	}
-
-    	public boolean visit(org.eclipse.jdt.core.dom.StringLiteral node) {
-    		System.out.println(">>> " + node);
-    		return false;
-    	}
-
-    	public boolean visit(QualifiedName node) {
-    		System.out.println(">>> " + node);
-    		return false;
-    	}
-    	
-    	public boolean visit(LabeledStatement node) {
-    		System.out.println(">>> " + node);
-    		return false;
-    	}
-
-    	public boolean visit(final VariableDeclarationFragment node) {
-    		System.out.println(">>> " + node);
-    		return false;
-    	}
-
-    	public boolean visit(final Assignment node) {
-    		System.out.println(">>> " + node);
-    		return false;
-    	}
-
-    	public boolean visit(EnhancedForStatement node) {
-    		System.out.println(">>> " + node);
-    		return false;
-    	}
-
-    	public boolean visit(final TypeDeclaration node) {
-    		System.out.println(">>> " + node);
-    		return false;
-    	}
-
-    	public boolean visit(PackageDeclaration node) {
-    		System.out.println(">>> " + node);
-    		return false;
-    	}
-
-    	public boolean visit(EnumDeclaration node) {
-    		System.out.println(">>> " + node);
-    		return false;
-    	}
-
-    	public boolean visit(AnnotationTypeDeclaration node) {
-    		System.out.println(">>> " + node);
-    		return false;
-    	}
-
-    	public boolean visit(BreakStatement node) {
-    		System.out.println(">>> " + node);
-    		return false;
-    	}*/
-
-		public boolean visit(MethodInvocation methodInvocation) {
-			String[] temp = methodInvocation.toString().split("\\(", 2);
-			assert(temp.length > 0);
-			String fullName = temp[0];
-			for (String unallowedMethodInvocation : REMOVED_METHOD_INVOCATIONS) {
-				boolean isMatching;
-				if (unallowedMethodInvocation.contains("*")) {
-					unallowedMethodInvocation = unallowedMethodInvocation.replace("*", "");
-					isMatching = fullName.startsWith(unallowedMethodInvocation);
-				} else {
-					isMatching = fullName.equals(unallowedMethodInvocation);
-				}
-
-	            if (isMatching) {
-	            	System.out.println(fullName);
-	            	methodInvocation.getParent().delete();
-	            	return false;
-	            }
-			}
-			return false;
-		}
-    };
-
-    @SuppressWarnings("unchecked")
-	private static void removeUnallowedMethodInvocations(ConverterRelevantCatroidSource source) {
-        CompilationUnit cu = source.getSourceAst();
-        final List<AbstractTypeDeclaration> types = cu.types();
-        assert types.size() > 0;
-
-        for (AbstractTypeDeclaration abstractTypeDecl : types) {
-            for (BodyDeclaration bodyDecl : new ArrayList<BodyDeclaration>(abstractTypeDecl.bodyDeclarations())) {
-                if (bodyDecl.getNodeType() != ASTNode.METHOD_DECLARATION) {
-                	continue;
-                }
-
-                MethodDeclaration methodDeclaration = (MethodDeclaration) bodyDecl;
-                Block body = methodDeclaration.getBody();
-                if ((body == null) || (body.statements().size() == 0)) {
-                	continue;
-                }
-                methodDeclaration.accept(visitor);
             }
         }
     }
@@ -362,6 +269,9 @@ public class SourceCodeFilter {
         // iterate over all classes which are part of Pocket Code serialization or a dependency for it
         FilteringProject project = new ConverterRelevantCatroidSource.FilteringProject(inputProjectDir, outputProjectDir);
         for (ConverterRelevantCatroidSource catroidSource : ConverterRelevantCatroidSource.converterRelevantSources(project)) {
+
+        	final String fullClassName = catroidSource.getQualifiedClassName();
+
             // if class is part of Pocket Code serialization XML
             if (catroidSource.isSerializationClass()) {
                 // remove types from class type hierarchy in class
@@ -370,11 +280,29 @@ public class SourceCodeFilter {
                 // remove all methods which method name do not include a serialize field name in class. Skip method names to ignore.
                 removeNonSerializedFieldsAndUnusedMethodsIn(catroidSource);
             }
-            //  remove all unavailable import in class
+
             removeUnsupportedImportsIn(catroidSource, project);
 
-            // remove unallowed method invocations
-            removeUnallowedMethodInvocations(catroidSource);
+    		Set<String> methodInvocationsWithParamToBeRemoved = REMOVE_METHOD_INVOCATIONS_WITH_PARAMETER.get(fullClassName);
+    		if (methodInvocationsWithParamToBeRemoved == null) {
+    			methodInvocationsWithParamToBeRemoved = new HashSet<>();
+    		}
+    		new MethodInvocationFilter(catroidSource, REMOVE_METHOD_INVOCATIONS, methodInvocationsWithParamToBeRemoved).removeUnallowedMethodInvocations();
+
+    		final Set<String> assignmentsToBeRemoved = REMOVE_ASSIGNMENTS.get(fullClassName);
+    		if (assignmentsToBeRemoved != null) {
+	            new AssignmentFilter(catroidSource, assignmentsToBeRemoved).removeUnallowedAssignments();
+    		}
+
+    		final Set<String> ifElseBlocksToBeRemoved = REMOVE_IF_ELSE_BLOCKS.get(fullClassName);
+    		if (ifElseBlocksToBeRemoved != null) {
+	            new IfElseFilter(catroidSource, ifElseBlocksToBeRemoved).removeUnallowedIfElseBlocks();
+    		}
+
+            Set<String> inlineClassesToBeInjected = INJECT_INLINE_CLASSES_TO_EXISTING_CLASS.get(catroidSource.getQualifiedClassName());
+            if (inlineClassesToBeInjected != null) {
+	            new InlineClassInjector(catroidSource, inlineClassesToBeInjected).inject();
+            }
 
             //  write modified class to output
             catroidSource.writeModifications(outputProjectDir);
@@ -402,11 +330,16 @@ public class SourceCodeFilter {
 	        final String xstreamLibraryDownloadURLString = config.getString("xstream_download_URL");
 
 	        // include/exclude setup
-	        REMOVED_CLASSES = config.getSet("removed_classes");
-	        REMOVED_METHOD_INVOCATIONS = config.getSet("removed_method_invocations");
+	        REMOVE_CLASSES = config.getSet("remove_classes");
+	        REMOVE_METHOD_INVOCATIONS = config.getSet("remove_method_invocations");
+	        REMOVE_METHOD_INVOCATIONS_WITH_PARAMETER = config.getMap("remove_method_invocations_with_parameter_mapping");
+	        REMOVE_ASSIGNMENTS = config.getMap("remove_assignments_mapping");
+	        REMOVE_IF_ELSE_BLOCKS = config.getMap("remove_if_else_blocks_mapping");
+	        INJECT_INLINE_CLASSES_TO_EXISTING_CLASS = config.getMap("inject_inline_classes_to_existing_class");
 	        ADDITIONAL_SERIALIZATION_CLASSES = config.getSet("additional_serialization_classes");
 	        PRESERVED_INTERFACES = config.getSet("preserved_interfaces");
 	        ADDITIONAL_HELPER_CLASSES = config.getSet("additional_helper_classes");
+	        PACKAGES_TO_BE_REMOVED = config.getSet("remove_packages_mapping");
 	        classToPreservedFieldsMapping = config.getMap("class_to_preserved_fields_mapping");
 	        classToPreservedMethodsMapping = config.getMap("class_to_preserved_methods_mapping");
 	        removeFieldsMapping = config.getMap("remove_fields_mapping");

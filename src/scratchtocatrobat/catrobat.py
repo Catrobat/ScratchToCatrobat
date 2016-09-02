@@ -33,7 +33,7 @@ import org.catrobat.catroid.formulaeditor as catformula
 _BACKGROUND_SPRITE_NAME = "Hintergrund"
 
 ANDROID_IGNORE_MEDIA_MARKER_FILE_NAME = ".nomedia"
-CATROBAT_LANGUAGE_VERSION = float("{0:.2f}".format(catcommon.Constants.CURRENT_CATROBAT_LANGUAGE_VERSION))
+CATROBAT_LANGUAGE_VERSION = float("{0:.3f}".format(catcommon.Constants.CURRENT_CATROBAT_LANGUAGE_VERSION))
 PACKAGED_PROGRAM_FILE_EXTENSION = catcommon.Constants.CATROBAT_EXTENSION
 PROGRAM_SOURCE_FILE_NAME = catcommon.Constants.PROJECTCODE_NAME
 
@@ -73,12 +73,12 @@ def create_lookdata(name, file_name):
 
 def set_as_background(sprite):
     sprite.setName(_BACKGROUND_SPRITE_NAME)
-    sprite.isBackgroundObject = True
+    #sprite.isBackgroundObject = True
     assert is_background_sprite(sprite)
 
 
 def is_background_sprite(sprite):
-    return sprite.getName() == _BACKGROUND_SPRITE_NAME and sprite.isBackgroundObject
+    return sprite.getName() == _BACKGROUND_SPRITE_NAME # and sprite.isBackgroundObject
 
 
 def background_sprite_of(project):

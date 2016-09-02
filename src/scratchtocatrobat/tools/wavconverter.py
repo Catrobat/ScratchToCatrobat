@@ -61,4 +61,5 @@ def convert_to_android_compatible_wav(input_path):
     # '-R' option ensures deterministic output
     subprocess.check_call([_checked_sox_path(), input_path, "-R", "-t", "wavpcm",
                            "-e", "unsigned-integer", output_path])
+    assert os.path.exists(output_path)
     return output_path

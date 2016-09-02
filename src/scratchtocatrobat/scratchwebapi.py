@@ -85,13 +85,17 @@ def extract_project_id_from_url(project_url):
     project_id = os.path.basename(urlparse(normalized_url).path)
     return project_id
 
+
 def download_project_code(project_id, target_dir):
     # TODO: consolidate with classes from scratch module
     from scratchtocatrobat import common
     import scratch
     project_code_url = helpers.config.get("SCRATCH_API", "project_url_template").format(project_id)
     project_file_path = os.path.join(target_dir, scratch._PROJECT_FILE_NAME)
-    common.download_file(project_code_url, project_file_path)
+    try:
+        common.download_file(project_code_url, project_file_path)
+    except common.ScratchtobatHTTP404Error as e:
+        _log.error("This seems to be an old Scratch program! Scratch 1.x programs are not supported!")
 
 def download_project(project_url, target_dir, progress_bar=None):
     # TODO: make this independent from Java

@@ -57,6 +57,9 @@ def isList(obj):
 class ScratchtobatError(Exception):
     pass
 
+class ScratchtobatHTTP404Error(ScratchtobatError):
+    pass
+
 def md5_hash(input_path):
     with open(input_path, "rb") as fp:
         return hashlib.md5(fp.read()).hexdigest()
@@ -266,7 +269,7 @@ def download_file(url, file_path, referer_url=None, retries=None, backoff=None, 
                 status_code = http_url_connection.getResponseCode()
 
                 if status_code == HttpURLConnection.HTTP_NOT_FOUND:
-                    raise ScratchtobatError("HTTP 404 NOT FOUND for URL: " + url)
+                    raise ScratchtobatHTTP404Error("HTTP 404 NOT FOUND for URL: " + url)
 
                 if status_code != HttpURLConnection.HTTP_OK:
                     if status_code == HttpURLConnection.HTTP_MOVED_TEMP \

@@ -203,6 +203,7 @@ class MediaConverter(object):
             resource_index = next_resources_end_index
         assert reference_index == resource_index and reference_index == num_total_resources
 
+        converted_media_files_to_be_removed = set()
         for resource_info in all_used_resources:
             scratch_md5_name = resource_info["scratch_md5_name"]
 
@@ -210,13 +211,8 @@ class MediaConverter(object):
             old_src_path = resource_info["src_path"]
             if old_src_path in new_src_paths:
                 src_path = new_src_paths[old_src_path]
-#                 self.scratch_project.unused_resource_names += (os.path.basename(src_path), )
-#                 self.scratch_project.unused_resource_paths += (src_path, )
             else:
                 src_path = old_src_path
-
-            dest_path = resource_info["dest_path"]
-            is_converted_file = resource_info["media_type"] in { MediaType.UNCONVERTED_SVG, MediaType.UNCONVERTED_WAV }
 
             if resource_info["media_type"] in { MediaType.IMAGE, MediaType.UNCONVERTED_SVG }:
                 costume_info = resource_info["info"]
@@ -238,30 +234,39 @@ class MediaConverter(object):
                     # TODO: move test_converter.py to converter-python-package...
                     image_processing.save_editable_image_as_png_to_disk(editable_image, image_file_path, overwrite=True)
 
-            self._copy_media_file(scratch_md5_name, src_path, dest_path, is_converted_file)
+            self._copy_media_file(scratch_md5_name, src_path, resource_info["dest_path"],
+                                  resource_info["media_type"])
 
-        self._rename_resource_file_names_in()
+            if resource_info["media_type"] in { MediaType.UNCONVERTED_SVG, MediaType.UNCONVERTED_WAV }:
+                converted_media_files_to_be_removed.add(src_path)
+
+        self._update_file_names_of_converted_media_files()
+
+        for media_file_to_be_removed in converted_media_files_to_be_removed:
+            os.remove(media_file_to_be_removed)
 
 
-    def _copy_media_file(self, scratch_md5_name, src_path, target_dir, is_converted_file=False):
+    def _update_file_names_of_converted_media_files(self):
+        for (old_file_name, new_file_name) in self.renamed_files_map.iteritems():
+            look_data_or_sound_infos = filter(lambda info: info.fileName == old_file_name,
+                                      catrobat.media_objects_in(self.catrobat_program))
+            assert len(look_data_or_sound_infos) > 0
+
+            for info in look_data_or_sound_infos:
+                info.fileName = new_file_name
+
+
+    def _copy_media_file(self, scratch_md5_name, src_path, dest_path, media_type):
         # for Catrobat separate file is needed for resources which are used multiple times but with different names
         for scratch_resource_name in self.scratch_project.find_all_resource_names_for(scratch_md5_name):
-            catrobat_resource_file_name = catrobat_resource_file_name_for(scratch_md5_name, scratch_resource_name)
-            if is_converted_file:
-                original_resource_file_name = catrobat_resource_file_name
+            new_file_name = catrobat_resource_file_name_for(scratch_md5_name, scratch_resource_name)
+            if media_type in { MediaType.UNCONVERTED_SVG, MediaType.UNCONVERTED_WAV }:
+                old_file_name = new_file_name
                 converted_scratch_md5_name = _resource_name_for(src_path)
-                catrobat_resource_file_name = catrobat_resource_file_name_for(converted_scratch_md5_name, scratch_resource_name)
-                self.renamed_files_map[original_resource_file_name] = catrobat_resource_file_name
-                assert catrobat_resource_file_name != original_resource_file_name # check if renamed!
-            shutil.copyfile(src_path, os.path.join(target_dir, catrobat_resource_file_name))
+                new_file_name = catrobat_resource_file_name_for(converted_scratch_md5_name,
+                                                                scratch_resource_name)
+                assert new_file_name != old_file_name # check if renamed!
+                self.renamed_files_map[old_file_name] = new_file_name
 
+            shutil.copyfile(src_path, os.path.join(dest_path, new_file_name))
 
-    def _rename_resource_file_names_in(self):
-        number_of_converted = 0
-        for look_data_or_sound_info in catrobat.media_objects_in(self.catrobat_program):
-            # HACK: by accessing private field don't have to care about type
-            renamed_file_name = self.renamed_files_map.get(look_data_or_sound_info.fileName)
-            if renamed_file_name is not None:
-                look_data_or_sound_info.fileName = renamed_file_name
-                number_of_converted += 1
-        assert number_of_converted >= len(self.renamed_files_map)

@@ -25,11 +25,9 @@ import itertools
 import json
 import os
 import sys
-import urllib2
 
 from scratchtocatrobat import common
 from scratchtocatrobat import scratchwebapi
-from string import punctuation
 from scratchtocatrobat.tools import helpers
 from scratchtocatrobat.tools.helpers import ProgressType
 
@@ -84,7 +82,8 @@ def verify_resources_of_scratch_object(scratch_object, md5_to_resource_path_map,
         md5_file = res_dict[JsonKeys.SOUND_MD5] if JsonKeys.SOUND_NAME in res_dict else res_dict[JsonKeys.COSTUME_MD5]
         resource_md5 = os.path.splitext(md5_file)[0]
         if md5_file not in md5_to_resource_path_map:
-            raise ProjectError("Missing resource file at project: {}. Provide resource with md5: {}".format(project_base_path, resource_md5))
+            raise ProjectError("Missing resource file at project: {}. Provide resource with md5: {}"
+                               .format(project_base_path, resource_md5))
 
 # TODO: rename
 class Object(common.DictAccessWrapper):
@@ -96,7 +95,7 @@ class Object(common.DictAccessWrapper):
             if key not in object_data:
                 object_data[key] = []
         super(Object, self).__init__(object_data)
-        self.scripts = [Script(_) for _ in self.get_scripts() if Script.is_valid_script_input(_)]
+        self.scripts = [Script(script) for script in self.get_scripts() if Script.is_valid_script_input(script)]
         number_of_ignored_scripts = len(self.get_scripts()) - len(self.scripts)
         if number_of_ignored_scripts > 0:
             _log.debug("Ignored %s scripts", number_of_ignored_scripts)
@@ -107,88 +106,6 @@ class Object(common.DictAccessWrapper):
             ADD_TIMER_RESET_SCRIPT_KEY: False,
             ADD_POSITION_SCRIPT_TO_OBJECTS_KEY: set()
         }
-
-        ############################################################################################
-        # user-defined function workaround
-        ############################################################################################
-        def check_list_for_getParam_blocks(scratch_function_header, block_list, all_param_variable_names):
-            for block in block_list:
-                if not isinstance(block, list):
-                    continue
-                if 'getParam' == block[0]:
-                    assert isinstance(block[1], (str, unicode))
-                    assert block[1] in param_names
-                    block[0] = "readVariable"
-                    block[1] = "S2CC_param_" + scratch_function_header + "_" + str(param_names.index(block[1]))
-                    assert block[1] not in all_param_variable_names
-                    all_param_variable_names += [block[1]]
-                    del block[2:]
-                else:
-                    check_list_for_getParam_blocks(scratch_function_header, block, all_param_variable_names)
-
-        def check_list_for_call_blocks(block_list):
-            new_block_list = []
-            for block in block_list:
-                if isinstance(block, list):
-                    if 'call' == block[0]:
-                        assert isinstance(block[1], (str, unicode))
-                        scratch_function_header = block[1]
-                        var_blocks = []
-                        for param_index, param_value in enumerate(block[2:]):
-                            var_name = "S2CC_param_" + scratch_function_header + "_" + str(param_index)
-                            var_blocks += [["setVar:to:", var_name, param_value]]
-                        new_block_list += var_blocks
-                        broadcast_message = "S2CC_msg_" + scratch_function_header
-                        new_block_list += [["doBroadcastAndWait", broadcast_message]]
-                    else:
-                        new_block_list += [check_list_for_call_blocks(block)]
-                else:
-                    new_block_list += [block]
-            return new_block_list
-
-        all_headers = []
-        all_param_variable_names = []
-        for script in self.scripts:
-            if script.get_type() == "procDef":
-                # ["procDef", "Function1 %n string: %s", ["number1", "string1"], [1, ""], true]
-                assert len(script.arguments) == 4
-                scratch_function_header = script.arguments[0]
-
-                if scratch_function_header in all_headers:
-                    continue # ignore duplicates
-                all_headers += [scratch_function_header]
-                # filter all % characters
-
-                filtered_scratch_function_header = scratch_function_header.replace("\\%", "")
-                num_of_params = filtered_scratch_function_header.count("%")
-                param_names = script.arguments[1]
-                assert len(script.arguments[1]) == num_of_params
-                start_index = 0
-                param_types = []
-                for _ in range(num_of_params):
-                    start_index = filtered_scratch_function_header.find("%", start_index) + 1
-                    param_type = filtered_scratch_function_header[start_index:(start_index + 1)]
-                    assert len(param_type) == 1
-                    param_types += [param_type]
-
-                check_list_for_getParam_blocks(scratch_function_header, script.blocks, all_param_variable_names)
-
-                script.type = SCRIPT_RECEIVE
-                script.arguments = ["S2CC_msg_" + scratch_function_header]
-                script.raw_script = [[script.type] + script.arguments] + script.blocks
-                assert isinstance(script.script_element, BlockList)
-
-            script.blocks = check_list_for_call_blocks(script.blocks)
-            # parse again ScriptElement tree
-            script.script_element = ScriptElement.from_raw_block(script.blocks)
-
-        # add new variables
-        for param_variable_name in all_param_variable_names:
-            self._dict_object["variables"].append({
-                "name": param_variable_name,
-                "value": 0,
-                "isPersistent": False
-            })
 
         ############################################################################################
         # timer and timerReset workaround
@@ -265,48 +182,18 @@ class Object(common.DictAccessWrapper):
             return new_block_list
 
         positions_needed_for_sprite_names = set()
-        for script_number, script in enumerate(self.scripts):
+        for script in self.scripts:
             if has_distance_to_object_block(script.blocks, all_sprite_names):
                 script.blocks = replace_distance_to_object_blocks(script.blocks, positions_needed_for_sprite_names)
             # parse again ScriptElement tree
             script.script_element = ScriptElement.from_raw_block(script.blocks)
         workaround_info[ADD_POSITION_SCRIPT_TO_OBJECTS_KEY] = positions_needed_for_sprite_names
 
-        ############################################################################################
-        # doUntil and doWaitUntil workaround
-        ############################################################################################
-        from scratchtocatrobat.converter import converter
-        preprocessed_scripts = []
-        additional_scripts = []
-        for script_number, script in enumerate(self.scripts):
-            preprocessed_blocks = []
-            blocks_iterator = iter(script.blocks)
-            for block_number, block in enumerate(blocks_iterator):
-                block_name, block_parameters = block[0], block[1:]
-                # WORKAROUND: as long there are no equivalent Catrobat bricks
-                if block_name in {"doUntil", "doWaitUntil"}:
-                    do_until_condition, [do_until_blocks] = block_parameters[0], block_parameters[1:] if block_name == "doUntil" else [["wait:elapsed:from:", 0.0001]]
-                    loop_done_variable = converter.generated_variable_name("_".join([self['objName'], block_name, str(script_number), str(block_number)]))
-                    broadcast_msg = loop_done_variable + "_msg"
-                    loop_blocks = [["doIfElse", ["not", do_until_condition], do_until_blocks, [["broadcast:", broadcast_msg], ["setVar:to:", loop_done_variable, 1]]]]
-                    loop_guard = ["doIf", ["not", ["=", ["readVariable", loop_done_variable], 1]], loop_blocks]
-                    replacement_blocks = [["setVar:to:", loop_done_variable, 0], ["doForever", [loop_guard]]]
-                    preprocessed_blocks += replacement_blocks
-                    after_loop_raw_script = [0, 0, [[SCRIPT_RECEIVE, broadcast_msg]] + [block for block in blocks_iterator]]
-                    additional_scripts += [Script(after_loop_raw_script)]
-                else:
-                    preprocessed_blocks += [block]
-            # TODO: improve
-            script.raw_script[1:] = preprocessed_blocks
-            script = Script([0, 0, script.raw_script])
-            preprocessed_scripts += [script]
-
-        self.scripts = preprocessed_scripts + additional_scripts
         return workaround_info
 
     @classmethod
     def is_valid_class_input(cls, object_data):
-        return 'objName' in object_data
+        return JsonKeys.OBJECT_NAME in object_data
 
     def is_stage(self):
         # TODO: extend and consolidate with verify in RawProject
@@ -512,6 +399,7 @@ class Project(RawProject):
 
         super(Project, self).__init__(self.raw_project_code_from_project_folder_path(project_base_path))
         self.project_base_path = project_base_path
+
         if id_ != None:
             self.project_id = id_
         else:
@@ -535,7 +423,7 @@ class Project(RawProject):
 
         self.name = self.name.strip() if self.name != None else "Unknown Project"
         self.md5_to_resource_path_map = read_md5_to_resource_path_mapping()
-        self.global_user_lists = [scratch_obj.get_lists() for scratch_obj in self.objects if scratch_obj.is_stage()][0]
+        self.global_user_lists = self.objects[0].get_lists()
 
         for scratch_object in self.objects:
             verify_resources_of_scratch_object(scratch_object, self.md5_to_resource_path_map,
@@ -548,19 +436,28 @@ class Project(RawProject):
                     assert len(script.arguments) == 1
                     listened_keys += script.arguments
         self.listened_keys = set(listened_keys)
+
         # TODO: rename
         self.background_md5_names = set([costume[JsonKeys.COSTUME_MD5] for costume in self.get_costumes()])
-        self.unused_resource_names, self.unused_resource_paths = common.pad(zip(*self.find_unused_resources_name_and_filepath()), 2, [])
+
+        result = self.find_unused_resources_name_and_filepath()
+        self.unused_resource_names = result[0] if len(result) > 0 else []
+        self.unused_resource_paths = result[1] if len(result) > 0 else []
+
         for unused_path in self.unused_resource_paths:
-            _log.warning("Project folder contains unused resource file: '%s'. These will be omitted for Catrobat project.", os.path.basename(unused_path))
+            _log.warning("Project folder contains unused resource file: '%s'. These " \
+                         "will be omitted for Catrobat project.",
+                         os.path.basename(unused_path))
 
     def find_unused_resources_name_and_filepath(self):
         # TODO: remove duplication with __init__
+        result = []
         for file_path in glob.glob(os.path.join(self.project_base_path, "*.*")):
             md5_resource_filename = common.md5_hash(file_path) + os.path.splitext(file_path)[1]
             if md5_resource_filename not in self.resource_names:
                 if os.path.basename(file_path) != _PROJECT_FILE_NAME:
-                    yield md5_resource_filename, file_path
+                    result += [(md5_resource_filename, file_path)]
+        return map(list, zip(*result))
 
     def find_all_resource_names_for(self, resource_unique_id):
         resource_names = set()
@@ -734,15 +631,15 @@ class ScriptElement(object):
             if not is_block_list:
                 block_name, block_arguments = raw_block[0], raw_block[1:]
                 assert isinstance(block_name, (str, unicode)), "Raw block: %s" % raw_block
-                Class = Block
+                clazz = Block
             else:
                 block_arguments = raw_block
-                Class = BlockList
+                clazz = BlockList
         else:
             block_name = raw_block
-            Class = BlockValue
+            clazz = BlockValue
             
-        return Class(block_name, arguments=block_arguments)
+        return clazz(block_name, arguments=block_arguments)
 
 
 class Block(ScriptElement):

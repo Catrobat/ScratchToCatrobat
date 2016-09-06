@@ -21,25 +21,20 @@
 import logging
 import os
 import re
-import tempfile
 from scratchtocatrobat.tools import common
 from scratchtocatrobat.tools import helpers
 from java.io import FileOutputStream
-from org.apache.batik.transcoder.image import PNGTranscoder #@UnresolvedImport
-from org.apache.batik.transcoder import TranscoderInput #@UnresolvedImport
-from org.apache.batik.transcoder import TranscoderOutput #@UnresolvedImport
+from org.apache.batik.transcoder.image import PNGTranscoder
+from org.apache.batik.transcoder import TranscoderInput
+from org.apache.batik.transcoder import TranscoderOutput
 from java.nio.file import Paths
 from java.awt.image import BufferedImage
-from java.awt import Image
 from java.awt import AlphaComposite
-from java.awt import Graphics2D
 from java.io import BufferedReader
 from java.io import FileReader
 from java.io import PrintWriter
 from java.util import StringTokenizer
 from javax.swing import ImageIcon
-from java.awt import Color
-
 
 _BATIK_CLI_JAR = "batik-rasterizer.jar"
 _log = logging.getLogger(__name__)
@@ -90,14 +85,15 @@ def convert(input_svg_path, rotation_x, rotation_y):
         png_converter.transcode(input_svg_image, output_png_image)
         assert os.path.exists(output_png_path)
 
-        final_image = _translation(output_png_path, rotation_x, rotation_y)
-
-        if final_image is None:
-            raise RuntimeError("...")
-
-        from javax.imageio import ImageIO
-        from java.io import File
-        ImageIO.write(final_image, "PNG", File(output_png_path))
+# TODO: uncomment this once all remaining bugs have been fixed!
+#         final_image = _translation(output_png_path, rotation_x, rotation_y)
+# 
+#         if final_image is None:
+#             raise RuntimeError("...")
+# 
+#         from javax.imageio import ImageIO
+#         from java.io import File
+#         ImageIO.write(final_image, "PNG", File(output_png_path))
         return output_png_path
     except BaseException as err:
         import traceback

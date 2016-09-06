@@ -39,11 +39,11 @@
 """
 
 import logging
-import tornado.web #@UnresolvedImport
-from tornado import httputil, httpclient #@UnresolvedImport
-from bs4 import BeautifulSoup #@UnresolvedImport
+import tornado.web
+from tornado import httputil, httpclient
+from bs4 import BeautifulSoup
 import os.path
-from tornado.web import HTTPError #@UnresolvedImport
+from tornado.web import HTTPError
 import sys
 from datetime import datetime as dt, timedelta
 sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "..", "src"))
@@ -52,12 +52,14 @@ from scratchtocatrobat.scratch.scratchwebapi import ScratchProjectVisibiltyState
 from scratchtocatrobat.tools import helpers
 import helpers as webhelpers
 from websocketserver.protocol.command.schedule_job_command import remove_client_from_download_list_if_exists
-import redis #@UnresolvedImport
+import redis
 
 _logger = logging.getLogger(__name__)
 
-# TODO: check if redis is available => error!
-REDIS_CONNECTION = redis.Redis() #'127.0.0.1', 6789) #, password='secret')
+REDIS_HOST = helpers.config.get("REDIS", "host")
+REDIS_PORT = int(helpers.config.get("REDIS", "port"))
+REDIS_PASSWORD = helpers.config.get("REDIS", "password")
+REDIS_CONNECTION = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASSWORD, encoding='utf-8')
 
 CATROBAT_FILE_EXT = helpers.config.get("CATROBAT", "file_extension")
 HTTP_RETRIES = int(helpers.config.get("SCRATCH_API", "http_retries"))

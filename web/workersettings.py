@@ -1,5 +1,5 @@
 #  ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
-#  Copyright (C) 2013-2015 The Catrobat Team
+#  Copyright (C) 2013-2016 The Catrobat Team
 #  (<http://developer.catrobat.org/credits>)
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -19,11 +19,15 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# REDIS_URL = 'redis://localhost:57356/1'
-REDIS_HOST = 'localhost'
-REDIS_PORT = 6379
+import sys, os
+sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "..", "src"))
+from scratchtocatrobat.tools import helpers
+
+
+REDIS_HOST = helpers.config.get("REDIS", "host")
+REDIS_PORT = int(helpers.config.get("REDIS", "port"))
 # REDIS_DB = 3
-REDIS_PASSWORD = '' # TODO: insert your secret password here!
+REDIS_PASSWORD = helpers.config.get("REDIS", "password")
 
 # Queues to listen on
-QUEUES = ['high', 'normal', 'low', 'default']
+QUEUES = map(lambda data: data["name"], helpers.config.items_as_dict("CONVERTER_JOB")["listening_queues"])

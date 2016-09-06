@@ -19,8 +19,8 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import tornado.tcpclient #@UnresolvedImport
-from tornado import gen #@UnresolvedImport
+import tornado.tcpclient
+from tornado import gen
 from jobmonitorserver.jobmonitorprotocol import Request, Reply, TCPConnection, SERVER, CLIENT
 import logging
 import json

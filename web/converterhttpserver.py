@@ -30,7 +30,7 @@
 #
 
 import logging
-import tornado.httpserver #@UnresolvedImport
+import tornado.httpserver
 
 _logger = logging.getLogger(__name__)
 

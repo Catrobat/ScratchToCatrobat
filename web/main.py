@@ -37,8 +37,8 @@
 #
 
 import logging
-import tornado.ioloop #@UnresolvedImport
-from tornado.options import define, options #@UnresolvedImport, @UnusedImport
+import tornado.ioloop
+from tornado.options import define, options #@UnusedImport
 import converterhttpserver
 import converterwebapp
 from jobmonitorserver import jobmonitortcpserver

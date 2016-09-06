@@ -40,9 +40,9 @@
 """
 
 import logging
-import tornado.ioloop #@UnresolvedImport
-from tornado.tcpserver import TCPServer #@UnresolvedImport
-from tornado import gen #@UnresolvedImport
+import tornado.ioloop
+from tornado.tcpserver import TCPServer
+from tornado import gen
 from jobmonitorserver.jobmonitorprotocol import Request, Reply, TCPConnection, SERVER, CLIENT, NotificationType
 from websocketserver.websockethandler import ConverterWebSocketHandler
 import json

@@ -44,9 +44,9 @@ sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "..", 
 import helpers as webhelpers
 from scratchtocatrobat.tools import helpers
 from scratchtocatrobat.scratch import scratchwebapi
-from bs4 import BeautifulSoup #@UnresolvedImport
-from tornado.ioloop import IOLoop #@UnresolvedImport
-from tornado import gen #@UnresolvedImport
+from bs4 import BeautifulSoup
+from tornado.ioloop import IOLoop
+from tornado import gen
 
 _logger = logging.getLogger(__name__)
 

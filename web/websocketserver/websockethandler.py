@@ -35,8 +35,8 @@
 #
 
 import logging, ast
-import tornado.escape #@UnresolvedImport
-import tornado.websocket #@UnresolvedImport
+import tornado.escape
+import tornado.websocket
 from protocol import protocol
 from protocol.command import command as cmd
 from protocol.command.schedule_job_command import remove_all_listening_clients_from_job, add_clients_to_download_list

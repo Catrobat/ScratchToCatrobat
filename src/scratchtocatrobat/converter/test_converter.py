@@ -806,7 +806,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert isinstance(catr_brick, catbricks.WaitBrick)
         formula_tree_seconds = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.TIME_TO_WAIT_IN_SECONDS).formulaTree # @UndefinedVariable
         assert formula_tree_seconds.type == catformula.FormulaElement.ElementType.NUMBER
-        assert formula_tree_seconds.value == "1.0"
+        assert formula_tree_seconds.value == "1"
 
     # playSound:
     def test_fail_convert_playsound_block_if_sound_missing(self):

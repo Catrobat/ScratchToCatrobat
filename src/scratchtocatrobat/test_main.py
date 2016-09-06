@@ -22,11 +22,11 @@ import os
 #import subprocess
 import unittest
 
-from scratchtocatrobat import common
-from scratchtocatrobat import common_testing
+from scratchtocatrobat.tools import common
+from scratchtocatrobat.tools import common_testing
 from scratchtocatrobat.converter import converter
 from scratchtocatrobat import main
-from scratchtocatrobat import scratchwebapi
+from scratchtocatrobat.scratch import scratchwebapi
 from scratchtocatrobat.tools import helpers
 
 _DEFAULT_INTERPRETER = common.JYTHON_BINARY

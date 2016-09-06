@@ -47,8 +47,8 @@ from tornado.web import HTTPError #@UnresolvedImport
 import sys
 from datetime import datetime as dt, timedelta
 sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "..", "src"))
-from scratchtocatrobat import scratchwebapi
-from scratchtocatrobat.scratchwebapi import ScratchProjectVisibiltyState
+from scratchtocatrobat.scratch import scratchwebapi
+from scratchtocatrobat.scratch.scratchwebapi import ScratchProjectVisibiltyState
 from scratchtocatrobat.tools import helpers
 import helpers as webhelpers
 from websocketserver.protocol.command.schedule_job_command import remove_client_from_download_list_if_exists

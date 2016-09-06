@@ -24,10 +24,10 @@ import shutil
 from threading import Thread
 from java.awt import Color
 
-from scratchtocatrobat import logger
-from scratchtocatrobat import catrobat
-from scratchtocatrobat import common
-from scratchtocatrobat.scratch import JsonKeys
+from scratchtocatrobat.tools import logger
+from scratchtocatrobat.converter import catrobat
+from scratchtocatrobat.tools import common
+from scratchtocatrobat.scratch.scratch import JsonKeys
 from scratchtocatrobat.tools import svgtopng
 from scratchtocatrobat.tools import wavconverter
 from scratchtocatrobat.tools import helpers

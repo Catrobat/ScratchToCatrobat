@@ -21,9 +21,8 @@
 
 import sys, os, re
 from urlparse import urlparse
-from scratchtocatrobat import logger
-from tools import helpers
-from tools.helpers import ProgressType
+from scratchtocatrobat.tools import logger, helpers
+from scratchtocatrobat.tools.helpers import ProgressType
 from collections import namedtuple
 from datetime import datetime
 
@@ -88,13 +87,13 @@ def extract_project_id_from_url(project_url):
 
 def download_project_code(project_id, target_dir):
     # TODO: consolidate with classes from scratch module
-    from scratchtocatrobat import common
-    import scratch
+    from scratchtocatrobat.tools import common
+    from scratchtocatrobat.scratch import scratch
     project_code_url = helpers.config.get("SCRATCH_API", "project_url_template").format(project_id)
     project_file_path = os.path.join(target_dir, scratch._PROJECT_FILE_NAME)
     try:
         common.download_file(project_code_url, project_file_path)
-    except common.ScratchtobatHTTP404Error as e:
+    except common.ScratchtobatHTTP404Error as _:
         _log.error("This seems to be an old Scratch program! Scratch 1.x programs are not supported!")
 
 def download_project(project_url, target_dir, progress_bar=None):
@@ -102,8 +101,8 @@ def download_project(project_url, target_dir, progress_bar=None):
     from threading import Thread
     from java.net import SocketTimeoutException, SocketException, UnknownHostException
     from java.io import IOException
-    from scratchtocatrobat import common
-    import scratch
+    from scratchtocatrobat.tools import common
+    from scratchtocatrobat.scratch import scratch
 
     # TODO: fix circular reference
     if not is_valid_project_url(project_url):

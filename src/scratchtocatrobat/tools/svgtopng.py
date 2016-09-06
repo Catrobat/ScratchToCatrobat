@@ -22,7 +22,7 @@ import logging
 import os
 import re
 import tempfile
-from scratchtocatrobat import common
+from scratchtocatrobat.tools import common
 from scratchtocatrobat.tools import helpers
 from java.io import FileOutputStream
 from org.apache.batik.transcoder.image import PNGTranscoder #@UnresolvedImport

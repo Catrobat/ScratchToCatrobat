@@ -1,5 +1,5 @@
 #  ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
-#  Copyright (C) 2013-2015 The Catrobat Team
+#  Copyright (C) 2013-2016 The Catrobat Team
 #  (http://developer.catrobat.org/credits)
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -26,10 +26,11 @@ import json
 import os
 import sys
 
-from scratchtocatrobat import common
-from scratchtocatrobat import scratchwebapi
+from scratchtocatrobat.tools import common
+from scratchtocatrobat.scratch import scratchwebapi
 from scratchtocatrobat.tools import helpers
 from scratchtocatrobat.tools.helpers import ProgressType
+from scratchtocatrobat.scratch import scriptcodemodifier
 
 
 _log = common.log
@@ -136,7 +137,7 @@ class Object(common.DictAccessWrapper):
                     new_block_list += [block]
             return new_block_list
 
-        for script_number, script in enumerate(self.scripts):
+        for script in self.scripts:
             if has_timer_reset_block(script.blocks): workaround_info[ADD_TIMER_RESET_SCRIPT_KEY] = True
             if has_timer_block(script.blocks): workaround_info[ADD_TIMER_SCRIPT_KEY] = True
 
@@ -467,7 +468,6 @@ class Project(RawProject):
         return list(resource_names)
 
 
-# TODO: rename
 class Script(object):
 
     def __init__(self, script_input):
@@ -477,9 +477,13 @@ class Script(object):
         script_block, self.blocks = self.raw_script[0], self.raw_script[1:]
         if not self.blocks:
             _log.debug("Empty script: %s", script_input)
+
+        # TODO: add them dynamically!
+        for injector in [scriptcodemodifier.ZeroifyEmptyValuesModifier(), scriptcodemodifier.InjectMissingBracketsModifier()]:
+            self.blocks = injector.modify(self.blocks)
+
         self.script_element = ScriptElement.from_raw_block(self.blocks)
         assert isinstance(self.script_element, BlockList)
-        assert len(self.script_element.math_stack) == 0
         self.type, self.arguments = script_block[0], script_block[1:]
         # FIXME: never reached as is_valid_script_input() fails before
         if self.type not in SCRIPTS:
@@ -547,18 +551,20 @@ class Script(object):
 
         assert isinstance(self.blocks, list)
         assert isinstance(other.blocks, list)
+
         if len(other.blocks) != len(self.blocks):
             return False
+
         for (index, block) in enumerate(self.blocks):
             other_block = other.blocks[index]
             assert isinstance(block, list)
             assert isinstance(other_block, list)
             if not cmp_block(block, other_block):
                 return False
+
         return True
 
 class ScriptElement(object):
-    math_stack = []
     def __init__(self, name=None, arguments=None):
         if arguments is None:
             arguments = []
@@ -588,41 +594,6 @@ class ScriptElement(object):
 
     @classmethod
     def from_raw_block(cls, raw_block):
-        # replace empty arguments/operands of math functions and math operators
-        # (i.e. "" and " ") with 0. This is actually default behavior in Scratch.
-        def _has_previous_operator_higher_priority(previous_operator, curr_operator):
-            if previous_operator == curr_operator:
-                return False
-            line_operators = ["+", "-"]
-            punctuation_operators = ["*", "/"]
-            logic_operators = ["|","&", "not"]
-            comparison_operator = ["<", ">", "="]
-            
-            if previous_operator in punctuation_operators:
-                if curr_operator in line_operators:
-                    return True
-            
-            if (previous_operator == "%") or (previous_operator in comparison_operator) or (previous_operator in logic_operators):
-                return True
-            
-            return previous_operator != curr_operator
-        
-        from scratchtocatrobat.converter import converter
-        if isinstance(raw_block, list) and len(raw_block) > 1 \
-        and converter.is_math_function_or_operator(raw_block[0]):
-            raw_block[1:] = map(lambda arg: arg if not isinstance(arg, (str, unicode)) \
-                        or arg.strip() != '' else 0, raw_block[1:])
-            current_operator = raw_block[0]
-            if len(cls.math_stack) > 0:
-                previous_operator = cls.math_stack[len(cls.math_stack) - 1]
-                if _has_previous_operator_higher_priority(previous_operator, current_operator):
-                    raw_block = ["()", raw_block]
-                assert(not isinstance(current_operator, list))
-
-            cls.math_stack.append(current_operator)
-        elif isinstance(raw_block, list) and len(raw_block) > 0 and not isinstance(raw_block[0], list) and common.int_or_float(raw_block[0]):
-            cls.math_stack = []
-
         # recursively create ScriptElement tree
         block_name = None
         block_arguments = []
@@ -638,14 +609,13 @@ class ScriptElement(object):
         else:
             block_name = raw_block
             clazz = BlockValue
-            
+
         return clazz(block_name, arguments=block_arguments)
 
 
 class Block(ScriptElement):
-    
+
     def __init__(self, *args, **kwargs):
-        ScriptElement.math_stack = []
         super(Block, self).__init__(*args, **kwargs)
 
 

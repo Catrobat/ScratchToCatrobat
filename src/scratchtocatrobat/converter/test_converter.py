@@ -27,10 +27,10 @@ import org.catrobat.catroid.content.bricks as catbricks
 import org.catrobat.catroid.content.bricks.Brick as catbasebrick
 import org.catrobat.catroid.formulaeditor as catformula
 
-from scratchtocatrobat import catrobat
-from scratchtocatrobat import common
-from scratchtocatrobat import common_testing
-from scratchtocatrobat import scratch
+from scratchtocatrobat.converter import catrobat
+from scratchtocatrobat.tools import common
+from scratchtocatrobat.tools import common_testing
+from scratchtocatrobat.scratch import scratch
 from scratchtocatrobat.converter import converter
 
 

@@ -171,7 +171,6 @@ class _ScratchToCatrobat(object):
         "whenGreenFlag": catbase.StartScript,
         "whenIReceive": lambda message: catbase.BroadcastScript(message.lower()), # lower case to prevent case-sensitivity issues in Catrobat...
         "whenKeyPressed": lambda key: catbase.BroadcastScript(_key_to_broadcast_message(key)),
-        # TODO: "whenSensorGreaterThan"
         "whenSceneStarts": lambda look_name: catbase.BroadcastScript(_background_look_to_broadcast_message(look_name)),
         "whenClicked": catbase.WhenScript,
 
@@ -180,8 +179,7 @@ class _ScratchToCatrobat(object):
         #
         "broadcast:": lambda message: catbricks.BroadcastBrick(message.lower()), # lower case to prevent case-sensitivity issues in Catrobat...
         "doBroadcastAndWait": lambda message: catbricks.BroadcastWaitBrick(message.lower()), # lower case to prevent case-sensitivity issues in Catrobat...
-        # TODO: creation method for FormulaElement object
-        "wait:elapsed:from:": lambda duration: catbricks.WaitBrick(catformula.Formula(duration)),
+        "wait:elapsed:from:": lambda duration: catbricks.WaitBrick(catrobat.create_formula_with_value(duration)),
 
         # conditionals
         "doForever": catbricks.ForeverBrick,
@@ -189,7 +187,7 @@ class _ScratchToCatrobat(object):
         "doIfElse": None,
         "doRepeat": catbricks.RepeatBrick,
         "doUntil": catbricks.RepeatUntilBrick,
-        "doWaitUntil": lambda condition: catbricks.WaitUntilBrick(catformula.Formula(condition)),
+        "doWaitUntil": lambda condition: catbricks.WaitUntilBrick(catrobat.create_formula_with_value(condition)),
 
         "turnRight:": catbricks.TurnRightBrick,
         "turnLeft:": catbricks.TurnLeftBrick,
@@ -426,8 +424,8 @@ class Converter(object):
     @staticmethod
     def _update_xml_header(xml_header, scratch_project_id, scratch_project_instructions,
                            scratch_project_notes_and_credits):
-        xml_header.virtualScreenHeight = scratch.STAGE_HEIGHT_IN_PIXELS
-        xml_header.virtualScreenWidth = scratch.STAGE_WIDTH_IN_PIXELS
+        xml_header.setVirtualScreenHeight(scratch.STAGE_HEIGHT_IN_PIXELS)
+        xml_header.setVirtualScreenWidth(scratch.STAGE_WIDTH_IN_PIXELS)
         xml_header.setApplicationBuildName(helpers.application_info("build_name"))
         nums = re.findall(r'\d+', helpers.application_info("build_number"))
         build_number = int(nums[0]) if len(nums) > 0 else 0
@@ -471,6 +469,7 @@ class _ScratchObjectConverter(object):
     _scratch_project = None
 
     def __init__(self, catrobat_project, scratch_project, progress_bar=None, context=None):
+        # TODO: refactor static
         _ScratchObjectConverter._catrobat_project = catrobat_project
         _ScratchObjectConverter._scratch_project = scratch_project
         self._progress_bar = progress_bar
@@ -482,7 +481,7 @@ class _ScratchObjectConverter(object):
     def _catrobat_sprite_from(self, scratch_object):
         if not isinstance(scratch_object, scratch.Object):
             raise common.ScratchtobatError("Input must be of type={}, but is={}".format(scratch.Object, type(scratch_object)))
-        sprite_name = scratch_object.get_objName()
+        sprite_name = scratch_object.name
         sprite_context = SpriteContext(sprite_name)
         sprite = catbase.Sprite(sprite_name)
         assert sprite_name == sprite.getName()
@@ -515,6 +514,7 @@ class _ScratchObjectConverter(object):
             for user_list_data in scratch_object.get_lists():
                 assert len(user_list_data["listName"]) > 0
                 catr_data_container.addSpriteUserListToSprite(sprite, user_list_data["listName"])
+                # TODO: check if user list has been added...
 
         for scratch_variable in scratch_object.get_variables():
             user_variable = catrobat.add_user_variable(
@@ -850,6 +850,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         assert catrobat_sprite is not None
         assert catrobat_project is not None
         self.script_context = script_context if script_context is not None else ScriptContext()
+        self.script_element = None
         self.sprite = catrobat_sprite
         self.project = catrobat_project
         self._stack = []
@@ -887,10 +888,12 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             for brick_list in reversed(self._child_stack):
                 self._stack += brick_list
             self._child_stack = []
+
         if len(new_stack_values) > 1 and isinstance(new_stack_values[-1], catformula.FormulaElement):
             # TODO: lambda check if all entries are instance of Brick
             self._child_stack += [new_stack_values[:-1]]
             new_stack_values = [new_stack_values[-1]]
+
         self._stack += new_stack_values
 
     def _converted_script_element(self):
@@ -901,7 +904,9 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             assert len(self.arguments) >= 1
             self.script_element = scratch.Block(name=self.arguments[0])
             self.arguments = self.arguments[1:]
+
         self.block_name = block_name = self.script_element.name
+
         if isinstance(self.script_element, scratch.Block):
             log.debug("    block to convert: %s, arguments: %s", block_name, catrobat.simple_name_for(self.arguments))
             self.CatrobatClass = _ScratchToCatrobat.catrobat_brick_class_for(block_name)
@@ -941,7 +946,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
                         converted_args = self.arguments
                     elif try_number == 2:
                         args = [arg if arg != None else "" for arg in self.arguments]
-                        converted_args = [catformula.Formula(arg) for arg in args]
+                        converted_args = [catrobat.create_formula_with_value(arg) for arg in args]
                     elif try_number == 3:
                         parameters = {
                             "brightness",
@@ -949,7 +954,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
                             "ghost",
                         }
                         if len(self.arguments) == 2 and self.arguments[0] in parameters:
-                            converted_args = [self.arguments[0]] + [catformula.Formula(arg) for arg in self.arguments[1:]]
+                            converted_args = [self.arguments[0]] + [catrobat.create_formula_with_value(arg) for arg in self.arguments[1:]]
 
                     if not is_catrobat_enum:
                         converted_value = CatrobatClass(*converted_args)
@@ -1090,7 +1095,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         brick_arguments = self.arguments
         if self.block_name == 'doRepeat':
             times_value, nested_bricks = brick_arguments
-            catr_loop_start_brick = self.CatrobatClass(catformula.Formula(times_value))
+            catr_loop_start_brick = self.CatrobatClass(catrobat.create_formula_with_value(times_value))
         else:
             assert self.block_name == 'doForever', self.block_name
             [nested_bricks] = brick_arguments
@@ -1100,7 +1105,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "doUntil")
     def _convert_do_until_block(self):
         condition, nested_bricks = self.arguments
-        repeat_until_brick = self.CatrobatClass(catformula.Formula(condition))
+        repeat_until_brick = self.CatrobatClass(catrobat.create_formula_with_value(condition))
         return [repeat_until_brick] + nested_bricks + [catbricks.LoopEndBrick(repeat_until_brick)]
 
     @_register_handler(_block_name_to_handler_map, "startScene")
@@ -1130,7 +1135,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "doIf")
     def _convert_if_block(self):
         assert len(self.arguments) == 2
-        if_begin_brick = catbricks.IfThenLogicBeginBrick(catformula.Formula(self.arguments[0]))
+        if_begin_brick = catbricks.IfThenLogicBeginBrick(catrobat.create_formula_with_value(self.arguments[0]))
         if_end_brick = catbricks.IfThenLogicEndBrick(if_begin_brick)
         if_bricks = self.arguments[1] or []
         assert isinstance(if_bricks, list)
@@ -1139,7 +1144,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "doIfElse")
     def _convert_if_else_block(self):
         assert len(self.arguments) == 3
-        if_begin_brick = catbricks.IfLogicBeginBrick(catformula.Formula(self.arguments[0]))
+        if_begin_brick = catbricks.IfLogicBeginBrick(catrobat.create_formula_with_value(self.arguments[0]))
         if_else_brick = catbricks.IfLogicElseBrick(if_begin_brick)
         if_end_brick = catbricks.IfLogicEndBrick(if_else_brick, if_begin_brick)
         if_bricks, [else_bricks] = self.arguments[1], self.arguments[2:] or [[]]
@@ -1194,12 +1199,12 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     def _convert_insert_at_of_list_block(self):
         [value, position, list_name] = self.arguments
         if position == "last":
-            index_formula = catformula.Formula(self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:"))
+            index_formula = catrobat.create_formula_with_value(self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:"))
         elif position == "random":
             start_formula_element = catformula.FormulaElement(catElementType.NUMBER, "1", None) # first index of list
             end_formula_element = self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:")
             formula_element = self._converted_helper_brick_or_formula_element([start_formula_element, end_formula_element], "randomFrom:to:")
-            index_formula = catformula.Formula(formula_element)
+            index_formula = catrobat.create_formula_with_value(formula_element)
         else:
             index_formula = catrobat.create_formula_with_value(position)
 
@@ -1216,7 +1221,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         prepend_bricks = []
         append_bricks = []
         if position in ["last", "all"]:
-            index_formula = catformula.Formula(self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:"))
+            index_formula = catrobat.create_formula_with_value(self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:"))
 
             if position == "all":
                 # repeat loop workaround...
@@ -1236,12 +1241,12 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     def _convert_set_line_of_list_to_block(self):
         [position, list_name, value] = self.arguments
         if position == "last":
-            index_formula = catformula.Formula(self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:"))
+            index_formula = catrobat.create_formula_with_value(self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:"))
         elif position == "random":
             start_formula_element = catformula.FormulaElement(catElementType.NUMBER, "1", None) # first index of list
             end_formula_element = self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:")
             index_formula_element = self._converted_helper_brick_or_formula_element([start_formula_element, end_formula_element], "randomFrom:to:")
-            index_formula = catformula.Formula(index_formula_element)
+            index_formula = catrobat.create_formula_with_value(index_formula_element)
         else:
             index_formula = catrobat.create_formula_with_value(position)
 
@@ -1277,7 +1282,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             sound_length_variable_name = _sound_length_variable_name_for(sound_name)
             sound_length_variable = _variable_for(sound_length_variable_name)
             self.script_context.sound_wait_length_variable_names.add(sound_length_variable_name)
-            converted_bricks += [catbricks.WaitBrick(catformula.Formula(sound_length_variable))]
+            converted_bricks += [catbricks.WaitBrick(catrobat.create_formula_with_value(sound_length_variable))]
         return converted_bricks
 
     @_register_handler(_block_name_to_handler_map, "setGraphicEffect:to:")

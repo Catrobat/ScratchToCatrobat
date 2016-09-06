@@ -152,7 +152,7 @@ class ScheduleJobCommand(Command):
         job = Job.from_redis(redis_conn, job_key)
 
         if job != None:
-            if job.state == Job.State.READY or job.state == Job.State.RUNNING:
+            if job.is_in_progress():
                 # TODO: lock.release()
                 _logger.info("Job already scheduled (scratch project with ID: %d)", job_ID)
                 remove_client_from_download_list_if_exists(redis_conn, job_ID, client_ID)

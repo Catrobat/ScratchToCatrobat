@@ -96,6 +96,7 @@ class Object(common.DictAccessWrapper):
             if key not in object_data:
                 object_data[key] = []
         super(Object, self).__init__(object_data)
+        self.name = self.get_objName()
         self.scripts = [Script(script) for script in self.get_scripts() if Script.is_valid_script_input(script)]
         number_of_ignored_scripts = len(self.get_scripts()) - len(self.scripts)
         if number_of_ignored_scripts > 0:

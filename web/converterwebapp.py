@@ -254,7 +254,8 @@ class _ProjectHandler(tornado.web.RequestHandler):
         remixed_program_info = []
         total_num_remixes = 0
         try:
-            tree_data = tornado.escape.json_decode(remix_tree_json_data.body)
+            tree_data_string = unicode(remix_tree_json_data.body)
+            tree_data = json.loads(tree_data_string)
             scratch_program_data = tree_data[str(project_id)]
             response.accessible = scratch_program_data["is_published"]
             response.visibility_state = ScratchProjectVisibiltyState.PUBLIC if scratch_program_data["visibility"] == "visible" else ScratchProjectVisibiltyState.PRIVATE

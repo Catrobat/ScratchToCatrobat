@@ -39,6 +39,7 @@
 """
 
 import logging
+import json
 import tornado.web
 from tornado import httputil, httpclient
 from bs4 import BeautifulSoup
@@ -68,6 +69,8 @@ HTTP_DELAY = int(helpers.config.get("SCRATCH_API", "http_delay"))
 HTTP_TIMEOUT = int(helpers.config.get("SCRATCH_API", "http_timeout"))
 HTTP_USER_AGENT = helpers.config.get("SCRATCH_API", "user_agent")
 SCRATCH_PROJECT_BASE_URL = helpers.config.get("SCRATCH_API", "project_base_url")
+SCRATCH_PROJECT_REMIX_TREE_URL_TEMPLATE = helpers.config.get("SCRATCH_API", "project_remix_tree_url_template")
+SCRATCH_PROJECT_MAX_NUM_REMIXES_TO_INCLUDE = int(helpers.config.get("CONVERTER_API", "max_num_remixes_to_include"))
 
 
 class _MainHandler(tornado.web.RequestHandler):
@@ -150,8 +153,13 @@ class ProjectDataResponse(object):
 
 
 class _ProjectHandler(tornado.web.RequestHandler):
-    response_cache = {}
+    RESPONSE_CACHE = {}
     CACHE_ENTRY_VALID_FOR = 1800 # 30 minutes (in seconds)
+    IN_PROGRESS_FUTURE_MAP = {}
+
+    def send_response_data(self, response_data):
+        self.write(json.dumps(response_data).decode('unicode-escape').encode('utf8'))
+        return
 
     @tornado.gen.coroutine
     def get(self, project_id = None):
@@ -166,16 +174,40 @@ class _ProjectHandler(tornado.web.RequestHandler):
         # ------------------------------------------------------------------------------------------
         # Project details HTTP-request
         # ------------------------------------------------------------------------------------------
-        cls = self.__class__
-        if project_id in cls.response_cache and dt.now() <= cls.response_cache[project_id].valid_until:
-            _logger.info("Cache hit for project ID {}".format(project_id))
-            self.write(cls.response_cache[project_id].as_dict())
+        project_id = int(project_id)
+        if not webhelpers.is_valid_scratch_project_ID(project_id):
+            x_real_ip = self.request.headers.get("X-Real-IP")
+            _logger.error("Invalid project ID given: {}, IP: {}"
+                          .format(project_id, x_real_ip or self.request.remote_ip))
+            self.send_response_data({})
             return
 
+        cls = self.__class__
+
+        scratch_project_url = SCRATCH_PROJECT_BASE_URL + str(project_id)
+        scratch_project_remix_tree_url = SCRATCH_PROJECT_REMIX_TREE_URL_TEMPLATE.format(project_id)
+
+        if project_id in cls.RESPONSE_CACHE:
+            response_data, valid_until = cls.RESPONSE_CACHE[project_id]
+            if dt.now() <= valid_until:
+                _logger.info("Cache hit for project ID {}".format(project_id))
+                self.send_response_data(response_data)
+                return
+
         try:
-            scratch_project_url = SCRATCH_PROJECT_BASE_URL + str(project_id)
-            _logger.info("Fetching project info from: {}".format(scratch_project_url))
-            http_response = yield self.application.async_http_client.fetch(scratch_project_url)
+            if project_id in cls.IN_PROGRESS_FUTURE_MAP:
+                futures = cls.IN_PROGRESS_FUTURE_MAP[project_id]
+                _logger.info("SHARED FUTURE!")
+                return
+            else:
+                async_http_client = self.application.async_http_client
+                _logger.info("Fetching project and remix info from: {} and {} simultaneously"
+                             .format(scratch_project_url, scratch_project_remix_tree_url))
+                futures = [async_http_client.fetch(scratch_project_url),
+                           async_http_client.fetch(scratch_project_remix_tree_url)]
+                cls.IN_PROGRESS_FUTURE_MAP[project_id] = futures
+
+            project_html_content, remix_tree_json_data = yield futures
         except tornado.httpclient.HTTPError, e:
             _logger.warn("Unable to download project's web page: HTTP-Status-Code: " + str(e.code))
             response = ProjectDataResponse()
@@ -184,22 +216,22 @@ class _ProjectHandler(tornado.web.RequestHandler):
                 # (e.g. projects that have been removed in the meanwhile...)
                 response.accessible = False
                 response.valid_until = dt.now() + timedelta(seconds=cls.CACHE_ENTRY_VALID_FOR)
-                cls.response_cache[project_id] = response
-
-            self.write(response.as_dict())
+                cls.RESPONSE_CACHE[project_id] = (response.as_dict(), response.valid_until)
+                if project_id in cls.IN_PROGRESS_FUTURE_MAP: del cls.IN_PROGRESS_FUTURE_MAP[project_id]
+            self.send_response_data(response.as_dict())
+            return
+        except Exception, e:
+            _logger.warn("Unable to download project's web page: " + str(e))
+            self.send_response_data(ProjectDataResponse().as_dict())
             return
 
-        if http_response is None or http_response.body is None or not isinstance(http_response.body, (str, unicode)):
+        if project_html_content is None or project_html_content.body is None \
+        or not isinstance(project_html_content.body, (str, unicode)):
             _logger.error("Unable to download web page of project: Invalid or empty HTML-content!")
-            self.write(ProjectDataResponse().as_dict())
+            self.send_response_data(ProjectDataResponse().as_dict())
             return
 
-        #body = re.sub("(.*" + re.escape("<li>") + r'\s*'
-        #     + re.escape("<div class=\"project thumb\">")
-        #     + r'.*' + re.escape("<span class=\"owner\">") + r'.*'
-        #     + re.escape("</span>") + r'\s*' + ")" + "(" + re.escape("</li>.*")
-        #     + ")", r'\1</div>\2', http_response.body)
-        document = webhelpers.ResponseBeautifulSoupDocumentWrapper(BeautifulSoup(http_response.body, b'html5lib'))
+        document = webhelpers.ResponseBeautifulSoupDocumentWrapper(BeautifulSoup(project_html_content.body.decode('utf-8', 'ignore'), b'html5lib'))
         visibility_state = scratchwebapi.extract_project_visibilty_state_from_document(document)
         response = ProjectDataResponse()
         response.accessible = True
@@ -208,20 +240,37 @@ class _ProjectHandler(tornado.web.RequestHandler):
 
         if visibility_state != ScratchProjectVisibiltyState.PUBLIC:
             _logger.warn("Not allowed to access non-public scratch-project!")
-            cls.response_cache[project_id] = response
-            self.write(response.as_dict())
+            cls.RESPONSE_CACHE[project_id] = (response.as_dict(), response.valid_until)
+            if project_id in cls.IN_PROGRESS_FUTURE_MAP: del cls.IN_PROGRESS_FUTURE_MAP[project_id]
+            self.send_response_data(response.as_dict())
             return
 
         project_info = scratchwebapi.extract_project_details_from_document(document)
         if project_info is None:
             _logger.error("Unable to parse project-info from web page: Invalid or empty HTML-content!")
-            self.write(response.as_dict())
+            self.send_response_data(response.as_dict())
             return
 
-        response.project_data = project_info.as_dict()
-        cls.response_cache[project_id] = response
-        self.write(response.as_dict())
-        return
+        remixed_program_info = []
+        total_num_remixes = 0
+        try:
+            tree_data = tornado.escape.json_decode(remix_tree_json_data.body)
+            scratch_program_data = tree_data[str(project_id)]
+            response.accessible = scratch_program_data["is_published"]
+            response.visibility_state = ScratchProjectVisibiltyState.PUBLIC if scratch_program_data["visibility"] == "visible" else ScratchProjectVisibiltyState.PRIVATE
+            remixed_program_info = scratchwebapi.extract_project_remixes_from_data(tree_data, project_id)
+            total_num_remixes = len(remixed_program_info)
+            remixed_program_info = remixed_program_info[:SCRATCH_PROJECT_MAX_NUM_REMIXES_TO_INCLUDE]
+        except:
+            _logger.error("Unable to decode JSON data of project: Invalid or empty JSON-content!")
+        finally:
+            response.project_data = project_info.as_dict()
+            response_data = response.as_dict()
+            response_data["projectData"]["total_num_remixes"] = total_num_remixes
+            response_data["projectData"]["remixes"] = remixed_program_info
+            cls.RESPONSE_CACHE[project_id] = (response_data, response.valid_until)
+            if project_id in cls.IN_PROGRESS_FUTURE_MAP: del cls.IN_PROGRESS_FUTURE_MAP[project_id]
+            self.send_response_data(response_data)
 
 
 class ConverterWebApp(tornado.web.Application):

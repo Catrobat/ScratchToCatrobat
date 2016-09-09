@@ -121,6 +121,10 @@ FEATURED_SCRATCH_PROGRAMS = [{
 }]
 
 
+def is_valid_scratch_project_ID(project_ID):
+    return project_ID is not None and isinstance(project_ID, int) and project_ID > 0
+
+
 def create_download_url(job_ID, client_ID, job_title):
     return "/download?job_id={}&client_id={}&fname={}" \
            .format(job_ID, client_ID, urllib.quote_plus(job_title))

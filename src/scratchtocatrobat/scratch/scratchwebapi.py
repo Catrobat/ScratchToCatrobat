@@ -19,7 +19,10 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see http://www.gnu.org/licenses/.
 
-import sys, os, re
+import sys
+import os
+import re
+import json
 from urlparse import urlparse
 from scratchtocatrobat.tools import logger, helpers
 from scratchtocatrobat.tools.helpers import ProgressType
@@ -264,14 +267,27 @@ def request_project_remixes_for(project_id):
         with tempfile.NamedTemporaryFile() as tempf:
             common.download_file(scratch_project_remix_tree_url, tempf.name)
             tempf.flush()
-            json_data = tempf.read()
-            if json_data is None: return []
+            json_data_string = tempf.read()
+            if json_data_string is None:
+                return []
+
+            json_data_string = unicode(json_data_string)
+
+            try:
+                json_data = json.loads(json_data_string)
+            except Exception as e:
+                json_data = []
 
             remix_info = extract_project_remixes_from_data(json_data, project_id)
             _cached_remix_info_data[project_id] = remix_info
             return remix_info
+
+    except Exception as e:
+        _log.warn("Cannot fetch remix tree data: " + str(e))
+        return None
     except common.ScratchtobatHTTP404Error as _:
-        _log.error("Cannot fetch remix tree data")
+        _log.error("Cannot fetch remix tree data: HTTP-Status-Code 404")
+        return None
 
 def request_project_details_for(project_id):
     return extract_project_details_from_document(request_project_page_as_Jsoup_document_for(project_id))
@@ -319,7 +335,8 @@ def extract_project_notes_and_credits_from_document(document):
     return unicode(extracted_text).strip().encode('utf-8') if extracted_text != None else None
 
 def extract_project_remixes_from_data(tree_data, project_id):
-    if tree_data is None: return []
+    if tree_data is None or not isinstance(tree_data, dict) or tree_data == []:
+        return []
 
     scratch_program_data = tree_data[str(project_id)]
     remixed_program_info = []

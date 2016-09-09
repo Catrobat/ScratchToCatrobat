@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
 #  ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
 #  Copyright (C) 2013-2015 The Catrobat Team
 #  (<http://developer.catrobat.org/credits>)

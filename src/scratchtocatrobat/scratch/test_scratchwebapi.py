@@ -74,6 +74,7 @@ TEST_PROJECT_ID_TO_NOTES_AND_CREDITS_MAP = {
     "2365565" : "None"
 }
 
+
 class WebApiTest(common_testing.BaseTestCase):
 
     def test_can_download_project_from_project_url(self):
@@ -138,7 +139,8 @@ class WebApiTest(common_testing.BaseTestCase):
             extracted_project_remixes = scratchwebapi.request_project_remixes_for(project_id)
             assert extracted_project_remixes is not None
             assert extracted_project_remixes == expected_project_remixes, \
-                   "'{}' is not equal to '{}'".format(extracted_project_remixes, expected_project_remixes)
+                   "'{}' is not equal to '{}'".format(extracted_project_remixes,
+                                                      expected_project_remixes)
 
     def test_can_request_project_info_for_id(self):
         for (project_id, expected_project_title) in TEST_PROJECT_ID_TO_TITLE_MAP.iteritems():
@@ -174,10 +176,6 @@ class WebApiTest(common_testing.BaseTestCase):
             assert isinstance(extracted_project_info.modified_date, datetime)
             assert extracted_project_info.shared_date is not None
             assert isinstance(extracted_project_info.shared_date, datetime)
-            assert extracted_project_info.remixes is not None
-            assert extracted_project_info.remixes == TEST_PROJECT_ID_TO_REMIXES_MAP[project_id], \
-                   "'{}' is not equal to '{}'".format(extracted_project_info.remixes, TEST_PROJECT_ID_TO_REMIXES_MAP[project_id])
-            assert isinstance(extracted_project_info.remixes, list)
 
     def test_can_detect_correct_availability_state_of_project(self):
         project_availability_map = {

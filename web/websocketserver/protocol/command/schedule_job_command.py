@@ -36,7 +36,6 @@ from websocketserver.protocol.message.job.job_failed_message import JobFailedMes
 from websocketserver.protocol.message.job.job_ready_message import JobReadyMessage
 
 CATROBAT_FILE_EXT = helpers.config.get("CATROBAT", "file_extension")
-SCRATCH_PROJECT_IMAGE_URL_TEMPLATE = helpers.config.get("SCRATCH_API", "project_image_url_template")
 MAX_NUM_SCHEDULED_JOBS_PER_CLIENT = int(helpers.config.get("CONVERTER_JOB", "max_num_scheduled_jobs_per_client"))
 JOB_TIMEOUT = int(helpers.config.get("CONVERTER_JOB", "timeout"))
 

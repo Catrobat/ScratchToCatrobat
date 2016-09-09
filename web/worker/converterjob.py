@@ -48,6 +48,11 @@ from bs4 import BeautifulSoup
 from tornado.ioloop import IOLoop
 from tornado import gen
 
+# TODO: not best solution! {
+reload(sys)
+sys.setdefaultencoding('utf-8') #@UndefinedVariable
+# }
+
 _logger = logging.getLogger(__name__)
 
 SCRATCH_PROJECT_BASE_URL = helpers.config.get("SCRATCH_API", "project_base_url")
@@ -58,6 +63,7 @@ BUFFER_SIZE = int(helpers.config.get("CONVERTER_JOB", "buffer_size"))
 CERTIFICATE_PATH = helpers.config.get("JOBMONITOR_SERVER", "certificate_path")
 CATROBAT_FILE_EXT = helpers.config.get("CATROBAT", "file_extension")
 LINE_BUFFER_SIZE = 3
+
 
 class ConverterJobHandler(jobhandler.JobHandler):
 
@@ -226,7 +232,7 @@ def convert_scratch_project(job_ID, host, port, verbose):
             raise Warning("Unable to set title of project from the project's " \
                           "website! Reason: Invalid or empty html content!")
 
-        document = webhelpers.ResponseBeautifulSoupDocumentWrapper(BeautifulSoup(html_content, b'html5lib'))
+        document = webhelpers.ResponseBeautifulSoupDocumentWrapper(BeautifulSoup(html_content.decode('utf-8', 'ignore'), b'html5lib'))
         title = scratchwebapi.extract_project_title_from_document(document)
         image_URL = scratchwebapi.extract_project_image_url_from_document(document)
         if title == None:

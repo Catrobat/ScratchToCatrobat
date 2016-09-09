@@ -32,14 +32,17 @@ HTTP_DELAY = int(helpers.config.get("SCRATCH_API", "http_delay"))
 HTTP_TIMEOUT = int(helpers.config.get("SCRATCH_API", "http_timeout"))
 HTTP_USER_AGENT = helpers.config.get("SCRATCH_API", "user_agent")
 SCRATCH_PROJECT_BASE_URL = helpers.config.get("SCRATCH_API", "project_base_url")
+SCRATCH_PROJECT_REMIX_TREE_URL_TEMPLATE = helpers.config.get("SCRATCH_API", "project_remix_tree_url_template")
+SCRATCH_PROJECT_IMAGE_URL_TEMPLATE = helpers.config.get("SCRATCH_API", "project_image_url_template")
 
 _log = logger.log
 _cached_jsoup_documents = {}
+_cached_remix_info_data = {}
 
 
 class ScratchProjectInfo(namedtuple("ScratchProjectInfo", "title owner image_url instructions " \
                                     "notes_and_credits tags views favorites loves modified_date " \
-                                    "shared_date remixes")):
+                                    "shared_date")):
     def as_dict(self):
         return dict(map(lambda s: (s, getattr(self, s).strftime("%Y-%m-%d") \
                                    if isinstance(getattr(self, s), datetime) else getattr(self, s)),
@@ -104,7 +107,6 @@ def download_project(project_url, target_dir, progress_bar=None):
     from scratchtocatrobat.tools import common
     from scratchtocatrobat.scratch import scratch
 
-    # TODO: fix circular reference
     if not is_valid_project_url(project_url):
         scratch_base_url = helpers.config.get("SCRATCH_API", "project_base_url")
         raise ScratchWebApiError("Project URL must be matching '{}'. Given: {}".format(scratch_base_url + '<project id>', project_url))
@@ -219,7 +221,6 @@ def request_project_page_as_Jsoup_document_for(project_id, retry_after_http_stat
         _log.error("Retry limit exceeded or an unexpected error occurred: {}".format(sys.exc_info()[0]))
         return None
 
-
 # TODO: class instead of request functions
 def request_is_project_available(project_id):
     from org.jsoup import HttpStatusException
@@ -249,7 +250,28 @@ def request_project_notes_and_credits_for(project_id):
     return extract_project_notes_and_credits_from_document(request_project_page_as_Jsoup_document_for(project_id))
 
 def request_project_remixes_for(project_id):
-    return extract_project_remixes_from_document(request_project_page_as_Jsoup_document_for(project_id))
+    global _cached_remix_info_data
+
+    if project_id in _cached_remix_info_data:
+        _log.debug("Cache hit: Remix tree data!")
+        return _cached_remix_info_data[project_id]
+
+    from scratchtocatrobat.tools import common
+    scratch_project_remix_tree_url = SCRATCH_PROJECT_REMIX_TREE_URL_TEMPLATE.format(project_id)
+
+    try:
+        import tempfile
+        with tempfile.NamedTemporaryFile() as tempf:
+            common.download_file(scratch_project_remix_tree_url, tempf.name)
+            tempf.flush()
+            json_data = tempf.read()
+            if json_data is None: return []
+
+            remix_info = extract_project_remixes_from_data(json_data, project_id)
+            _cached_remix_info_data[project_id] = remix_info
+            return remix_info
+    except common.ScratchtobatHTTP404Error as _:
+        _log.error("Cannot fetch remix tree data")
 
 def request_project_details_for(project_id):
     return extract_project_details_from_document(request_project_page_as_Jsoup_document_for(project_id))
@@ -296,42 +318,21 @@ def extract_project_notes_and_credits_from_document(document):
     extracted_text = document.select_first_as_text("div#description > div.viewport > div.overview")
     return unicode(extracted_text).strip().encode('utf-8') if extracted_text != None else None
 
-def extract_project_remixes_from_document(document):
-    if document is None: return None
+def extract_project_remixes_from_data(tree_data, project_id):
+    if tree_data is None: return []
 
-    extracted_text_list = document.select_all_as_text_list("ul.media-col > li > div.project > span.title > a")
-    if extracted_text_list is None: return None
-
-    titles_of_remixed_projects = [unicode(text).strip() for text in extracted_text_list]
-
-    extracted_text_list = document.select_all_as_text_list("ul.media-col > li > div.project > span.owner")
-    if extracted_text_list is None: return None
-
-    owners_of_remixed_projects = [unicode(text).replace("by ", "").strip() for text in extracted_text_list]
-
-    extracted_text_list = document.select_attributes_as_text_list("ul.media-col > li > div.project > a.image > img", "src")
-    if extracted_text_list is None: return None
-
-    extracted_image_urls = [unicode(url).strip() for url in extracted_text_list]
-    image_urls_of_remixed_projects = [url.replace("//", "https://") if url.startswith("//") else url for url in extracted_image_urls]
-
-    has_unique_length = len(set([len(titles_of_remixed_projects), len(owners_of_remixed_projects), len(image_urls_of_remixed_projects)])) == 1
-    if not has_unique_length: return None
-
-    remixed_project_info = []
-    for index, title in enumerate(titles_of_remixed_projects):
-        data = {}
-        image_url = image_urls_of_remixed_projects[index]
-        url_parts = image_url.split("/")
-        assert len(url_parts) > 0
-        resource_name_paths = url_parts[len(url_parts) - 1].split("_")
-        assert len(resource_name_paths) == 2
-        data["id"] = int(resource_name_paths[0])
-        data["title"] = unicode(title).strip().encode('utf-8')
-        data["owner"] = unicode(owners_of_remixed_projects[index]).strip()
-        data["image"] = image_url
-        remixed_project_info += [data]
-    return remixed_project_info
+    scratch_program_data = tree_data[str(project_id)]
+    remixed_program_info = []
+    for remixed_program_id in scratch_program_data["children"]:
+        remixed_program_data = tree_data[remixed_program_id]
+        remixed_program_id = int(remixed_program_id)
+        remix_data = {}
+        remix_data["id"] = remixed_program_id
+        remix_data["title"] = unicode(remixed_program_data["title"]).strip().encode('utf-8').replace("  ", " ")
+        remix_data["owner"] = unicode(remixed_program_data["username"]).strip()
+        remix_data["image"] = SCRATCH_PROJECT_IMAGE_URL_TEMPLATE.format(remixed_program_id, 144, 108)
+        remixed_program_info += [remix_data]
+    return remixed_program_info
 
 def extract_project_visibilty_state_from_document(document):
     extracted_text = document.select_first_as_text("div#share-bar > span")
@@ -386,11 +387,7 @@ def extract_project_details_from_document(document):
     except:
         shared_date = None
 
-    remixes = extract_project_remixes_from_document(document)
-    if remixes is None: return None
-
     return ScratchProjectInfo(title = title, owner = owner, image_url = image_url,
                               instructions = instructions, notes_and_credits = notes_and_credits,
                               tags = tags, views = views, favorites = favorites, loves = loves,
-                              modified_date = modified_date, shared_date = shared_date,
-                              remixes = remixes)
+                              modified_date = modified_date, shared_date = shared_date)

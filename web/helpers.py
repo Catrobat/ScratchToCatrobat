@@ -127,7 +127,7 @@ def is_valid_scratch_project_ID(project_ID):
 
 def create_download_url(job_ID, client_ID, job_title):
     return "/download?job_id={}&client_id={}&fname={}" \
-           .format(job_ID, client_ID, urllib.quote_plus(job_title))
+           .format(job_ID, client_ID, urllib.quote_plus(job_title.encode('utf8')))
 
 
 class ResponseBeautifulSoupDocumentWrapper(scratchwebapi.ResponseDocumentWrapper):

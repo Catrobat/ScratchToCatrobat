@@ -77,6 +77,11 @@ class TCPConnectionHandler(object):
         self.server.streams[self.connection.stream] = time.time() # last update
         return self.connection.read_message()
 
+    def _extract_data_from_message(self, message):
+        message = unicode(message).rstrip()
+        _logger.debug("Extracting message: %s" % message)
+        return json.loads(message)
+
     def read_bytes(self, buffer_size):
         stream = self.connection.stream
         self.server.streams[stream] = time.time() # last update
@@ -89,7 +94,7 @@ class TCPConnectionHandler(object):
 
     @gen.coroutine
     def handle_authentication(self):
-        data = json.loads((yield self.read_message()).rstrip())
+        data = self._extract_data_from_message((yield self.read_message()))
         if not Request.is_valid(data, Request.Command.AUTH):
             raise TCPConnectionException("Invalid data given!")
         request = Request.request_from_data(data)
@@ -111,12 +116,12 @@ class TCPConnectionHandler(object):
 
     @gen.coroutine
     def handle_job_started_notification(self):
-        data = json.loads((yield self.read_message()).rstrip())
+        data = self._extract_data_from_message((yield self.read_message()))
         if not Request.is_valid(data, Request.Command.JOB_STARTED_NOTIFICATION):
             raise TCPConnectionException("Invalid data given!")
         request = Request.request_from_data(data)
         _logger.info("[%s]: Received job start notification" % SERVER)
-        _logger.info("[%s]: %s " % (CLIENT, request.args[Request.ARGS_MSG]))
+        _logger.info("[%s]: Title of Scratch program: '%s'" % (CLIENT, unicode(request.args[Request.ARGS_TITLE])))
 
         _logger.debug("[%s]: Reply: Accepted!" % SERVER)
         yield self.send_message(Reply(result=True, msg="ACK"))
@@ -166,7 +171,7 @@ class TCPConnectionHandler(object):
 
     @gen.coroutine
     def handle_job_finished(self):
-        data = json.loads((yield self.read_message()).rstrip())
+        data = self._extract_data_from_message((yield self.read_message()))
         if not Request.is_valid(data, Request.Command.JOB_FINISHED):
             if Request.is_valid(data, Request.Command.JOB_FAILED):
                 _logger.warn("[%s] Job failed!" % CLIENT)
@@ -262,7 +267,7 @@ class TCPConnectionHandler(object):
         data = None
         try:
             while True:
-                data = json.loads((yield self.read_message()).rstrip())
+                data = self._extract_data_from_message((yield self.read_message()))
                 if Request.is_valid(data, Request.Command.JOB_CONVERSION_FINISHED_NOTIFICATION):
                     break
                 elif Request.is_valid(data, Request.Command.JOB_OUTPUT_NOTIFICATION):
@@ -272,10 +277,10 @@ class TCPConnectionHandler(object):
                 else:
                     raise TCPConnectionException("Invalid data given!")
         except Exception as e:
-            self.handle_exception(e, "Processing job progress notification failed")
+            self.handle_exception(e, "Processing job notification failed")
             return
         except:
-            self.handle_exception(sys.exc_info()[0], "Processing job progress notification failed")
+            self.handle_exception(sys.exc_info()[0], "Processing job notification failed")
             return
 
         # (V) Expecting job finished notification

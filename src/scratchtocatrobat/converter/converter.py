@@ -365,7 +365,8 @@ class Converter(object):
         self._add_converted_sprites_to(_catr_project)
         self._add_key_sprites_to(_catr_project, self.scratch_project.listened_keys)
         self._update_xml_header(_catr_project.getXmlHeader(), scratch_project.project_id,
-                                scratch_project.instructions, scratch_project.notes_and_credits)
+                                scratch_project.name, scratch_project.instructions,
+                                scratch_project.notes_and_credits)
         return _catr_project
 
     def _add_global_user_lists_to(self, catrobat_project):
@@ -422,7 +423,7 @@ class Converter(object):
             catrobat_project.addSprite(key_sprite)
 
     @staticmethod
-    def _update_xml_header(xml_header, scratch_project_id, scratch_project_instructions,
+    def _update_xml_header(xml_header, scratch_project_id, program_name, scratch_project_instructions,
                            scratch_project_notes_and_credits):
         xml_header.setVirtualScreenHeight(scratch.STAGE_HEIGHT_IN_PIXELS)
         xml_header.setVirtualScreenWidth(scratch.STAGE_WIDTH_IN_PIXELS)
@@ -432,6 +433,7 @@ class Converter(object):
         xml_header.setApplicationBuildNumber(build_number)
         xml_header.setApplicationName(helpers.application_info("name"))
         xml_header.setApplicationVersion(helpers.application_info("version"))
+        xml_header.setProgramName('%s' % program_name) # NOTE: needed to workaround unicode issue!
         xml_header.setCatrobatLanguageVersion(catrobat.CATROBAT_LANGUAGE_VERSION)
         xml_header.setDeviceName(helpers.scratch_info("device_name"))
         xml_header.setPlatform(helpers.scratch_info("platform"))
@@ -728,7 +730,7 @@ class ConvertedProject(object):
         with common.TemporaryDirectory() as catrobat_program_dir:
             self.save_as_catrobat_directory_structure_to(catrobat_program_dir, progress_bar, context)
             common.makedirs(output_dir)
-            archive_name = self.name if archive_name == None else archive_name
+            archive_name = self.name if archive_name is None else archive_name
             catrobat_zip_file_path = self._converted_output_path(output_dir, archive_name)
             log.info("  save packaged Scratch project to '%s'", catrobat_zip_file_path)
             if os.path.exists(catrobat_zip_file_path):

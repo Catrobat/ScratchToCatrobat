@@ -21,25 +21,20 @@
 import logging
 import os
 import re
-import tempfile
 from scratchtocatrobat.tools import common
 from scratchtocatrobat.tools import helpers
 from java.io import FileOutputStream
-from org.apache.batik.transcoder.image import PNGTranscoder #@UnresolvedImport
-from org.apache.batik.transcoder import TranscoderInput #@UnresolvedImport
-from org.apache.batik.transcoder import TranscoderOutput #@UnresolvedImport
+from org.apache.batik.transcoder.image import PNGTranscoder
+from org.apache.batik.transcoder import TranscoderInput
+from org.apache.batik.transcoder import TranscoderOutput
 from java.nio.file import Paths
 from java.awt.image import BufferedImage
-from java.awt import Image
 from java.awt import AlphaComposite
-from java.awt import Graphics2D
 from java.io import BufferedReader
 from java.io import FileReader
 from java.io import PrintWriter
 from java.util import StringTokenizer
 from javax.swing import ImageIcon
-from java.awt import Color
-
 
 _BATIK_CLI_JAR = "batik-rasterizer.jar"
 _log = logging.getLogger(__name__)
@@ -90,14 +85,15 @@ def convert(input_svg_path, rotation_x, rotation_y):
         png_converter.transcode(input_svg_image, output_png_image)
         assert os.path.exists(output_png_path)
 
-        final_image = _translation(output_png_path, rotation_x, rotation_y)
-
-        if final_image is None:
-            raise RuntimeError("...")
-
-        from javax.imageio import ImageIO
-        from java.io import File
-        ImageIO.write(final_image, "PNG", File(output_png_path))
+# TODO: uncomment this once all remaining bugs have been fixed!
+#         final_image = _translation(output_png_path, rotation_x, rotation_y)
+# 
+#         if final_image is None:
+#             raise RuntimeError("...")
+# 
+#         from javax.imageio import ImageIO
+#         from java.io import File
+#         ImageIO.write(final_image, "PNG", File(output_png_path))
         return output_png_path
     except BaseException as err:
         import traceback
@@ -168,43 +164,30 @@ def _translation(output_png_path, rotation_x, rotation_y):
     g2d.setComposite(AlphaComposite.Clear)
     g2d.fillRect(0, 0, dst_new_width, dst_new_height)
 
-            
-    # bottom right
-    for old_row_y, new_row_y in zip(xrange(rotation_y, end_y + 1), xrange(end_y, dst_new_height)):
-        for old_column_x, new_column_x in zip(xrange(rotation_x, end_x + 1), xrange(end_x, dst_new_width)):
-            if old_row_y < len(buffered_image_matrix) and old_column_x < len(buffered_image_matrix[old_row_y]):
-                colored_pixel = buffered_image_matrix[old_row_y][old_column_x]
-            else:
-                colored_pixel = 0
-            new_buffered_image.setRGB(new_column_x, new_row_y, colored_pixel)
-
-    # upper right
-    for old_row_y, new_row_y in zip(xrange(rotation_y, start_y - 1, -1), xrange(end_y, -1, -1)):
-        for old_column_x, new_column_x in zip(xrange(rotation_x, end_x + 1), xrange(end_x, dst_new_width)):
-            if old_row_y < len(buffered_image_matrix) and old_column_x < len(buffered_image_matrix[old_row_y]):
-                colored_pixel = buffered_image_matrix[old_row_y][old_column_x]
-            else:
-                colored_pixel = 0
-            new_buffered_image.setRGB(new_column_x, new_row_y, colored_pixel)
-
-    # upper left
+    # Bottom Right
+    for old_row_y, new_row_y in zip(xrange(rotation_y, end_y + 1),xrange(end_y, dst_new_height)):
+        for old_column_x, new_column_x in zip(xrange(rotation_x, end_x + 1),xrange(end_x, dst_new_width)):
+            if(old_row_y >= 0 and old_column_x >= 0 and old_row_y < buffered_image_matrix.length and old_column_x < buffered_image_matrix[old_row_y].length):
+                new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x]);
+    
+    # Upper Right
+    for old_row_y, new_row_y in zip(xrange(rotation_y, start_y - 1, -1),xrange(end_y, -1, -1)):
+        for old_column_x, new_column_x in zip(xrange(rotation_x, end_x + 1),xrange(end_x, dst_new_width)):
+            if(old_row_y >= 0 and old_column_x >= 0 and old_row_y < buffered_image_matrix.length and old_column_x < buffered_image_matrix[old_row_y].length):
+                new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x])
+          
+    # Upper Left
     for old_row_y, new_row_y in zip(xrange(rotation_y, start_y - 1, -1),xrange(end_y, -1, -1)):
         for old_column_x, new_column_x in zip(xrange(rotation_x, start_x - 1, -1),xrange(end_x, -1, -1)):
-            if old_row_y < len(buffered_image_matrix) and old_column_x < len(buffered_image_matrix[old_row_y]):
-                colored_pixel = buffered_image_matrix[old_row_y][old_column_x]
-            else:
-                colored_pixel = 0
-            new_buffered_image.setRGB(new_column_x, new_row_y, colored_pixel)
+            if(old_row_y >= 0 and old_column_x >= 0 and old_row_y < buffered_image_matrix.length and old_column_x < buffered_image_matrix[old_row_y].length):
+                new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x])
 
-    # bottom left
+    # Bottom Left
     for old_row_y, new_row_y in zip(xrange(rotation_y, end_y + 1),xrange(end_y, dst_new_height)):
         for old_column_x, new_column_x in zip(xrange(rotation_x, start_x - 1, -1),xrange(end_x, -1, -1)):
-            if old_row_y < len(buffered_image_matrix) and old_column_x < len(buffered_image_matrix[old_row_y]):
-                colored_pixel = buffered_image_matrix[old_row_y][old_column_x]
-            else:
-                colored_pixel = 0
-            new_buffered_image.setRGB(new_column_x,new_row_y, colored_pixel)
-
+            if(old_row_y >= 0 and old_column_x >= 0 and old_row_y < buffered_image_matrix.length and old_column_x < buffered_image_matrix[old_row_y].length):
+                new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x])
+                
     #color = Color.yellow
     #new_buffered_image.setRGB(end_x - 1, end_y - 1, color.getRGB())
     return new_buffered_image

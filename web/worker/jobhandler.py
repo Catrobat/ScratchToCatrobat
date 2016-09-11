@@ -1,5 +1,5 @@
 #  ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
-#  Copyright (C) 2013-2015 The Catrobat Team
+#  Copyright (C) 2013-2016 The Catrobat Team
 #  (<http://developer.catrobat.org/credits>)
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -19,8 +19,8 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import tornado.tcpclient #@UnresolvedImport
-from tornado import gen #@UnresolvedImport
+import tornado.tcpclient
+from tornado import gen
 from jobmonitorserver.jobmonitorprotocol import Request, Reply, TCPConnection, SERVER, CLIENT
 import logging
 import json
@@ -121,6 +121,7 @@ class JobHandler(object):
     def send_job_output_notification(self, job_ID, messages):
         # Job output (request)
         assert isinstance(messages, list)
+        messages = map(lambda message: message.replace('"', ''), messages)
         _logger.debug('[%s]: Sending job output notification: %s' % (CLIENT, "\n".join(messages)))
         args = { Request.ARGS_JOB_ID: job_ID, Request.ARGS_LINES: messages }
         yield self._connection.send_message(Request(Request.Command.JOB_OUTPUT_NOTIFICATION, args))

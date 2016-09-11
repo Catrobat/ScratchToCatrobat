@@ -34,9 +34,11 @@
 #    https://raw.github.com/nvie/rq/master/LICENSE
 #
 
-import logging, ast
-import tornado.escape #@UnresolvedImport
-import tornado.websocket #@UnresolvedImport
+import logging
+import ast
+import json
+import tornado.escape
+import tornado.websocket
 from protocol import protocol
 from protocol.command import command as cmd
 from protocol.command.schedule_job_command import remove_all_listening_clients_from_job, add_clients_to_download_list
@@ -103,6 +105,7 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
             job.state = Job.State.RUNNING
             job.progress = 0
             job.imageURL = args[jobmonprot.Request.ARGS_IMAGE_URL]
+            _logger.info('Started to convert: "%s"' % job.title)
         elif msg_type == NotificationType.JOB_FAILED:
             _logger.warn("Job failed! Exception Args: %s", args)
             job.state = Job.State.FAILED
@@ -194,7 +197,8 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
         assert isinstance(message, Message)
         _logger.debug("Sending %s %r to %d", message.__class__.__name__, message.as_dict(), id(self))
         try:
-            self.write_message(tornado.escape.json_encode(message.as_dict()))
+            self.write_message(json.dumps(message.as_dict()).decode('unicode-escape').encode('utf8'),
+                               binary=False)
         except:
             _logger.error("Error sending message", exc_info=True)
 

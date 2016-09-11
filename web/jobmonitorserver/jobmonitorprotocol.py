@@ -77,7 +77,7 @@ class Request(object):
 
     def bytedata(self):
         data = { self.__class__.CMD: self.cmd, self.__class__.ARGS: self.args }
-        return (json.dumps(data)+"\n").encode()
+        return json.dumps(data).decode('unicode-escape').encode('utf8') + "\n"
 
     @classmethod
     def request_from_data(cls, data):
@@ -101,10 +101,10 @@ class Reply(object):
         self.msg = msg
 
     def bytedata(self):
-        return (json.dumps({
+        return json.dumps({
             self.__class__.KEY_RESULT: self.result,
             self.__class__.KEY_MSG: self.msg
-        })+"\n").encode()
+        }).decode('unicode-escape').encode('utf8') + "\n"
 
     @classmethod
     def is_valid(cls, data):

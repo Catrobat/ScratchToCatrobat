@@ -37,8 +37,8 @@
 #
 
 import logging
-import tornado.ioloop #@UnresolvedImport
-from tornado.options import define, options #@UnresolvedImport, @UnusedImport
+import tornado.ioloop
+from tornado.options import define, options #@UnusedImport
 import converterhttpserver
 import converterwebapp
 from jobmonitorserver import jobmonitortcpserver
@@ -49,6 +49,11 @@ import time
 import ssl
 sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "..", "src"))
 from scratchtocatrobat.tools import helpers
+
+# TODO: not best solution! {
+reload(sys)
+sys.setdefaultencoding('utf-8') #@UndefinedVariable
+# }
 
 MAX_WAIT_SECONDS_BEFORE_SHUTDOWN = int(helpers.config.get("WEBSERVER", "max_wait_seconds_before_shutdown"))
 CERTIFICATE_PATH = helpers.config.get("JOBMONITOR_SERVER", "certificate_path")

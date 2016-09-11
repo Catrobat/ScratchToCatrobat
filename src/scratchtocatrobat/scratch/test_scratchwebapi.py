@@ -30,49 +30,234 @@ from datetime import datetime
 TEST_PROJECT_ID_TO_TITLE_MAP = {
     "10205819": "Dancin' in the Castle",
     "10132588": "Dance back",
-    "2365565" : u"Fußball Kapfenstein"
+    "2365565" : u"Fußball Kapfenstein",
+    "117300839": "やねうら部屋（びっくりハウス）"
 }
 
 TEST_PROJECT_ID_TO_IMAGE_URL_MAP = {
     "10205819": "https://cdn2.scratch.mit.edu/get_image/project/10205819_144x108.png?v=1368470695.0",
     "10132588": "https://cdn2.scratch.mit.edu/get_image/project/10132588_144x108.png?v=1368129031.0",
-    "2365565" : "https://cdn2.scratch.mit.edu/get_image/project/2365565_144x108.png?v=1368072082.0"
+    "2365565" : "https://cdn2.scratch.mit.edu/get_image/project/2365565_144x108.png?v=1368072082.0",
+    "117300839": "https://cdn2.scratch.mit.edu/get_image/project/117300839_144x108.png?v=1469765618.94"
 }
 
 TEST_PROJECT_ID_TO_OWNER_MAP = {
     "10205819": "jschombs",
     "10132588": "psush09",
-    "2365565" : "hej_wickie_hej"
+    "2365565" : "hej_wickie_hej",
+    "117300839": "NHK_for_School"
 }
 
 TEST_PROJECT_ID_TO_REMIXES_MAP = {
-    "10205819": [{
+    "10205819"  : [{
         'id'   : 10211023,
         'owner': 'Amanda69',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/10211023_144x108.png?v=1368486334.0',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/10211023_144x108.png',
         'title': "Dancin' in the Castle remake"
     }],
-    "10132588": [],
-    "2365565" : [],
+    "10132588"  : [],
+    "2365565"   : [],
+    "117300839" : [{
+        'owner': u'apple502j',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/117443373_144x108.png',
+        'title': '\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xef\xbc\x88\xe3\x81\x97\xe3' \
+                 '\x81\x99\xe3\x81\x8e\xef\xbc\x89\xe3\x83\x8f\xe3\x82\xa6\xe3\x82\xb9',
+        'id': 117443373
+    }, {
+        'owner': u'nono-san',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/117459825_144x108.png',
+        'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
+                 '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
+                 '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
+        'id': 117459825
+    }, {
+        'owner': u'fujiyama',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/117458670_144x108.png',
+        'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
+                 '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
+                 '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
+        'id': 117458670
+    }, {
+        'owner': u'nono-san', 'image': 'https://cdn2.scratch.mit.edu/get_image/project/117462865_144x108.png',
+        'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
+                 '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
+                 '\xa6\xe3\x82\xb9\xef\xbc\x89 remix-2',
+        'id': 117462865
+    }, {
+        'owner': u'tomo37564',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/117526717_144x108.png',
+        'title': '\xe3\x82\xab\xe3\x82\xaa\xe3\x82\xb9\xe3\x83\xbb\xe3\x82\xaa\xe3\x83\x96\xe3' \
+                 '\x83\xbb\xe3\x83\xa4\xe3\x83\x8d\xe3\x82\xa6\xe3\x83\xa9 remix',
+        'id': 117526717
+    }, {
+        'owner': u'MrUdonn',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/117542867_144x108.png',
+        'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
+                 '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
+                 '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
+        'id': 117542867
+    }, {
+        'owner': u'nono-san',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/117588399_144x108.png',
+        'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
+                 '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
+                 '\xa6\xe3\x82\xb9\xef\xbc\x89 remix-3',
+        'id': 117588399
+    }, {
+        'owner': u'punpo2007',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/117466753_144x108.png',
+        'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
+                 '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
+                 '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
+        'id': 117466753
+    }, {
+        'owner': u'nposss',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/117697631_144x108.png',
+        'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b(\xe3' \
+                 '\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82\xa6\xe3\x82' \
+                 '\xb9) remix \xe3\x81\x8a\xe5\x8c\x96\xe3\x81\x91\xe5\xb1\x8b\xe6\x95\xb7',
+        'id': 117697631
+    }, {
+        'owner': u'haya_tofu',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/117802666_144x108.png',
+        'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
+                 '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
+                 '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
+        'id': 117802666
+    }, {
+        'owner': u'Sabomeat',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/117742271_144x108.png',
+        'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
+                 '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
+                 '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
+        'id': 117742271
+    }, {
+        'owner': u'kanjitv',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/117805280_144x108.png',
+        'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
+                 '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
+                 '\xa6\xe3\x82\xb9\xef\xbc\x89 \xe3\x83\xaa\xe3\x83\x9f\xe3\x83\x83\xe3\x82\xaf' \
+                 '\xe3\x82\xb9\xe6\xb8\x88\xe3\x81\xbf',
+        'id': 117805280
+    }, {
+        'owner': u'ikagirl1',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/117820941_144x108.png',
+        'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
+                 '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
+                 '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
+        'id': 117820941
+    }, {
+        'owner': u'kenta_suzuki',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/117909085_144x108.png',
+        'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
+                 '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
+                 '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
+        'id': 117909085
+    }, {
+        'owner': u'yuma08',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/118123925_144x108.png',
+        'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
+                 '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
+                 '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
+        'id': 118123925
+    }, {
+        'owner': u'takumigenki',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/118127784_144x108.png',
+        'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
+                 '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
+                 '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
+        'id': 118127784
+    }, {
+        'owner': u'rukiha',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/118556396_144x108.png',
+        'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
+                 '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
+                 '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
+        'id': 118556396
+    }, {
+        'owner': u'tyouhennzinn',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/118505858_144x108.png',
+        'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
+                 '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
+                 '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
+        'id': 118505858
+    }, {
+        'owner': u'naohiro1153',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/118661818_144x108.png',
+        'title': '\xe3\x82\x84\xe3\x81\xb0\xe3\x81\x84\xe3\x80\x82\xe3\x82\x84\xe3\x81\xad\xe3' \
+                 '\x81\x86\xe3\x82\x89',
+        'id': 118661818
+    }, {
+        'owner': u'emimi27',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/118772082_144x108.png',
+        'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
+                 '\xbc\x88\xe5\x91\xaa\xe3\x81\x84\xe3\x81\xae\xe3\x83\x8f\xe3\x82\xa6\xe3\x82' \
+                 '\xb9\xef\xbc\x89',
+        'id': 118772082
+    }, {
+        'owner': u'mentosu',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/118424749_144x108.png',
+        'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
+                 '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
+                 '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
+        'id': 118424749
+    }, {
+        'owner': u'kenshin007',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/118914295_144x108.png',
+        'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
+                 '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
+                 '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
+        'id': 118914295
+    }, {
+        'owner': u'Ryomap',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/119203970_144x108.png',
+        'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
+                 '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
+                 '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
+        'id': 119203970
+    }, {
+        'owner': u'supertaku',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/119291555_144x108.png',
+        'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
+                 '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
+                 '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
+        'id': 119291555
+    }, {
+        'owner': u'cheechanGoGo',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/119292702_144x108.png',
+        'title': '\xef\xbd\x8d\xe3\x80\x8d',
+        'id': 119292702
+    }]
 }
 
 TEST_PROJECT_ID_TO_TAGS_MAP = {
     "10205819": ['animations', 'castle'],
     "10132588": ['music', 'simulations', 'animations'],
     "2365565" : [],
+    "117300839": []
 }
 
 TEST_PROJECT_ID_TO_INSTRUCTIONS_MAP = {
     "10205819": "Click the flag to run the stack. Click the space bar to change it up!",
     "10132588": "D,4,8 for the animals to move.C,A for background.",
-    "2365565" : None
+    "2365565" : None,
+    "117300839": "◆「Why!?大喜利」8月のお題 ・キミのびっくりハウスをつくろう！～やねうら部屋 編～ " \
+                 "広い“屋根裏部屋”には、何もないみたいだね。好きなものを書いたり、おいたりして“びっく" \
+                 "り”を作ろう。スプライトには助っ人として、マックスとリンゴがあるぞ！ ◆自由にリミックス" \
+                 "（改造）して、遊んでください！ 面白い作品ができたら、こちらまで投稿を！ http://www.nhk." \
+                 "or.jp/xxx ※リミックス作品を投稿する時は”共有”を忘れないでね。"
 }
 
 TEST_PROJECT_ID_TO_NOTES_AND_CREDITS_MAP = {
     "10205819": "First project on Scratch! This was great.",
     "10132588": "",
-    "2365565" : "None"
+    "2365565" : "None",
+    "117300839": "◆NHK「わいわい プログラミング」 メインコーナー「why!?大喜利」では、月がわりでお題を出す" \
+                 "よ！毎月末が応募締め切り。優秀者にはインタビューも。さぁ、キミも投稿してみよう！ " \
+                 "http://www.nhk.or.jp/school/programming/oogiri/index.html ◆「キミのびっくりハウ" \
+                 "スをつくろう！～やねうら部屋 編～」 キャラクター onnacodomo 制作 NHK"
 }
+
 
 class WebApiTest(common_testing.BaseTestCase):
 
@@ -138,7 +323,8 @@ class WebApiTest(common_testing.BaseTestCase):
             extracted_project_remixes = scratchwebapi.request_project_remixes_for(project_id)
             assert extracted_project_remixes is not None
             assert extracted_project_remixes == expected_project_remixes, \
-                   "'{}' is not equal to '{}'".format(extracted_project_remixes, expected_project_remixes)
+                   "'{}' is not equal to '{}'".format(extracted_project_remixes,
+                                                      expected_project_remixes)
 
     def test_can_request_project_info_for_id(self):
         for (project_id, expected_project_title) in TEST_PROJECT_ID_TO_TITLE_MAP.iteritems():
@@ -174,10 +360,6 @@ class WebApiTest(common_testing.BaseTestCase):
             assert isinstance(extracted_project_info.modified_date, datetime)
             assert extracted_project_info.shared_date is not None
             assert isinstance(extracted_project_info.shared_date, datetime)
-            assert extracted_project_info.remixes is not None
-            assert extracted_project_info.remixes == TEST_PROJECT_ID_TO_REMIXES_MAP[project_id], \
-                   "'{}' is not equal to '{}'".format(extracted_project_info.remixes, TEST_PROJECT_ID_TO_REMIXES_MAP[project_id])
-            assert isinstance(extracted_project_info.remixes, list)
 
     def test_can_detect_correct_availability_state_of_project(self):
         project_availability_map = {

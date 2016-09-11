@@ -23,7 +23,7 @@ import logging
 import os
 import ast
 from datetime import datetime as dt, timedelta
-from rq import Queue, use_connection #@UnresolvedImport
+from rq import Queue, use_connection
 from worker.converterjob import convert_scratch_project
 from command import Command
 from websocketserver.protocol.job import Job
@@ -36,7 +36,6 @@ from websocketserver.protocol.message.job.job_failed_message import JobFailedMes
 from websocketserver.protocol.message.job.job_ready_message import JobReadyMessage
 
 CATROBAT_FILE_EXT = helpers.config.get("CATROBAT", "file_extension")
-SCRATCH_PROJECT_IMAGE_URL_TEMPLATE = helpers.config.get("SCRATCH_API", "project_image_url_template")
 MAX_NUM_SCHEDULED_JOBS_PER_CLIENT = int(helpers.config.get("CONVERTER_JOB", "max_num_scheduled_jobs_per_client"))
 JOB_TIMEOUT = int(helpers.config.get("CONVERTER_JOB", "timeout"))
 
@@ -152,7 +151,7 @@ class ScheduleJobCommand(Command):
         job = Job.from_redis(redis_conn, job_key)
 
         if job != None:
-            if job.state == Job.State.READY or job.state == Job.State.RUNNING:
+            if job.is_in_progress():
                 # TODO: lock.release()
                 _logger.info("Job already scheduled (scratch project with ID: %d)", job_ID)
                 remove_client_from_download_list_if_exists(redis_conn, job_ID, client_ID)

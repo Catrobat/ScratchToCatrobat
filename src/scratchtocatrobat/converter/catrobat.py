@@ -73,7 +73,6 @@ def create_lookdata(name, file_name):
 
 def set_as_background(sprite):
     sprite.setName(_BACKGROUND_SPRITE_NAME)
-    #sprite.isBackgroundObject = True
     assert is_background_sprite(sprite)
 
 
@@ -157,7 +156,6 @@ def add_user_variable(project, variable_name, sprite=None, sprite_name=None):
     if sprite_name is None:
         added_user_variable = user_variables.addProjectUserVariable(variable_name)
     else:
-#         sprite = _sprite_of(project, sprite_name)
         added_user_variable = user_variables.addSpriteUserVariableToSprite(sprite, variable_name)
     assert added_user_variable is not None
     return added_user_variable

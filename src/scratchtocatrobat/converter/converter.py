@@ -1299,6 +1299,10 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             # range  Scratch:     0 to 100  (default:   0)
             # range Catrobat:     0 to 100% (default:   0%)
             return catbricks.SetTransparencyBrick(catrobat.create_formula_with_value(value))
+        elif effect_type == 'color':
+            # range  Scratch:     0 to 200  (default:   0)
+            # range Catrobat:     0 to 200% (default:   0%)
+            return catbricks.SetColorBrick(catrobat.create_formula_with_value(value))
         else:
             return _placeholder_for_unmapped_bricks_to("setGraphicEffect:to:", effect_type, value)
 
@@ -1314,6 +1318,10 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             # range  Scratch:     0 to 100  (default:   0)
             # range Catrobat:     0 to 100% (default:   0%)
             return catbricks.ChangeTransparencyByNBrick(catrobat.create_formula_with_value(value))
+        elif effect_type == 'color':
+            # range  Scratch:     0 to 200  (default:   0)
+            # range Catrobat:     0 to 200% (default:   0%)
+            return catbricks.ChangeColorByNBrick(catrobat.create_formula_with_value(value))
         else:
             return _placeholder_for_unmapped_bricks_to("changeGraphicEffect:by:", effect_type, value)
 

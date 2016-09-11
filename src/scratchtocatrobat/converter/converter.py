@@ -208,8 +208,8 @@ class _ScratchToCatrobat(object):
         "setVar:to:": lambda *args: _create_variable_brick(*itertools.chain(args, [catbricks.SetVariableBrick])),
         "changeVar:by:": lambda *args: _create_variable_brick(*itertools.chain(args, [catbricks.ChangeVariableBrick])),
         "readVariable": lambda variable_name: _variable_for(variable_name),
-        "showVariable:": catbricks.ShowTextBrick,
-        "hideVariable:": catbricks.HideTextBrick,
+        "showVariable:": catbricks.ShowVariableBrick,
+        "hideVariable:": catbricks.HideVariableBrick,
 
         # formula lists
         "append:toList:": catbricks.AddItemToUserListBrick,
@@ -355,39 +355,42 @@ class Converter(object):
     def converted_project_for(cls, scratch_project, progress_bar=None, context=None):
         converter = Converter(scratch_project)
         catrobat_project = converter._converted_catrobat_program(progress_bar, context)
-        assert catrobat.is_background_sprite(catrobat_project.getSpriteList().get(0))
+        assert catrobat.is_background_sprite(catrobat_project.getDefaultScene().getSpriteList().get(0))
         return ConvertedProject(catrobat_project, scratch_project)
 
     def _converted_catrobat_program(self, progress_bar=None, context=None):
         scratch_project = self.scratch_project
         _catr_project = catbase.Project(None, scratch_project.name)
+        _catr_scene = catbase.Scene(None, "Scene 1", _catr_project)
+        _catr_project.sceneList.add(_catr_scene)
+
         self._scratch_object_converter = _ScratchObjectConverter(_catr_project, scratch_project,
                                                                  progress_bar, context)
-        self._add_global_user_lists_to(_catr_project)
-        self._add_converted_sprites_to(_catr_project)
-        self._add_key_sprites_to(_catr_project, self.scratch_project.listened_keys)
+        self._add_global_user_lists_to(_catr_scene)
+        self._add_converted_sprites_to(_catr_scene)
+        self._add_key_sprites_to(_catr_scene, self.scratch_project.listened_keys)
         self._update_xml_header(_catr_project.getXmlHeader(), scratch_project.project_id,
                                 scratch_project.instructions, scratch_project.notes_and_credits)
         return _catr_project
 
-    def _add_global_user_lists_to(self, catrobat_project):
+    def _add_global_user_lists_to(self, catrobat_scene):
         if self.scratch_project.global_user_lists is None:
             return
 
         for global_user_list in self.scratch_project.global_user_lists:
             # TODO: use "visible" as soon as show/hide-formula-list-bricks are available in Catrobat => global_formula_list["visible"]
             # TODO: use "isPersistent" as soon as Catrobat supports this => global_formula_list["isPersistent"]
-            data_container = catrobat_project.getDataContainer()
+            data_container = catrobat_scene.getDataContainer()
             data_container.addProjectUserList(global_user_list["listName"])
 
-    def _add_converted_sprites_to(self, catrobat_project):
+    def _add_converted_sprites_to(self, catrobat_scene):
         for scratch_object in self.scratch_project.objects:
             catr_sprite = self._scratch_object_converter(scratch_object)
-            catrobat_project.addSprite(catr_sprite)
+            catrobat_scene.addSprite(catr_sprite)
 
     # TODO: make it more explicit that this depends on the conversion code for "whenKeyPressed" Scratch block
     @staticmethod
-    def _add_key_sprites_to(catrobat_project, listened_keys):
+    def _add_key_sprites_to(catrobat_scene, listened_keys):
         height_pos = 1
         for idx, key in enumerate(listened_keys):
             width_pos = idx
@@ -421,7 +424,7 @@ class Converter(object):
             when_tapped_script.addBrick(catbricks.BroadcastBrick(key_message))
             key_sprite.addScript(when_tapped_script)
 
-            catrobat_project.addSprite(key_sprite)
+            catrobat_scene.addSprite(key_sprite)
 
     @staticmethod
     def _update_xml_header(xml_header, scratch_project_id, scratch_project_instructions,
@@ -472,6 +475,7 @@ class _ScratchObjectConverter(object):
 
     def __init__(self, catrobat_project, scratch_project, progress_bar=None, context=None):
         _ScratchObjectConverter._catrobat_project = catrobat_project
+        _ScratchObjectConverter._catrobat_scene = catrobat_project.getDefaultScene()
         _ScratchObjectConverter._scratch_project = scratch_project
         self._progress_bar = progress_bar
         self._context = context
@@ -511,7 +515,7 @@ class _ScratchObjectConverter(object):
             sprite_sounds.add(self._catrobat_sound_from(scratch_sound))
 
         if not scratch_object.is_stage() and scratch_object.get_lists() is not None:
-            catr_data_container = self._catrobat_project.getDataContainer()
+            catr_data_container = self._catrobat_scene.getDataContainer()
             for user_list_data in scratch_object.get_lists():
                 assert len(user_list_data["listName"]) > 0
                 catr_data_container.addSpriteUserListToSprite(sprite, user_list_data["listName"])
@@ -524,7 +528,7 @@ class _ScratchObjectConverter(object):
                     sprite_name=sprite.getName() if not scratch_object.is_stage() else None
             )
             assert user_variable is not None
-            user_variable = self._catrobat_project.getDataContainer().getUserVariable(scratch_variable["name"], sprite)
+            user_variable = self._catrobat_scene.getDataContainer().getUserVariable(scratch_variable["name"], sprite)
             assert user_variable is not None
 
         for scratch_script in scratch_object.scripts:
@@ -541,7 +545,7 @@ class _ScratchObjectConverter(object):
             log.error("Cannot add default behaviour to sprite object {}".format(sprite_name))
 
         for scratch_variable in scratch_object.get_variables():
-            args = [self._catrobat_project, scratch_variable["name"], scratch_variable["value"], sprite]
+            args = [self._catrobat_scene, scratch_variable["name"], scratch_variable["value"], sprite]
             if not scratch_object.is_stage():
                 args += [sprite.getName()]
             try:
@@ -772,7 +776,7 @@ class ConvertedProject(object):
             # TODO: extract method
             # note: at this position because of use of sounds_path variable
             # TODO: make it more explicit that the "doPlayAndWait" brick workaround depends on the following code block
-            for catrobat_sprite in catrobat_program.getSpriteList():
+            for catrobat_sprite in catrobat_program.getDefaultScene().getSpriteList():
                 for sound_info in catrobat_sprite.getSoundList():
                     sound_length_variable_name = _sound_length_variable_name_for(sound_info.getTitle())
 
@@ -827,8 +831,8 @@ def _add_new_user_variable_with_initialization_value(project, variable_name, var
     variable_initialization_brick = _create_variable_brick(variable_value, user_variable, catbricks.SetVariableBrick)
     catrobat.add_to_start_script([variable_initialization_brick], sprite)
 
-def _assign_initialization_value_to_user_variable(project, variable_name, variable_value, sprite, sprite_name=None):
-    user_variable = project.getDataContainer().getUserVariable(variable_name, sprite)
+def _assign_initialization_value_to_user_variable(scene, variable_name, variable_value, sprite, sprite_name=None):
+    user_variable = scene.getDataContainer().getUserVariable(variable_name, sprite)
     assert user_variable is not None and user_variable.getName() == variable_name, "variable: %s, sprite_name: %s" % (variable_name, sprite.getName())
     variable_initialization_brick = _create_variable_brick(variable_value, user_variable, catbricks.SetVariableBrick)
     catrobat.add_to_start_script([variable_initialization_brick], sprite, position=0)
@@ -852,6 +856,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         self.script_context = script_context if script_context is not None else ScriptContext()
         self.sprite = catrobat_sprite
         self.project = catrobat_project
+        self.scene = catrobat_project.getDefaultScene()
         self._stack = []
         self._child_stack = []
 
@@ -1017,7 +1022,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "lineCountOfList:")
     def _convert_line_count_of_list_block(self):
         [list_name] = self.arguments
-        user_list = catrobat.find_global_or_sprite_user_list_by_name(self.project, self.sprite, list_name)
+        user_list = catrobat.find_global_or_sprite_user_list_by_name(self.scene, self.sprite, list_name)
         assert user_list is not None
         left_formula_elem = catformula.FormulaElement(catElementType.USER_LIST, list_name, None)
         formula_element = catformula.FormulaElement(catElementType.FUNCTION, self.CatrobatClass.toString(), None)
@@ -1027,7 +1032,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "list:contains:")
     def _convert_list_contains_block(self):
         [list_name, value] = self.arguments
-        user_list = catrobat.find_global_or_sprite_user_list_by_name(self.project, self.sprite, list_name)
+        user_list = catrobat.find_global_or_sprite_user_list_by_name(self.scene, self.sprite, list_name)
         assert user_list is not None
         left_formula_elem = catformula.FormulaElement(catElementType.USER_LIST, list_name, None)
         formula_element = catformula.FormulaElement(catElementType.FUNCTION, self.CatrobatClass.toString(), None)
@@ -1038,7 +1043,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "getLine:ofList:")
     def _convert_get_line_of_list_block(self):
         [position, list_name] = self.arguments
-        user_list = catrobat.find_global_or_sprite_user_list_by_name(self.project, self.sprite, list_name)
+        user_list = catrobat.find_global_or_sprite_user_list_by_name(self.scene, self.sprite, list_name)
         assert user_list is not None
 
         if position == "last":
@@ -1109,7 +1114,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         # TODO: implement!
         #if look_name == "next backdrop": => use NextLookBrick
         #if look_name == "previous backdrop": => not sure...
-        background_sprite = catrobat.background_sprite_of(self.project)
+        background_sprite = catrobat.background_sprite_of(self.scene)
         if not background_sprite:
             assert catrobat.is_background_sprite(self.sprite)
             background_sprite = self.sprite
@@ -1163,29 +1168,35 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "showVariable:")
     def _convert_show_variable_block(self):
         [variable_name] = self.arguments
-        user_variable = self.project.getDataContainer().getUserVariable(variable_name, self.sprite)
+        user_variable = self.scene.getDataContainer().getUserVariable(variable_name, self.sprite)
         assert user_variable is not None # the variable must exist at this stage!
         assert user_variable.getName() == variable_name
         show_variable_brick = self.CatrobatClass(0, 0)
-        show_variable_brick.userVariableName = variable_name
-        show_variable_brick.userVariable = user_variable
+        
+        #Commented out because it isn't present anymore
+        #show_variable_brick.userVariableName = variable_name
+        #show_variable_brick.userVariable = user_variable
+        
         return show_variable_brick
 
     @_register_handler(_block_name_to_handler_map, "hideVariable:")
     def _convert_hide_variable_block(self):
         [variable_name] = self.arguments
-        user_variable = self.project.getDataContainer().getUserVariable(variable_name, self.sprite)
+        user_variable = self.scene.getDataContainer().getUserVariable(variable_name, self.sprite)
         assert user_variable is not None # the variable must exist at this stage!
         assert user_variable.getName() == variable_name
         hide_variable_brick = self.CatrobatClass()
-        hide_variable_brick.userVariableName = variable_name
-        hide_variable_brick.userVariable = user_variable
+        
+        #Commented out because it isn't present anymore
+        #hide_variable_brick.userVariableName = variable_name
+        #hide_variable_brick.userVariable = user_variable
+
         return hide_variable_brick
 
     @_register_handler(_block_name_to_handler_map, "append:toList:")
     def _convert_append_to_list_block(self):
         [value, list_name] = self.arguments
-        user_list = catrobat.find_global_or_sprite_user_list_by_name(self.project, self.sprite, list_name)
+        user_list = catrobat.find_global_or_sprite_user_list_by_name(self.scene, self.sprite, list_name)
         assert user_list is not None
         value_formula = catrobat.create_formula_with_value(value)
         return self.CatrobatClass(value_formula, user_list)
@@ -1203,7 +1214,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         else:
             index_formula = catrobat.create_formula_with_value(position)
 
-        user_list = catrobat.find_global_or_sprite_user_list_by_name(self.project, self.sprite, list_name)
+        user_list = catrobat.find_global_or_sprite_user_list_by_name(self.scene, self.sprite, list_name)
         assert user_list is not None
         value_formula = catrobat.create_formula_with_value(value)
         assert index_formula is not None
@@ -1227,7 +1238,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         else:
             index_formula = catrobat.create_formula_with_value(position)
 
-        user_list = catrobat.find_global_or_sprite_user_list_by_name(self.project, self.sprite, list_name)
+        user_list = catrobat.find_global_or_sprite_user_list_by_name(self.scene, self.sprite, list_name)
         assert user_list is not None
         assert index_formula is not None
         return prepend_bricks + [self.CatrobatClass(index_formula, user_list)] + append_bricks
@@ -1245,7 +1256,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         else:
             index_formula = catrobat.create_formula_with_value(position)
 
-        user_list = catrobat.find_global_or_sprite_user_list_by_name(self.project, self.sprite, list_name)
+        user_list = catrobat.find_global_or_sprite_user_list_by_name(self.scene, self.sprite, list_name)
         assert user_list is not None
         value_formula = catrobat.create_formula_with_value(value)
         assert index_formula is not None
@@ -1313,13 +1324,13 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "changeVar:by:", "setVar:to:")
     def _convert_variable_block(self):
         [variable_name, value] = self.arguments
-        user_variable = self.project.getDataContainer().getUserVariable(variable_name, self.sprite)
+        user_variable = self.scene.getDataContainer().getUserVariable(variable_name, self.sprite)
         if user_variable is None:
             # WORKAROUND: for generated variables added in preprocessing step
             # must be generated user variable, otherwise the variable must have already been added at this stage!
             assert(_is_generated(variable_name))
             catrobat.add_user_variable(self.project, variable_name, self.sprite, self.sprite.getName())
-            user_variable = self.project.getDataContainer().getUserVariable(variable_name, self.sprite)
+            user_variable = self.scene.getDataContainer().getUserVariable(variable_name, self.sprite)
             assert user_variable is not None and user_variable.getName() == variable_name, "variable: %s, sprite_name: %s" % (variable_name, self.sprite.getName())
         return [self.CatrobatClass(value, user_variable)]
 

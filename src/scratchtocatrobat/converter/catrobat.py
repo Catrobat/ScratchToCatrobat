@@ -81,37 +81,37 @@ def is_background_sprite(sprite):
     return sprite.getName() == _BACKGROUND_SPRITE_NAME # and sprite.isBackgroundObject
 
 
-def background_sprite_of(project):
-    if project.getSpriteList().size() > 0:
-        sprite = project.getSpriteList().get(0)
+def background_sprite_of(scene):
+    if scene.getSpriteList().size() > 0:
+        sprite = scene.getSpriteList().get(0)
         assert is_background_sprite(sprite)
     else:
         sprite = None
     return sprite
 
 
-def _sprite_of(project, sprite_name):
+def _sprite_of(scene, sprite_name):
     sprite = None
     if sprite_name is None:
         sprite_name = _BACKGROUND_SPRITE_NAME
-    for sprite_ in project.getSpriteList():
+    for sprite_ in scene.getSpriteList():
         if sprite_.getName() == sprite_name:
             sprite = sprite_
             break
     return sprite
 
-def find_global_or_sprite_user_list_by_name(project, sprite, list_name):
-    return project.getDataContainer().getUserList(list_name, sprite)
+def find_global_or_sprite_user_list_by_name(scene, sprite, list_name):
+    return scene.getDataContainer().getUserList(list_name, sprite)
 
 def find_global_user_list_by_name(project, sprite, list_name):
-    user_lists = project.getDataContainer().getProjectLists()
+    user_lists = project.getDefaultScene().getDataContainer().getProjectLists()
     for user_list in user_lists:
         if user_list.getName() == list_name:
             return user_list
     return None
 
 def find_sprite_user_list_by_name(project, sprite, list_name):
-    user_lists = project.getDataContainer().getSpriteListOfLists(sprite)
+    user_lists = project.getDefaultScene().getDataContainer().getSpriteListOfLists(sprite)
     for user_list in user_lists:
         if user_list.getName() == list_name:
             return user_list
@@ -121,11 +121,11 @@ def user_variable_of(project, variable_name, sprite_name=None):
     '''
     If `sprite_name` is None the project variables are checked.
     '''
-    data_container = project.getDataContainer()
+    data_container = project.getDefaultScene().getDataContainer()
     if sprite_name is None:
         return data_container.findUserVariable(variable_name, data_container.projectVariables)
     else:
-        sprite = _sprite_of(project, sprite_name)
+        sprite = _sprite_of(project.getDefaultScene(), sprite_name)
         return data_container.getUserVariable(variable_name, sprite)
 
 def create_formula_with_value(variable_value):
@@ -153,7 +153,7 @@ def create_formula_element_with_value(variable_value):
 def add_user_variable(project, variable_name, sprite=None, sprite_name=None):
     ''' If `sprite_name` is set a sprite variable is added otherwise the variable is added to the project. '''
     _log.debug("adding variable '%s' to sprite '%s'", variable_name, sprite_name if sprite_name is not None else "<Stage>")
-    user_variables = project.getDataContainer()
+    user_variables = project.getDefaultScene().getDataContainer()
     if sprite_name is None:
         added_user_variable = user_variables.addProjectUserVariable(variable_name)
     else:
@@ -164,17 +164,19 @@ def add_user_variable(project, variable_name, sprite=None, sprite_name=None):
 
 
 def defined_variable_names_in(project, sprite_name=None, sprite=None):
+    scene = project.getDefaultScene()
     if sprite_name is None:
-        user_variables = project.getDataContainer().projectVariables
+        user_variables = scene.getDataContainer().projectVariables
     else:
         if sprite is None:
-            sprite = _sprite_of(project, sprite_name)
-        user_variables = project.getDataContainer().getOrCreateVariableListForSprite(sprite)
+            sprite = _sprite_of(scene, sprite_name)
+        user_variables = scene.getDataContainer().getOrCreateVariableListForSprite(sprite)
     return [user_variable.getName() for user_variable in user_variables]
 
 
 def media_objects_in(project):
-    for sprite in project.getSpriteList():
+    scene = project.getDefaultScene()
+    for sprite in scene.getSpriteList():
         for media_object in itertools.chain(sprite.getLookDataList(), sprite.getSoundList()):
             yield media_object
 

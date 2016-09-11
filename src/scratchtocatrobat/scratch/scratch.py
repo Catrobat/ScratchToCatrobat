@@ -32,7 +32,6 @@ from scratchtocatrobat.tools import helpers
 from scratchtocatrobat.tools.helpers import ProgressType
 from scratchtocatrobat.scratch import scriptcodemodifier
 
-
 _log = common.log
 
 _PROJECT_FILE_NAME = helpers.scratch_info("code_file_name")

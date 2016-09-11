@@ -33,33 +33,27 @@ import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.BodyDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.TryStatement;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
-import org.eclipse.jdt.core.dom.MethodInvocation;
 
 import sourcecodefilter.ConverterRelevantCatroidSource;
 
-public class MethodInvocationFilter extends ASTVisitor {
+public class TryCatchFilter extends ASTVisitor {
 
 	final private ConverterRelevantCatroidSource catroidSource;
-	final private Set<String> methodInvocationsToBeRemoved;
-	final private Set<String> methodInvocationsWithParameterToBeRemoved;
+	final private Set<String> tryCatchBlocksToBeRemoved;
 
-	public MethodInvocationFilter(ConverterRelevantCatroidSource catroidSource,
-			Set<String> methodInvocationsToBeRemoved,
-			Set<String> methodInvocationsWithParameterToBeRemoved) {
+	public TryCatchFilter(ConverterRelevantCatroidSource catroidSource, Set<String> tryCatchBlocksToBeRemoved) {
 		this.catroidSource = catroidSource;
-		this.methodInvocationsToBeRemoved = methodInvocationsToBeRemoved;
-		this.methodInvocationsWithParameterToBeRemoved = methodInvocationsWithParameterToBeRemoved;
+		this.tryCatchBlocksToBeRemoved = tryCatchBlocksToBeRemoved;
 	}
 
     @SuppressWarnings("unchecked")
-	public void removeUnallowedMethodInvocations() {
+	public void removeUnallowedTryCatchBlocks() {
         CompilationUnit cu = catroidSource.getSourceAst();
         final List<AbstractTypeDeclaration> types = cu.types();
         assert types.size() > 0;
-        if (catroidSource.getQualifiedClassName().equals("org.catrobat.catroid.content.Scene")) {
-        	return;
-        }
+
         for (AbstractTypeDeclaration abstractTypeDecl : types) {
             for (BodyDeclaration bodyDecl : new ArrayList<BodyDeclaration>(abstractTypeDecl.bodyDeclarations())) {
                 if (bodyDecl.getNodeType() != ASTNode.METHOD_DECLARATION) {
@@ -76,30 +70,11 @@ public class MethodInvocationFilter extends ASTVisitor {
         }
     }
 
-	public boolean visit(MethodInvocation methodInvocation) {
-		final String[] temp = methodInvocation.toString().split("\\(", 2);
-		assert(temp.length > 0);
-		final String fullName = temp[0];
-
-		for (String unallowedMethodInvocation : methodInvocationsToBeRemoved) {
-			boolean isMatching;
-			if (unallowedMethodInvocation.contains("*")) {
-				unallowedMethodInvocation = unallowedMethodInvocation.replace("*", "");
-				isMatching = fullName.startsWith(unallowedMethodInvocation)
-						|| fullName.endsWith(unallowedMethodInvocation);
-			} else {
-				isMatching = fullName.equals(unallowedMethodInvocation);
-			}
-
-            if (isMatching) {
-            	methodInvocation.getParent().delete();
-            	return false;
-            }
-		}
-
-		for (String expectedMethodInvocation : methodInvocationsWithParameterToBeRemoved) {
-			if (methodInvocation.toString().equals(expectedMethodInvocation)) {
-            	methodInvocation.getParent().delete();
+	public boolean visit(final TryStatement node) {
+		final String expression = node.getBody().toString();
+		for (String expectedExpression : tryCatchBlocksToBeRemoved) {
+			if (expression.contains(expectedExpression)) {
+				node.delete();
 			}
 		}
 		return false;

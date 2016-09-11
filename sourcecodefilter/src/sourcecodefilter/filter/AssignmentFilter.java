@@ -72,6 +72,10 @@ public class AssignmentFilter extends ASTVisitor {
 
 	public boolean visit(final Assignment node) {
 		final String fullName = node.toString();
+		/*System.out.println("    >>>> " + catroidSource.getQualifiedClassName() + " \n" + fullName);
+		if (catroidSource.getQualifiedClassName().contains("Look") && fullName.contains("getZIndex()")) {
+		System.exit(0);
+		}*/
 		for (String expectedAssignment : assignmentsToBeRemoved) {
 			if (fullName.equals(expectedAssignment)) {
 				node.getParent().delete();

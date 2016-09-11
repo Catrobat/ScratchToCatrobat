@@ -825,7 +825,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert catr_brick.sound.getTitle() == sound_name
 
     # setGraphicEffect:to: (brightness)
-    def test_can_convert_set_graphic_effect_brightness_block(self):
+    def test_can_convert_set_graphic_effect_with_float_value_brightness_block(self):
         scratch_block = _, _, expected_value = ["setGraphicEffect:to:", "brightness", 10.1]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.SetBrightnessBrick)
@@ -847,8 +847,46 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert formula_right_child.leftChild is None
         assert formula_right_child.rightChild is None
 
+    # setGraphicEffect:to: (brightness)
+    def test_can_convert_set_graphic_effect_with_formula_value_brightness_block(self):
+        expected_left_operand = 10.1
+        expected_right_operand = 1
+        scratch_block = ["setGraphicEffect:to:", "brightness", ["+", expected_left_operand,
+                                                                expected_right_operand]]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.SetBrightnessBrick)
+        formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.BRIGHTNESS).formulaTree # @UndefinedVariable
+        assert formula_tree_value.type == catformula.FormulaElement.ElementType.OPERATOR
+        assert formula_tree_value.value == catformula.Operators.PLUS.toString() # @UndefinedVariable
+        assert formula_tree_value.leftChild is not None
+        assert formula_tree_value.rightChild is not None
+
+        formula_left_child = formula_tree_value.leftChild
+        assert formula_left_child.type == catformula.FormulaElement.ElementType.OPERATOR
+        assert formula_left_child.value == catformula.Operators.PLUS.toString() # @UndefinedVariable
+        assert formula_left_child.leftChild is not None
+        assert formula_left_child.rightChild is not None
+
+        formula_left_child_left_child = formula_left_child.leftChild
+        assert formula_left_child_left_child.type == catformula.FormulaElement.ElementType.NUMBER
+        assert str(expected_left_operand) == formula_left_child_left_child.value
+        assert formula_left_child_left_child.leftChild is None
+        assert formula_left_child_left_child.rightChild is None
+
+        formula_right_child_right_child = formula_left_child.rightChild
+        assert formula_right_child_right_child.type == catformula.FormulaElement.ElementType.NUMBER
+        assert str(expected_right_operand) == formula_right_child_right_child.value
+        assert formula_right_child_right_child.leftChild is None
+        assert formula_right_child_right_child.rightChild is None
+
+        formula_right_child = formula_tree_value.rightChild
+        assert formula_right_child.type == catformula.FormulaElement.ElementType.NUMBER
+        assert "100" == formula_right_child.value # offset 100 due to range-conversion!
+        assert formula_right_child.leftChild is None
+        assert formula_right_child.rightChild is None
+
     # setGraphicEffect:to: (ghost)
-    def test_can_convert_set_graphic_effect_ghost_block(self):
+    def test_can_convert_set_graphic_effect_with_float_value_ghost_block(self):
         scratch_block = _, _, expected_value = ["setGraphicEffect:to:", "ghost", 10.2]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.SetTransparencyBrick)
@@ -858,8 +896,33 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert formula_tree_value.leftChild is None
         assert formula_tree_value.rightChild is None
 
+    # setGraphicEffect:to: (ghost)
+    def test_can_convert_set_graphic_effect_with_formula_value_ghost_block(self):
+        expected_left_operand = 10.2
+        expected_right_operand = 1
+        scratch_block = ["setGraphicEffect:to:", "ghost", ["+", expected_left_operand, expected_right_operand]]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.SetTransparencyBrick)
+        formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.TRANSPARENCY).formulaTree # @UndefinedVariable
+        assert formula_tree_value.type == catformula.FormulaElement.ElementType.OPERATOR
+        assert formula_tree_value.value == catformula.Operators.PLUS.toString() # @UndefinedVariable
+        assert formula_tree_value.leftChild is not None
+        assert formula_tree_value.rightChild is not None
+
+        formula_left_child = formula_tree_value.leftChild
+        assert formula_left_child.type == catformula.FormulaElement.ElementType.NUMBER
+        assert str(expected_left_operand) == formula_left_child.value
+        assert formula_left_child.leftChild is None
+        assert formula_left_child.rightChild is None
+
+        formula_right_child = formula_tree_value.rightChild
+        assert formula_right_child.type == catformula.FormulaElement.ElementType.NUMBER
+        assert str(expected_right_operand) == formula_right_child.value
+        assert formula_right_child.leftChild is None
+        assert formula_right_child.rightChild is None
+
     # changeGraphicEffect:by: (brightness)
-    def test_can_convert_change_graphic_effect_brightness_block(self):
+    def test_can_convert_change_graphic_effect_with_float_value_brightness_block(self):
         scratch_block = _, _, expected_value = ["changeGraphicEffect:by:", "brightness", 10.1]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.ChangeBrightnessByNBrick)
@@ -869,8 +932,33 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert formula_tree_value.leftChild is None
         assert formula_tree_value.rightChild is None
 
+    # changeGraphicEffect:by: (brightness)
+    def test_can_convert_change_graphic_effect_with_formula_value_brightness_block(self):
+        expected_left_operand = 10.2
+        expected_right_operand = 1
+        scratch_block = ["changeGraphicEffect:by:", "brightness", ["+", expected_left_operand, expected_right_operand]]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.ChangeBrightnessByNBrick)
+        formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.BRIGHTNESS_CHANGE).formulaTree # @UndefinedVariable
+        assert formula_tree_value.type == catformula.FormulaElement.ElementType.OPERATOR
+        assert formula_tree_value.value == catformula.Operators.PLUS.toString() # @UndefinedVariable
+        assert formula_tree_value.leftChild is not None
+        assert formula_tree_value.rightChild is not None
+
+        formula_left_child = formula_tree_value.leftChild
+        assert formula_left_child.type == catformula.FormulaElement.ElementType.NUMBER
+        assert str(expected_left_operand) == formula_left_child.value
+        assert formula_left_child.leftChild is None
+        assert formula_left_child.rightChild is None
+
+        formula_right_child = formula_tree_value.rightChild
+        assert formula_right_child.type == catformula.FormulaElement.ElementType.NUMBER
+        assert str(expected_right_operand) == formula_right_child.value
+        assert formula_right_child.leftChild is None
+        assert formula_right_child.rightChild is None
+
     # changeGraphicEffect:by: (ghost)
-    def test_can_convert_change_graphic_effect_ghost_block(self):
+    def test_can_convert_change_graphic_effect_with_float_value_ghost_block(self):
         scratch_block = _, _, expected_value = ["changeGraphicEffect:by:", "ghost", 10.2]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.ChangeTransparencyByNBrick)
@@ -879,6 +967,31 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert str(expected_value) == formula_tree_value.value
         assert formula_tree_value.leftChild is None
         assert formula_tree_value.rightChild is None
+
+    # changeGraphicEffect:by: (ghost)
+    def test_can_convert_change_graphic_effect_with_formula_value_ghost_block(self):
+        expected_left_operand = 10.2
+        expected_right_operand = 1
+        scratch_block = ["changeGraphicEffect:by:", "ghost", ["+", expected_left_operand, expected_right_operand]]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.ChangeTransparencyByNBrick)
+        formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.TRANSPARENCY_CHANGE).formulaTree # @UndefinedVariable
+        assert formula_tree_value.type == catformula.FormulaElement.ElementType.OPERATOR
+        assert formula_tree_value.value == catformula.Operators.PLUS.toString() # @UndefinedVariable
+        assert formula_tree_value.leftChild is not None
+        assert formula_tree_value.rightChild is not None
+
+        formula_left_child = formula_tree_value.leftChild
+        assert formula_left_child.type == catformula.FormulaElement.ElementType.NUMBER
+        assert str(expected_left_operand) == formula_left_child.value
+        assert formula_left_child.leftChild is None
+        assert formula_left_child.rightChild is None
+
+        formula_right_child = formula_tree_value.rightChild
+        assert formula_right_child.type == catformula.FormulaElement.ElementType.NUMBER
+        assert str(expected_right_operand) == formula_right_child.value
+        assert formula_right_child.leftChild is None
+        assert formula_right_child.rightChild is None
 
     # showVariable:
     def test_can_convert_show_variable_block(self):

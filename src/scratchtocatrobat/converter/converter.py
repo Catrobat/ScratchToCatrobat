@@ -1298,7 +1298,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         elif effect_type == 'ghost':
             # range  Scratch:     0 to 100  (default:   0)
             # range Catrobat:     0 to 100% (default:   0%)
-            return catbricks.SetTransparencyBrick(value)
+            return catbricks.SetTransparencyBrick(catrobat.create_formula_with_value(value))
         else:
             return _placeholder_for_unmapped_bricks_to("setGraphicEffect:to:", effect_type, value)
 
@@ -1309,11 +1309,11 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             # range  Scratch:  -100 to 100  (default:   0)
             # range Catrobat:     0 to 200% (default: 100%)
             # since ChangeBrightnessByNBrick adds increment -> no range-conversion needed
-            return catbricks.ChangeBrightnessByNBrick(value)
+            return catbricks.ChangeBrightnessByNBrick(catrobat.create_formula_with_value(value))
         elif effect_type == 'ghost':
             # range  Scratch:     0 to 100  (default:   0)
             # range Catrobat:     0 to 100% (default:   0%)
-            return catbricks.ChangeTransparencyByNBrick(value)
+            return catbricks.ChangeTransparencyByNBrick(catrobat.create_formula_with_value(value))
         else:
             return _placeholder_for_unmapped_bricks_to("changeGraphicEffect:by:", effect_type, value)
 

@@ -206,13 +206,16 @@ def _dummy_project():
 
 class TestConvertBlocks(common_testing.BaseTestCase):
 
-    block_converter = converter._ScratchObjectConverter(catbase.Project(None, "__test_project__"), None)
+    test_project = catbase.Project(None, "__test_project__")
+    test_scene = catbase.Scene(None, "Scene 1",test_project)
+    test_project.sceneList.add(test_scene)
+    block_converter = converter._ScratchObjectConverter(test_project, None)
     _name_of_test_list = "my_test_list"
 
     def setUp(self):
         super(TestConvertBlocks, self).setUp()
         # create and add user list for user list bricks to project
-        self.block_converter._catrobat_project.getDataContainer().addProjectUserList(self._name_of_test_list)
+        self.block_converter._catrobat_scene.getDataContainer().addProjectUserList(self._name_of_test_list)
         # create dummy sprite
         self.sprite_stub = create_catrobat_background_sprite_stub()
 
@@ -1065,42 +1068,46 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert formula_right_child.leftChild is None
         assert formula_right_child.rightChild is None
 
-    # showVariable:
+    # showVariableBrick:
     def test_can_convert_show_variable_block(self):
         # create user variable
         variable_name = "test_var"
         project = self.block_converter._catrobat_project
         catrobat.add_user_variable(project, variable_name, DUMMY_CATR_SPRITE, DUMMY_CATR_SPRITE.getName())
-        user_variable = project.getDataContainer().getUserVariable(variable_name, DUMMY_CATR_SPRITE)
+        user_variable = project.getDefaultScene().getDataContainer().getUserVariable(variable_name, DUMMY_CATR_SPRITE)
         assert user_variable is not None
         assert user_variable.getName() == variable_name
 
         # create and validate show variable brick
         scratch_block = ["showVariable:", variable_name]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        assert isinstance(catr_brick, catbricks.ShowTextBrick)
-        assert catr_brick.userVariableName == variable_name
-        assert user_variable == catr_brick.userVariable
-        assert catr_brick.userVariable.getName() == variable_name
+        assert isinstance(catr_brick, catbricks.ShowVariableBrick)
 
-    # hideVariable:
+        #Commented out because members aren't present anymore
+        #assert catr_brick.userVariableName == variable_name
+        #assert user_variable == catr_brick.userVariable
+        #assert catr_brick.userVariable.getName() == variable_name
+
+    # hideVariableBrick:
     def test_can_convert_hide_variable_block(self):
         # create user variable
         variable_name = "test_var"
         project = self.block_converter._catrobat_project
         catrobat.add_user_variable(project, variable_name, DUMMY_CATR_SPRITE, DUMMY_CATR_SPRITE.getName())
-        user_variable = project.getDataContainer().getUserVariable(variable_name, DUMMY_CATR_SPRITE)
+        user_variable = project.getDefaultScene().getDataContainer().getUserVariable(variable_name, DUMMY_CATR_SPRITE)
         assert user_variable is not None
         assert user_variable.getName() == variable_name
 
         # create and validate show variable brick
         scratch_block = ["hideVariable:", variable_name]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        assert isinstance(catr_brick, catbricks.HideTextBrick)
-        assert catr_brick.userVariableName == variable_name
-        assert user_variable == catr_brick.userVariable
-        assert catr_brick.userVariable.getName() == variable_name
-
+        assert isinstance(catr_brick, catbricks.HideVariableBrick)
+        
+        #Commented out because members aren't present anymore
+        #assert catr_brick.userVariableName == variable_name
+        #assert user_variable == catr_brick.userVariable
+        #assert catr_brick.userVariable.getName() == variable_name
+        
     # append:toList:
     def test_can_convert_append_number_to_list_block(self):
         value = "1.23"
@@ -1441,7 +1448,9 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         scratch_block = _, look_name = ["startScene", "look1"]
         script = scratch.Script([30, 355, [['whenGreenFlag'], scratch_block]])
         project = catbase.Project(None, "TestDummyProject")
-        project.addSprite(self.sprite_stub)
+        scene = catbase.Scene(None, "Scene 1", project)
+        scene.addSprite(self.sprite_stub)
+        project.sceneList.add(scene)
         converter._catr_project = project
         catr_script = self.block_converter._catrobat_script_from(script, self.sprite_stub)
         converter._catr_project = None

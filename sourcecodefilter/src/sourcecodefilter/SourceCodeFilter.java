@@ -62,6 +62,8 @@ import sourcecodefilter.ConverterRelevantCatroidSource.FilteringProject;
 import sourcecodefilter.filter.AssignmentFilter;
 import sourcecodefilter.filter.IfElseFilter;
 import sourcecodefilter.filter.MethodInvocationFilter;
+import sourcecodefilter.filter.VariableDeclarationFilter;
+import sourcecodefilter.filter.TryCatchFilter;
 import sourcecodefilter.inject.InlineClassInjector;
 
 import com.google.common.base.Charsets;
@@ -79,6 +81,8 @@ public class SourceCodeFilter {
 	private static Map<String, Set<String>> REMOVE_METHOD_INVOCATIONS_WITH_PARAMETER = null;
 	private static Map<String, Set<String>> REMOVE_ASSIGNMENTS = null;
 	private static Map<String, Set<String>> REMOVE_IF_ELSE_BLOCKS = null;
+	private static Map<String, Set<String>> REMOVE_VARIABLE_DECLARATIONS = null;
+	private static Map<String, Set<String>> REMOVE_TRY_CATCH_BLOCKS = null;
 	private static Map<String, Set<String>> INJECT_INLINE_CLASSES_TO_EXISTING_CLASS = null;
     private static Set<String> ADDITIONAL_SERIALIZATION_CLASSES = null;
     private static Set<String> PRESERVED_INTERFACES = null;
@@ -154,7 +158,7 @@ public class SourceCodeFilter {
     }
 
     static Set<String> parseSerializationRelevantClassNames(File baseDir) {
-        File xstreamConfigurationSourceFile = new File(baseDir, "/org/catrobat/catroid/io/StorageHandler.java");
+        File xstreamConfigurationSourceFile = new File(baseDir, "org/catrobat/catroid/io/StorageHandler.java");
         if (!(xstreamConfigurationSourceFile.exists())) {
             throw new RuntimeException("Serialization configuration source must exist: " + xstreamConfigurationSourceFile.toString());
         }
@@ -177,10 +181,10 @@ public class SourceCodeFilter {
 		Iterator<ImportDeclaration> iterator = catroidSource.getSourceAst().imports().iterator(); iterator.hasNext();) {
             ImportDeclaration importDecl = iterator.next();
             String importName = importDecl.getName().getFullyQualifiedName();
-
+            
             if (importName.contains("android") || importName.startsWith("com.") || importName.endsWith(".R")
                     || importName.contains("catroid.ui")) {
-                if (!(importName.startsWith("com.thoughtworks"))) {
+                if (!importName.startsWith("com.thoughtworks") && !project.isRelevantClass(importName)) {
                     iterator.remove();
                 }
                 continue;
@@ -195,6 +199,7 @@ public class SourceCodeFilter {
             // if import is from a package that will be removed according to rules
             // -> remove that import statement too
             if (isImportOfRemovedPackage(importName)) {
+                System.out.println("DEBUG:     import to delete: " + importName);
     			iterator.remove();
     			continue;
             }
@@ -298,7 +303,17 @@ public class SourceCodeFilter {
     		if (ifElseBlocksToBeRemoved != null) {
 	            new IfElseFilter(catroidSource, ifElseBlocksToBeRemoved).removeUnallowedIfElseBlocks();
     		}
-
+    		
+    		final Set<String> variableDeclarationsToBeRemoved = REMOVE_VARIABLE_DECLARATIONS.get(fullClassName);
+    		if (variableDeclarationsToBeRemoved != null) {
+	            new VariableDeclarationFilter(catroidSource, variableDeclarationsToBeRemoved).removeUnallowedVariableDeclarations();
+    		}
+    		
+    		final Set<String> tryCatchBlocksToBeRemoved = REMOVE_TRY_CATCH_BLOCKS.get(fullClassName);
+    		if (tryCatchBlocksToBeRemoved != null) {
+	            new TryCatchFilter(catroidSource, tryCatchBlocksToBeRemoved).removeUnallowedTryCatchBlocks();;
+    		}
+    		
             Set<String> inlineClassesToBeInjected = INJECT_INLINE_CLASSES_TO_EXISTING_CLASS.get(catroidSource.getQualifiedClassName());
             if (inlineClassesToBeInjected != null) {
 	            new InlineClassInjector(catroidSource, inlineClassesToBeInjected).inject();
@@ -335,6 +350,8 @@ public class SourceCodeFilter {
 	        REMOVE_METHOD_INVOCATIONS_WITH_PARAMETER = config.getMap("remove_method_invocations_with_parameter_mapping");
 	        REMOVE_ASSIGNMENTS = config.getMap("remove_assignments_mapping");
 	        REMOVE_IF_ELSE_BLOCKS = config.getMap("remove_if_else_blocks_mapping");
+	        REMOVE_VARIABLE_DECLARATIONS = config.getMap("remove_variable_declarations_mapping");
+	        REMOVE_TRY_CATCH_BLOCKS = config.getMap("remove_try_catch_blocks_mapping");
 	        INJECT_INLINE_CLASSES_TO_EXISTING_CLASS = config.getMap("inject_inline_classes_to_existing_class");
 	        ADDITIONAL_SERIALIZATION_CLASSES = config.getSet("additional_serialization_classes");
 	        PRESERVED_INTERFACES = config.getSet("preserved_interfaces");

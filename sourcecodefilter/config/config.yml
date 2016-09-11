@@ -5,7 +5,8 @@ catroid_version: v0.9.24
 xstream_class_name: XStreamToSupportCatrobatLanguageVersion0991AndBefore
 archive_extension: "zip"
 #URL: "https://github.com/Catrobat/Catroid/archive/master.%{archive_extension}"
-URL: "https://github.com/Catrobat/Catroid/archive/%{catroid_version}.%{archive_extension}"
+#URL: "https://github.com/Catrobat/Catroid/archive/%{catroid_version}.%{archive_extension}"
+URL: "https://github.com/Catrobat/Catroid/archive/develop.zip"
 xstream_version: "1.4.7"
 xstream_lib_extension: "jar"
 xstream_download_URL: "http://repo.maven.apache.org/maven2/com/thoughtworks/xstream/xstream/%{xstream_version}/xstream-%{xstream_version}.%{xstream_lib_extension}"
@@ -13,7 +14,7 @@ download_path: "./workspace/input"
 output_path: "./workspace/output"
 output_src_path: "%{output_path}/src"
 output_lib_path: "%{output_path}/lib"
-relative_code_source_path: "catroid/src"
+relative_code_source_path: "catroid/src/main/java"
 
 
 #==================================================================================================
@@ -58,7 +59,7 @@ remove_method_invocations:
      "context.getString"]
 
 remove_method_invocations_with_parameter_mapping:
-    org.catrobat.catroid.content.Project:
+    org.catrobat.catroid.content.Scene:
         - background.look.setZIndex(0)
         - addSprite(background)
     org.catrobat.catroid.io.StorageHandler:
@@ -233,6 +234,30 @@ remove_assignments_mapping:
 remove_if_else_blocks_mapping:
     org.catrobat.catroid.io.StorageHandler:
         - "!Utils.externalStorageAvailable()"
+    org.catrobat.catroid.content.Look:
+        - "isBackgroundLook"
+    org.catrobat.catroid.content.Project:
+        - "ScreenValues.SCREEN_HEIGHT == 0 || ScreenValues.SCREEN_WIDTH == 0"
+        - "context == null"
+    org.catrobat.catroid.content.bricks.BroadcastReceiverBrick:
+        - "receiveScript != null && receiveScript.isCommentedOut()"
+    org.catrobat.catroid.content.bricks.WhenBrick:
+        - "whenScript != null && whenScript.isCommentedOut()"
+    org.catrobat.catroid.content.bricks.WhenStartedBrick:
+        - "script != null && script.isCommentedOut()"
+    org.catrobat.catroid.content.bricks.WhenTouchDownBrick:
+        - "script != null && script.isCommentedOut()"
+
+remove_variable_declarations_mapping:
+    org.catrobat.catroid.content.Look:
+        - "boolean isBackgroundLook = getZIndex() == 0"
+
+remove_try_catch_blocks_mapping:
+    org.catrobat.catroid.content.Project:
+        - "scene=new Scene(context,String.format(context.getString(R.string.default_scene_name),1),this)"
+    org.catrobat.catroid.content.Scene:
+        - "background=new SingleSprite(context.getString(R.string.background))"
+
 
 inject_inline_classes_to_existing_class:
     org.catrobat.catroid.content.Project:
@@ -263,9 +288,10 @@ additional_serialization_classes:
     - IfThenLogicEndBrick
     - WhenTouchDownBrick
 
+
 preserved_interfaces:
     [Brick, BroadcastMessage, Converter, LoopBeginBrick, MindstormsSensor,
-    MindstormsCommand]
+    MindstormsCommand, ScriptBrick]
 
 additional_helper_classes:
     - BroadcastMessage
@@ -277,9 +303,12 @@ additional_helper_classes:
     - XStreamConcurrentFormulaHashMapConverter
     - XStreamScriptConverter
     - XStreamSettingConverter
+    - XStreamFieldKeyOrder
     - LOOKUP
     - "%{xstream_class_name}"
     - XStreamUserVariableConverter
+    - SpriteFactory
+    - XStreamSpriteConverter
     # exception classes
     - ProjectException
     - CompatibilityProjectException
@@ -287,8 +316,15 @@ additional_helper_classes:
     - OutdatedVersionProjectException
     - FileChecksumContainer
     - InterpretationException
+    - XStreamMissingSerializableFieldException
 
 class_to_preserved_fields_mapping:
+    DataContainer:
+        - project
+    GoToBrick:
+        - oldSelectedObject
+    Scene:
+        - project
     BroadcastReceiverBrick:
         - broadcastMessage
     FormulaElement:
@@ -303,6 +339,7 @@ class_to_preserved_fields_mapping:
         [look, isPaused, newUserBrickNext, isBackpackObject]
     SetLookBrick:
         - oldSelectedLook
+        - wait
     UserVariable:
         - value
     WhenScript:
@@ -343,8 +380,29 @@ class_to_preserved_fields_mapping:
         - defaultPrototypeToken
 
 class_to_preserved_methods_mapping:
+    ThinkForBubbleBrick:
+        - initializeBrickFields
+    ThinkBubbleBrick:
+        - initializeBrickFields
+    SpeakAndWaitBrick:
+        - initializeBrickFields
+    ShowVariableBrick:
+        - initializeBrickFields
+    SetPenSizeBrick:
+        - initializeBrickFields
+    SetPenColorBrick:
+        - initializeBrickFields
+    SayForBubbleBrick:
+        - initializeBrickFields
+    SayBubbleBrick:
+        - initializeBrickFields
+    AskBrick:
+        - initializeBrickFields
+    Scene:
+        - addSprite
     Brick:
         - getRequiredResources
+        - isCommentedOut
     Functions:
         - isFunction
         - getFunctionByValue
@@ -372,6 +430,7 @@ class_to_preserved_methods_mapping:
         - setName
         - getName
         - isBackgroundObject
+        - getDefaultScene
     SoundInfo:
         - compareTo
         - setTitle
@@ -433,6 +492,9 @@ class_to_preserved_methods_mapping:
         - getUserList
         - existSpriteList
         - getCurrentUserBrick
+        - setSpriteVariablesForSupportContainer
+        - getProjectVariables
+        - getProjectLists
     AddItemToUserListBrick:
         - initializeBrickFields
     ChangeTransparencyByNBrick:
@@ -537,6 +599,12 @@ class_to_preserved_methods_mapping:
         - setlandscapeMode
     NfcTagData:
         - compareTo
+    WhenBackgroundChangesScript:
+        - getScriptBrick
+    WhenClonedScript:
+        - getScriptBrick
+    WhenConditionScript:
+        - getScriptBrick
 
 remove_fields_mapping:
     Constants:
@@ -551,8 +619,14 @@ remove_fields_mapping:
         - backPackedData
     UserVariableBrick:
         - backPackedData
+    Project:
+        - UtilUi
 
 remove_methods_mapping:
+    GoToBrick:
+        - setSpinnerSelection
+    BrickBaseType:
+        - setCommentedOut
     XStreamToSupportCatrobatLanguageVersion0991AndBefore:
         - updateCollisionReceiverBrickMessage
     UserScriptDefinitionBrick:
@@ -563,10 +637,11 @@ remove_methods_mapping:
         - setIfBrickReferences
         - setIfThenBrickReferences
         - setLoopBrickReferences
+        - setCommentedOut
     ProjectManager:
         [uploadProject, loadProject, cancelLoadProject, canLoadProject, saveProject,
         initializeDefaultProject, initializeDroneProject, initializeNewProject,
-        deleteCurrentProject, checkCurrentSprite, checkCurrentScript, deleteProject, renameProject, addSprite,
+        deleteCurrentProject, checkCurrentSprite, checkCurrentScript, deleteProject, renameProject,
         addScript]
     XmlHeader:
         - setTags

@@ -1283,27 +1283,23 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
     @_register_handler(_block_name_to_handler_map, "playSound:")
     def _convert_sound_block(self):
-        [sound_name] = self.arguments
-        soundinfo_name_to_soundinfo_map = {sound_data.getTitle(): sound_data for sound_data in self.sprite.getSoundList()}
-        sound_data = soundinfo_name_to_soundinfo_map.get(sound_name)
+        [sound_name], sound_list = self.arguments, self.sprite.getSoundList()
+        sound_data = {sound_info.getTitle(): sound_info for sound_info in sound_list}.get(sound_name)
         if not sound_data:
             raise ConversionError("Sprite does not contain sound with name={}".format(sound_name))
         play_sound_brick = self.CatrobatClass()
         play_sound_brick.setSoundInfo(sound_data)
-        converted_bricks = [play_sound_brick]
-        return converted_bricks
+        return play_sound_brick
     
     @_register_handler(_block_name_to_handler_map, "doPlaySoundAndWait")
     def _convert_sound_and_wait_block(self):
-        [sound_name] = self.arguments
-        soundinfo_name_to_soundinfo_map = {sound_data.getTitle(): sound_data for sound_data in self.sprite.getSoundList()}
-        sound_data = soundinfo_name_to_soundinfo_map.get(sound_name)
+        [sound_name], sound_list = self.arguments, self.sprite.getSoundList()
+        sound_data = {sound_info.getTitle(): sound_info for sound_info in sound_list}.get(sound_name)
         if not sound_data:
             raise ConversionError("Sprite does not contain sound with name={}".format(sound_name))
         play_sound_and_wait_brick = self.CatrobatClass()
         play_sound_and_wait_brick.setSoundInfo(sound_data)
-        converted_bricks = [play_sound_and_wait_brick]
-        return converted_bricks
+        return play_sound_and_wait_brick
 
     @_register_handler(_block_name_to_handler_map, "setGraphicEffect:to:")
     def _convert_set_graphic_effect_block(self):

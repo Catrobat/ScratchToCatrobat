@@ -244,7 +244,7 @@ class _ScratchToCatrobat(object):
 
         # sound
         "playSound:": catbricks.PlaySoundBrick,
-        "doPlaySoundAndWait": catbricks.PlaySoundBrick,
+        "doPlaySoundAndWait": catbricks.PlaySoundAndWaitBrick,
         "stopAllSounds": catbricks.StopAllSoundsBrick,
         "changeVolumeBy:": catbricks.ChangeVolumeByNBrick,
         "setVolumeTo:": catbricks.SetVolumeToBrick,
@@ -784,7 +784,7 @@ class ConvertedProject(object):
 
                     if context is not None:
                         # don't add length-variable if it is never used by any brick
-                        # (e.g. due to no doPlaySound block workaround)
+                        # (e.g. due to no Sound block workaround)
                         [sprite_context] = [ctxt for ctxt in context.sprite_contexts if ctxt.name == catrobat_sprite.getName()]
                         if sound_length_variable_name not in sprite_context.sound_wait_length_variable_names:
                             continue
@@ -1281,7 +1281,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         #[list_name] = self.arguments
         assert "IMPLEMENT THIS AS SOON AS CATROBAT SUPPORTS THIS!!"
 
-    @_register_handler(_block_name_to_handler_map, "playSound:", "doPlaySoundAndWait")
+    @_register_handler(_block_name_to_handler_map, "playSound:")
     def _convert_sound_block(self):
         [sound_name] = self.arguments
         soundinfo_name_to_soundinfo_map = {sound_data.getTitle(): sound_data for sound_data in self.sprite.getSoundList()}
@@ -1291,11 +1291,18 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         play_sound_brick = self.CatrobatClass()
         play_sound_brick.setSoundInfo(sound_data)
         converted_bricks = [play_sound_brick]
-        if self.block_name == "doPlaySoundAndWait":
-            sound_length_variable_name = _sound_length_variable_name_for(sound_name)
-            sound_length_variable = _variable_for(sound_length_variable_name)
-            self.script_context.sound_wait_length_variable_names.add(sound_length_variable_name)
-            converted_bricks += [catbricks.WaitBrick(catrobat.create_formula_with_value(sound_length_variable))]
+        return converted_bricks
+    
+    @_register_handler(_block_name_to_handler_map, "doPlaySoundAndWait")
+    def _convert_sound_and_wait_block(self):
+        [sound_name] = self.arguments
+        soundinfo_name_to_soundinfo_map = {sound_data.getTitle(): sound_data for sound_data in self.sprite.getSoundList()}
+        sound_data = soundinfo_name_to_soundinfo_map.get(sound_name)
+        if not sound_data:
+            raise ConversionError("Sprite does not contain sound with name={}".format(sound_name))
+        play_sound_and_wait_brick = self.CatrobatClass()
+        play_sound_and_wait_brick.setSoundInfo(sound_data)
+        converted_bricks = [play_sound_and_wait_brick]
         return converted_bricks
 
     @_register_handler(_block_name_to_handler_map, "setGraphicEffect:to:")

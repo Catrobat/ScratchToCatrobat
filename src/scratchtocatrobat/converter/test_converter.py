@@ -1359,14 +1359,21 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert formula_tree_value.rightChild == None
 
     # doPlaySoundAndWait
+    def test_fail_convert_doplaysoundandwait_block(self):
+        scratch_block = ["doPlaySoundAndWait", "bird"]
+        bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert len(bricks) == 2
+        assert isinstance(bricks[0], catbricks.WaitBrick)
+        assert isinstance(bricks[1], catbricks.NoteBrick)
+        
+
+    # doPlaySoundAndWait
     def test_can_convert_doplaysoundandwait_block(self):
         scratch_block = _, sound_name = ["doPlaySoundAndWait", "bird"]
         dummy_sprite = self.get_sprite_with_soundinfo(sound_name)
-        [play_sound_brick, wait_brick] = self.block_converter._catrobat_bricks_from(scratch_block, dummy_sprite)
-        assert isinstance(play_sound_brick, catbricks.PlaySoundBrick)
-        assert play_sound_brick.sound.getTitle() == sound_name
-        assert isinstance(wait_brick, catbricks.WaitBrick)
-        # FIXME: assert for wait variable is missing
+        [play_sound_and_wait_brick] = self.block_converter._catrobat_bricks_from(scratch_block, dummy_sprite)
+        assert isinstance(play_sound_and_wait_brick, catbricks.PlaySoundAndWaitBrick)
+        assert play_sound_and_wait_brick.sound.getTitle() == sound_name
 
     # nextCostume
     def test_can_convert_nextcostume_block(self):

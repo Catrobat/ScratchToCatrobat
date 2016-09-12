@@ -447,6 +447,8 @@ class_to_preserved_methods_mapping:
         - clone
     PlaySoundBrick:
         - setSoundInfo
+    PlaySoundAndWaitBrick:
+        - setSoundInfo
     StorageHandler:
         - getInstance
         - setXstreamAliases

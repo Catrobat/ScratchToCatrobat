@@ -248,6 +248,12 @@ class _ScratchToCatrobat(object):
         "stopAllSounds": catbricks.StopAllSoundsBrick,
         "changeVolumeBy:": catbricks.ChangeVolumeByNBrick,
         "setVolumeTo:": catbricks.SetVolumeToBrick,
+        
+        # bubble bricks
+        "say:duration:elapsed:from:": lambda msg, duration: catbricks.SayForBubbleBrick(msg, duration),
+        "say:": lambda msg: catbricks.SayBubbleBrick(msg),
+        "think:duration:elapsed:from:": lambda msg, duration: catbricks.ThinkForBubbleBrick(msg, duration),
+        "think:": lambda msg: catbricks.ThinkBubbleBrick(msg),
 
         # sprite values
         "xpos": catformula.Sensors.OBJECT_X,
@@ -1352,12 +1358,3 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             assert user_variable is not None and user_variable.getName() == variable_name, "variable: %s, sprite_name: %s" % (variable_name, self.sprite.getName())
         return [self.CatrobatClass(value, user_variable)]
 
-    @_register_handler(_block_name_to_handler_map, "say:duration:elapsed:from:", "say:", "think:duration:elapsed:from:", "think:")
-    def _convert_say_think_blocks(self):
-        text, _args = self.arguments[0], self.arguments[1:]
-        if self.block_name.startswith("think:"):
-            text = _SPEAK_BRICK_THINK_INTRO + text
-            # TODO: concatenate...
-        value = catrobat.create_formula_with_value(text)
-        # FIXME: value should depend on text length and optionally args
-        return [catbricks.SpeakBrick(value), catbricks.WaitBrick(1000)]

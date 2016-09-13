@@ -250,8 +250,8 @@ class _ScratchToCatrobat(object):
         "setVolumeTo:": catbricks.SetVolumeToBrick,
         
         # bubble bricks
-        "say:duration:elapsed:from:": lambda msg, duration: catbricks.SayForBubbleBrick(msg, duration),
-        "say:": lambda msg: catbricks.SayBubbleBrick(msg),
+        "say:duration:elapsed:from:": catbricks.SayForBubbleBrick,
+        "say:": catbricks.SayBubbleBrick,
         "think:duration:elapsed:from:": lambda msg, duration: catbricks.ThinkForBubbleBrick(msg, duration),
         "think:": lambda msg: catbricks.ThinkBubbleBrick(msg),
 
@@ -1357,4 +1357,18 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             user_variable = self.scene.getDataContainer().getUserVariable(variable_name, self.sprite)
             assert user_variable is not None and user_variable.getName() == variable_name, "variable: %s, sprite_name: %s" % (variable_name, self.sprite.getName())
         return [self.CatrobatClass(value, user_variable)]
+    
+    @_register_handler(_block_name_to_handler_map, "say:duration:elapsed:from:")
+    def _convert_say_for_bubble_brick(self):
+        [msg, duration] = self.arguments
+        say_for_bubble_brick = self.CatrobatClass()
+        say_for_bubble_brick.initializeBrickFields(catformula.Formula(msg),catformula.Formula(duration))
+        return say_for_bubble_brick
+    
+    @_register_handler(_block_name_to_handler_map, "say:")
+    def _convert_say_bubble_brick(self):
+        [msg] = self.arguments
+        say_bubble_brick = self.CatrobatClass()
+        say_bubble_brick.initializeBrickFields(catformula.Formula(msg))
+        return say_bubble_brick
 

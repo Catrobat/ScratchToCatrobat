@@ -252,8 +252,8 @@ class _ScratchToCatrobat(object):
         # bubble bricks
         "say:duration:elapsed:from:": catbricks.SayForBubbleBrick,
         "say:": catbricks.SayBubbleBrick,
-        "think:duration:elapsed:from:": lambda msg, duration: catbricks.ThinkForBubbleBrick(msg, duration),
-        "think:": lambda msg: catbricks.ThinkBubbleBrick(msg),
+        "think:duration:elapsed:from:": catbricks.ThinkForBubbleBrick,
+        "think:": catbricks.ThinkBubbleBrick,
 
         # sprite values
         "xpos": catformula.Sensors.OBJECT_X,
@@ -1357,18 +1357,32 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             user_variable = self.scene.getDataContainer().getUserVariable(variable_name, self.sprite)
             assert user_variable is not None and user_variable.getName() == variable_name, "variable: %s, sprite_name: %s" % (variable_name, self.sprite.getName())
         return [self.CatrobatClass(value, user_variable)]
-    
+
     @_register_handler(_block_name_to_handler_map, "say:duration:elapsed:from:")
     def _convert_say_for_bubble_brick(self):
         [msg, duration] = self.arguments
         say_for_bubble_brick = self.CatrobatClass()
         say_for_bubble_brick.initializeBrickFields(catformula.Formula(msg),catformula.Formula(duration))
         return say_for_bubble_brick
-    
+
     @_register_handler(_block_name_to_handler_map, "say:")
     def _convert_say_bubble_brick(self):
         [msg] = self.arguments
         say_bubble_brick = self.CatrobatClass()
         say_bubble_brick.initializeBrickFields(catformula.Formula(msg))
         return say_bubble_brick
+
+    @_register_handler(_block_name_to_handler_map, "think:duration:elapsed:from:")
+    def _convert_think_for_bubble_brick(self):
+        [msg, duration] = self.arguments
+        msg_formula = catrobat.create_formula_with_value(msg)
+        duration_formula = catrobat.create_formula_with_value(duration)
+        return self.CatrobatClass(msg_formula, duration_formula)
+
+    @_register_handler(_block_name_to_handler_map, "think:")
+    def _convert_think_bubble_brick(self):
+        [msg] = self.arguments
+        think_bubble_brick = self.CatrobatClass()
+        think_bubble_brick.initializeBrickFields(catrobat.create_formula_with_value(msg))
+        return think_bubble_brick
 

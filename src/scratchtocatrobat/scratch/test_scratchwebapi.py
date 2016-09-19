@@ -227,6 +227,13 @@ TEST_PROJECT_ID_TO_REMIXES_MAP = {
         'image': 'https://cdn2.scratch.mit.edu/get_image/project/119292702_144x108.png',
         'title': '\xef\xbd\x8d\xe3\x80\x8d',
         'id': 119292702
+    }, {
+        'owner': u'katakanakana',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/120985495_144x108.png',
+        'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\x08\xe8\xb6\x85\xe8\xb6\x85' \
+                 '\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82\xa6\xe3' \
+                 '\x82\xb9\xef\xbc\x89',
+        'id': 120985495
     }]
 }
 

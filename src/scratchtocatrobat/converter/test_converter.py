@@ -1468,43 +1468,126 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert expected_msg, stub_scripts.get(0).getBroadcastMessage()
         assert isinstance(catr_script.getBrickList().get(0), catbricks.BroadcastBrick)
         assert expected_msg, catr_script.getBrickList().get(0).getBroadcastMessage()
-        
+
     # sayBubbleBrick
     def test_can_convert_say_bubble_brick(self):
-        scratch_block = _, msg = ["say:", "Hello!"]
+        scratch_block = _, expected_message = ["say:", "Hello!"]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.SayBubbleBrick)
-        
+        formula_tree_message = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.STRING).formulaTree # @UndefinedVariable
+        assert catformula.FormulaElement.ElementType.STRING == formula_tree_message.type
+        assert expected_message == formula_tree_message.value
+        assert formula_tree_message.leftChild is None
+        assert formula_tree_message.rightChild is None
+
     # sayForBubbleBrick
     def test_can_convert_say_for_bubble_brick(self):
-        scratch_block = _, msg, duration = ["say:duration:elapsed:from:", "Hello!", 2]
+        scratch_block = _, expected_message, expected_duration = ["say:duration:elapsed:from:", "Hello!", 2]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.SayForBubbleBrick)
-        
-        # sayBubbleBrick
+
+        formula_tree_message = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.STRING).formulaTree # @UndefinedVariable
+        assert catformula.FormulaElement.ElementType.STRING == formula_tree_message.type
+        assert expected_message == formula_tree_message.value
+        assert formula_tree_message.leftChild is None
+        assert formula_tree_message.rightChild is None
+
+        formula_tree_duration = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.DURATION_IN_SECONDS).formulaTree # @UndefinedVariable
+        assert catformula.FormulaElement.ElementType.NUMBER == formula_tree_duration.type
+        assert str(float(expected_duration)) == formula_tree_duration.value
+        assert formula_tree_duration.leftChild is None
+        assert formula_tree_duration.rightChild is None
+
+    # sayBubbleBrick
     def test_can_convert_say_bubble_brick_with_formulas(self):
-        scratch_block = _, msg = ["say:", ["+", 1, 1]]
+        expected_left_operand = 1
+        expected_right_operand = 2
+        scratch_block = ["say:", ["+", expected_left_operand, expected_right_operand]]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.SayBubbleBrick)
-        
+
+        formula_tree = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.STRING).formulaTree # @UndefinedVariable
+        assert catformula.FormulaElement.ElementType.OPERATOR == formula_tree.type
+        assert formula_tree.value == catformula.Operators.PLUS.toString() # @UndefinedVariable
+        assert formula_tree.leftChild is not None
+        assert formula_tree.rightChild is not None
+
+        formula_left_child = formula_tree.leftChild
+        assert catformula.FormulaElement.ElementType.NUMBER == formula_left_child.type
+        assert str(expected_left_operand) == formula_left_child.value
+        assert formula_left_child.leftChild is None
+        assert formula_left_child.rightChild is None
+
+        formula_right_child = formula_tree.rightChild
+        assert catformula.FormulaElement.ElementType.NUMBER == formula_right_child.type
+        assert str(expected_right_operand) == formula_right_child.value
+        assert formula_right_child.leftChild is None
+        assert formula_right_child.rightChild is None
+
     # sayForBubbleBrick
     def test_can_convert_say_for_bubble_brick_with_formulas(self):
-        scratch_block = _, msg, duration = ["say:duration:elapsed:from:", "Hello!", ["+", 1, 1]]
+        expected_left_operand = 1
+        expected_right_operand = 2
+        scratch_block = _, expected_message, _ = ["say:duration:elapsed:from:", "Hello!",
+                                                  ["+", expected_left_operand, expected_right_operand]]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.SayForBubbleBrick)
-        
+
+        formula_tree = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.STRING).formulaTree # @UndefinedVariable
+        assert catformula.FormulaElement.ElementType.STRING == formula_tree.type
+        assert expected_message == formula_tree.value
+        assert formula_tree.leftChild is None
+        assert formula_tree.rightChild is None
+
+        formula_tree = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.DURATION_IN_SECONDS).formulaTree # @UndefinedVariable
+        assert catformula.FormulaElement.ElementType.OPERATOR == formula_tree.type
+        assert formula_tree.value == catformula.Operators.PLUS.toString() # @UndefinedVariable
+        assert formula_tree.leftChild is not None
+        assert formula_tree.rightChild is not None
+
+        formula_left_child = formula_tree.leftChild
+        assert catformula.FormulaElement.ElementType.NUMBER == formula_left_child.type
+        assert str(expected_left_operand) == formula_left_child.value
+        assert formula_left_child.leftChild is None
+        assert formula_left_child.rightChild is None
+
+        formula_right_child = formula_tree.rightChild
+        assert catformula.FormulaElement.ElementType.NUMBER == formula_right_child.type
+        assert str(expected_right_operand) == formula_right_child.value
+        assert formula_right_child.leftChild is None
+        assert formula_right_child.rightChild is None
+
     # thinkBubbleBrick
     def test_can_convert_think_bubble_brick(self):
-        scratch_block = _, msg = ["think:", "2B or !2B..."]
+        scratch_block = _, expected_message = ["think:", "2B or !2B..."]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        print type(catr_brick)
         assert isinstance(catr_brick, catbricks.ThinkBubbleBrick)
-        
+
+        formula_tree = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.STRING).formulaTree # @UndefinedVariable
+        assert catformula.FormulaElement.ElementType.STRING == formula_tree.type
+        assert expected_message == formula_tree.value
+        assert formula_tree.leftChild is None
+        assert formula_tree.rightChild is None
+
     # thinkForBubbleBrick
     def test_can_convert_think_for_bubble_brick(self):
-        scratch_block = _, msg, duration = ["think:duration:elapsed:from:", "2B or !2B...", 2]
+        scratch_block = _, expected_message, expected_duration = ["think:duration:elapsed:from:", "2B or !2B...", 2]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.ThinkForBubbleBrick)
-        
+
+        formula_tree = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.STRING).formulaTree # @UndefinedVariable
+        assert catformula.FormulaElement.ElementType.STRING == formula_tree.type
+        assert expected_message == formula_tree.value
+        assert formula_tree.leftChild is None
+        assert formula_tree.rightChild is None
+
+        formula_tree_duration = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.DURATION_IN_SECONDS).formulaTree # @UndefinedVariable
+        assert catformula.FormulaElement.ElementType.NUMBER == formula_tree_duration.type
+        assert str(expected_duration) == formula_tree_duration.value
+        assert formula_tree_duration.leftChild is None
+        assert formula_tree_duration.rightChild is None
+
 
 class TestConvertProjects(common_testing.ProjectTestCase):
 

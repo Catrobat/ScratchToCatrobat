@@ -1468,6 +1468,43 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert expected_msg, stub_scripts.get(0).getBroadcastMessage()
         assert isinstance(catr_script.getBrickList().get(0), catbricks.BroadcastBrick)
         assert expected_msg, catr_script.getBrickList().get(0).getBroadcastMessage()
+        
+    # sayBubbleBrick
+    def test_can_convert_say_bubble_brick(self):
+        scratch_block = _, msg = ["say:", "Hello!"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.SayBubbleBrick)
+        
+    # sayForBubbleBrick
+    def test_can_convert_say_for_bubble_brick(self):
+        scratch_block = _, msg, duration = ["say:duration:elapsed:from:", "Hello!", 2]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.SayForBubbleBrick)
+        
+        # sayBubbleBrick
+    def test_can_convert_say_bubble_brick_with_formulas(self):
+        scratch_block = _, msg = ["say:", ["+", 1, 1]]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.SayBubbleBrick)
+        
+    # sayForBubbleBrick
+    def test_can_convert_say_for_bubble_brick_with_formulas(self):
+        scratch_block = _, msg, duration = ["say:duration:elapsed:from:", "Hello!", ["+", 1, 1]]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.SayForBubbleBrick)
+        
+    # thinkBubbleBrick
+    def test_can_convert_think_bubble_brick(self):
+        scratch_block = _, msg = ["think:", "2B or !2B..."]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.ThinkBubbleBrick)
+        
+    # thinkForBubbleBrick
+    def test_can_convert_think_for_bubble_brick(self):
+        scratch_block = _, msg, duration = ["think:duration:elapsed:from:", "2B or !2B...", 2]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.ThinkForBubbleBrick)
+        
 
 class TestConvertProjects(common_testing.ProjectTestCase):
 

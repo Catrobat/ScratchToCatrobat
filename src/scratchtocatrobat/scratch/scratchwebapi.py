@@ -360,20 +360,24 @@ def extract_project_visibilty_state_from_document(document):
     else:
         return ScratchProjectVisibiltyState.PUBLIC
 
-def extract_project_details_from_document(document):
+def extract_project_details_from_document(document, escape_quotes=True):
     if document is None: return None
 
     title = extract_project_title_from_document(document)
     if title is None: return None
+    if escape_quotes: title = title.replace('"','\\"')
 
     owner = extract_project_owner_from_document(document)
     if owner is None: return None
+    if escape_quotes: owner = owner.replace('"','\\"')
 
     image_url = extract_project_image_url_from_document(document)
     if image_url is None: return None
 
     instructions = extract_project_instructions_from_document(document)
+    if escape_quotes: instructions = instructions.replace('"','\\"')
     notes_and_credits = extract_project_notes_and_credits_from_document(document)
+    if escape_quotes: notes_and_credits = notes_and_credits.replace('"','\\"')
     tags = document.select_all_as_text_list("div#project-tags div.tag-box span.tag") or []
 
     extracted_text = document.select_first_as_text("div#total-views > span.views")

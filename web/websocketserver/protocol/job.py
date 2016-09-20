@@ -26,11 +26,12 @@ _logger = logging.getLogger(__name__)
 
 
 class Job(object):
-    class State:
+    class State(object):
         READY = 0
         RUNNING = 1
         FINISHED = 2
         FAILED = 3
+
 
     DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
     CACHE_ENTRY_VALID_FOR = 600

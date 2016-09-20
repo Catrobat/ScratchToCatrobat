@@ -126,9 +126,11 @@ class _DownloadHandler(tornado.web.RequestHandler):
                         self.write(write_buffer)
                     else:
                         self.finish()
+                        _logger.info("Download of job {} finished (client: {})".format(job_ID, client_ID))
                         return
             except:
                 raise HTTPError(404)
+
         raise HTTPError(500)
 
 
@@ -245,7 +247,7 @@ class _ProjectHandler(tornado.web.RequestHandler):
             self.send_response_data(response.as_dict())
             return
 
-        project_info = scratchwebapi.extract_project_details_from_document(document)
+        project_info = scratchwebapi.extract_project_details_from_document(document, escape_quotes=True)
         if project_info is None:
             _logger.error("Unable to parse project-info from web page: Invalid or empty HTML-content!")
             self.send_response_data(response.as_dict())

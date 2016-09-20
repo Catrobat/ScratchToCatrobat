@@ -26,7 +26,6 @@ from scratchtocatrobat.scratch import scratchwebapi
 
 REDIS_JOB_KEY_TEMPLATE = "job#{}"
 REDIS_LISTENING_CLIENT_JOB_KEY_TEMPLATE = "listeningClientsOfJob#{}"
-REDIS_CLIENTS_NOT_YET_DOWNLOADED_JOB_KEY_TEMPLATE = "clientsNotYetDownloadedJob#{}"
 REDIS_JOB_CLIENT_KEY_TEMPLATE = "jobsOfClient#{}"
 
 

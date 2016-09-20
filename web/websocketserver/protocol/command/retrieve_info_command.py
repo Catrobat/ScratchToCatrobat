@@ -46,19 +46,9 @@ class RetrieveInfoCommand(Command):
         jobs_info = []
         for job in jobs:
             info = job.__dict__
-            info["alreadyDownloaded"] = self._job_already_downloaded_by_client(redis_conn, job.jobID,
-                                                                               client_ID)
             info["downloadURL"] = webhelpers.create_download_url(job.jobID, client_ID, job.title)
             del info["output"]
             jobs_info += [info]
 
         return InfoMessage(CATROBAT_LANGUAGE_VERSION, jobs_info)
 
-
-    def _job_already_downloaded_by_client(self, redis_connection, job_ID, client_ID):
-        assert isinstance(client_ID, int)
-        client_download_job_key = webhelpers.REDIS_CLIENTS_NOT_YET_DOWNLOADED_JOB_KEY_TEMPLATE.format(job_ID)
-        existing_client_IDs = redis_connection.get(client_download_job_key)
-        existing_client_IDs = ast.literal_eval(existing_client_IDs) if existing_client_IDs != None else []
-        assert isinstance(existing_client_IDs, list)
-        return client_ID not in existing_client_IDs

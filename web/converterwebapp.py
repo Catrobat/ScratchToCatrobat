@@ -52,7 +52,6 @@ from scratchtocatrobat.scratch import scratchwebapi
 from scratchtocatrobat.scratch.scratchwebapi import ScratchProjectVisibiltyState
 from scratchtocatrobat.tools import helpers
 import helpers as webhelpers
-from websocketserver.protocol.command.schedule_job_command import remove_client_from_download_list_if_exists
 import redis
 
 _logger = logging.getLogger(__name__)
@@ -99,7 +98,6 @@ class _DownloadHandler(tornado.web.RequestHandler):
         if not file_name or not os.path.exists(file_path):
             raise HTTPError(404)
 
-        remove_client_from_download_list_if_exists(REDIS_CONNECTION, job_ID, client_ID)
         file_size = os.path.getsize(file_path)
         self.set_header('Content-Type', 'application/zip')
         self.set_header('Content-Disposition', 'attachment; filename="%s"' % file_name)

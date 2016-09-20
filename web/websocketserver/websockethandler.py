@@ -41,7 +41,7 @@ import tornado.escape
 import tornado.websocket
 from protocol import protocol
 from protocol.command import command as cmd
-from protocol.command.schedule_job_command import remove_all_listening_clients_from_job, add_clients_to_download_list
+from protocol.command.schedule_job_command import remove_all_listening_clients_from_job
 from protocol.job import Job
 from protocol.message.message import Message
 from protocol.message.job.job_failed_message import JobFailedMessage
@@ -145,8 +145,6 @@ class ConverterWebSocketHandler(tornado.websocket.WebSocketHandler):
             # Job completely finished or failed -> remove all listeners from database
             #                                      before updating job state in database
             remove_all_listening_clients_from_job(cls.REDIS_CONNECTION, job_ID)
-            # append clients to download-list
-            add_clients_to_download_list(cls.REDIS_CONNECTION, job_ID, all_listening_client_IDs)
 
         # update job state in database
         if not job.save_to_redis(cls.REDIS_CONNECTION, job_key):

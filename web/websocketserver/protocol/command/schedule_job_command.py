@@ -59,32 +59,6 @@ def remove_all_listening_clients_from_job(redis_connection, job_ID):
     return redis_connection.delete(client_job_key)
 
 
-def add_clients_to_download_list(redis_connection, job_ID, new_client_IDs):
-    assert isinstance(new_client_IDs, list)
-    for client_ID in new_client_IDs:
-        assert isinstance(client_ID, int)
-
-    client_download_job_key = webhelpers.REDIS_CLIENTS_NOT_YET_DOWNLOADED_JOB_KEY_TEMPLATE.format(job_ID)
-    existing_client_IDs = redis_connection.get(client_download_job_key)
-    existing_client_IDs = ast.literal_eval(existing_client_IDs) if existing_client_IDs != None else []
-    assert isinstance(existing_client_IDs, list)
-    existing_client_IDs += new_client_IDs
-    return redis_connection.set(client_download_job_key, existing_client_IDs)
-
-
-def remove_client_from_download_list_if_exists(redis_connection, job_ID, client_ID):
-    assert isinstance(client_ID, int)
-    client_download_job_key = webhelpers.REDIS_CLIENTS_NOT_YET_DOWNLOADED_JOB_KEY_TEMPLATE.format(job_ID)
-    existing_client_IDs = redis_connection.get(client_download_job_key)
-    existing_client_IDs = ast.literal_eval(existing_client_IDs) if existing_client_IDs != None else []
-    assert isinstance(existing_client_IDs, list)
-
-    if client_ID not in existing_client_IDs:
-        return False
-    existing_client_IDs.remove(client_ID)
-    return redis_connection.set(client_download_job_key, existing_client_IDs)
-
-
 def assign_job_to_client(redis_connection, job_ID, client_ID):
     job_client_key = webhelpers.REDIS_JOB_CLIENT_KEY_TEMPLATE.format(client_ID)
     jobs_of_client = redis_connection.get(job_client_key)
@@ -154,7 +128,6 @@ class ScheduleJobCommand(Command):
             if job.is_in_progress():
                 # TODO: lock.release()
                 _logger.info("Job already scheduled (scratch project with ID: %d)", job_ID)
-                remove_client_from_download_list_if_exists(redis_conn, job_ID, client_ID)
                 if not add_listening_client_to_job(redis_conn, client_ID, job_ID):
                     return JobFailedMessage(job_ID, "Cannot add client as listener to job!")
                 return JobAlreadyRunningMessage(job_ID, job.title, job.imageURL)
@@ -180,7 +153,6 @@ class ScheduleJobCommand(Command):
             # TODO: lock.release()
             return JobFailedMessage(job_ID, "Cannot schedule job!")
 
-        remove_client_from_download_list_if_exists(redis_conn, job_ID, client_ID)
         if not add_listening_client_to_job(redis_conn, client_ID, job_ID):
             return JobFailedMessage(job_ID, "Cannot add client as listener to job!")
 

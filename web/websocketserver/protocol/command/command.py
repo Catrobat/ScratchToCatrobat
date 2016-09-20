@@ -24,7 +24,6 @@ from websocketserver.protocol.message.base.error_message import ErrorMessage
 COMMAND_AUTHENTICATE    = 0
 COMMAND_RETRIEVE_INFO   = 1
 COMMAND_SCHEDULE_JOB    = 2
-COMMAND_CANCEL_DOWNLOAD = 3
 
 
 class Command(object):
@@ -75,11 +74,9 @@ def get_command(typeID):
     from websocketserver.protocol.command import authenticate_command
     from websocketserver.protocol.command import schedule_job_command
     from websocketserver.protocol.command import retrieve_info_command
-    from websocketserver.protocol.command import cancel_download_command
     COMMANDS = {
         COMMAND_AUTHENTICATE:   authenticate_command.AuthenticateCommand(),
         COMMAND_RETRIEVE_INFO:   retrieve_info_command.RetrieveInfoCommand(),
-        COMMAND_SCHEDULE_JOB:    schedule_job_command.ScheduleJobCommand(),
-        COMMAND_CANCEL_DOWNLOAD: cancel_download_command.CancelDownloadCommand()
+        COMMAND_SCHEDULE_JOB:    schedule_job_command.ScheduleJobCommand()
     }
     return COMMANDS[typeID] if isinstance(typeID, int) and typeID in COMMANDS else InvalidCommand()

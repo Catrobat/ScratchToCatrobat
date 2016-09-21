@@ -58,6 +58,7 @@ _SPEAK_BRICK_THINK_INTRO = "I am thinking. "
 _SUPPORTED_IMAGE_EXTENSIONS_BY_CATROBAT = {".gif", ".jpg", ".jpeg", ".png"}
 _SUPPORTED_SOUND_EXTENSIONS_BY_CATROBAT = {".mp3", ".wav"}
 
+CATROBAT_DEFAULT_SCENE_NAME = "Scene 1"
 UNSUPPORTED_SCRATCH_BRICK_NOTE_MESSAGE_PREFIX = "Missing brick for Scratch identifier: "
 
 log = logger.log
@@ -365,7 +366,7 @@ class Converter(object):
     def _converted_catrobat_program(self, progress_bar=None, context=None):
         scratch_project = self.scratch_project
         _catr_project = catbase.Project(None, scratch_project.name)
-        _catr_scene = catbase.Scene(None, "Scene 1", _catr_project)
+        _catr_scene = catbase.Scene(None, CATROBAT_DEFAULT_SCENE_NAME, _catr_project)
         _catr_project.sceneList.add(_catr_scene)
 
         self._scratch_object_converter = _ScratchObjectConverter(_catr_project, scratch_project,
@@ -755,19 +756,19 @@ class ConvertedProject(object):
 
     @staticmethod
     def _images_dir_of_project(temp_dir):
-        return os.path.join(temp_dir, "images")
+        return os.path.join(temp_dir, CATROBAT_DEFAULT_SCENE_NAME, "images")
 
     @staticmethod
     def _sounds_dir_of_project(temp_dir):
-        return os.path.join(temp_dir, "sounds")
+        return os.path.join(temp_dir, CATROBAT_DEFAULT_SCENE_NAME, "sounds")
 
     def save_as_catrobat_directory_structure_to(self, temp_path, progress_bar=None, context=None):
         def create_directory_structure():
             sounds_path = self._sounds_dir_of_project(temp_path)
-            os.mkdir(sounds_path)
+            os.makedirs(sounds_path)
 
             images_path = self._images_dir_of_project(temp_path)
-            os.mkdir(images_path)
+            os.makedirs(images_path)
 
             for _ in (temp_path, sounds_path, images_path):
                 # TODO: into common module
@@ -828,7 +829,7 @@ class ConvertedProject(object):
         log.info("  Saving project XML file")
         write_program_source(self.catrobat_program, context)
         log.info("  Downloading and adding automatic screenshot")
-        download_automatic_screenshot_if_available(temp_path, self.scratch_project)
+        download_automatic_screenshot_if_available(os.path.join(temp_path, CATROBAT_DEFAULT_SCENE_NAME), self.scratch_project)
         if progress_bar != None:
             progress_bar.update(ProgressType.SAVE_XML, progress_bar.saving_xml_progress_weight)
 

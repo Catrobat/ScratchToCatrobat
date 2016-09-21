@@ -31,6 +31,7 @@ from codecs import open
 
 import org.catrobat.catroid.common as catcommon
 import org.catrobat.catroid.content as catbase
+from org.catrobat.catroid.ui.fragment import SpriteFactory
 import org.catrobat.catroid.content.bricks as catbricks
 import org.catrobat.catroid.formulaeditor as catformula
 import org.catrobat.catroid.formulaeditor.FormulaElement.ElementType as catElementType
@@ -403,7 +404,7 @@ class Converter(object):
             key_filename = _key_filename_for(key)
             key_message = _key_to_broadcast_message(key)
 
-            key_sprite = catbase.Sprite(key_message)
+            key_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, key_message)
             key_look = catcommon.LookData()
             key_look.setLookName(key_message)
             key_look.setLookFilename(key_filename)
@@ -496,7 +497,7 @@ class _ScratchObjectConverter(object):
             raise common.ScratchtobatError("Input must be of type={}, but is={}".format(scratch.Object, type(scratch_object)))
         sprite_name = scratch_object.name
         sprite_context = SpriteContext(sprite_name)
-        sprite = catbase.Sprite(sprite_name)
+        sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, sprite_name)
         assert sprite_name == sprite.getName()
         log.info('-'*80)
         log.info("Converting Sprite: '%s'", sprite.getName())

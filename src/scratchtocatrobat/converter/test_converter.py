@@ -23,6 +23,7 @@ import unittest
 
 import org.catrobat.catroid.common as catcommon
 import org.catrobat.catroid.content as catbase
+from org.catrobat.catroid.ui.fragment import SpriteFactory
 import org.catrobat.catroid.content.bricks as catbricks
 import org.catrobat.catroid.content.bricks.Brick as catbasebrick
 import org.catrobat.catroid.formulaeditor as catformula
@@ -35,7 +36,7 @@ from scratchtocatrobat.converter import converter
 
 
 def create_catrobat_sprite_stub(name=None):
-    sprite = catbase.Sprite("Dummy" if name is None else name)
+    sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, "Dummy" if name is None else name)
     looks = sprite.getLookDataList()
     for lookname in ["look1", "look2", "look3"]:
         looks.add(catrobat.create_lookdata(lookname, None))
@@ -222,7 +223,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def get_sprite_with_soundinfo(self, soundinfo_name):
         dummy_sound = catcommon.SoundInfo()
         dummy_sound.setTitle(soundinfo_name)
-        dummy_sprite = catbase.Sprite("TestDummy")
+        dummy_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, "TestDummy")
         dummy_sprite.getSoundList().add(dummy_sound)
         return dummy_sprite
 

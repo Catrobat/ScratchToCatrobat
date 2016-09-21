@@ -179,7 +179,8 @@ class ProjectTestCase(BaseTestCase):
         with zipfile.ZipFile(zip_path) as zip_fp:
             assert zip_fp.testzip() is None
             assert project_name != os.path.commonprefix(zip_fp.namelist())[:-1], "Wrong directory in zipped catrobat project."
-            all_nomedia_files = (".nomedia", "images/.nomedia", "sounds/.nomedia")
+            all_nomedia_files = (".nomedia", converter.CATROBAT_DEFAULT_SCENE_NAME + "/images/.nomedia", \
+                                 converter.CATROBAT_DEFAULT_SCENE_NAME + "/sounds/.nomedia")
             for nomedia_file in all_nomedia_files:
                 assert nomedia_file in set(zip_fp.namelist())
             for unused_scratch_resource in unused_scratch_resources:

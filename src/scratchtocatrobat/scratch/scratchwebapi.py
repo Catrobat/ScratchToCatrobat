@@ -375,9 +375,9 @@ def extract_project_details_from_document(document, escape_quotes=True):
     if image_url is None: return None
 
     instructions = extract_project_instructions_from_document(document)
-    if escape_quotes: instructions = instructions.replace('"','\\"')
+    if escape_quotes and instructions is not None: instructions = instructions.replace('"','\\"')
     notes_and_credits = extract_project_notes_and_credits_from_document(document)
-    if escape_quotes: notes_and_credits = notes_and_credits.replace('"','\\"')
+    if escape_quotes and notes_and_credits is not None: notes_and_credits = notes_and_credits.replace('"','\\"')
     tags = document.select_all_as_text_list("div#project-tags div.tag-box span.tag") or []
 
     extracted_text = document.select_first_as_text("div#total-views > span.views")

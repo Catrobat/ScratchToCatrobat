@@ -217,17 +217,19 @@ class _ProjectHandler(tornado.web.RequestHandler):
                 response.accessible = False
                 response.valid_until = dt.now() + timedelta(seconds=cls.CACHE_ENTRY_VALID_FOR)
                 cls.RESPONSE_CACHE[project_id] = (response.as_dict(), response.valid_until)
-                if project_id in cls.IN_PROGRESS_FUTURE_MAP: del cls.IN_PROGRESS_FUTURE_MAP[project_id]
+            if project_id in cls.IN_PROGRESS_FUTURE_MAP: del cls.IN_PROGRESS_FUTURE_MAP[project_id]
             self.send_response_data(response.as_dict())
             return
         except Exception, e:
             _logger.warn("Unable to download project's web page: " + str(e))
+            if project_id in cls.IN_PROGRESS_FUTURE_MAP: del cls.IN_PROGRESS_FUTURE_MAP[project_id]
             self.send_response_data(ProjectDataResponse().as_dict())
             return
 
         if project_html_content is None or project_html_content.body is None \
         or not isinstance(project_html_content.body, (str, unicode)):
             _logger.error("Unable to download web page of project: Invalid or empty HTML-content!")
+            if project_id in cls.IN_PROGRESS_FUTURE_MAP: del cls.IN_PROGRESS_FUTURE_MAP[project_id]
             self.send_response_data(ProjectDataResponse().as_dict())
             return
 
@@ -248,6 +250,7 @@ class _ProjectHandler(tornado.web.RequestHandler):
         project_info = scratchwebapi.extract_project_details_from_document(document, escape_quotes=True)
         if project_info is None:
             _logger.error("Unable to parse project-info from web page: Invalid or empty HTML-content!")
+            if project_id in cls.IN_PROGRESS_FUTURE_MAP: del cls.IN_PROGRESS_FUTURE_MAP[project_id]
             self.send_response_data(response.as_dict())
             return
 

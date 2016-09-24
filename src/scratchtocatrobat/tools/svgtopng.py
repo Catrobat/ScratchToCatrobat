@@ -35,6 +35,7 @@ from java.io import FileReader
 from java.io import PrintWriter
 from java.util import StringTokenizer
 from javax.swing import ImageIcon
+import java.awt.Color
 
 _BATIK_CLI_JAR = "batik-rasterizer.jar"
 _log = logging.getLogger(__name__)
@@ -86,14 +87,14 @@ def convert(input_svg_path, rotation_x, rotation_y):
         assert os.path.exists(output_png_path)
 
 # TODO: uncomment this once all remaining bugs have been fixed!
-#         final_image = _translation(output_png_path, rotation_x, rotation_y)
-# 
-#         if final_image is None:
-#             raise RuntimeError("...")
-# 
-#         from javax.imageio import ImageIO
-#         from java.io import File
-#         ImageIO.write(final_image, "PNG", File(output_png_path))
+        final_image = _translation(output_png_path, rotation_x, rotation_y)
+ 
+        if final_image is None:
+            raise RuntimeError("...")
+ 
+        from javax.imageio import ImageIO
+        from java.io import File
+        ImageIO.write(final_image, "PNG", File(output_png_path))
         return output_png_path
     except BaseException as err:
         import traceback
@@ -136,62 +137,92 @@ def _translation(output_png_path, rotation_x, rotation_y):
 
     _log.info("-" * 80)
     _log.info("Output path: {}".format(output_png_path))
-    _log.info("height, weight: ({}, {})".format(m, n))
+    _log.info("height, width: ({}, {})".format(m, n))
     start_x = min(x_coords_list) if len(x_coords_list) > 0 else 0
     end_x = max(x_coords_list) if len(x_coords_list) > 0 else 0
     start_y = min(y_coords_list) if len(y_coords_list) > 0 else 0
     end_y = max(y_coords_list) if len(y_coords_list) > 0 else 0
 
+    if start_x == 0 and end_x == 0 and start_y == 0 and end_y == 0:
+        _log.info("ANTENNA-ERROR")
+        return buffered_image
+
+    _log.info("start y, start x: ({}, {})".format(start_y, start_x))
     _log.info("end y, end x: ({}, {})".format(end_y, end_x))
 
-    if start_x > rotation_x:
-        start_x = rotation_x
-    if end_x < rotation_x:
-        end_x = rotation_x
-    if start_y > rotation_y:
-        start_y = rotation_y
-    if end_y < rotation_y:
-        end_y = rotation_y
+#    if start_x > rotation_x:
+#        start_x = rotation_x
+#    if end_x < rotation_x:
+#        end_x = rotation_x
+#    if start_y > rotation_y:
+#        start_y = rotation_y
+#    if end_y < rotation_y:
+#        end_y = rotation_y
+    old_end_y = end_y
+    old_end_x = end_x
+    #check for overlap and calculate new start and end
+    if (rotation_x < end_x) and (rotation_x > 0):
+        _log.info("x overlap")
+        if end_x - rotation_x > end_x/2:
+            start_x = -(end_x - 2*rotation_x)
+        elif end_x - rotation_x < end_x/2:
+            end_x = 2*rotation_x
+        
+    if (rotation_y < end_y) and (rotation_y > 0):
+        _log.info("y overlap")
+        if end_y - rotation_y > end_y/2:
+            start_y = -(end_y - 2*rotation_y)
+        elif end_y - rotation_y < end_y/2:
+            end_y = 2*rotation_y
+            
+    dst_new_width = (abs(start_x) + abs(end_x))
+    dst_new_height = (abs(start_y) + abs(end_y))
+            
+    if rotation_x  < 0:
+        _log.info("2nd quadrant x rotation")
+        start_x = 2*abs(rotation_x) + end_x
+        dst_new_width = 2*(abs(rotation_x) + end_x)
+        _log.info("({})".format(dst_new_width))
+        end_x = 2*(abs(rotation_x) + end_x)
+        
+    elif rotation_x >= end_x:
+        _log.info("huge x rotation")
+        dst_new_width = 2*rotation_x - 2*end_x
+   
+    if rotation_y  < 0:
+        _log.info("4th quadrant y rotation")
+        start_y = 2*abs(rotation_y) + end_y
+        dst_new_height = 2*(abs(rotation_y) + end_y)
+        end_y = 2*(abs(rotation_y) + end_y)
+        
+    elif rotation_y >= end_y:
+        _log.info("huge y rotation")
+        dst_new_height = 2*rotation_y - 2*end_y
 
+    _log.info("start y, start x: ({}, {})".format(start_y, start_x))
     _log.info("end y, end x: ({}, {})".format(end_y, end_x))
     _log.info("-" * 80)
 
-    dst_new_width = end_x * 2
-    dst_new_height = end_y * 2
+    #dst_new_width = end_x * 2
+    #dst_new_height = end_y * 2 
             
     new_buffered_image = BufferedImage(dst_new_width, dst_new_height,BufferedImage.TYPE_INT_ARGB)    
     g2d = new_buffered_image.createGraphics()
     g2d.setComposite(AlphaComposite.Clear)
     g2d.fillRect(0, 0, dst_new_width, dst_new_height)
 
-    # Bottom Right
-    for old_row_y, new_row_y in zip(xrange(rotation_y, end_y + 1),xrange(end_y, dst_new_height)):
-        for old_column_x, new_column_x in zip(xrange(rotation_x, end_x + 1),xrange(end_x, dst_new_width)):
-            if(old_row_y >= 0 and old_column_x >= 0 and old_row_y < buffered_image_matrix.length and old_column_x < buffered_image_matrix[old_row_y].length):
-                new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x]);
+    #try to assemble image
+    for row_y in xrange(abs(start_y), end_y + 1):
+        for column_x in xrange(abs(start_x), end_x + 1):
+            if(row_y - abs(start_y) < old_end_y and column_x - abs(start_x) < old_end_x):
+                new_buffered_image.setRGB(column_x,row_y, buffered_image_matrix[row_y-abs(start_y)][column_x-abs(start_x)])
     
-    # Upper Right
-    for old_row_y, new_row_y in zip(xrange(rotation_y, start_y - 1, -1),xrange(end_y, -1, -1)):
-        for old_column_x, new_column_x in zip(xrange(rotation_x, end_x + 1),xrange(end_x, dst_new_width)):
-            if(old_row_y >= 0 and old_column_x >= 0 and old_row_y < buffered_image_matrix.length and old_column_x < buffered_image_matrix[old_row_y].length):
-                new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x])
-          
-    # Upper Left
-    for old_row_y, new_row_y in zip(xrange(rotation_y, start_y - 1, -1),xrange(end_y, -1, -1)):
-        for old_column_x, new_column_x in zip(xrange(rotation_x, start_x - 1, -1),xrange(end_x, -1, -1)):
-            if(old_row_y >= 0 and old_column_x >= 0 and old_row_y < buffered_image_matrix.length and old_column_x < buffered_image_matrix[old_row_y].length):
-                new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x])
-
-    # Bottom Left
-    for old_row_y, new_row_y in zip(xrange(rotation_y, end_y + 1),xrange(end_y, dst_new_height)):
-        for old_column_x, new_column_x in zip(xrange(rotation_x, start_x - 1, -1),xrange(end_x, -1, -1)):
-            if(old_row_y >= 0 and old_column_x >= 0 and old_row_y < buffered_image_matrix.length and old_column_x < buffered_image_matrix[old_row_y].length):
-                new_buffered_image.setRGB(new_column_x,new_row_y, buffered_image_matrix[old_row_y][old_column_x])
-                
-    #color = Color.yellow
-    #new_buffered_image.setRGB(end_x - 1, end_y - 1, color.getRGB())
+    _log.info("row: ({})".format(row_y))
+    _log.info("col: ({})".format(column_x))           
+    rgb = java.awt.Color(255,20,147)
+    new_buffered_image.setRGB(dst_new_width/2, dst_new_height/2, rgb.getRGB())
     return new_buffered_image
-    
+
 # def _translation_to_rotation_point(img, rotation_x, rotation_y):
 #    
 #     dst_new_width, dst_new_height = None, None

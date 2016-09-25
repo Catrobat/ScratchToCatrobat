@@ -191,7 +191,7 @@ def _translation(output_png_path, rotation_x, rotation_y):
         
     elif rotation_x >= end_x:
         _log.info("huge x rotation")
-        dst_new_width = 2*rotation_x - 2*end_x - 2*org_st_x
+        dst_new_width = rotation_x + end_x + 2*org_st_x
    
     if rotation_y  < 0:
         _log.info("4th quadrant y rotation")
@@ -201,7 +201,7 @@ def _translation(output_png_path, rotation_x, rotation_y):
         
     elif rotation_y >= end_y:
         _log.info("huge y rotation")
-        dst_new_height = 2*rotation_y - 2*end_y - 2*org_st_y
+        dst_new_height = rotation_y + end_y + 2*org_st_y
 
     _log.info("start y, start x: ({}, {})".format(start_y, start_x))
     _log.info("end y, end x: ({}, {})".format(end_y, end_x))

@@ -167,7 +167,7 @@ def _translation(output_png_path, rotation_x, rotation_y):
         _log.info("x overlap")
         if end_x - rotation_x > end_x/2:
             start_x = end_x - 2*rotation_x
-            end_x = abs(start_x) + end_x
+            end_x = start_x + end_x
         elif end_x - rotation_x < end_x/2:
             end_x = 2*rotation_x
         
@@ -179,8 +179,8 @@ def _translation(output_png_path, rotation_x, rotation_y):
         elif end_y - rotation_y < end_y/2:
             end_y = 2*rotation_y
     
-    dst_new_width = (start_x + end_x)
-    dst_new_height = (abs(start_y) + abs(end_y))        
+    dst_new_width = start_x + end_x
+    dst_new_height = start_y + end_y        
      
     if rotation_x  < 0:
         _log.info("2nd quadrant x rotation")
@@ -191,7 +191,7 @@ def _translation(output_png_path, rotation_x, rotation_y):
         
     elif rotation_x >= end_x:
         _log.info("huge x rotation")
-        dst_new_width = 2*rotation_x - 2*end_x
+        dst_new_width = 2*rotation_x - 2*end_x - 2*org_st_x
    
     if rotation_y  < 0:
         _log.info("4th quadrant y rotation")
@@ -201,21 +201,21 @@ def _translation(output_png_path, rotation_x, rotation_y):
         
     elif rotation_y >= end_y:
         _log.info("huge y rotation")
-        dst_new_height = 2*rotation_y - 2*end_y
+        dst_new_height = 2*rotation_y - 2*end_y - 2*org_st_y
 
     _log.info("start y, start x: ({}, {})".format(start_y, start_x))
     _log.info("end y, end x: ({}, {})".format(end_y, end_x))
     _log.info("dwidth, dheight: ({}, {})".format(dst_new_width, dst_new_height))
     _log.info("-" * 80)
             
-    new_buffered_image = BufferedImage(dst_new_width, dst_new_height,BufferedImage.TYPE_INT_ARGB)    
+    new_buffered_image = BufferedImage(dst_new_width + org_st_x + 1, dst_new_height + org_st_y + 1, BufferedImage.TYPE_INT_ARGB)    
     g2d = new_buffered_image.createGraphics()
     g2d.setComposite(AlphaComposite.Clear)
     g2d.fillRect(0, 0, dst_new_width, dst_new_height)
 
     #try to assemble image
-    for row_y in xrange(start_y, end_y + org_st_y):
-        for column_x in xrange(start_x, end_x + org_st_x):
+    for row_y in xrange(start_y, end_y + org_st_y + 1):
+        for column_x in xrange(start_x, end_x + org_st_x + 1):
             if row_y - start_y < buffered_image.getHeight() and column_x - start_x < buffered_image.getWidth():
                 try:
                     new_buffered_image.setRGB(column_x,row_y, buffered_image_matrix[row_y-start_y][column_x-start_x])

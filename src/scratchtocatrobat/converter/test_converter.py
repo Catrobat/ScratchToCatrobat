@@ -207,14 +207,13 @@ def _dummy_project():
 
 class TestConvertBlocks(common_testing.BaseTestCase):
 
-    test_project = catbase.Project(None, "__test_project__")
-    test_scene = catbase.Scene(None, "Scene 1",test_project)
-    test_project.sceneList.add(test_scene)
-    block_converter = converter._ScratchObjectConverter(test_project, None)
-    _name_of_test_list = "my_test_list"
-
     def setUp(self):
         super(TestConvertBlocks, self).setUp()
+        self.test_project = catbase.Project(None, "__test_project__")
+        self.test_scene = catbase.Scene(None, "Scene 1", self.test_project)
+        self.test_project.sceneList.add(self.test_scene)
+        self._name_of_test_list = "my_test_list"
+        self.block_converter = converter._ScratchObjectConverter(self.test_project, None)
         # create and add user list for user list bricks to project
         self.block_converter._catrobat_scene.getDataContainer().addProjectUserList(self._name_of_test_list)
         # create dummy sprite
@@ -760,6 +759,30 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert expected_value_right_operand == formula_right_child.value
         assert formula_right_child.leftChild is None
         assert formula_right_child.rightChild is None
+
+    # stopScripts ("this script")
+    def test_can_convert_stop_scripts_with_option_this_script_block(self):
+        expected_index_of_option = 0
+        scratch_block = ["stopScripts", "this script"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.StopScriptBrick)
+        assert expected_index_of_option == catr_brick.spinnerSelection
+
+    # stopScripts ("all")
+    def test_can_convert_stop_scripts_with_option_all_scripts_block(self):
+        expected_index_of_option = 1
+        scratch_block = ["stopScripts", "all"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.StopScriptBrick)
+        assert expected_index_of_option == catr_brick.spinnerSelection
+
+    # stopScripts ("other scripts in sprite")
+    def test_can_convert_stop_scripts_with_option_other_scripts_in_sprite_block(self):
+        expected_index_of_option = 2
+        scratch_block = ["stopScripts", "other scripts in sprite"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.StopScriptBrick)
+        assert expected_index_of_option == catr_brick.spinnerSelection
 
     # broadcast:
     def test_can_convert_broadcast_block(self):

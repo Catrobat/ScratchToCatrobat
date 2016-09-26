@@ -183,14 +183,16 @@ class _ScratchToCatrobat(object):
         "doBroadcastAndWait": lambda message: catbricks.BroadcastWaitBrick(message.lower()), # lower case to prevent case-sensitivity issues in Catrobat...
         "wait:elapsed:from:": lambda duration: catbricks.WaitBrick(catrobat.create_formula_with_value(duration)),
 
-        # conditionals
+        # control
         "doForever": catbricks.ForeverBrick,
         "doIf": None,
         "doIfElse": None,
         "doRepeat": catbricks.RepeatBrick,
         "doUntil": catbricks.RepeatUntilBrick,
         "doWaitUntil": lambda condition: catbricks.WaitUntilBrick(catrobat.create_formula_with_value(condition)),
+        "stopScripts": lambda subject: catbricks.StopScriptBrick(["this script", "all", "other scripts in sprite"].index(subject)),
 
+        # motion
         "turnRight:": catbricks.TurnRightBrick,
         "turnLeft:": catbricks.TurnLeftBrick,
         "heading:": catbricks.PointInDirectionBrick,

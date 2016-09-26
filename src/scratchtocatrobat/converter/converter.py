@@ -53,8 +53,7 @@ _DEFAULT_FORMULA_ELEMENT = catformula.FormulaElement(catElementType.NUMBER, str(
 
 _GENERATED_VARIABLE_PREFIX = helpers.application_info("short_name") + ":"
 _SOUND_LENGTH_VARIABLE_NAME_FORMAT = "length_of_{}_in_secs"
-
-_SPEAK_BRICK_THINK_INTRO = "I am thinking. "
+_SHARED_GLOBAL_ANSWER_VARIABLE_NAME = _GENERATED_VARIABLE_PREFIX + "global_answer"
 
 _SUPPORTED_IMAGE_EXTENSIONS_BY_CATROBAT = {".gif", ".jpg", ".jpeg", ".png"}
 _SUPPORTED_SOUND_EXTENSIONS_BY_CATROBAT = {".mp3", ".wav"}
@@ -258,6 +257,8 @@ class _ScratchToCatrobat(object):
         "say:": catbricks.SayBubbleBrick,
         "think:duration:elapsed:from:": catbricks.ThinkForBubbleBrick,
         "think:": catbricks.ThinkBubbleBrick,
+        "doAsk": catbricks.AskBrick,
+        "answer": None,
 
         # sprite values
         "xpos": catformula.Sensors.OBJECT_X,
@@ -299,6 +300,19 @@ def _create_variable_brick(value, user_variable, Class):
 
 def _variable_for(variable_name):
     return catformula.FormulaElement(catElementType.USER_VARIABLE, variable_name, None)  # @UndefinedVariable
+
+def _get_or_create_shared_global_answer_variable(project, data_container, script_context):
+    shared_global_answer_user_variable = data_container.getUserVariable(_SHARED_GLOBAL_ANSWER_VARIABLE_NAME, None)
+    if shared_global_answer_user_variable is None:
+        assert(_is_generated(_SHARED_GLOBAL_ANSWER_VARIABLE_NAME))
+        catrobat.add_user_variable(project, _SHARED_GLOBAL_ANSWER_VARIABLE_NAME, None, None)
+        shared_global_answer_user_variable = data_container.getUserVariable(_SHARED_GLOBAL_ANSWER_VARIABLE_NAME, None)
+        script_context.sprite_context.created_shared_global_answer_user_variable = True
+
+    assert shared_global_answer_user_variable is not None \
+    and shared_global_answer_user_variable.getName() == _SHARED_GLOBAL_ANSWER_VARIABLE_NAME, \
+    "variable: %s" % (_SHARED_GLOBAL_ANSWER_VARIABLE_NAME)
+    return shared_global_answer_user_variable
 
 # TODO: refactor _key_* functions to be used just once
 def _key_image_path_for(key):
@@ -344,11 +358,11 @@ class Context(object):
 class SpriteContext(object):
     def __init__(self, name):
         self.name = name
-        self.sound_wait_length_variable_names = set()
+        self.created_shared_global_answer_user_variable = False
 
 class ScriptContext(object):
-    def __init__(self):
-        self.sound_wait_length_variable_names = set()
+    def __init__(self, sprite_context):
+        self.sprite_context = sprite_context
 
 def converted(scratch_project, progress_bar=None, context=None):
     return Converter.converted_project_for(scratch_project, progress_bar, context)
@@ -552,18 +566,11 @@ class _ScratchObjectConverter(object):
             self._context.add_sprite_context(sprite_context)
 
         try:
-            self._add_default_behaviour_to(sprite, self._catrobat_project, scratch_object, self._scratch_project, costume_resolution)
+            self._add_default_behaviour_to(sprite, sprite_context, self._catrobat_scene,
+                                           self._catrobat_project, scratch_object,
+                                           self._scratch_project, costume_resolution)
         except:
             log.error("Cannot add default behaviour to sprite object {}".format(sprite_name))
-
-        for scratch_variable in scratch_object.get_variables():
-            args = [self._catrobat_scene, scratch_variable["name"], scratch_variable["value"], sprite]
-            if not scratch_object.is_stage():
-                args += [sprite.getName()]
-            try:
-                _assign_initialization_value_to_user_variable(*args)
-            except:
-                log.error("Cannot assign initialization value {} to user variable {}".format(scratch_variable["name"], scratch_variable["value"]))
 
         log.info('')
         return sprite
@@ -599,7 +606,8 @@ class _ScratchObjectConverter(object):
         return soundinfo
 
     @staticmethod
-    def _add_default_behaviour_to(sprite, catrobat_project, scratch_object, scratch_project, costume_resolution):
+    def _add_default_behaviour_to(sprite, sprite_context, catrobat_scene, catrobat_project,
+                                  scratch_object, scratch_project, costume_resolution):
         # some initial Scratch settings are done with a general JSON configuration instead with blocks. Here the equivalent bricks are added for Catrobat.
         implicit_bricks_to_add = []
 
@@ -668,6 +676,33 @@ class _ScratchObjectConverter(object):
         if len(implicit_bricks_to_add) > 0:
             catrobat.add_to_start_script(implicit_bricks_to_add, sprite)
 
+        # initialization of object's variables
+        for scratch_variable in scratch_object.get_variables():
+            if scratch_variable["name"] == _SHARED_GLOBAL_ANSWER_VARIABLE_NAME:
+                continue
+
+            args = [catrobat_scene, scratch_variable["name"], scratch_variable["value"], sprite]
+            try:
+                _assign_initialization_value_to_user_variable(*args)
+            except:
+                log.error("Cannot assign initialization value {} to user variable {}"
+                          .format(scratch_variable["name"], scratch_variable["value"]))
+
+        # if this sprite object contains a script that first added AskBrick or accessed the
+        # (global) answer variable, the (global) answer variable gets initialized by adding a
+        # SetVariable brick with an empty string-initialization value (i.e. "")
+        if sprite_context.created_shared_global_answer_user_variable:
+            try:
+                _assign_initialization_value_to_user_variable(catrobat_scene,
+                                                              _SHARED_GLOBAL_ANSWER_VARIABLE_NAME,
+                                                              "", sprite)
+            except:
+                log.error("Cannot assign initialization value {} to shared global answer user variable {}"
+                          .format(scratch_variable["name"], scratch_variable["value"]))
+
+        # TODO: Add ShowVariable Bricks for variables that are visible
+        #       (also for "answer", i.e. _SHARED_GLOBAL_ANSWER_VARIABLE_NAME!!)
+
     @classmethod
     def _catrobat_script_from(cls, scratch_script, sprite, context=None):
         if not isinstance(scratch_script, scratch.Script):
@@ -684,14 +719,11 @@ class _ScratchObjectConverter(object):
             for brick in wait_and_note_brick:
                 cat_script.addBrick(brick)
 
-        script_context = ScriptContext()
+        script_context = ScriptContext(context)
         converted_bricks = cls._catrobat_bricks_from(scratch_script.script_element, sprite, script_context)
 
         assert isinstance(converted_bricks, list) and len(converted_bricks) == 1
         [converted_bricks] = converted_bricks
-
-        if context is not None:
-            context.sound_wait_length_variable_names |= script_context.sound_wait_length_variable_names
 
 #         print(map(catrobat.simple_name_for, converted_bricks))
 #         log.debug("   --> converted: <%s>", ", ".join(map(catrobat.simple_name_for, converted_bricks)))
@@ -785,24 +817,6 @@ class ConvertedProject(object):
             return code_xml_content
 
         def write_program_source(catrobat_program, context):
-            # TODO: extract method
-            # note: at this position because of use of sounds_path variable
-            # TODO: make it more explicit that the "doPlayAndWait" brick workaround depends on the following code block
-            for catrobat_sprite in catrobat_program.getDefaultScene().getSpriteList():
-                for sound_info in catrobat_sprite.getSoundList():
-                    sound_length_variable_name = _sound_length_variable_name_for(sound_info.getTitle())
-
-                    if context is not None:
-                        # don't add length-variable if it is never used by any brick
-                        # (e.g. due to no Sound block workaround)
-                        [sprite_context] = [ctxt for ctxt in context.sprite_contexts if ctxt.name == catrobat_sprite.getName()]
-                        if sound_length_variable_name not in sprite_context.sound_wait_length_variable_names:
-                            continue
-
-                    sound_length = common.length_of_audio_file_in_secs(os.path.join(sounds_path, sound_info.getSoundFileName()))
-                    sound_length = round(sound_length, 3) # accuracy +/- 0.5 milliseconds => review if we really need this...
-                    _add_new_user_variable_with_initialization_value(catrobat_program, sound_length_variable_name, sound_length, catrobat_sprite, catrobat_sprite.getName())
-
             program_source = program_source_for(catrobat_program)
             with open(os.path.join(temp_path, catrobat.PROGRAM_SOURCE_FILE_NAME), "wb") as fp:
                 fp.write(program_source.encode("utf8"))
@@ -843,9 +857,10 @@ def _add_new_user_variable_with_initialization_value(project, variable_name, var
     variable_initialization_brick = _create_variable_brick(variable_value, user_variable, catbricks.SetVariableBrick)
     catrobat.add_to_start_script([variable_initialization_brick], sprite)
 
-def _assign_initialization_value_to_user_variable(scene, variable_name, variable_value, sprite, sprite_name=None):
+def _assign_initialization_value_to_user_variable(scene, variable_name, variable_value, sprite):
     user_variable = scene.getDataContainer().getUserVariable(variable_name, sprite)
-    assert user_variable is not None and user_variable.getName() == variable_name, "variable: %s, sprite_name: %s" % (variable_name, sprite.getName())
+    assert user_variable is not None and user_variable.getName() == variable_name, \
+           "variable: %s, sprite_name: %s" % (variable_name, sprite.getName())
     variable_initialization_brick = _create_variable_brick(variable_value, user_variable, catbricks.SetVariableBrick)
     catrobat.add_to_start_script([variable_initialization_brick], sprite, position=0)
 
@@ -865,7 +880,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     def __init__(self, catrobat_sprite, catrobat_project, script_context=None):
         assert catrobat_sprite is not None
         assert catrobat_project is not None
-        self.script_context = script_context if script_context is not None else ScriptContext()
+        self.script_context = script_context if script_context is not None else ScriptContext(None)
         self.script_element = None
         self.sprite = catrobat_sprite
         self.project = catrobat_project
@@ -1193,7 +1208,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         #Commented out because it isn't present anymore
         #show_variable_brick.userVariableName = variable_name
         #show_variable_brick.userVariable = user_variable
-        
+
         return show_variable_brick
 
     @_register_handler(_block_name_to_handler_map, "hideVariable:")
@@ -1363,30 +1378,48 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         return [self.CatrobatClass(value, user_variable)]
 
     @_register_handler(_block_name_to_handler_map, "say:duration:elapsed:from:")
-    def _convert_say_for_bubble_brick(self):
+    def _convert_say_duration_elapsed_from_block(self):
         [msg, duration] = self.arguments
         say_for_bubble_brick = self.CatrobatClass()
         say_for_bubble_brick.initializeBrickFields(catformula.Formula(msg),catformula.Formula(duration))
         return say_for_bubble_brick
 
     @_register_handler(_block_name_to_handler_map, "say:")
-    def _convert_say_bubble_brick(self):
+    def _convert_say_block(self):
         [msg] = self.arguments
         say_bubble_brick = self.CatrobatClass()
         say_bubble_brick.initializeBrickFields(catformula.Formula(msg))
         return say_bubble_brick
 
     @_register_handler(_block_name_to_handler_map, "think:duration:elapsed:from:")
-    def _convert_think_for_bubble_brick(self):
+    def _convert_think_duration_elapsed_from_block(self):
         [msg, duration] = self.arguments
         msg_formula = catrobat.create_formula_with_value(msg)
         duration_formula = catrobat.create_formula_with_value(duration)
         return self.CatrobatClass(msg_formula, duration_formula)
 
     @_register_handler(_block_name_to_handler_map, "think:")
-    def _convert_think_bubble_brick(self):
+    def _convert_think_block(self):
         [msg] = self.arguments
         think_bubble_brick = self.CatrobatClass()
         think_bubble_brick.initializeBrickFields(catrobat.create_formula_with_value(msg))
         return think_bubble_brick
+
+    @_register_handler(_block_name_to_handler_map, "doAsk")
+    def _convert_do_ask_block(self):
+        [question] = self.arguments
+        data_container = self.scene.getDataContainer()
+        question_formula = catrobat.create_formula_with_value(question)
+        shared_global_answer_user_variable = _get_or_create_shared_global_answer_variable(self.project,
+                                                                                          data_container,
+                                                                                          self.script_context)
+        return self.CatrobatClass(question_formula, shared_global_answer_user_variable)
+
+    @_register_handler(_block_name_to_handler_map, "answer")
+    def _convert_answer_block(self):
+        data_container = self.scene.getDataContainer()
+        shared_global_answer_user_variable = _get_or_create_shared_global_answer_variable(self.project,
+                                                                                          data_container,
+                                                                                          self.script_context)
+        return _variable_for(shared_global_answer_user_variable.getName())
 

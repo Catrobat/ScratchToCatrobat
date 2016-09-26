@@ -1581,11 +1581,10 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert formula_right_child.leftChild is None
         assert formula_right_child.rightChild is None
 
-    # thinkBubbleBrick
+    # think:
     def test_can_convert_think_bubble_brick(self):
         scratch_block = _, expected_message = ["think:", "2B or !2B..."]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        print type(catr_brick)
         assert isinstance(catr_brick, catbricks.ThinkBubbleBrick)
 
         formula_tree = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.STRING).formulaTree # @UndefinedVariable
@@ -1594,7 +1593,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert formula_tree.leftChild is None
         assert formula_tree.rightChild is None
 
-    # thinkForBubbleBrick
+    # think:duration:elapsed:from:
     def test_can_convert_think_for_bubble_brick(self):
         scratch_block = _, expected_message, expected_duration = ["think:duration:elapsed:from:", "2B or !2B...", 2]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
@@ -1611,6 +1610,92 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert str(expected_duration) == formula_tree_duration.value
         assert formula_tree_duration.leftChild is None
         assert formula_tree_duration.rightChild is None
+
+    # doAsk (with question as string)
+    def test_can_convert_do_ask_with_question_as_string_block(self):
+        sprite_context = converter.SpriteContext(DUMMY_CATR_SPRITE.getName())
+        script_context = converter.ScriptContext(sprite_context)
+        scratch_block = _, expected_question_string = ["doAsk", "What's your name?"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE,
+                                                                  script_context)
+        assert sprite_context.created_shared_global_answer_user_variable is True
+        assert isinstance(catr_brick, catbricks.AskBrick)
+
+        formula_tree = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.ASK_QUESTION).formulaTree # @UndefinedVariable
+        assert catformula.FormulaElement.ElementType.STRING == formula_tree.type
+        assert expected_question_string == formula_tree.value
+        assert formula_tree.leftChild is None
+        assert formula_tree.rightChild is None
+
+        user_variable = catr_brick.getUserVariable()
+        assert user_variable is not None
+        assert isinstance(user_variable, catformula.UserVariable)
+        assert converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME == user_variable.getName()
+
+        project = self.block_converter._catrobat_project
+        data_container = project.getDefaultScene().getDataContainer()
+        assert user_variable == data_container.getUserVariable(converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME,
+                                                               DUMMY_CATR_SPRITE)
+
+    # doAsk (with question as formula)
+    def test_can_convert_do_ask_with_question_as_formula_block(self):
+        expected_left_operand = 1
+        expected_right_operand = 2
+        sprite_context = converter.SpriteContext(DUMMY_CATR_SPRITE.getName())
+        script_context = converter.ScriptContext(sprite_context)
+        scratch_block = _, expected_question_string = ["doAsk", ["+", expected_left_operand, expected_right_operand]]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE,
+                                                                  script_context)
+        assert sprite_context.created_shared_global_answer_user_variable is True
+        assert isinstance(catr_brick, catbricks.AskBrick)
+
+        formula_tree = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.ASK_QUESTION).formulaTree # @UndefinedVariable
+        assert catformula.FormulaElement.ElementType.OPERATOR == formula_tree.type
+        assert formula_tree.value == catformula.Operators.PLUS.toString() # @UndefinedVariable
+        assert formula_tree.leftChild is not None
+        assert formula_tree.rightChild is not None
+
+        formula_left_child = formula_tree.leftChild
+        assert catformula.FormulaElement.ElementType.NUMBER == formula_left_child.type
+        assert str(expected_left_operand) == formula_left_child.value
+        assert formula_left_child.leftChild is None
+        assert formula_left_child.rightChild is None
+
+        formula_right_child = formula_tree.rightChild
+        assert catformula.FormulaElement.ElementType.NUMBER == formula_right_child.type
+        assert str(expected_right_operand) == formula_right_child.value
+        assert formula_right_child.leftChild is None
+        assert formula_right_child.rightChild is None
+
+        user_variable = catr_brick.getUserVariable()
+        assert user_variable is not None
+        assert isinstance(user_variable, catformula.UserVariable)
+        assert converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME == user_variable.getName()
+
+        project = self.block_converter._catrobat_project
+        data_container = project.getDefaultScene().getDataContainer()
+        assert user_variable == data_container.getUserVariable(converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME,
+                                                               DUMMY_CATR_SPRITE)
+
+    # answer
+    def test_can_convert_answer_block(self):
+        sprite_context = converter.SpriteContext(DUMMY_CATR_SPRITE.getName())
+        script_context = converter.ScriptContext(sprite_context)
+        [formula_element] = self.block_converter._catrobat_bricks_from(["answer"], DUMMY_CATR_SPRITE,
+                                                                       script_context)
+        assert sprite_context.created_shared_global_answer_user_variable is True
+        assert isinstance(formula_element, catformula.FormulaElement)
+        assert catformula.FormulaElement.ElementType.USER_VARIABLE == formula_element.type
+        assert converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME == formula_element.value
+        assert formula_element.leftChild is None
+        assert formula_element.rightChild is None
+
+        project = self.block_converter._catrobat_project
+        data_container = project.getDefaultScene().getDataContainer()
+        user_variable = data_container.getUserVariable(converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME,
+                                                       DUMMY_CATR_SPRITE)
+        assert user_variable is not None
+        assert converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME == user_variable.getName()
 
 
 class TestConvertProjects(common_testing.ProjectTestCase):
@@ -1648,25 +1733,9 @@ class TestConvertProjects(common_testing.ProjectTestCase):
     def test_can_convert_project_with_keys(self):
         for project_name in ("keys_pressed", ):
             self._test_project(project_name)
-            
 
     def test_can_convert_project_with_mediafiles(self):
-        scratch_project_to_sound_to_sound_length_map = {
-            "Hannah_Montana": {
-                ("HandClap", catrobat._BACKGROUND_SPRITE_NAME): 0.0,
-                ("rada rada", catrobat._BACKGROUND_SPRITE_NAME): 1.0,
-                ("See You Again", "Sprite3"): 4 * 60.0 + 15,
-            }
-        }
-        for project_name, sound_to_sound_length_map in scratch_project_to_sound_to_sound_length_map.iteritems():
-            catrobat_project = self._test_project(project_name)
-#             for [sound_name, containing_sprite_name], expected_sound_length in sound_to_sound_length_map.iteritems():
-            for [sound_name, containing_sprite_name], _ in sound_to_sound_length_map.iteritems():
-                sound_length_variable_name = converter._sound_length_variable_name_for(sound_name)
-                sound_length_variable = catrobat.user_variable_of(catrobat_project, sound_length_variable_name, containing_sprite_name)
-                assert isinstance(sound_length_variable, catformula.UserVariable)
-                # TODO: check first set brick for variable
-#                 assert sound_length_variable.getValue() == expected_sound_length
+        self._test_project("Hannah_Montana")
 
     # simple test project
     def test_can_convert_project_with_unusued_files(self):

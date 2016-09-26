@@ -161,27 +161,31 @@ def _translation(output_png_path, rotation_x, rotation_y):
 
     org_st_x = start_x
     org_st_y = start_y
+    
+    dst_new_width = end_x
+    dst_new_height = end_y
 
     #check for overlap and calculate new start and end
     if (rotation_x < end_x) and (rotation_x > 0):
         _log.info("x overlap")
         if end_x - rotation_x > end_x/2:
-            start_x = end_x - 2*rotation_x
+            dst_new_width = (end_x - rotation_x) * 2
+            start_x = dst_new_width/2 - rotation_x
             end_x = start_x + end_x
         elif end_x - rotation_x < end_x/2:
             end_x = 2*rotation_x
+            dst_new_width = start_x + end_x
         
     if (rotation_y < end_y) and (rotation_y > 0):
         _log.info("y overlap")
         if end_y - rotation_y > end_y/2:
-            start_y = end_y - 2*rotation_y
+            dst_new_height = (end_y - rotation_y) * 2
+            start_y = dst_new_height/2 - rotation_y
             end_y = start_y + end_y
         elif end_y - rotation_y < end_y/2:
             end_y = 2*rotation_y
-    
-    dst_new_width = start_x + end_x
-    dst_new_height = start_y + end_y        
-     
+            dst_new_height = start_y + end_y        
+         
     if rotation_x  < 0:
         _log.info("2nd quadrant x rotation")
         start_x = 2*abs(rotation_x) + end_x
@@ -191,7 +195,7 @@ def _translation(output_png_path, rotation_x, rotation_y):
         
     elif rotation_x >= end_x:
         _log.info("huge x rotation")
-        dst_new_width = rotation_x + end_x + 2*org_st_x
+        dst_new_width = 2*rotation_x + 2*org_st_x
    
     if rotation_y  < 0:
         _log.info("4th quadrant y rotation")
@@ -201,7 +205,7 @@ def _translation(output_png_path, rotation_x, rotation_y):
         
     elif rotation_y >= end_y:
         _log.info("huge y rotation")
-        dst_new_height = rotation_y + end_y + 2*org_st_y
+        dst_new_height = 2*rotation_y + 2*org_st_y
 
     _log.info("start y, start x: ({}, {})".format(start_y, start_x))
     _log.info("end y, end x: ({}, {})".format(end_y, end_x))

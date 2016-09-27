@@ -124,24 +124,27 @@ def _translation(output_png_path, rotation_x, rotation_y):
     buffered_image_matrix = [[buffered_image.getRGB(i, j) for j in xrange(height)] for i in xrange(width)]
    
     buffered_image_matrix = _transpose_matrix(buffered_image_matrix)
-
+    m, n = len(buffered_image_matrix), len(buffered_image_matrix[0])
+    '''
     x_coords_list, y_coords_list = [], []
     
-    m, n = len(buffered_image_matrix), len(buffered_image_matrix[0])
     for y in xrange(m):
         for x in xrange(n):
             pixel = buffered_image_matrix[y][x]
             if (pixel >> 24) != 0x00:
                 x_coords_list.append(x)
                 y_coords_list.append(y)
-
+    '''
     _log.info("-" * 80)
     _log.info("Output path: {}".format(output_png_path))
     _log.info("height, width: ({}, {})".format(m, n))
-    start_x = min(x_coords_list) if len(x_coords_list) > 0 else 0
-    end_x = max(x_coords_list) if len(x_coords_list) > 0 else 0
-    start_y = min(y_coords_list) if len(y_coords_list) > 0 else 0
-    end_y = max(y_coords_list) if len(y_coords_list) > 0 else 0
+#    start_x = min(x_coords_list) if len(x_coords_list) > 0 else 0
+#    end_x = max(x_coords_list) if len(x_coords_list) > 0 else 0
+#    start_y = min(y_coords_list) if len(y_coords_list) > 0 else 0
+#    end_y = max(y_coords_list) if len(y_coords_list) > 0 else 0
+
+    start_x, start_y = 0, 0
+    end_x, end_y = n, m
 
     if start_x == 0 and end_x == 0 and start_y == 0 and end_y == 0:
         _log.info("ANTENNA-ERROR")
@@ -159,13 +162,13 @@ def _translation(output_png_path, rotation_x, rotation_y):
 #    if end_y < rotation_y:
 #        end_y = rotation_y
 
-    org_st_x = start_x
-    org_st_y = start_y
+    #org_st_x = start_x
+    #org_st_y = start_y
     
     dst_new_width = end_x
     dst_new_height = end_y
 
-    #check for overlap and calculate new start and end
+    #overlapping x enhancement
     if (rotation_x < end_x) and (rotation_x > 0):
         _log.info("x overlap")
         if end_x - rotation_x > end_x/2:
@@ -175,6 +178,17 @@ def _translation(output_png_path, rotation_x, rotation_y):
         elif end_x - rotation_x < end_x/2:
             end_x = 2*rotation_x
             dst_new_width = start_x + end_x
+    #non-overlapping x enhancement        
+    elif rotation_x  < 0:
+        _log.info("2nd quadrant x rotation")
+        start_x = 2*abs(rotation_x) + end_x
+        dst_new_width = 2*(abs(rotation_x) + end_x)
+        _log.info("({})".format(dst_new_width))
+        end_x = start_x + end_x
+        
+    elif rotation_x >= end_x:
+        _log.info("huge x rotation")
+        dst_new_width = 2*rotation_x #+ 2*org_st_x
         
     if (rotation_y < end_y) and (rotation_y > 0):
         _log.info("y overlap")
@@ -186,18 +200,7 @@ def _translation(output_png_path, rotation_x, rotation_y):
             end_y = 2*rotation_y
             dst_new_height = start_y + end_y        
          
-    if rotation_x  < 0:
-        _log.info("2nd quadrant x rotation")
-        start_x = 2*abs(rotation_x) + end_x
-        dst_new_width = 2*(abs(rotation_x) + end_x)
-        _log.info("({})".format(dst_new_width))
-        end_x = start_x + end_x
-        
-    elif rotation_x >= end_x:
-        _log.info("huge x rotation")
-        dst_new_width = 2*rotation_x + 2*org_st_x
-   
-    if rotation_y  < 0:
+    elif rotation_y  < 0:
         _log.info("4th quadrant y rotation")
         start_y = 2*abs(rotation_y) + end_y
         dst_new_height = 2*(abs(rotation_y) + end_y)
@@ -205,21 +208,22 @@ def _translation(output_png_path, rotation_x, rotation_y):
         
     elif rotation_y >= end_y:
         _log.info("huge y rotation")
-        dst_new_height = 2*rotation_y + 2*org_st_y
+        dst_new_height = 2*rotation_y #+ 2*org_st_y
 
     _log.info("start y, start x: ({}, {})".format(start_y, start_x))
     _log.info("end y, end x: ({}, {})".format(end_y, end_x))
     _log.info("dwidth, dheight: ({}, {})".format(dst_new_width, dst_new_height))
     _log.info("-" * 80)
             
-    new_buffered_image = BufferedImage(dst_new_width + org_st_x + 1, dst_new_height + org_st_y + 1, BufferedImage.TYPE_INT_ARGB)    
+    #new_buffered_image = BufferedImage(dst_new_width + org_st_x + 1, dst_new_height + org_st_y + 1, BufferedImage.TYPE_INT_ARGB)    
+    new_buffered_image = BufferedImage(dst_new_width + 1, dst_new_height + 1, BufferedImage.TYPE_INT_ARGB)    
     g2d = new_buffered_image.createGraphics()
     g2d.setComposite(AlphaComposite.Clear)
     g2d.fillRect(0, 0, dst_new_width, dst_new_height)
 
     #try to assemble image
-    for row_y in xrange(start_y, end_y + org_st_y + 1):
-        for column_x in xrange(start_x, end_x + org_st_x + 1):
+    for row_y in xrange(start_y, end_y + 1):
+        for column_x in xrange(start_x, end_x + 1):
             if row_y - start_y < buffered_image.getHeight() and column_x - start_x < buffered_image.getWidth():
                 try:
                     new_buffered_image.setRGB(column_x,row_y, buffered_image_matrix[row_y-start_y][column_x-start_x])

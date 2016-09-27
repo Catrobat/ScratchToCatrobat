@@ -101,6 +101,7 @@ class _DownloadHandler(tornado.web.RequestHandler):
         file_size = os.path.getsize(file_path)
         self.set_header('Content-Type', 'application/zip')
         self.set_header('Content-Disposition', 'attachment; filename="%s"' % file_name)
+
         with open(file_path, "rb") as f:
             range_header = self.request.headers.get("Range")
             request_range = None
@@ -158,7 +159,7 @@ class _ProjectHandler(tornado.web.RequestHandler):
     IN_PROGRESS_FUTURE_MAP = {}
 
     def send_response_data(self, response_data):
-        self.write(json.dumps(response_data).decode('unicode-escape').encode('utf8'))
+        self.finish(json.dumps(response_data).decode('unicode-escape').encode('utf8'))
         return
 
     @tornado.gen.coroutine
@@ -168,7 +169,7 @@ class _ProjectHandler(tornado.web.RequestHandler):
         # ------------------------------------------------------------------------------------------
         if project_id is None:
             # TODO: automatically update featured projects...
-            self.write({ "results": webhelpers.FEATURED_SCRATCH_PROGRAMS })
+            self.finish({ "results": webhelpers.FEATURED_SCRATCH_PROGRAMS })
             return
 
         # ------------------------------------------------------------------------------------------
@@ -203,8 +204,8 @@ class _ProjectHandler(tornado.web.RequestHandler):
                 async_http_client = self.application.async_http_client
                 _logger.info("Fetching project and remix info from: {} and {} simultaneously"
                              .format(scratch_project_url, scratch_project_remix_tree_url))
-                futures = [async_http_client.fetch(scratch_project_url),
-                           async_http_client.fetch(scratch_project_remix_tree_url)]
+                futures = [tornado.gen.Task(async_http_client.fetch, scratch_project_url),
+                           tornado.gen.Task(async_http_client.fetch, scratch_project_remix_tree_url)]
                 cls.IN_PROGRESS_FUTURE_MAP[project_id] = futures
 
             project_html_content, remix_tree_json_data = yield futures

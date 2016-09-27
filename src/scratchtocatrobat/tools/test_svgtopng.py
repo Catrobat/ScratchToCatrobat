@@ -140,11 +140,11 @@ class SvgToPngTest(common_testing.BaseTestCase):
         bufferd_image = ImageIO.read(File(output_png_path))
         width, height = bufferd_image.getWidth(), bufferd_image.getHeight()
         output_image_matrix = [[bufferd_image.getRGB(i, j) for j in xrange(height)] for i in xrange(width)]
-        print(width, height)
+
         bufferd_image = ImageIO.read(File(expected_image_path))
         width, height = bufferd_image.getWidth(), bufferd_image.getHeight()
         expected_image_matrix = [[bufferd_image.getRGB(i, j) for j in xrange(height)] for i in xrange(width)]
-        print(width, height)
+
         for i in xrange(width):
             for j in xrange(height):
                 exp_rgb_val = expected_image_matrix[i][j]

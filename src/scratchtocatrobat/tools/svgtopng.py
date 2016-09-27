@@ -135,9 +135,9 @@ def _translation(output_png_path, rotation_x, rotation_y):
                 x_coords_list.append(x)
                 y_coords_list.append(y)
     '''
-    _log.info("-" * 80)
+    #_log.info("-" * 80)
     _log.info("Output path: {}".format(output_png_path))
-    _log.info("height, width: ({}, {})".format(m, n))
+    #_log.info("height, width: ({}, {})".format(m, n))
 #    start_x = min(x_coords_list) if len(x_coords_list) > 0 else 0
 #    end_x = max(x_coords_list) if len(x_coords_list) > 0 else 0
 #    start_y = min(y_coords_list) if len(y_coords_list) > 0 else 0
@@ -150,8 +150,8 @@ def _translation(output_png_path, rotation_x, rotation_y):
         _log.info("ANTENNA-ERROR")
         return buffered_image
 
-    _log.info("start y, start x: ({}, {})".format(start_y, start_x))
-    _log.info("end y, end x: ({}, {})".format(end_y, end_x))
+    #_log.info("start y, start x: ({}, {})".format(start_y, start_x))
+    #_log.info("end y, end x: ({}, {})".format(end_y, end_x))
 
 #    if start_x > rotation_x:
 #        start_x = rotation_x
@@ -170,7 +170,7 @@ def _translation(output_png_path, rotation_x, rotation_y):
 
     #overlapping x enhancement
     if (rotation_x < end_x) and (rotation_x > 0):
-        _log.info("x overlap")
+        #_log.info("x overlap")
         if end_x - rotation_x > end_x/2:
             dst_new_width = (end_x - rotation_x) * 2
             start_x = dst_new_width/2 - rotation_x
@@ -180,18 +180,18 @@ def _translation(output_png_path, rotation_x, rotation_y):
             dst_new_width = start_x + end_x
     #non-overlapping x enhancement        
     elif rotation_x  < 0:
-        _log.info("2nd quadrant x rotation")
+        #_log.info("2nd quadrant x rotation")
         start_x = 2*abs(rotation_x) + end_x
         dst_new_width = 2*(abs(rotation_x) + end_x)
-        _log.info("({})".format(dst_new_width))
+        #_log.info("({})".format(dst_new_width))
         end_x = start_x + end_x
         
     elif rotation_x >= end_x:
-        _log.info("huge x rotation")
+        #_log.info("huge x rotation")
         dst_new_width = 2*rotation_x #+ 2*org_st_x
         
     if (rotation_y < end_y) and (rotation_y > 0):
-        _log.info("y overlap")
+        #_log.info("y overlap")
         if end_y - rotation_y > end_y/2:
             dst_new_height = (end_y - rotation_y) * 2
             start_y = dst_new_height/2 - rotation_y
@@ -201,19 +201,19 @@ def _translation(output_png_path, rotation_x, rotation_y):
             dst_new_height = start_y + end_y        
          
     elif rotation_y  < 0:
-        _log.info("4th quadrant y rotation")
+        #_log.info("4th quadrant y rotation")
         start_y = 2*abs(rotation_y) + end_y
         dst_new_height = 2*(abs(rotation_y) + end_y)
         end_y = start_y + end_y
         
     elif rotation_y >= end_y:
-        _log.info("huge y rotation")
+        #_log.info("huge y rotation")
         dst_new_height = 2*rotation_y #+ 2*org_st_y
 
-    _log.info("start y, start x: ({}, {})".format(start_y, start_x))
-    _log.info("end y, end x: ({}, {})".format(end_y, end_x))
-    _log.info("dwidth, dheight: ({}, {})".format(dst_new_width, dst_new_height))
-    _log.info("-" * 80)
+    #_log.info("start y, start x: ({}, {})".format(start_y, start_x))
+    #_log.info("end y, end x: ({}, {})".format(end_y, end_x))
+    #_log.info("dwidth, dheight: ({}, {})".format(dst_new_width, dst_new_height))
+    #_log.info("-" * 80)
             
     #new_buffered_image = BufferedImage(dst_new_width + org_st_x + 1, dst_new_height + org_st_y + 1, BufferedImage.TYPE_INT_ARGB)    
     new_buffered_image = BufferedImage(dst_new_width + 1, dst_new_height + 1, BufferedImage.TYPE_INT_ARGB)    
@@ -225,11 +225,8 @@ def _translation(output_png_path, rotation_x, rotation_y):
     for row_y in xrange(start_y, end_y + 1):
         for column_x in xrange(start_x, end_x + 1):
             if row_y - start_y < buffered_image.getHeight() and column_x - start_x < buffered_image.getWidth():
-                try:
-                    new_buffered_image.setRGB(column_x,row_y, buffered_image_matrix[row_y-start_y][column_x-start_x])
-                except:
-                    _log.info("{} start_y, end_y: ({}, {}) start_x, end_x: ({}, {}) row, col: ({}, {}) old_y, old_x: {}, {}".format(output_png_path, start_y, end_y, start_x, end_x, row_y, column_x, row_y-start_y, column_x-start_x))
-                    raise
+                new_buffered_image.setRGB(column_x,row_y, buffered_image_matrix[row_y-start_y][column_x-start_x])
+
     #rgb = java.awt.Color(255,20,147)
     #new_buffered_image.setRGB(dst_new_width/2, dst_new_height/2, rgb.getRGB())
     return new_buffered_image

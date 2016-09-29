@@ -365,7 +365,11 @@ def _get_viewbox_values(view_box_str):
     
     st = StringTokenizer(view_box_str," ")
     while st.hasMoreTokens():
-        view_box_values.append(float(st.nextToken()))  
+        ch = st.nextToken()
+        try:
+            view_box_values.append(float(ch))  
+        except:
+            view_box_values.append(int(ch))  
     return view_box_values
     
     

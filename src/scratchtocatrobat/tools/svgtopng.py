@@ -324,7 +324,8 @@ def _parse_and_rewrite_svg_file(svg_input_path):
     file_reader = FileReader(svg_input_path)
     buffered_reader = BufferedReader(file_reader)
     read_line = ""
-
+    
+    check = False
     while True:
         read_line = buffered_reader.readLine()
 
@@ -350,7 +351,14 @@ def _parse_and_rewrite_svg_file(svg_input_path):
                                read_line, 1)
             read_line = re.sub(r"height=\"[0-9]+\"", "height=\""+ str(view_box_values[3]) + "\"",
                                read_line, 1)
-
+            check = True
+        
+        if "g id=\"ID" in read_line and not check:
+            if "transform=" in read_line:
+                _log.info(read_line)
+                read_line = read_line[0:read_line.find("transform")] + ">"
+                check = True
+        
         write_str += read_line + "\n"
 
     buffered_reader.close()

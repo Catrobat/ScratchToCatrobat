@@ -199,7 +199,6 @@ class _ProjectHandler(tornado.web.RequestHandler):
             if project_id in cls.IN_PROGRESS_FUTURE_MAP:
                 futures = cls.IN_PROGRESS_FUTURE_MAP[project_id]
                 _logger.info("SHARED FUTURE!")
-                return
             else:
                 async_http_client = self.application.async_http_client
                 _logger.info("Fetching project and remix info from: {} and {} simultaneously"

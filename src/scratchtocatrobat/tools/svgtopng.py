@@ -75,21 +75,22 @@ def convert(input_svg_path, rotation_x, rotation_y):
     _log.info("      converting '%s' to Pocket Code compatible png '%s'", input_svg_path, output_png_path)
 
     input_svg_URI = Paths.get(input_svg_path).toUri().toURL().toString()
-    #output_svg_path = input_svg_path.replace(".svg", "_modified.svg")
+    output_svg_path = input_svg_path.replace(".svg", "_modified.svg")
+    output_svg_URI = Paths.get(output_svg_path).toUri().toURL().toString()
     
     if os.path.exists(output_png_path):
         _log.info("      nothing to do: '%s' already exists", output_png_path)
         # remove temporary files
-        #if os.path.exists(output_svg_path):
-            #os.remove(output_svg_path)
+        if os.path.exists(output_svg_path):
+            os.remove(output_svg_path)
         return output_png_path # avoid duplicate conversions!
 
     png_ostream = None
     error = None
     try:
-        #_parse_and_rewrite_svg_file(input_svg_path)
+        _parse_and_rewrite_svg_file(input_svg_path, output_svg_path)
         
-        input_svg_image = TranscoderInput(input_svg_URI)
+        input_svg_image = TranscoderInput(output_svg_URI)
 
         output_png_image = TranscoderOutput(FileOutputStream(output_png_path))
 
@@ -123,8 +124,8 @@ def convert(input_svg_path, rotation_x, rotation_y):
             png_ostream.flush()
             png_ostream.close()
         # remove temporary files
-        #if os.path.exists(output_svg_path):
-            #os.remove(output_svg_path)
+        if os.path.exists(output_svg_path):
+            os.remove(output_svg_path)
 
     if error != None:
         raise error
@@ -334,7 +335,7 @@ def _create_buffered_image(image):
     return result 
 
 
-def _parse_and_rewrite_svg_file(svg_input_path):
+def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
     write_str = ""
     file_reader = FileReader(svg_input_path)
     buffered_reader = BufferedReader(file_reader)
@@ -378,7 +379,7 @@ def _parse_and_rewrite_svg_file(svg_input_path):
 
     buffered_reader.close()
     file_reader.close()
-    file_writer = PrintWriter(svg_input_path)
+    file_writer = PrintWriter(svg_output_path)
     file_writer.print(write_str)
     file_writer.close()
 

@@ -37,6 +37,18 @@ from java.util import StringTokenizer
 from javax.swing import ImageIcon
 import java.awt.Color
 
+'''
+from org.w3c.dom import Document
+from org.w3c.dom import Element
+from org.apache.batik.util import XMLResourceDescriptor
+from org.apache.batik.dom.svg import SAXSVGDocumentFactory
+from org.apache.batik.dom.svg import SVGDOMImplementation
+from org.apache.batik.dom.svg import SVGOMDocument
+import java.io.InputStream
+import java.io.File
+import java.nio.file.Files
+'''
+
 _BATIK_CLI_JAR = "batik-rasterizer.jar"
 _log = logging.getLogger(__name__)
 _batik_jar_path = None
@@ -75,7 +87,8 @@ def convert(input_svg_path, rotation_x, rotation_y):
     png_ostream = None
     error = None
     try:
-        _parse_and_rewrite_svg_file(input_svg_path)
+        #_parse_and_rewrite_svg_file(input_svg_path)
+        
         input_svg_image = TranscoderInput(input_svg_URI)
 
         output_png_image = TranscoderOutput(FileOutputStream(output_png_path))
@@ -120,6 +133,8 @@ def _translation(output_png_path, rotation_x, rotation_y):
     buffered_image = _create_buffered_image(ImageIcon(output_png_path).getImage())
     #buffered_image = ImageIO.read(new File());
     width, height = buffered_image.getWidth(), buffered_image.getHeight()
+    #_log.info(buffered_image.getAlphaRaster().toString())
+    #_log.info(buffered_image.getPropertyNames())
     
     buffered_image_matrix = [[buffered_image.getRGB(i, j) for j in xrange(height)] for i in xrange(width)]
    
@@ -331,7 +346,7 @@ def _parse_and_rewrite_svg_file(svg_input_path):
 
         if read_line is None:
             break
-
+        
         if "viewBox" in read_line:
             view_box_content = _get_viewbox_content(read_line)
             view_box_values = _get_viewbox_values(view_box_content)

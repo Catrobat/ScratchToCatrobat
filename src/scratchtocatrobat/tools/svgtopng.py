@@ -64,7 +64,7 @@ def convert(input_svg_path, rotation_x, rotation_y):
 
     output_svg_path = input_svg_path.replace(".svg", "_modified.svg")
     output_svg_URI = Paths.get(output_svg_path).toUri().toURL().toString()
-    
+
     if os.path.exists(output_png_path):
         _log.info("      nothing to do: '%s' already exists", output_png_path)
         # remove temporary files
@@ -76,7 +76,7 @@ def convert(input_svg_path, rotation_x, rotation_y):
     error = None
     try:
         _parse_and_rewrite_svg_file(input_svg_path, output_svg_path)
-        
+
         input_svg_image = TranscoderInput(output_svg_URI)
 
         output_png_image = TranscoderOutput(FileOutputStream(output_png_path))
@@ -89,10 +89,10 @@ def convert(input_svg_path, rotation_x, rotation_y):
 
 # TODO: uncomment this once all remaining bugs have been fixed!
         final_image = _translation(output_png_path, rotation_x, rotation_y)
- 
+
         if final_image is None:
             raise RuntimeError("...")
- 
+
         from javax.imageio import ImageIO
         from java.io import File
         ImageIO.write(final_image, "PNG", File(output_png_path))
@@ -120,7 +120,7 @@ def convert(input_svg_path, rotation_x, rotation_y):
 def _translation(output_png_path, rotation_x, rotation_y):
     buffered_image = _create_buffered_image(ImageIcon(output_png_path).getImage())
     width, height = buffered_image.getWidth(), buffered_image.getHeight()
-    
+
     buffered_image_matrix = [[buffered_image.getRGB(i, j) for j in xrange(height)] for i in xrange(width)]
     buffered_image_matrix = _transpose_matrix(buffered_image_matrix)
     m, n = len(buffered_image_matrix), len(buffered_image_matrix[0])
@@ -134,7 +134,6 @@ def _translation(output_png_path, rotation_x, rotation_y):
                 x_coords_list.append(x)
                 y_coords_list.append(y)
     '''
-    #_log.info("-" * 80)
     _log.info("Output path: {}".format(output_png_path))
     #_log.info("height, width: ({}, {})".format(m, n))
 #    start_x = min(x_coords_list) if len(x_coords_list) > 0 else 0
@@ -167,7 +166,7 @@ def _translation(output_png_path, rotation_x, rotation_y):
     dst_new_width = end_x
     dst_new_height = end_y
 
-    #overlapping x enhancement
+    # overlapping x enhancement
     if (rotation_x < end_x) and (rotation_x > 0):
         #_log.info("x overlap")
         if end_x - rotation_x > end_x/2:
@@ -177,18 +176,19 @@ def _translation(output_png_path, rotation_x, rotation_y):
         elif end_x - rotation_x < end_x/2:
             end_x = 2*rotation_x
             dst_new_width = start_x + end_x
-    #non-overlapping x enhancement        
+
+    # non-overlapping x enhancement        
     elif rotation_x  < 0:
         #_log.info("2nd quadrant x rotation")
         start_x = 2*abs(rotation_x) + end_x
         dst_new_width = 2*(abs(rotation_x) + end_x)
         #_log.info("({})".format(dst_new_width))
         end_x = start_x + end_x
-        
+
     elif rotation_x >= end_x:
         #_log.info("huge x rotation")
         dst_new_width = 2*rotation_x #+ 2*org_st_x
-        
+
     if (rotation_y < end_y) and (rotation_y > 0):
         #_log.info("y overlap")
         if end_y - rotation_y > end_y/2:
@@ -198,13 +198,13 @@ def _translation(output_png_path, rotation_x, rotation_y):
         elif end_y - rotation_y < end_y/2:
             end_y = 2*rotation_y
             dst_new_height = start_y + end_y        
-         
+
     elif rotation_y  < 0:
         #_log.info("4th quadrant y rotation")
         start_y = 2*abs(rotation_y) + end_y
         dst_new_height = 2*(abs(rotation_y) + end_y)
         end_y = start_y + end_y
-        
+
     elif rotation_y >= end_y:
         #_log.info("huge y rotation")
         dst_new_height = 2*rotation_y #+ 2*org_st_y
@@ -213,7 +213,7 @@ def _translation(output_png_path, rotation_x, rotation_y):
     #_log.info("end y, end x: ({}, {})".format(end_y, end_x))
     #_log.info("dwidth, dheight: ({}, {})".format(dst_new_width, dst_new_height))
     #_log.info("-" * 80)
-            
+
     #new_buffered_image = BufferedImage(dst_new_width + org_st_x + 1, dst_new_height + org_st_y + 1, BufferedImage.TYPE_INT_ARGB)    
     new_buffered_image = BufferedImage(dst_new_width + 1, dst_new_height + 1, BufferedImage.TYPE_INT_ARGB)    
     g2d = new_buffered_image.createGraphics()
@@ -311,7 +311,7 @@ def _transpose_matrix(matrix):
     transposed_matrix = [[matrix[y][x] for y in xrange(m)] for x in xrange(n)] 
     return transposed_matrix
 
-    
+
 def _create_buffered_image(image):
     result = BufferedImage(image.getWidth(None),image.getHeight(None),BufferedImage.TYPE_INT_ARGB)
     result.getGraphics().drawImage(image,0,0,None)
@@ -323,7 +323,7 @@ def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
     file_reader = FileReader(svg_input_path)
     buffered_reader = BufferedReader(file_reader)
     read_line = ""
-    
+
     check = False
     while True:
         read_line = buffered_reader.readLine()
@@ -346,7 +346,7 @@ def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
             read_line = re.sub(r"height=\"[0-9]+\"", "height=\""+ str(view_box_values[3]) + "\"",
                                read_line, 1)
             check = True
-        
+
         if "g id=\"ID" in read_line and not check:
             if "transform=" in read_line:
                 _log.info(read_line)
@@ -363,7 +363,7 @@ def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
 
 def _get_viewbox_values(view_box_str):
     view_box_values = []
-    
+
     st = StringTokenizer(view_box_str," ")
     while st.hasMoreTokens():
         ch = st.nextToken()
@@ -372,12 +372,10 @@ def _get_viewbox_values(view_box_str):
         except:
             view_box_values.append(int(ch))  
     return view_box_values
-    
-    
+
+
 def _get_viewbox_content(view_box_str):
     start_view_box = view_box_str.index("viewBox") + 9
     end_view_box = view_box_str.index("\"", start_view_box)
     return view_box_str[start_view_box:end_view_box]
-    
 
-    

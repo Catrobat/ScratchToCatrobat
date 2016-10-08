@@ -37,18 +37,6 @@ from java.util import StringTokenizer
 from javax.swing import ImageIcon
 import java.awt.Color
 
-'''
-from org.w3c.dom import Document
-from org.w3c.dom import Element
-from org.apache.batik.util import XMLResourceDescriptor
-from org.apache.batik.dom.svg import SAXSVGDocumentFactory
-from org.apache.batik.dom.svg import SVGDOMImplementation
-from org.apache.batik.dom.svg import SVGOMDocument
-import java.io.InputStream
-import java.io.File
-import java.nio.file.Files
-'''
-
 _BATIK_CLI_JAR = "batik-rasterizer.jar"
 _log = logging.getLogger(__name__)
 _batik_jar_path = None
@@ -74,7 +62,6 @@ def convert(input_svg_path, rotation_x, rotation_y):
     output_png_path = "{}_rotX_{}_rotY_{}.png".format(input_file_name, rotation_x, rotation_y)
     _log.info("      converting '%s' to Pocket Code compatible png '%s'", input_svg_path, output_png_path)
 
-    input_svg_URI = Paths.get(input_svg_path).toUri().toURL().toString()
     output_svg_path = input_svg_path.replace(".svg", "_modified.svg")
     output_svg_URI = Paths.get(output_svg_path).toUri().toURL().toString()
     
@@ -132,13 +119,9 @@ def convert(input_svg_path, rotation_x, rotation_y):
 
 def _translation(output_png_path, rotation_x, rotation_y):
     buffered_image = _create_buffered_image(ImageIcon(output_png_path).getImage())
-    #buffered_image = ImageIO.read(new File());
     width, height = buffered_image.getWidth(), buffered_image.getHeight()
-    #_log.info(buffered_image.getAlphaRaster().toString())
-    #_log.info(buffered_image.getPropertyNames())
     
     buffered_image_matrix = [[buffered_image.getRGB(i, j) for j in xrange(height)] for i in xrange(width)]
-   
     buffered_image_matrix = _transpose_matrix(buffered_image_matrix)
     m, n = len(buffered_image_matrix), len(buffered_image_matrix[0])
     '''
@@ -347,22 +330,17 @@ def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
 
         if read_line is None:
             break
-        
         if "viewBox" in read_line:
             view_box_content = _get_viewbox_content(read_line)
             view_box_values = _get_viewbox_values(view_box_content)
             if view_box_values[0] != 0:
-                view_box_values[2] += view_box_values[0]
+                view_box_values[2] = abs(view_box_values[2]) + abs(view_box_values[0])
                 view_box_values[0] = 0
-
             if view_box_values[1] != 0:
-                view_box_values[3] += view_box_values[1]
+                view_box_values[3] = abs(view_box_values[3]) + abs(view_box_values[1])
                 view_box_values[1] = 0
-            
-            #new_view_box = str(view_box_values[0]) + " " + str(view_box_values[1]) + " " + \
-            #               str(view_box_values[2]) + " " + str(view_box_values[3])
+
             read_line = re.sub(r"viewBox=\"[\-|0-9| ]+\"", "", read_line, 1)
-            
             read_line = re.sub(r"width=\"[0-9]+\"", "width=\""+ str(view_box_values[2]) + "\"",
                                read_line, 1)
             read_line = re.sub(r"height=\"[0-9]+\"", "height=\""+ str(view_box_values[3]) + "\"",
@@ -374,7 +352,6 @@ def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
                 _log.info(read_line)
                 read_line = read_line[0:read_line.find("transform")] + ">"
                 check = True
-        
         write_str += read_line + "\n"
 
     buffered_reader.close()

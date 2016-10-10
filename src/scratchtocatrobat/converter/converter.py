@@ -174,6 +174,7 @@ class _ScratchToCatrobat(object):
         "whenKeyPressed": lambda key: catbase.BroadcastScript(_key_to_broadcast_message(key)),
         "whenSceneStarts": lambda look_name: catbase.BroadcastScript(_background_look_to_broadcast_message(look_name)),
         "whenClicked": catbase.WhenScript,
+        "whenCloned": catbase.WhenClonedScript,
 
         #
         # Bricks
@@ -270,6 +271,9 @@ class _ScratchToCatrobat(object):
         "mousePressed": catformula.Sensors.FINGER_TOUCHED,
         "mouseX": catformula.Sensors.FINGER_X,
         "mouseY": catformula.Sensors.FINGER_Y,
+        
+        "createCloneOf": catbricks.CloneBrick,
+        "deleteClone": catbricks.DeleteThisCloneBrick,
 
         # WORKAROUND: using ROUND for Catrobat float => Scratch int
         "soundLevel": lambda *_args: catrobat.formula_element_for(catformula.Functions.ROUND, arguments=[catrobat.formula_element_for(catformula.Sensors.LOUDNESS)]),  # @UndefinedVariable
@@ -1422,4 +1426,11 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
                                                                                           data_container,
                                                                                           self.script_context)
         return _variable_for(shared_global_answer_user_variable.getName())
+    
+    @_register_handler(_block_name_to_handler_map, "createCloneOf")
+    def _convert_create_clone_of_block(self):
+        [base_sprite] = self.arguments
+        create_clone_of_brick = self.CatrobatClass(catbase.Sprite(base_sprite))
+        return create_clone_of_brick
+    
 

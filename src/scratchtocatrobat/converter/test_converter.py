@@ -1700,14 +1700,27 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     # createCloneOf
     def test_can_convert_create_clone_of_block(self):
         sprite_name = '_myself_'
-        scratch_block = _, expected_message = ["createCloneOf", sprite_name]
+        scratch_block = ["createCloneOf", sprite_name]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert sprite_name == catr_brick.objectToClone.name
         assert isinstance(catr_brick, catbricks.CloneBrick)
+       
+    # createCloneOf 
+    def test_fail_convert_create_clone_of_block_with_empty_string_arg(self):
+        sprite_name = ""
+        scratch_block = ["createCloneOf", sprite_name]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.NoteBrick)
+
+    # createCloneOf 
+    def test_fail_convert_create_clone_of_block_with_formula_arg(self):
+        scratch_block = ["createCloneOf", ["-", 2, 1]]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.NoteBrick)
         
     # whenCloned
     def test_can_convert_when_cloned_block(self):
-        scratch_block = _, expected_message = ["say:", "Hello!"]
+        scratch_block = ["say:", "Hello!"]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.SayBubbleBrick) 
         

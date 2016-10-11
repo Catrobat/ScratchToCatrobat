@@ -1431,7 +1431,14 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "createCloneOf")
     def _convert_create_clone_of_block(self):
         [base_sprite] = self.arguments
-        create_clone_of_brick = self.CatrobatClass(catbase.Sprite(base_sprite))
-        return create_clone_of_brick
+        if isinstance(base_sprite, catformula.FormulaElement):
+            return catbricks.NoteBrick("Can't convert Clone-Brick with Formula as argument.\n"\
+                                       "This is not supported in Pocket Code.")
+        if len(base_sprite) == 0:
+            return catbricks.NoteBrick("Can't convert Clone-Brick with no argument.\n"\ 
+                                       "This is not supported in Pocket Code.")
+        if isinstance(base_sprite, basestring):
+            create_clone_of_brick = self.CatrobatClass(catbase.Sprite(base_sprite))
+            return create_clone_of_brick
     
 

@@ -1696,7 +1696,31 @@ class TestConvertBlocks(common_testing.BaseTestCase):
                                                        DUMMY_CATR_SPRITE)
         assert user_variable is not None
         assert converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME == user_variable.getName()
-
+        
+    # createCloneOf
+    def test_can_convert_create_clone_of_block(self):
+        sprite_name = '_myself_'
+        scratch_block = _, expected_message = ["createCloneOf", sprite_name]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert sprite_name == catr_brick.objectToClone.name
+        assert isinstance(catr_brick, catbricks.CloneBrick)
+        
+    # whenCloned
+    def test_can_convert_when_cloned_block(self):
+        scratch_block = _, expected_message = ["say:", "Hello!"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.SayBubbleBrick) 
+        
+        script = scratch.Script([30, 355, [['whenCloned'], scratch_block]])
+        catr_script = self.block_converter._catrobat_script_from(script, self.sprite_stub)
+        assert isinstance(catr_script, catbase.WhenClonedScript)
+        assert isinstance(catr_script.getBrickList().get(0), catbricks.SayBubbleBrick)
+        
+    # deleteClone
+    def test_can_convert_delete_clone_block(self):
+        scratch_block = ["deleteClone"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.DeleteThisCloneBrick)
 
 class TestConvertProjects(common_testing.ProjectTestCase):
 

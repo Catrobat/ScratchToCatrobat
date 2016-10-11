@@ -272,6 +272,7 @@ class _ScratchToCatrobat(object):
         "mouseX": catformula.Sensors.FINGER_X,
         "mouseY": catformula.Sensors.FINGER_Y,
         
+        # clone
         "createCloneOf": catbricks.CloneBrick,
         "deleteClone": catbricks.DeleteThisCloneBrick,
 

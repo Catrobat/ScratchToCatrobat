@@ -185,13 +185,43 @@ class TestRawProjectFunc(unittest.TestCase):
         for scratch_object in self.project.objects:
             assert scratch_object
             assert isinstance(scratch_object, scratch.Object)
-        assert self.project.objects[0].get_objName() == scratch.STAGE_OBJECT_NAME, "Stage object missing"
-        assert [_.get_objName() for _ in self.project.objects] == ['Stage', 'Sprite1', 'Cassy Dance']
+        assert self.project.objects[0].name == scratch.STAGE_OBJECT_NAME, "Stage object missing"
+        assert [_.name for _ in self.project.objects] == ['Stage', 'Sprite1', 'Cassy Dance']
 
     def test_can_access_project_variables(self):
         variables_test_code_content = common.content_of(common_testing.get_test_resources_path("scratch_code_only", "variables_test.json"))
         raw_project = scratch.RawProject.from_project_code_content(variables_test_code_content)
         assert [variable["name"] for variable in raw_project.get_variables()] == ["$", "MarketOpen", "Multiplier", "bc1bought", "bc2bought"]
+
+
+class TestProjectOrderedObjects(unittest.TestCase):
+
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        self.project_with_object_indexes = scratch.Project(common_testing.get_test_project_path("dress_up_tera_with_object_indexes"))
+        self.project_without_object_indexes = scratch.Project(common_testing.get_test_project_path("dress_up_tera_without_object_indexes"))
+
+    def test_are_scratch_objects_ordered_by_library_index_correctly(self):
+        expected_sorted_object_names = ["Stage", "Cape", "Tera", "Mask", "Hat", "Blouse",
+                                        "Tshirt", "Wings", "Antennae"]
+        assert len(expected_sorted_object_names) == len(self.project_with_object_indexes.objects)
+        for idx, scratch_object in enumerate(self.project_with_object_indexes.objects):
+            assert scratch_object
+            assert isinstance(scratch_object, scratch.Object)
+            assert scratch_object.name == expected_sorted_object_names[idx], \
+                   "Scratch Object with name '{}' is not equal to '{}'!" \
+                   .format(scratch_object.name, expected_sorted_object_names[idx])
+
+    def test_are_scratch_objects_ordered_according_to_given_sequence_when_no_library_index_is_given(self):
+        expected_sorted_object_names = ["Stage", "Wings", "Tera", "Antennae", "Blouse", "Tshirt",
+                                        "Cape", "Hat", "Mask"]
+        assert len(expected_sorted_object_names) == len(self.project_without_object_indexes.objects)
+        for idx, scratch_object in enumerate(self.project_without_object_indexes.objects):
+            assert scratch_object
+            assert isinstance(scratch_object, scratch.Object)
+            assert scratch_object.name == expected_sorted_object_names[idx], \
+                   "Scratch Object with name '{}' is not equal to '{}'!" \
+                   .format(scratch_object.name, expected_sorted_object_names[idx])
 
 
 class TestObjectInit(unittest.TestCase):

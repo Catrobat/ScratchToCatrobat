@@ -234,6 +234,13 @@ TEST_PROJECT_ID_TO_REMIXES_MAP = {
                  '\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82\xa6\xe3' \
                  '\x82\xb9\xef\xbc\x89',
         'id': 120985495
+    }, {
+        'owner': u'Lily-co',
+        'image': 'https://cdn2.scratch.mit.edu/get_image/project/125370675_144x108.png',
+        'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
+                 '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
+                 '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
+        'id': 125370675
     }]
 }
 
@@ -323,11 +330,13 @@ class WebApiTest(common_testing.BaseTestCase):
             extracted_project_notes_and_credits = scratchwebapi.request_project_notes_and_credits_for(project_id)
             assert extracted_project_notes_and_credits is not None
             assert extracted_project_notes_and_credits == expected_project_notes_and_credits, \
-                   "'{}' is not equal to '{}'".format(extracted_project_notes_and_credits, expected_project_notes_and_credits)
+                   "'{}' is not equal to '{}'".format(extracted_project_notes_and_credits,
+                                                      expected_project_notes_and_credits)
 
     def test_can_request_remixes_for_id(self):
         for (project_id, expected_project_remixes) in TEST_PROJECT_ID_TO_REMIXES_MAP.iteritems():
             extracted_project_remixes = scratchwebapi.request_project_remixes_for(project_id)
+            extracted_project_remixes = extracted_project_remixes[:len(TEST_PROJECT_ID_TO_REMIXES_MAP)]
             assert extracted_project_remixes is not None
             assert extracted_project_remixes == expected_project_remixes, \
                    "'{}' is not equal to '{}'".format(extracted_project_remixes,

@@ -271,7 +271,7 @@ class _ScratchToCatrobat(object):
         "mousePressed": catformula.Sensors.FINGER_TOUCHED,
         "mouseX": catformula.Sensors.FINGER_X,
         "mouseY": catformula.Sensors.FINGER_Y,
-        
+
         # clone
         "createCloneOf": catbricks.CloneBrick,
         "deleteClone": catbricks.DeleteThisCloneBrick,
@@ -1427,18 +1427,16 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
                                                                                           data_container,
                                                                                           self.script_context)
         return _variable_for(shared_global_answer_user_variable.getName())
-    
+
     @_register_handler(_block_name_to_handler_map, "createCloneOf")
     def _convert_create_clone_of_block(self):
         [base_sprite] = self.arguments
         if isinstance(base_sprite, catformula.FormulaElement):
-            return catbricks.NoteBrick("Can't convert Clone-Brick with Formula as argument.\n"\
-                                       "This is not supported in Pocket Code.")
+            return catbricks.NoteBrick("Can't convert Clone-Brick with Formula as argument.\n")
+
         if len(base_sprite) == 0:
-            return catbricks.NoteBrick("Can't convert Clone-Brick with no argument.\n"\ 
-                                       "This is not supported in Pocket Code.")
+            return catbricks.NoteBrick("Can't convert Clone-Brick with no argument.\n")
+
         if isinstance(base_sprite, basestring):
             create_clone_of_brick = self.CatrobatClass(catbase.Sprite(base_sprite))
             return create_clone_of_brick
-    
-

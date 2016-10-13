@@ -271,6 +271,7 @@ class _ScratchToCatrobat(object):
         "mousePressed": catformula.Sensors.FINGER_TOUCHED,
         "mouseX": catformula.Sensors.FINGER_X,
         "mouseY": catformula.Sensors.FINGER_Y,
+        "timeAndDate": None,
 
         # clone
         "createCloneOf": catbricks.CloneBrick,
@@ -1440,3 +1441,22 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         if isinstance(base_sprite, basestring):
             create_clone_of_brick = self.CatrobatClass(catbase.Sprite(base_sprite))
             return create_clone_of_brick
+
+    @_register_handler(_block_name_to_handler_map, "timeAndDate")
+    def _convert_time_and_date_block(self):
+        [time_or_date] = self.arguments
+        switcher = {
+            "second": str(catformula.Sensors.TIME_SECOND),
+            "minute": str(catformula.Sensors.TIME_MINUTE),
+            "hour": str(catformula.Sensors.TIME_HOUR),
+            "day of week": str(catformula.Sensors.DATE_WEEKDAY),
+            "date": str(catformula.Sensors.DATE_DAY),
+            "month": str(catformula.Sensors.DATE_MONTH),
+            "year": str(catformula.Sensors.DATE_YEAR)
+        }
+        converted_time_or_date = switcher.get(time_or_date, "ERROR")
+        if(converted_time_or_date == "ERROR"):
+            return catbricks.NoteBrick("Can't convert Time-And-Date Block.\n")
+        time_formula = catformula.FormulaElement(catformula.FormulaElement.ElementType.SENSOR, 
+                                                 converted_time_or_date, None)
+        return time_formula

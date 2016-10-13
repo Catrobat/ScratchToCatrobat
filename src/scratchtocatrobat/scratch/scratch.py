@@ -214,7 +214,8 @@ class RawProject(Object):
         assert self.is_stage()
         self._verify_scratch_dictionary(dict_, data_origin)
         self.dict_ = dict_
-        self.raw_objects = [child for child in self.get_children() if "objName" in child]
+        raw_child_objects = sorted(self.get_children(), key=lambda obj_data: obj_data.get("indexInLibrary", 0))
+        self.raw_objects = [child for child in raw_child_objects if "objName" in child]
         self.objects = [Object(raw_object) for raw_object in [dict_] + self.raw_objects]
         self.resource_names = [self._resource_name_from(raw_resource) for raw_resource in self._raw_resources()]
         self.unique_resource_names = list(set(self.resource_names))

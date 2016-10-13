@@ -1433,10 +1433,10 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     def _convert_create_clone_of_block(self):
         [base_sprite] = self.arguments
         if isinstance(base_sprite, catformula.FormulaElement):
-            return catbricks.NoteBrick("Can't convert Clone-Brick with Formula as argument.\n")
+            return catbricks.NoteBrick("Can't convert Clone-Brick with Formula as argument.")
 
         if len(base_sprite) == 0:
-            return catbricks.NoteBrick("Can't convert Clone-Brick with no argument.\n")
+            return catbricks.NoteBrick("Can't convert Clone-Brick with no argument.")
 
         if isinstance(base_sprite, basestring):
             create_clone_of_brick = self.CatrobatClass(catbase.Sprite(base_sprite))
@@ -1455,8 +1455,10 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             "year": str(catformula.Sensors.DATE_YEAR)
         }
         converted_time_or_date = switcher.get(time_or_date, "ERROR")
-        if(converted_time_or_date == "ERROR"):
-            return catbricks.NoteBrick("Can't convert Time-And-Date Block.\n")
+        if converted_time_or_date == "ERROR":
+            return catbricks.NoteBrick("Can't convert Time-And-Date Block.")
         time_formula = catformula.FormulaElement(catformula.FormulaElement.ElementType.SENSOR, 
                                                  converted_time_or_date, None)
+        if time_or_date == "day of week":
+            time_formula = self._converted_helper_brick_or_formula_element([time_formula, 1], "+")
         return time_formula

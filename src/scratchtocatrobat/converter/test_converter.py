@@ -1758,7 +1758,8 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         scratch_block = ["timeAndDate", "day of week"]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catformula.FormulaElement)
-        assert catr_brick.getValue() == str(catformula.Sensors.DATE_WEEKDAY)
+        assert catr_brick.getValue() == str(catformula.Operators.PLUS)
+        assert catr_brick.leftChild.getValue() == str(catformula.Sensors.DATE_WEEKDAY)
 
     # timeAndDate
     def test_can_convert_time_and_date_block_date(self):

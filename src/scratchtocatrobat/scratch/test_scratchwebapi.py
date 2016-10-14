@@ -338,6 +338,8 @@ class WebApiTest(common_testing.BaseTestCase):
             extracted_project_remixes = scratchwebapi.request_project_remixes_for(project_id)
             extracted_project_remixes = extracted_project_remixes[:len(TEST_PROJECT_ID_TO_REMIXES_MAP)]
             assert extracted_project_remixes is not None
+            assert isinstance(extracted_project_remixes, list)
+            extracted_project_remixes = extracted_project_remixes[:len(expected_project_remixes)]
             assert extracted_project_remixes == expected_project_remixes, \
                    "'{}' is not equal to '{}'".format(extracted_project_remixes,
                                                       expected_project_remixes)

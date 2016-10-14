@@ -271,6 +271,7 @@ class _ScratchToCatrobat(object):
         "mousePressed": catformula.Sensors.FINGER_TOUCHED,
         "mouseX": catformula.Sensors.FINGER_X,
         "mouseY": catformula.Sensors.FINGER_Y,
+        "timeAndDate": None,
 
         # clone
         "createCloneOf": catbricks.CloneBrick,
@@ -1432,11 +1433,32 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     def _convert_create_clone_of_block(self):
         [base_sprite] = self.arguments
         if isinstance(base_sprite, catformula.FormulaElement):
-            return catbricks.NoteBrick("Can't convert Clone-Brick with Formula as argument.\n")
+            return catbricks.NoteBrick("Can't convert Clone-Brick with Formula as argument.")
 
         if len(base_sprite) == 0:
-            return catbricks.NoteBrick("Can't convert Clone-Brick with no argument.\n")
+            return catbricks.NoteBrick("Can't convert Clone-Brick with no argument.")
 
         if isinstance(base_sprite, basestring):
             create_clone_of_brick = self.CatrobatClass(catbase.Sprite(base_sprite))
             return create_clone_of_brick
+
+    @_register_handler(_block_name_to_handler_map, "timeAndDate")
+    def _convert_time_and_date_block(self):
+        [time_or_date] = self.arguments
+        switcher = {
+            "second": str(catformula.Sensors.TIME_SECOND),
+            "minute": str(catformula.Sensors.TIME_MINUTE),
+            "hour": str(catformula.Sensors.TIME_HOUR),
+            "day of week": str(catformula.Sensors.DATE_WEEKDAY),
+            "date": str(catformula.Sensors.DATE_DAY),
+            "month": str(catformula.Sensors.DATE_MONTH),
+            "year": str(catformula.Sensors.DATE_YEAR)
+        }
+        converted_time_or_date = switcher.get(time_or_date, "ERROR")
+        if converted_time_or_date == "ERROR":
+            return catbricks.NoteBrick("Can't convert Time-And-Date Block.")
+        time_formula = catformula.FormulaElement(catformula.FormulaElement.ElementType.SENSOR, 
+                                                 converted_time_or_date, None)
+        if time_or_date == "day of week":
+            time_formula = self._converted_helper_brick_or_formula_element([time_formula, 1], "+")
+        return time_formula

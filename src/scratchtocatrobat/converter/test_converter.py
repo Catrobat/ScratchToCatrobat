@@ -1760,6 +1760,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert isinstance(catr_brick, catformula.FormulaElement)
         assert catr_brick.getValue() == str(catformula.Operators.PLUS)
         assert catr_brick.leftChild.getValue() == str(catformula.Sensors.DATE_WEEKDAY)
+        assert catr_brick.rightChild.getValue() == str(1)
 
     # timeAndDate
     def test_can_convert_time_and_date_block_date(self):

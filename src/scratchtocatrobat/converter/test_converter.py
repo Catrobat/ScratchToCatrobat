@@ -1769,17 +1769,43 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert isinstance(catr_brick, catformula.FormulaElement)
         assert catr_brick.getValue() == str(catformula.Sensors.DATE_DAY)
 
+    # timeAndDate
     def test_can_convert_time_and_date_block_month(self):
         scratch_block = ["timeAndDate", "month"]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catformula.FormulaElement)
         assert catr_brick.getValue() == str(catformula.Sensors.DATE_MONTH)
 
+    # timeAndDate
     def test_can_convert_time_and_date_block_year(self):
         scratch_block = ["timeAndDate", "year"]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catformula.FormulaElement)
         assert catr_brick.getValue() == str(catformula.Sensors.DATE_YEAR)
+
+    #putPenDown
+    def test_can_convert_pen_down_block(self):
+        scratch_block = ["putPenDown"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.PenDownBrick)
+
+    #putPenUp
+    def test_can_convert_pen_up_block(self):
+        scratch_block = ["putPenUp"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.PenUpBrick)
+
+    #stampCostume
+    def test_can_convert_stamp_costume_block(self):
+        scratch_block = ["stampCostume"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.StampBrick)
+
+    #clearPenTrails
+    def test_can_convert_clear_pen_trails_block(self):
+        scratch_block = ["clearPenTrails"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.ClearBackgroundBrick)
 
 
 class TestConvertProjects(common_testing.ProjectTestCase):

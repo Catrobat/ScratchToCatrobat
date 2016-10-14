@@ -277,6 +277,12 @@ class _ScratchToCatrobat(object):
         "createCloneOf": catbricks.CloneBrick,
         "deleteClone": catbricks.DeleteThisCloneBrick,
 
+        # pen bricks
+        "putPenDown": catbricks.PenDownBrick,
+        "putPenUp": catbricks.PenUpBrick,
+        "stampCostume": catbricks.StampBrick,
+        "clearPenTrails": catbricks.ClearBackgroundBrick,
+
         # WORKAROUND: using ROUND for Catrobat float => Scratch int
         "soundLevel": lambda *_args: catrobat.formula_element_for(catformula.Functions.ROUND, arguments=[catrobat.formula_element_for(catformula.Sensors.LOUDNESS)]),  # @UndefinedVariable
     }.items() + math_function_block_parameters_mapping.items() \

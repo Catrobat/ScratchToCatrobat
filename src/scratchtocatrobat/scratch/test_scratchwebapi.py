@@ -336,7 +336,6 @@ class WebApiTest(common_testing.BaseTestCase):
     def test_can_request_remixes_for_id(self):
         for (project_id, expected_project_remixes) in TEST_PROJECT_ID_TO_REMIXES_MAP.iteritems():
             extracted_project_remixes = scratchwebapi.request_project_remixes_for(project_id)
-            extracted_project_remixes = extracted_project_remixes[:len(TEST_PROJECT_ID_TO_REMIXES_MAP)]
             assert extracted_project_remixes is not None
             assert isinstance(extracted_project_remixes, list)
             extracted_project_remixes = extracted_project_remixes[:len(expected_project_remixes)]

@@ -44,6 +44,8 @@ from scratchtocatrobat.scratch.scratch import JsonKeys as scratchkeys
 from scratchtocatrobat.tools import helpers
 from scratchtocatrobat.tools.helpers import ProgressType
 
+import java.awt.Color as Color
+
 import catrobat
 import mediaconverter
 
@@ -282,6 +284,7 @@ class _ScratchToCatrobat(object):
         "putPenUp": catbricks.PenUpBrick,
         "stampCostume": catbricks.StampBrick,
         "clearPenTrails": catbricks.ClearBackgroundBrick,
+        "penColor:": catbricks.SetPenColorBrick,
 
         # WORKAROUND: using ROUND for Catrobat float => Scratch int
         "soundLevel": lambda *_args: catrobat.formula_element_for(catformula.Functions.ROUND, arguments=[catrobat.formula_element_for(catformula.Sensors.LOUDNESS)]),  # @UndefinedVariable
@@ -1468,3 +1471,14 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         if time_or_date == "day of week":
             time_formula = self._converted_helper_brick_or_formula_element([time_formula, 1], "+")
         return time_formula
+
+    @_register_handler(_block_name_to_handler_map, "penColor:")
+    def _convert_pen_color_block(self):
+        [int_color_value] = self.arguments
+        int_color_value = int(int_color_value)
+        color = Color(int_color_value)
+        red_value = color.getRed()
+        green_value = color.getGreen()
+        blue_value = color.getBlue()
+        return self.CatrobatClass(red_value, green_value, blue_value)
+

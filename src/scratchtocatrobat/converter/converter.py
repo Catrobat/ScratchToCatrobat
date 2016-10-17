@@ -44,8 +44,6 @@ from scratchtocatrobat.scratch.scratch import JsonKeys as scratchkeys
 from scratchtocatrobat.tools import helpers
 from scratchtocatrobat.tools.helpers import ProgressType
 
-import java.awt.Color as Color
-
 import catrobat
 import mediaconverter
 
@@ -1475,10 +1473,20 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "penColor:")
     def _convert_pen_color_block(self):
         [int_color_value] = self.arguments
-        int_color_value = int(int_color_value)
-        color = Color(int_color_value)
-        red_value = color.getRed()
-        green_value = color.getGreen()
-        blue_value = color.getBlue()
-        return self.CatrobatClass(red_value, green_value, blue_value)
+
+        blue = self._converted_helper_brick_or_formula_element([int_color_value, 256], "%")
+
+        blue_parenth = self._converted_helper_brick_or_formula_element([blue], "()")
+        x_minus_blue = self._converted_helper_brick_or_formula_element([int_color_value, blue_parenth], "-")
+        xmb_parenth = self._converted_helper_brick_or_formula_element([x_minus_blue], "()")
+        xmb_divided_256 = self._converted_helper_brick_or_formula_element([xmb_parenth, 256], "/")
+        xmbd_256_parenth = self._converted_helper_brick_or_formula_element([xmb_divided_256], "()")
+        green = self._converted_helper_brick_or_formula_element([xmbd_256_parenth, 256], "%")
+
+        green_parenth = self._converted_helper_brick_or_formula_element([green], "()")
+        xmbd_256_minus_green = self._converted_helper_brick_or_formula_element([xmbd_256_parenth, green_parenth], "-")
+        xmbd_256_mg_parenth = self._converted_helper_brick_or_formula_element([xmbd_256_minus_green], "()")
+        red = self._converted_helper_brick_or_formula_element([xmbd_256_mg_parenth, 256], "/")
+
+        return self.CatrobatClass(catformula.Formula(red), catformula.Formula(green), catformula.Formula(blue))
 

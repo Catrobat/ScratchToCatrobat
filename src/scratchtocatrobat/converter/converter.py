@@ -283,6 +283,7 @@ class _ScratchToCatrobat(object):
         "stampCostume": catbricks.StampBrick,
         "clearPenTrails": catbricks.ClearBackgroundBrick,
         "penColor:": catbricks.SetPenColorBrick,
+        "penSize:": catbricks.SetPenSizeBrick,
 
         # WORKAROUND: using ROUND for Catrobat float => Scratch int
         "soundLevel": lambda *_args: catrobat.formula_element_for(catformula.Functions.ROUND, arguments=[catrobat.formula_element_for(catformula.Sensors.LOUDNESS)]),  # @UndefinedVariable
@@ -1490,3 +1491,8 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
         return self.CatrobatClass(catformula.Formula(red), catformula.Formula(green), catformula.Formula(blue))
 
+    @_register_handler(_block_name_to_handler_map, "penSize:")
+    def _convert_set_pen_size_block(self):
+        [size] = self.arguments
+        pen_size_block = self.CatrobatClass(catformula.Formula(size))
+        return pen_size_block

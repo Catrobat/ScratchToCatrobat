@@ -475,7 +475,23 @@ class Converter(object):
         xml_header.mediaLicense = helpers.catrobat_info("media_license_url")
         xml_header.programLicense = helpers.catrobat_info("program_license_url")
         assert scratch_project_id is not None
-        xml_header.remixOf = helpers.config.get("SCRATCH_API", "project_base_url") + scratch_project_id
+
+        #-------------------------------------------------------------------------------------------
+        # ATTENTION: *** CATROBAT REMIX SPECIFICATION REQUIREMENT ***
+        #-------------------------------------------------------------------------------------------
+        #       Keep in mind that the remixOf-field is used by Catroweb's web application only!!!
+        #       Once new Catrobat programs get uploaded, Catroweb automatically updates
+        #       the remixOf-field and sets the program as being remixed!
+        #       In order to do so, Catroweb takes the value from the url-field and assigns it to
+        #       the remixOf-field.
+        #
+        #       With that said, the only correct way to set a remix-URL *before* uploading a
+        #       Catrobat program is to insert it into the url-field!
+        #       That's why the url of the Scratch program is assigned to the url-field here.
+        #-------------------------------------------------------------------------------------------
+        xml_header.url = helpers.config.get("SCRATCH_API", "project_base_url") + scratch_project_id
+        # TODO: @Christian: use setUrl() instead after next catroid-class-hierarchy update!!!
+        #       -> setUrl() will be available soon
 
         sep_line = "\n" + "-" * 40 + "\n"
         description = sep_line
@@ -496,7 +512,7 @@ class Converter(object):
         description += "\nMade with {} version {}.\nOriginal Scratch project => {}".format( \
                          helpers.application_info("name"), \
                          helpers.application_info("version"), \
-                         xml_header.remixOf)
+                         xml_header.getUrl())
         xml_header.setDescription(description)
 
 class _ScratchObjectConverter(object):

@@ -784,6 +784,30 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert isinstance(catr_brick, catbricks.StopScriptBrick)
         assert expected_index_of_option == catr_brick.spinnerSelection
 
+    # setRotationStyle ("left-right")
+    def test_can_convert_set_rotation_style_with_option_left_right_block(self):
+        expected_index_of_option = 0
+        scratch_block = ["setRotationStyle", "left-right"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.SetRotationStyleBrick)
+        assert expected_index_of_option == catr_brick.selection
+
+    # setRotationStyle ("all around")
+    def test_can_convert_set_rotation_style_with_option_all_around_block(self):
+        expected_index_of_option = 1
+        scratch_block = ["setRotationStyle", "all around"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.SetRotationStyleBrick)
+        assert expected_index_of_option == catr_brick.selection
+
+    # setRotationStyle ("don't rotate")
+    def test_can_convert_set_rotation_style_with_option_dont_rotate_block(self):
+        expected_index_of_option = 2
+        scratch_block = ["setRotationStyle", "don't rotate"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.SetRotationStyleBrick)
+        assert expected_index_of_option == catr_brick.selection
+
     # broadcast:
     def test_can_convert_broadcast_block(self):
         broadcast_message = "hello world"
@@ -1121,12 +1145,10 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         # create and validate show variable brick
         scratch_block = ["showVariable:", variable_name]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        assert isinstance(catr_brick, catbricks.ShowVariableBrick)
-
-        #Commented out because members aren't present anymore
-        #assert catr_brick.userVariableName == variable_name
-        #assert user_variable == catr_brick.userVariable
-        #assert catr_brick.userVariable.getName() == variable_name
+        assert isinstance(catr_brick, catbricks.ShowTextBrick)
+        assert catr_brick.userVariableName == variable_name
+        assert user_variable == catr_brick.getUserVariable()
+        assert catr_brick.getUserVariable().getName() == variable_name
 
     # hideVariableBrick:
     def test_can_convert_hide_variable_block(self):
@@ -1141,13 +1163,11 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         # create and validate show variable brick
         scratch_block = ["hideVariable:", variable_name]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        assert isinstance(catr_brick, catbricks.HideVariableBrick)
-        
-        #Commented out because members aren't present anymore
-        #assert catr_brick.userVariableName == variable_name
-        #assert user_variable == catr_brick.userVariable
-        #assert catr_brick.userVariable.getName() == variable_name
-        
+        assert isinstance(catr_brick, catbricks.HideTextBrick)
+        assert catr_brick.userVariableName == variable_name
+        assert user_variable == catr_brick.getUserVariable()
+        assert catr_brick.getUserVariable().getName() == variable_name
+
     # append:toList:
     def test_can_convert_append_number_to_list_block(self):
         value = "1.23"

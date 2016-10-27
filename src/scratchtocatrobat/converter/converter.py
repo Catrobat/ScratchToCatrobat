@@ -205,13 +205,14 @@ class _ScratchToCatrobat(object):
         "bounceOffEdge": catbricks.IfOnEdgeBounceBrick,
         "changeXposBy:": catbricks.ChangeXByNBrick,
         "changeYposBy:": catbricks.ChangeYByNBrick,
+        "setRotationStyle": catbricks.SetRotationStyleBrick,
 
         # variables
         "setVar:to:": lambda *args: _create_variable_brick(*itertools.chain(args, [catbricks.SetVariableBrick])),
         "changeVar:by:": lambda *args: _create_variable_brick(*itertools.chain(args, [catbricks.ChangeVariableBrick])),
         "readVariable": lambda variable_name: _variable_for(variable_name),
-        "showVariable:": catbricks.ShowVariableBrick,
-        "hideVariable:": catbricks.HideVariableBrick,
+        "showVariable:": catbricks.ShowTextBrick,
+        "hideVariable:": catbricks.HideTextBrick,
 
         # formula lists
         "append:toList:": catbricks.AddItemToUserListBrick,
@@ -692,8 +693,16 @@ class _ScratchObjectConverter(object):
             implicit_bricks_to_add += [catbricks.HideBrick()]
 
         rotation_style = scratch_object.get_rotationStyle()
-        if rotation_style and rotation_style != "normal":
-            log.warning("Unsupported rotation style '{}' at object: {}".format(rotation_style, scratch_object.get_objName()))
+        if rotation_style is not None:
+            traverser = _BlocksConversionTraverser(sprite, catrobat_project)
+            if rotation_style == "leftRight":
+                set_rotation_style_brick = traverser._converted_helper_brick_or_formula_element(["left-right"], "setRotationStyle")
+                assert set_rotation_style_brick is not None
+                implicit_bricks_to_add += [set_rotation_style_brick]
+            elif rotation_style == "none":
+                set_rotation_style_brick = traverser._converted_helper_brick_or_formula_element(["don't rotate"], "setRotationStyle")
+                assert set_rotation_style_brick is not None
+                implicit_bricks_to_add += [set_rotation_style_brick]
 
         if len(implicit_bricks_to_add) > 0:
             catrobat.add_to_start_script(implicit_bricks_to_add, sprite)
@@ -907,6 +916,8 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         self.sprite = catrobat_sprite
         self.project = catrobat_project
         self.scene = catrobat_project.getDefaultScene()
+        self.CatrobatClass = None
+        self.arguments = None
         self._stack = []
         self._child_stack = []
 
@@ -1226,11 +1237,8 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         assert user_variable is not None # the variable must exist at this stage!
         assert user_variable.getName() == variable_name
         show_variable_brick = self.CatrobatClass(0, 0)
-        
-        #Commented out because it isn't present anymore
-        #show_variable_brick.userVariableName = variable_name
-        #show_variable_brick.userVariable = user_variable
-
+        show_variable_brick.setUserVariableName(variable_name)
+        show_variable_brick.setUserVariable(user_variable)
         return show_variable_brick
 
     @_register_handler(_block_name_to_handler_map, "hideVariable:")
@@ -1240,11 +1248,8 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         assert user_variable is not None # the variable must exist at this stage!
         assert user_variable.getName() == variable_name
         hide_variable_brick = self.CatrobatClass()
-        
-        #Commented out because it isn't present anymore
-        #hide_variable_brick.userVariableName = variable_name
-        #hide_variable_brick.userVariable = user_variable
-
+        hide_variable_brick.setUserVariableName(variable_name)
+        hide_variable_brick.setUserVariable(user_variable)
         return hide_variable_brick
 
     @_register_handler(_block_name_to_handler_map, "append:toList:")
@@ -1478,3 +1483,10 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         if time_or_date == "day of week":
             time_formula = self._converted_helper_brick_or_formula_element([time_formula, 1], "+")
         return time_formula
+
+    @_register_handler(_block_name_to_handler_map, "setRotationStyle")
+    def _convert_set_rotation_style_block(self):
+        [style] = self.arguments
+        set_rotation_style_brick = catbricks.SetRotationStyleBrick()
+        set_rotation_style_brick.selection = ["left-right", "all around", "don't rotate"].index(style)
+        return set_rotation_style_brick

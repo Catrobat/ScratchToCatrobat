@@ -21,7 +21,9 @@
         var version = "{{ data["version"] }}";
         var buildName = "{{ data["build_name"] }}";
         var buildNumber = "{{ data["build_number"] }}";
-        alert("Version: " + version + "\nBuild: " + buildName + " (" + buildNumber + ")");
+        var catrobatLanguageVersion = "{{ data["catrobat_language_version"] }}";
+        alert("Version: " + version + "\nBuild: " + buildName + " (" + buildNumber + ")\n" +
+              "Catrobat Language Version: " + catrobatLanguageVersion);
         return false;
       });
     });

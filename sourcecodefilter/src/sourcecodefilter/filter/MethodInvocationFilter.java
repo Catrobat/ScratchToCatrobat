@@ -71,7 +71,11 @@ public class MethodInvocationFilter extends ASTVisitor {
                 if ((body == null) || (body.statements().size() == 0)) {
                 	continue;
                 }
-                methodDeclaration.accept(this);
+                try {
+                	methodDeclaration.accept(this);
+                } catch (java.lang.IllegalArgumentException ex) {
+                	System.err.println("Unable to filter methods in: " + this.catroidSource.getQualifiedClassName());
+                }
             }
         }
     }

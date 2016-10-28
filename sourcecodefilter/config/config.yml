@@ -1,12 +1,12 @@
 #==================================================================================================
 # Define and update parameters here
 #==================================================================================================
-catroid_version: v0.9.24
-xstream_class_name: XStreamToSupportCatrobatLanguageVersion0991AndBefore
+catroid_version: v0.9.27
+xstream_class_name: XStreamToSupportCatrobatLanguageVersion0992AndBefore
 archive_extension: "zip"
 #URL: "https://github.com/Catrobat/Catroid/archive/master.%{archive_extension}"
 #URL: "https://github.com/Catrobat/Catroid/archive/%{catroid_version}.%{archive_extension}"
-URL: "https://github.com/Catrobat/Catroid/archive/develop.zip"
+URL: "https://github.com/Catrobat/Catroid/archive/release-0.9.27.%{archive_extension}"
 xstream_version: "1.4.7"
 xstream_lib_extension: "jar"
 xstream_download_URL: "http://repo.maven.apache.org/maven2/com/thoughtworks/xstream/xstream/%{xstream_version}/xstream-%{xstream_version}.%{xstream_lib_extension}"
@@ -59,6 +59,8 @@ remove_method_invocations:
      "context.getString"]
 
 remove_method_invocations_with_parameter_mapping:
+    org.catrobat.catroid.content.Project:
+        - removeInvalidVariablesAndLists(oldProject.dataContainer)
     org.catrobat.catroid.content.Scene:
         - background.look.setZIndex(0)
         - addSprite(background)
@@ -108,7 +110,6 @@ remove_method_invocations_with_parameter_mapping:
         - xstream.alias("setting",LegoNXTSetting.class)
         - xstream.alias("nxtPort",LegoNXTSetting.NXTPort.class)
         - xstream.aliasAttribute(LegoNXTSetting.NXTPort.class,"number","number")
-
     org.catrobat.catroid.io.XStreamToSupportCatrobatLanguageVersion0991AndBefore:
         - brickInfo.addBrickFieldToMap("speed",BrickField.LEGO_NXT_SPEED)
         - brickInfoMap.put("legoNxtMotorMoveBrick",brickInfo)
@@ -261,7 +262,7 @@ remove_try_catch_blocks_mapping:
 
 inject_inline_classes_to_existing_class:
     org.catrobat.catroid.content.Project:
-        - "public class Context {}"
+        - "public static class Context {}"
 
 additional_serialization_classes:
     - AllowedAfterDeadEndBrick
@@ -435,6 +436,8 @@ class_to_preserved_methods_mapping:
         - compareTo
         - setTitle
         - getTitle
+    Look:
+        - getDirectionInUserInterfaceDimensionUnit
     LookData:
         - setLookFilename
     FormulaElement:
@@ -497,6 +500,7 @@ class_to_preserved_methods_mapping:
         - setSpriteVariablesForSupportContainer
         - getProjectVariables
         - getProjectLists
+        - removeSpriteVariableWithSameSpriteName
     AddItemToUserListBrick:
         - initializeBrickFields
     ChangeTransparencyByNBrick:
@@ -648,7 +652,7 @@ remove_methods_mapping:
     XmlHeader:
         - setTags
     Look:
-        [copyLookForSprite, createBrightnessContrastShader, checkImageChanged, setWhenParallelAction]
+        [cloneLook, copyLookForSprite, createBrightnessContrastShader, checkImageChanged, setWhenParallelAction]
     NXTSensor:
         [resetScaledValue, getSensorReadings, getUpdateInterval,
         updateLastSensorValue, getLastSensorValue]

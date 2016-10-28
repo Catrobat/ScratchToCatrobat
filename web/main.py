@@ -106,6 +106,7 @@ def main():
 
     try:
         converterwebapp._MainHandler.app_data = helpers.config.items_as_dict("APPLICATION")
+        converterwebapp._MainHandler.app_data["catrobat_language_version"] = helpers.catrobat_info("catrobat_language_version")
     except:
         _logger.error("Error fetching application data", exc_info=True)
         sys.exit(helpers.ExitCode.FAILURE)

@@ -58,7 +58,7 @@ PROJECT_DUMMY_ID = "1013258"  # dance back
 # TODO: parse from Java annotations
 FIELD_NAMES_TO_XML_NAMES = {"virtualScreenWidth": "screenWidth", "virtualScreenHeight": "screenHeight"}
 IGNORED_XML_HEADER_CLASS_FIELDS = ["serialVersionUID"]
-OPTIONAL_HEADER_TAGS = ["dateTimeUpload", "description", "tags", "url", "userHandle"]
+OPTIONAL_HEADER_TAGS = ["dateTimeUpload", "description", "tags", "remixOf", "userHandle"]
 
 _log = common.log
 
@@ -125,7 +125,7 @@ class ProjectTestCase(BaseTestCase):
         assert len(bricks) == len(expected_brick_classes)
         assert [brick.__class__ for brick in bricks] == expected_brick_classes
 
-    def __assertTagsAreNonempty(self, xml_root):
+    def __assertTagsAreNonEmpty(self, xml_root):
         header_tags = [FIELD_NAMES_TO_XML_NAMES[field] if field in FIELD_NAMES_TO_XML_NAMES else field for field in common.fields_of(catbase.XmlHeader) if field not in IGNORED_XML_HEADER_CLASS_FIELDS]
         mandatory_header_tags = set(header_tags) - set(OPTIONAL_HEADER_TAGS)
         for header_tag in header_tags:
@@ -152,7 +152,7 @@ class ProjectTestCase(BaseTestCase):
 
         root = ElementTree.parse(project_xml_path).getroot()
         assert root.tag == 'program'
-        self.__assertTagsAreNonempty(root)
+        self.__assertTagsAreNonEmpty(root)
 
         project_name_from_xml = root.find("header/programName")
         assert project_name_from_xml.text == project_name

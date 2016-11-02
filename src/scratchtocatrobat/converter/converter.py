@@ -165,7 +165,7 @@ class _ScratchToCatrobat(object):
         "concatenate:with:": catformula.Functions.JOIN
     }
 
-    complete_mapping = dict({
+    script_mapping = {
         #
         # Scripts
         #
@@ -175,7 +175,10 @@ class _ScratchToCatrobat(object):
         "whenSceneStarts": lambda look_name: catbase.BroadcastScript(_background_look_to_broadcast_message(look_name)),
         "whenClicked": catbase.WhenScript,
         "whenCloned": catbase.WhenClonedScript,
+        "procDef": catbricks.UserBrick
+    }
 
+    complete_mapping = dict({
         #
         # Bricks
         #
@@ -278,12 +281,22 @@ class _ScratchToCatrobat(object):
         "createCloneOf": catbricks.CloneBrick,
         "deleteClone": catbricks.DeleteThisCloneBrick,
 
+        # UserBrick
+        "call": catbricks.UserBrick,
+
         # WORKAROUND: using ROUND for Catrobat float => Scratch int
-        "soundLevel": lambda *_args: catrobat.formula_element_for(catformula.Functions.ROUND, arguments=[catrobat.formula_element_for(catformula.Sensors.LOUDNESS)]),  # @UndefinedVariable
+        "soundLevel": lambda *_args: catrobat.formula_element_for(catformula.Functions.ROUND,
+                                       arguments=[catrobat.formula_element_for(catformula.Sensors.LOUDNESS)]),  # @UndefinedVariable
     }.items() + math_function_block_parameters_mapping.items() \
               + math_unary_operators_mapping.items() + math_binary_operators_mapping.items() \
               + user_list_block_parameters_mapping.items() \
               + string_function_block_parameters_mapping.items())
+
+    @classmethod
+    def catrobat_script_class_for(cls, scratch_block_name):
+        assert isinstance(scratch_block_name, (str, unicode))
+        catrobat_script = cls.script_mapping.get(scratch_block_name)
+        return catrobat_script
 
     @classmethod
     def catrobat_brick_class_for(cls, scratch_block_name):
@@ -294,11 +307,67 @@ class _ScratchToCatrobat(object):
         return catrobat_brick
 
     @classmethod
-    def create_script(cls, scratch_script_name, arguments):
+    def create_script(cls, scratch_script_name, arguments, context=None):
         if scratch_script_name not in scratch.SCRIPTS:
             assert False, "Missing script mapping for: " + scratch_script_name
-        # TODO: separate script and brick mapping
-        return cls.catrobat_brick_class_for(scratch_script_name)(*arguments)
+        catrobat_script = cls.catrobat_script_class_for(scratch_script_name)
+        # TODO: register handler!! -> _ScriptBlocksConversionTraverser
+        if scratch_script_name != "procDef":
+            return catrobat_script(*arguments)
+
+        # ["procDef", "Function1 %n string: %s", ["number1", "string1"], [1, ""], true]
+        assert len(arguments) == 4
+        assert isinstance(catrobat_script, catbricks.UserBrick)
+        user_script_definition_brick = catbricks.UserScriptDefinitionBrick()
+        user_brick = catrobat_script(user_script_definition_brick)
+        scratch_function_header = arguments[0]
+
+        if context is not None:
+            if scratch_function_header in context.user_script_params_map:
+                continue # ignore duplicates
+
+        # filter all % characters
+        filtered_scratch_function_header = scratch_function_header.replace("\\%", "")
+        num_of_params = filtered_scratch_function_header.count("%")
+        param_names = arguments[1]
+        param_default_values = arguments[2]
+        assert len(param_names) == num_of_params
+
+        user_script_definition_brick_elements_list = user_script_definition_brick.getUserScriptDefinitionBrickElements()
+        user_brick_parameters_list = user_brick.getUserBrickParameters()
+
+        param_types = []
+        param_index = 0
+        for function_header_part in filtered_scratch_function_header.split():
+            # "label0 %n %s %b label1"
+            # ["number1", "string1", "boolean1"]
+            user_script_definition_brick_element = catbricks.UserScriptDefinitionBrickElement()
+            if function_header_part.startswith('%'):
+                assert len(function_header_part) == 2
+                assert function_header_part in ['%n', '%s', '%b']
+                user_script_definition_brick_element.setIsVariable()
+                param_types += [function_header_part]
+
+                param_default_value = param_default_values[param_index]
+                param_default_value = int(param_default_value) if param_default_value in ['%n', '%b'] else str(param_default_value)
+                param_default_value_formula = catrobat.create_formula_with_value(param_default_value)
+                user_brick_parameter = catbricks.UserBrickParameter(param_default_value_formula)
+                user_brick_parameter.setParent(user_brick)
+                user_brick_parameter.setElement(user_script_definition_brick_element)
+                user_brick_parameters_list.add(user_brick_parameter)
+                param_index += 1
+            else:
+                # TODO: decide when line-breaks are useful...
+                user_script_definition_brick_element.setIsText()
+                user_script_definition_brick_element.setText(function_header_part)
+
+            user_script_definition_brick_elements_list.add(user_script_definition_brick_element)
+
+        if context is not None:
+            context.user_script_params_map[scratch_function_header] = param_types
+
+        return user_brick
+
 
 def _create_variable_brick(value, user_variable, Class):
     assert Class in set([catbricks.SetVariableBrick, catbricks.ChangeVariableBrick])
@@ -366,6 +435,7 @@ class SpriteContext(object):
     def __init__(self, name):
         self.name = name
         self.created_shared_global_answer_user_variable = False
+        self.user_script_params_map = {}
 
 class ScriptContext(object):
     def __init__(self, sprite_context):
@@ -581,7 +651,13 @@ class _ScratchObjectConverter(object):
             assert user_variable is not None
 
         for scratch_script in scratch_object.scripts:
-            sprite.addScript(self._catrobat_script_from(scratch_script, sprite, sprite_context))
+            cat_instance = self._catrobat_script_from(scratch_script, sprite, sprite_context)
+            if not isinstance(cat_instance, catbricks.UserBrick):
+                assert isinstance(cat_instance, catbase.Script)
+                sprite.addScript(cat_instance)
+            else:
+                sprite.addUserBrick(cat_instance)
+
             if self._progress_bar != None:
                 self._progress_bar.update(ProgressType.CONVERT_SCRIPT)
 
@@ -743,12 +819,13 @@ class _ScratchObjectConverter(object):
 
         log.debug("  script type: %s, args: %s", scratch_script.type, scratch_script.arguments)
         try:
-            cat_script = _ScratchToCatrobat.create_script(scratch_script.type, scratch_script.arguments)
+            cat_instance = _ScratchToCatrobat.create_script(scratch_script.type, scratch_script.arguments,
+                                                            context)
         except:
-            cat_script = catbase.StartScript()
+            cat_instance = catbase.StartScript()
             wait_and_note_brick = _placeholder_for_unmapped_bricks_to("UNSUPPORTED SCRIPT", scratch_script.type)
             for brick in wait_and_note_brick:
-                cat_script.addBrick(brick)
+                cat_instance.addBrick(brick)
 
         script_context = ScriptContext(context)
         converted_bricks = cls._catrobat_bricks_from(scratch_script.script_element, sprite, script_context)
@@ -765,7 +842,11 @@ class _ScratchObjectConverter(object):
                 ignored_blocks += 1
                 continue
             try:
-                cat_script.addBrick(brick)
+                if not isinstance(cat_instance, catbricks.UserBrick):
+                    assert isinstance(cat_instance, catbase.Script)
+                    cat_instance.addBrick(brick)
+                else:
+                    cat_instance.appendBrickToScript(brick)
             except TypeError:
                 if isinstance(brick, (str, unicode)):
                     log.error("string brick: %s", brick)
@@ -774,7 +855,7 @@ class _ScratchObjectConverter(object):
                 assert False
         if ignored_blocks > 0:
             log.info("number of ignored Scratch blocks: %d", ignored_blocks)
-        return cat_script
+        return cat_instance
 
     @classmethod
     def _catrobat_bricks_from(cls, scratch_blocks, catrobat_sprite, script_context=None):

@@ -474,7 +474,13 @@ class Script(object):
     def __init__(self, script_input):
         if not self.is_valid_script_input(script_input):
             raise ScriptError("Input is no valid Scratch script.")
-        self.raw_script = script_input[2] # TODO: remove this...
+
+        self.raw_script = script_input[2]
+        self.type = self.raw_script[0][0]
+
+        if self.type not in SCRIPTS:
+            raise ScriptError("Unknown Scratch script type: {}".format(self.type))
+
         script_block, self.blocks = self.raw_script[0], self.raw_script[1:]
         if not self.blocks:
             _log.debug("Empty script: %s", script_input)
@@ -485,10 +491,7 @@ class Script(object):
 
         self.script_element = ScriptElement.from_raw_block(self.blocks)
         assert isinstance(self.script_element, BlockList)
-        self.type, self.arguments = script_block[0], script_block[1:]
-        # FIXME: never reached as is_valid_script_input() fails before
-        if self.type not in SCRIPTS:
-            raise ScriptError("Unknown Scratch script type: {}".format(self.type))
+        self.arguments = script_block[1:]
 
     @classmethod
     def is_valid_script_input(cls, json_input):

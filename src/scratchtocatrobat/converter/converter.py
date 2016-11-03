@@ -44,6 +44,8 @@ from scratchtocatrobat.scratch.scratch import JsonKeys as scratchkeys
 from scratchtocatrobat.tools import helpers
 from scratchtocatrobat.tools.helpers import ProgressType
 
+from java.awt import Color
+
 import catrobat
 import mediaconverter
 
@@ -62,7 +64,6 @@ CATROBAT_DEFAULT_SCENE_NAME = "Scene 1"
 UNSUPPORTED_SCRATCH_BRICK_NOTE_MESSAGE_PREFIX = "Missing brick for Scratch identifier: "
 
 log = logger.log
-
 
 class ConversionError(common.ScratchtobatError):
     pass
@@ -285,6 +286,8 @@ class _ScratchToCatrobat(object):
         "clearPenTrails": catbricks.ClearBackgroundBrick,
         "penColor:": catbricks.SetPenColorBrick,
         "penSize:": catbricks.SetPenSizeBrick,
+        "changePenSizeBy:": None,
+        "changePenHueBy:": None,
 
         # WORKAROUND: using ROUND for Catrobat float => Scratch int
         "soundLevel": lambda *_args: catrobat.formula_element_for(catformula.Functions.ROUND, arguments=[catrobat.formula_element_for(catformula.Sensors.LOUDNESS)]),  # @UndefinedVariable
@@ -1496,27 +1499,117 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     def _convert_pen_color_block(self):
         [int_color_value] = self.arguments
 
-        blue = self._converted_helper_brick_or_formula_element([int_color_value, 256], "%")
+        if isinstance(int_color_value, int):
+            color = Color(int_color_value)
+            red = color.getRed()
+            green = color.getGreen()
+            blue = color.getBlue()
+            print(red,green,blue)
+            self.sprite.penConfiguration.penColor = color
+            return self.CatrobatClass(red, green, blue)
+        elif isinstance(int_color_value, catformula.FormulaElement):
+            blue = self._converted_helper_brick_or_formula_element([int_color_value, 256], "%")
 
-        blue_parenth = self._converted_helper_brick_or_formula_element([blue], "()")
-        x_minus_blue = self._converted_helper_brick_or_formula_element([int_color_value, blue_parenth], "-")
-        xmb_parenth = self._converted_helper_brick_or_formula_element([x_minus_blue], "()")
-        xmb_divided_256 = self._converted_helper_brick_or_formula_element([xmb_parenth, 256], "/")
-        xmbd_256_parenth = self._converted_helper_brick_or_formula_element([xmb_divided_256], "()")
-        green = self._converted_helper_brick_or_formula_element([xmbd_256_parenth, 256], "%")
+            blue_parenth = self._converted_helper_brick_or_formula_element([blue], "()")
+            x_minus_blue = self._converted_helper_brick_or_formula_element([int_color_value, blue_parenth], "-")
+            xmb_parenth = self._converted_helper_brick_or_formula_element([x_minus_blue], "()")
+            xmb_divided_256 = self._converted_helper_brick_or_formula_element([xmb_parenth, 256], "/")
+            xmbd_256_parenth = self._converted_helper_brick_or_formula_element([xmb_divided_256], "()")
+            green = self._converted_helper_brick_or_formula_element([xmbd_256_parenth, 256], "%")
 
-        green_parenth = self._converted_helper_brick_or_formula_element([green], "()")
-        xmbd_256_minus_green = self._converted_helper_brick_or_formula_element([xmbd_256_parenth, green_parenth], "-")
-        xmbd_256_mg_parenth = self._converted_helper_brick_or_formula_element([xmbd_256_minus_green], "()")
-        red = self._converted_helper_brick_or_formula_element([xmbd_256_mg_parenth, 256], "/")
+            green_parenth = self._converted_helper_brick_or_formula_element([green], "()")
+            xmbd_256_minus_green = self._converted_helper_brick_or_formula_element([xmbd_256_parenth, green_parenth], "-")
+            xmbd_256_mg_parenth = self._converted_helper_brick_or_formula_element([xmbd_256_minus_green], "()")
+            red = self._converted_helper_brick_or_formula_element([xmbd_256_mg_parenth, 256], "/")
 
-        return self.CatrobatClass(catformula.Formula(red), catformula.Formula(green), catformula.Formula(blue))
+            return self.CatrobatClass(catformula.Formula(red), catformula.Formula(green), catformula.Formula(blue))
+        else:
+            return catbricks.NoteBrick("Unsupported Argument Type")
 
     @_register_handler(_block_name_to_handler_map, "penSize:")
     def _convert_set_pen_size_block(self):
         [size] = self.arguments
         pen_size_block = self.CatrobatClass(catformula.Formula(size))
+        self.pen_size = catformula.Formula(size)
         return pen_size_block
+
+    @_register_handler(_block_name_to_handler_map, "changePenHueBy:")
+    def _convert_change_pen_color_block(self):
+        [hue] = self.arguments
+        old_color = self.sprite.penConfiguration.penColor
+        r_ = old_color.getRed()/255.0
+        g_ = old_color.getGreen()/255.0
+        b_ = old_color.getBlue()/255.0
+        Cmax = max([r_, g_, b_])
+        Cmin = min([r_, g_, b_])
+        delta = Cmax - Cmin
+
+        h = 0
+        s = 0
+        v = Cmax
+
+        if delta == 0:
+            h = 0
+        elif Cmax == r_:
+            h = 60*(((g_-b_)/delta)%6)
+        elif Cmax == g_:
+            h = 60*(((b_-r_)/delta)+2)
+        elif Cmax == b_:
+            h = 60*(((r_-g_)/delta)+4)
+
+        if Cmax == 0:
+            s = 0
+        else:
+            s = delta/Cmax
+
+        if h + hue > 360:
+            h = (h + hue) % 360
+        else:
+            h = h + hue
+
+        C = v*s
+        X = C*(1-abs( ( (h/60) % 2) -1 ) )
+        m = v - C
+
+        if h < 60 and h >= 0:
+            r_ = C
+            g_ = X
+            b_ = 0
+        if h < 120 and h >= 60:
+            r_ = X
+            g_ = C
+            b_ = 0
+        if h < 180 and h >= 120:
+            r_ = 0
+            g_ = C
+            b_ = X
+        if h < 240 and h >= 180:
+            r_ = 0
+            g_ = X
+            b_ = C
+        if h < 300 and h >= 240:
+            r_ = X
+            g_ = 0
+            b_ = C
+        if h < 360 and h >= 300:
+            r_ = C
+            g_ = 0
+            b_ = X
+
+        r = (r_ + m) * 255
+        g = (g_ + m) * 255
+        b = (b_ + m) * 255
+        new_color = Color(int(r), int(g), int(b))
+        self.sprite.penConfiguration.penColor = new_color
+        return catbricks.SetPenColorBrick(new_color.getRed(), new_color.getGreen(), new_color.getBlue())
+
+    @_register_handler(_block_name_to_handler_map, "changePenSizeBy:")
+    def _convert_change_pen_size_block(self):
+        [size_add] = self.arguments
+        old_pen_size = self.sprite.penConfiguration.penSize
+        new_pen_size = int(old_pen_size) + size_add
+        self.sprite.penConfiguration.penSize = float(new_pen_size)
+        return catbricks.SetPenSizeBrick(int(old_pen_size) + size_add)
 
     @_register_handler(_block_name_to_handler_map, "setRotationStyle")
     def _convert_set_rotation_style_block(self):
@@ -1524,3 +1617,4 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         set_rotation_style_brick = catbricks.SetRotationStyleBrick()
         set_rotation_style_brick.selection = ["left-right", "all around", "don't rotate"].index(style)
         return set_rotation_style_brick
+        

@@ -1828,8 +1828,14 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert isinstance(catr_brick, catbricks.ClearBackgroundBrick)
 
     #setPenColor
-    def test_can_convert_set_pen_color_block(self):
+    def test_can_convert_set_pen_color_block_with_formula(self):
         scratch_block = ["penColor:", ["+", 5000, 32]]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.SetPenColorBrick)
+
+    #setPenColor
+    def test_can_convert_set_pen_color_block_with_integer(self):
+        scratch_block = ["penColor:", 986895]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.SetPenColorBrick)
 

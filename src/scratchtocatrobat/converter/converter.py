@@ -285,9 +285,9 @@ class _ScratchToCatrobat(object):
         "stampCostume": catbricks.StampBrick,
         "clearPenTrails": catbricks.ClearBackgroundBrick,
         "penColor:": catbricks.SetPenColorBrick,
-        "penSize:": catbricks.SetPenSizeBrick,
-        "changePenSizeBy:": None,
-        "changePenHueBy:": None,
+        "penSize:": lambda pen_size: catbricks.SetPenSizeBrick(catformula.Formula(pen_size)),
+        #"changePenSizeBy:": None,
+        #"changePenHueBy:": None,
 
         # WORKAROUND: using ROUND for Catrobat float => Scratch int
         "soundLevel": lambda *_args: catrobat.formula_element_for(catformula.Functions.ROUND, arguments=[catrobat.formula_element_for(catformula.Sensors.LOUDNESS)]),  # @UndefinedVariable
@@ -1498,14 +1498,10 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "penColor:")
     def _convert_pen_color_block(self):
         [int_color_value] = self.arguments
-
+        #TODO save value in UserVariable
         if isinstance(int_color_value, int):
             color = Color(int_color_value)
-            red = color.getRed()
-            green = color.getGreen()
-            blue = color.getBlue()
-            print(red,green,blue)
-            self.sprite.penConfiguration.penColor = color
+            red, green, blue = color.getRed(), color.getGreen(), color.getBlue()
             return self.CatrobatClass(red, green, blue)
         elif isinstance(int_color_value, catformula.FormulaElement):
             blue = self._converted_helper_brick_or_formula_element([int_color_value, 256], "%")
@@ -1526,90 +1522,61 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         else:
             return catbricks.NoteBrick("Unsupported Argument Type")
 
-    @_register_handler(_block_name_to_handler_map, "penSize:")
-    def _convert_set_pen_size_block(self):
-        [size] = self.arguments
-        pen_size_block = self.CatrobatClass(catformula.Formula(size))
-        self.pen_size = catformula.Formula(size)
-        return pen_size_block
-
-    @_register_handler(_block_name_to_handler_map, "changePenHueBy:")
-    def _convert_change_pen_color_block(self):
-        [hue] = self.arguments
-        old_color = self.sprite.penConfiguration.penColor
-        r_ = old_color.getRed()/255.0
-        g_ = old_color.getGreen()/255.0
-        b_ = old_color.getBlue()/255.0
-        Cmax = max([r_, g_, b_])
-        Cmin = min([r_, g_, b_])
-        delta = Cmax - Cmin
-
-        h = 0
-        s = 0
-        v = Cmax
-
-        if delta == 0:
-            h = 0
-        elif Cmax == r_:
-            h = 60*(((g_-b_)/delta)%6)
-        elif Cmax == g_:
-            h = 60*(((b_-r_)/delta)+2)
-        elif Cmax == b_:
-            h = 60*(((r_-g_)/delta)+4)
-
-        if Cmax == 0:
-            s = 0
-        else:
-            s = delta/Cmax
-
-        if h + hue > 360:
-            h = (h + hue) % 360
-        else:
-            h = h + hue
-
-        C = v*s
-        X = C*(1-abs( ( (h/60) % 2) -1 ) )
-        m = v - C
-
-        if h < 60 and h >= 0:
-            r_ = C
-            g_ = X
-            b_ = 0
-        if h < 120 and h >= 60:
-            r_ = X
-            g_ = C
-            b_ = 0
-        if h < 180 and h >= 120:
-            r_ = 0
-            g_ = C
-            b_ = X
-        if h < 240 and h >= 180:
-            r_ = 0
-            g_ = X
-            b_ = C
-        if h < 300 and h >= 240:
-            r_ = X
-            g_ = 0
-            b_ = C
-        if h < 360 and h >= 300:
-            r_ = C
-            g_ = 0
-            b_ = X
-
-        r = (r_ + m) * 255
-        g = (g_ + m) * 255
-        b = (b_ + m) * 255
-        new_color = Color(int(r), int(g), int(b))
-        self.sprite.penConfiguration.penColor = new_color
-        return catbricks.SetPenColorBrick(new_color.getRed(), new_color.getGreen(), new_color.getBlue())
-
-    @_register_handler(_block_name_to_handler_map, "changePenSizeBy:")
-    def _convert_change_pen_size_block(self):
-        [size_add] = self.arguments
-        old_pen_size = self.sprite.penConfiguration.penSize
-        new_pen_size = int(old_pen_size) + size_add
-        self.sprite.penConfiguration.penSize = float(new_pen_size)
-        return catbricks.SetPenSizeBrick(int(old_pen_size) + size_add)
+#     @_register_handler(_block_name_to_handler_map, "changePenHueBy:")
+#     def _convert_change_pen_color_block(self):
+#         [hue] = self.arguments
+#         #TODO: get old color on old_color
+#         r_, g_, b_ = old_color.getRed()/255.0, old_color.getGreen()/255.0, old_color.getBlue()/255.0
+#         Cmax, Cmin = max([r_, g_, b_]), min([r_, g_, b_])
+#         delta = Cmax - Cmin
+# 
+#         h, s, v = 0, 0, Cmax
+# 
+#         if delta == 0:
+#             h = 0
+#         elif Cmax == r_:
+#             h = 60*(((g_-b_)/delta)%6)
+#         elif Cmax == g_:
+#             h = 60*(((b_-r_)/delta)+2)
+#         elif Cmax == b_:
+#             h = 60*(((r_-g_)/delta)+4)
+# 
+#         if Cmax == 0:
+#             s = 0
+#         else:
+#             s = delta/Cmax
+# 
+#         if h + hue > 360:
+#             h = (h + hue) % 360
+#         else:
+#             h = h + hue
+# 
+#         C = v*s
+#         X = C*(1-abs( ( (h/60) % 2) -1 ) )
+#         m = v - C
+# 
+#         if h < 60 and h >= 0:
+#             r_, g_, b_ = C, X, 0
+#         if h < 120 and h >= 60:
+#             r_, g_, b_ = X, C, 0
+#         if h < 180 and h >= 120:
+#             r_, g_, b_ = 0, C, X
+#         if h < 240 and h >= 180:
+#             r_, g_, b_ = 0, X, C
+#         if h < 300 and h >= 240:
+#             r_, g_, b_ = X, 0, C
+#         if h < 360 and h >= 300:
+#             r_, g_, b_ = C, 0, X
+# 
+#         r, g, b = (r_ + m) * 255, (g_ + m) * 255, (b_ + m) * 255
+#         new_color = Color(int(r), int(g), int(b))
+#         return catbricks.SetPenColorBrick(new_color.getRed(), new_color.getGreen(), new_color.getBlue())
+# 
+#     @_register_handler(_block_name_to_handler_map, "changePenSizeBy:")
+#     def _convert_change_pen_size_block(self):
+#         [size_add] = self.arguments
+#         #TODO: get old pen size
+#         return catbricks.SetPenSizeBrick(int(old_pen_size) + size_add)
 
     @_register_handler(_block_name_to_handler_map, "setRotationStyle")
     def _convert_set_rotation_style_block(self):

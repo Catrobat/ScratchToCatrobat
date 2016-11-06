@@ -48,7 +48,6 @@ import catrobat
 import mediaconverter
 
 
-_DEFAULT_BRICK_CLASS = catbricks.WaitBrick
 _DEFAULT_FORMULA_ELEMENT = catformula.FormulaElement(catElementType.NUMBER, str(00001), None)  # @UndefinedVariable (valueOf)
 
 _GENERATED_VARIABLE_PREFIX = helpers.application_info("short_name") + ":"
@@ -77,15 +76,14 @@ class UnmappedBlock(object):
         return catrobat.simple_name_for(self.block_and_args)
 
     def to_placeholder_brick(self):
-        return _placeholder_for_unmapped_bricks_to(*self.block_and_args)
+        return [_placeholder_for_unmapped_bricks_to(*self.block_and_args)]
 
 def _with_unmapped_blocks_replaced_as_default_formula_value(arguments):
     return [_DEFAULT_FORMULA_ELEMENT if isinstance(argument, UnmappedBlock) else argument for argument in arguments]
 
 def _placeholder_for_unmapped_bricks_to(*args):
     arguments = ", ".join(map(catrobat.simple_name_for, args))
-    temp = _DEFAULT_BRICK_CLASS(500)
-    return [temp, catbricks.NoteBrick(UNSUPPORTED_SCRATCH_BRICK_NOTE_MESSAGE_PREFIX + arguments)]
+    return catbricks.NoteBrick(UNSUPPORTED_SCRATCH_BRICK_NOTE_MESSAGE_PREFIX + arguments)
 
 def _key_to_broadcast_message(key_name):
     return "key " + key_name + " pressed"
@@ -746,9 +744,7 @@ class _ScratchObjectConverter(object):
             cat_script = _ScratchToCatrobat.create_script(scratch_script.type, scratch_script.arguments)
         except:
             cat_script = catbase.StartScript()
-            wait_and_note_brick = _placeholder_for_unmapped_bricks_to("UNSUPPORTED SCRIPT", scratch_script.type)
-            for brick in wait_and_note_brick:
-                cat_script.addBrick(brick)
+            cat_script.addBrick(_placeholder_for_unmapped_bricks_to("UNSUPPORTED SCRIPT", scratch_script.type))
 
         script_context = ScriptContext(context)
         converted_bricks = cls._catrobat_bricks_from(scratch_script.script_element, sprite, script_context)
@@ -973,7 +969,8 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         self.block_name = block_name = self.script_element.name
 
         if isinstance(self.script_element, scratch.Block):
-            log.debug("    block to convert: %s, arguments: %s", block_name, catrobat.simple_name_for(self.arguments))
+            log.debug("    block to convert: %s, arguments: %s",
+                      block_name, catrobat.simple_name_for(self.arguments))
             self.CatrobatClass = _ScratchToCatrobat.catrobat_brick_class_for(block_name)
             handler_method_name = self._block_name_to_handler_map.get(block_name)
             try:
@@ -991,7 +988,9 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         else:
             assert isinstance(self.script_element, scratch.BlockList)
             # TODO: readability
-            converted_element = [[arg2 for arg1 in self.arguments for arg2 in (arg1.to_placeholder_brick() if isinstance(arg1, UnmappedBlock) else [arg1])]]
+            converted_element = [[arg2 for arg1 in self.arguments \
+                                            for arg2 in (arg1.to_placeholder_brick() \
+                                                if isinstance(arg1, UnmappedBlock) else [arg1])]]
         return converted_element
 
     def _regular_block_conversion(self):
@@ -1013,12 +1012,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
                         args = [arg if arg != None else "" for arg in self.arguments]
                         converted_args = [catrobat.create_formula_with_value(arg) for arg in args]
                     elif try_number == 3:
-                        parameters = {
-                            "brightness",
-                            "color",  # unsupported
-                            "ghost",
-                        }
-                        if len(self.arguments) == 2 and self.arguments[0] in parameters:
+                        if len(self.arguments) == 2 and self.arguments[0] in { "brightness", "color", "ghost" }:
                             converted_args = [self.arguments[0]] + [catrobat.create_formula_with_value(arg) for arg in self.arguments[1:]]
 
                     if not is_catrobat_enum:
@@ -1028,10 +1022,12 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
                     assert converted_value, "No result for {} with args {}".format(self.block_name, converted_args)
                     break
                 except (TypeError) as e:
-                    log.debug("instantiation try %d failed for class: %s, raw_args: %s, Catroid args: %s", try_number, CatrobatClass, self.arguments, map(catrobat.simple_name_for, converted_args))
+                    log.debug("instantiation try %d failed for class: %s, raw_args: %s, Catroid args: %s",
+                              try_number, CatrobatClass, self.arguments, map(catrobat.simple_name_for, converted_args))
                     class_exception = e
             else:
-                log.error("General instantiation failed for class: %s, raw_args: %s, Catroid args: %s", CatrobatClass, self.arguments, map(catrobat.simple_name_for, converted_args))
+                log.error("General instantiation failed for class: %s, raw_args: %s, Catroid args: %s",
+                          CatrobatClass, self.arguments, map(catrobat.simple_name_for, converted_args))
                 raise class_exception
                 log.exception(class_exception)
                 self.errors += [class_exception]
@@ -1081,7 +1077,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         # exp(x*ln(10))
         result_formula_elem = self._converted_helper_brick_or_formula_element([exponent_formula_elem], "e^")
 
-        # round(exp(x*ln(10)))     (use round to get rid of rounding errors)
+        # round(exp(x*ln(10)))     (use round-function to get rid of rounding errors)
         return self._converted_helper_brick_or_formula_element([result_formula_elem], "rounded")
 
     @_register_handler(_block_name_to_handler_map, "lineCountOfList:")

@@ -1498,11 +1498,23 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "penColor:")
     def _convert_pen_color_block(self):
         [int_color_value] = self.arguments
-        #TODO save value in UserVariable
         if isinstance(int_color_value, int):
             color = Color(int_color_value)
             red, green, blue = color.getRed(), color.getGreen(), color.getBlue()
-            return self.CatrobatClass(red, green, blue)
+            #creating uservariables
+            red_uv, green_uv, blue_uv = catformula.UserVariable("red"), catformula.UserVariable("green"), \
+                                        catformula.UserVariable("blue")
+            red_uv.value, green_uv.value, blue_uv.value = catformula.Formula(red), \
+                                                          catformula.Formula(green), \
+                                                          catformula.Formula(blue)
+            catrobat.add_user_variable(self.project, "red", self.sprite, self.sprite.getName())
+            catrobat.add_user_variable(self.project, "green", self.sprite, self.sprite.getName())
+            catrobat.add_user_variable(self.project, "blue", self.sprite, self.sprite.getName())
+            red_sv = catbricks.SetVariableBrick(catformula.Formula(red), red_uv)
+            green_sv = catbricks.SetVariableBrick(catformula.Formula(green), green_uv)
+            blue_sv = catbricks.SetVariableBrick(catformula.Formula(blue), blue_uv)
+            
+            return [red_sv, green_sv, blue_sv, self.CatrobatClass(red, green, blue)]
         elif isinstance(int_color_value, catformula.FormulaElement):
             blue = self._converted_helper_brick_or_formula_element([int_color_value, 256], "%")
 
@@ -1518,7 +1530,19 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             xmbd_256_mg_parenth = self._converted_helper_brick_or_formula_element([xmbd_256_minus_green], "()")
             red = self._converted_helper_brick_or_formula_element([xmbd_256_mg_parenth, 256], "/")
 
-            return self.CatrobatClass(catformula.Formula(red), catformula.Formula(green), catformula.Formula(blue))
+            #_create_variable_brick(value, user_variable, Class)
+            red_uv, green_uv, blue_uv = catformula.UserVariable("red"), catformula.UserVariable("green"), \
+                                        catformula.UserVariable("blue")
+            red_uv.value, green_uv.value, blue_uv.value = catformula.Formula(red), catformula.Formula(green),\
+                                                          catformula.Formula(blue)
+            catrobat.add_user_variable(self.project, "red", self.sprite, self.sprite.getName())
+            catrobat.add_user_variable(self.project, "green", self.sprite, self.sprite.getName())
+            catrobat.add_user_variable(self.project, "blue", self.sprite, self.sprite.getName())
+            red_sv = catbricks.SetVariableBrick(catformula.Formula(red), red_uv)
+            green_sv = catbricks.SetVariableBrick(catformula.Formula(green), green_uv)
+            blue_sv = catbricks.SetVariableBrick(catformula.Formula(blue), blue_uv)
+
+            return [red_sv, green_sv, blue_sv, self.CatrobatClass(catformula.Formula(red), catformula.Formula(green), catformula.Formula(blue))]
         else:
             return catbricks.NoteBrick("Unsupported Argument Type")
 

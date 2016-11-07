@@ -285,7 +285,7 @@ class _ScratchToCatrobat(object):
         "stampCostume": catbricks.StampBrick,
         "clearPenTrails": catbricks.ClearBackgroundBrick,
         "penColor:": catbricks.SetPenColorBrick,
-        "penSize:": lambda pen_size: catbricks.SetPenSizeBrick(catformula.Formula(pen_size)),
+        "penSize:": catbricks.SetPenSizeBrick,
         #"changePenSizeBy:": None,
         #"changePenHueBy:": None,
 
@@ -1513,7 +1513,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             red_sv = catbricks.SetVariableBrick(catformula.Formula(red), red_uv)
             green_sv = catbricks.SetVariableBrick(catformula.Formula(green), green_uv)
             blue_sv = catbricks.SetVariableBrick(catformula.Formula(blue), blue_uv)
-            
+
             return [red_sv, green_sv, blue_sv, self.CatrobatClass(red, green, blue)]
         elif isinstance(int_color_value, catformula.FormulaElement):
             blue = self._converted_helper_brick_or_formula_element([int_color_value, 256], "%")
@@ -1545,6 +1545,15 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             return [red_sv, green_sv, blue_sv, self.CatrobatClass(catformula.Formula(red), catformula.Formula(green), catformula.Formula(blue))]
         else:
             return catbricks.NoteBrick("Unsupported Argument Type")
+
+    @_register_handler(_block_name_to_handler_map, "penSize:")
+    def _convert_pen_size_block(self):
+        [pen_size] = self.arguments
+        pen_size_uv = catformula.UserVariable("pen_size")
+        pen_size_uv.value = catformula.Formula(pen_size)
+        catrobat.add_user_variable(self.project, "pen_size", self.sprite, self.sprite.getName())
+        pen_size_sv = catbricks.SetVariableBrick(catformula.Formula(pen_size), pen_size_uv)
+        return [pen_size_sv, self.CatrobatClass(catformula.Formula(pen_size))]
 
 #     @_register_handler(_block_name_to_handler_map, "changePenHueBy:")
 #     def _convert_change_pen_color_block(self):
@@ -1608,4 +1617,3 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         set_rotation_style_brick = catbricks.SetRotationStyleBrick()
         set_rotation_style_brick.selection = ["left-right", "all around", "don't rotate"].index(style)
         return set_rotation_style_brick
-        

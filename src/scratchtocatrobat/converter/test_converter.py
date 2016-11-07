@@ -1837,9 +1837,9 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert blue_formula.leftChild.value == "PLUS"
         assert blue_formula.leftChild.leftChild.value == "5000"
         assert blue_formula.leftChild.rightChild.value == "32"
-        
+
         #if blue is right, the rest should also be alright, because red and green build up on blue
-        
+
         assert isinstance(catr_bricks[0], catbricks.SetVariableBrick)
         assert isinstance(catr_bricks[1], catbricks.SetVariableBrick)
         assert isinstance(catr_bricks[2], catbricks.SetVariableBrick)
@@ -1849,7 +1849,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def test_can_convert_set_pen_color_block_with_integer(self):
         scratch_block = ["penColor:", 986895]
         catr_bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        
+
         assert isinstance(catr_bricks[0], catbricks.SetVariableBrick)
         assert isinstance(catr_bricks[1], catbricks.SetVariableBrick)
         assert isinstance(catr_bricks[2], catbricks.SetVariableBrick)
@@ -1861,14 +1861,22 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     #setPenSize
     def test_can_convert_set_pen_size_block_with_integer(self):
         scratch_block = ["penSize:", 32]
-        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        assert isinstance(catr_brick, catbricks.SetPenSizeBrick)
+        catr_bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+
+        assert isinstance(catr_bricks[0], catbricks.SetVariableBrick)
+        assert isinstance(catr_bricks[1], catbricks.SetPenSizeBrick)
+        assert catr_bricks[0].userVariable.getValue().formulaTree.value == "32.0"
 
     #setPenSize
     def test_can_convert_set_pen_size_block_with_formula(self):
         scratch_block = ["penSize:", ["+", 2, 32]]
-        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        assert isinstance(catr_brick, catbricks.SetPenSizeBrick)
+        catr_bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+
+        assert isinstance(catr_bricks[0], catbricks.SetVariableBrick)
+        assert isinstance(catr_bricks[1], catbricks.SetPenSizeBrick)
+        assert catr_bricks[0].userVariable.getValue().formulaTree.value == "PLUS"
+        assert catr_bricks[0].userVariable.getValue().formulaTree.leftChild.value == "2"
+        assert catr_bricks[0].userVariable.getValue().formulaTree.rightChild.value == "32"
 
 class TestConvertProjects(common_testing.ProjectTestCase):
 

@@ -603,10 +603,15 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     def test_fail_on_unknown_block(self):
         #with self.assertRaises(common.ScratchtobatError):
-        [catr_brick] = self.block_converter._catrobat_bricks_from(['wrong_block_name_zzz', 10, 10], DUMMY_CATR_SPRITE)
+        [catr_brick] = self.block_converter._catrobat_bricks_from(['wrong_block_name_zzz', 10, 10],
+                                                                  DUMMY_CATR_SPRITE)
         # TODO: change to note-brick check later!!!
         #assert isinstance(catr_brick, catbricks.NoteBrick)
         assert isinstance(catr_brick, converter.UnmappedBlock)
+        placeholder_brick = catr_brick.to_placeholder_brick()
+        assert isinstance(placeholder_brick, list)
+        assert len(placeholder_brick) == 1
+        assert isinstance(placeholder_brick[0], catbricks.NoteBrick)
 
     # doIf
     def test_can_convert_if_block(self):
@@ -698,8 +703,9 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         catr_do_loop = self.block_converter._catrobat_bricks_from(scratch_do_loop, DUMMY_CATR_SPRITE)
         assert isinstance(catr_do_loop, list)
         # 1 loop start + 4 inner loop bricks +2 inner note bricks (playDrum not supported) + 1 loop end = 8
-        assert len(catr_do_loop) == 8
-        expected_brick_classes = [catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.LoopEndBrick]
+        assert len(catr_do_loop) == 6
+        expected_brick_classes = [catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.NoteBrick,
+                                  catbricks.MoveNStepsBrick, catbricks.NoteBrick, catbricks.LoopEndBrick]
         assert [_.__class__ for _ in catr_do_loop] == expected_brick_classes
 
     # doUntil
@@ -863,9 +869,8 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def test_fail_convert_playsound_block_if_sound_missing(self):
         scratch_block = ["playSound:", "bird"]
         bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        assert len(bricks) == 2
-        assert isinstance(bricks[0], catbricks.WaitBrick)
-        assert isinstance(bricks[1], catbricks.NoteBrick)
+        assert len(bricks) == 1
+        assert isinstance(bricks[0], catbricks.NoteBrick)
 
     # playSound:
     def test_can_convert_playsound_block(self):
@@ -879,9 +884,8 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def test_fail_convert_doplaysoundandwait_block(self):
         scratch_block = ["doPlaySoundAndWait", "bird"]
         bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        assert len(bricks) == 2
-        assert isinstance(bricks[0], catbricks.WaitBrick)
-        assert isinstance(bricks[1], catbricks.NoteBrick)
+        assert len(bricks) == 1
+        assert isinstance(bricks[0], catbricks.NoteBrick)
 
     # doPlaySoundAndWait
     def test_can_convert_doplaysoundandwait_block(self):

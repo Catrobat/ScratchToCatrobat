@@ -603,10 +603,15 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     def test_fail_on_unknown_block(self):
         #with self.assertRaises(common.ScratchtobatError):
-        [catr_brick] = self.block_converter._catrobat_bricks_from(['wrong_block_name_zzz', 10, 10], DUMMY_CATR_SPRITE)
+        [catr_brick] = self.block_converter._catrobat_bricks_from(['wrong_block_name_zzz', 10, 10],
+                                                                  DUMMY_CATR_SPRITE)
         # TODO: change to note-brick check later!!!
         #assert isinstance(catr_brick, catbricks.NoteBrick)
         assert isinstance(catr_brick, converter.UnmappedBlock)
+        placeholder_brick = catr_brick.to_placeholder_brick()
+        assert isinstance(placeholder_brick, list)
+        assert len(placeholder_brick) == 1
+        assert isinstance(placeholder_brick[0], catbricks.NoteBrick)
 
     # doIf
     def test_can_convert_if_block(self):
@@ -698,8 +703,9 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         catr_do_loop = self.block_converter._catrobat_bricks_from(scratch_do_loop, DUMMY_CATR_SPRITE)
         assert isinstance(catr_do_loop, list)
         # 1 loop start + 4 inner loop bricks +2 inner note bricks (playDrum not supported) + 1 loop end = 8
-        assert len(catr_do_loop) == 8
-        expected_brick_classes = [catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.LoopEndBrick]
+        assert len(catr_do_loop) == 6
+        expected_brick_classes = [catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.NoteBrick,
+                                  catbricks.MoveNStepsBrick, catbricks.NoteBrick, catbricks.LoopEndBrick]
         assert [_.__class__ for _ in catr_do_loop] == expected_brick_classes
 
     # doUntil
@@ -863,9 +869,8 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def test_fail_convert_playsound_block_if_sound_missing(self):
         scratch_block = ["playSound:", "bird"]
         bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        assert len(bricks) == 2
-        assert isinstance(bricks[0], catbricks.WaitBrick)
-        assert isinstance(bricks[1], catbricks.NoteBrick)
+        assert len(bricks) == 1
+        assert isinstance(bricks[0], catbricks.NoteBrick)
 
     # playSound:
     def test_can_convert_playsound_block(self):
@@ -879,9 +884,8 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def test_fail_convert_doplaysoundandwait_block(self):
         scratch_block = ["doPlaySoundAndWait", "bird"]
         bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        assert len(bricks) == 2
-        assert isinstance(bricks[0], catbricks.WaitBrick)
-        assert isinstance(bricks[1], catbricks.NoteBrick)
+        assert len(bricks) == 1
+        assert isinstance(bricks[0], catbricks.NoteBrick)
 
     # doPlaySoundAndWait
     def test_can_convert_doplaysoundandwait_block(self):
@@ -1789,18 +1793,94 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert isinstance(catr_brick, catformula.FormulaElement)
         assert catr_brick.getValue() == str(catformula.Sensors.DATE_DAY)
 
+    # timeAndDate
     def test_can_convert_time_and_date_block_month(self):
         scratch_block = ["timeAndDate", "month"]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catformula.FormulaElement)
         assert catr_brick.getValue() == str(catformula.Sensors.DATE_MONTH)
 
+    # timeAndDate
     def test_can_convert_time_and_date_block_year(self):
         scratch_block = ["timeAndDate", "year"]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catformula.FormulaElement)
         assert catr_brick.getValue() == str(catformula.Sensors.DATE_YEAR)
 
+    #putPenDown
+    def test_can_convert_pen_down_block(self):
+        scratch_block = ["putPenDown"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.PenDownBrick)
+
+    #putPenUp
+    def test_can_convert_pen_up_block(self):
+        scratch_block = ["putPenUp"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.PenUpBrick)
+
+    #stampCostume
+    def test_can_convert_stamp_costume_block(self):
+        scratch_block = ["stampCostume"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.StampBrick)
+
+    #clearPenTrails
+    def test_can_convert_clear_pen_trails_block(self):
+        scratch_block = ["clearPenTrails"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.ClearBackgroundBrick)
+
+    #setPenColor
+    def test_can_convert_set_pen_color_block_with_formula(self):
+        scratch_block = ["penColor:", ["+", 5000, 32]]
+        catr_bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        blue_formula = catr_bricks[2].userVariable.getValue().formulaTree
+        assert blue_formula.value == "MOD"
+        assert blue_formula.rightChild.value == "256"
+        assert blue_formula.leftChild.value == "PLUS"
+        assert blue_formula.leftChild.leftChild.value == "5000"
+        assert blue_formula.leftChild.rightChild.value == "32"
+
+        #if blue is right, the rest should also be alright, because red and green build up on blue
+
+        assert isinstance(catr_bricks[0], catbricks.SetVariableBrick)
+        assert isinstance(catr_bricks[1], catbricks.SetVariableBrick)
+        assert isinstance(catr_bricks[2], catbricks.SetVariableBrick)
+        assert isinstance(catr_bricks[3], catbricks.SetPenColorBrick)
+
+    #setPenColor
+    def test_can_convert_set_pen_color_block_with_integer(self):
+        scratch_block = ["penColor:", 986895]
+        catr_bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+
+        assert isinstance(catr_bricks[0], catbricks.SetVariableBrick)
+        assert isinstance(catr_bricks[1], catbricks.SetVariableBrick)
+        assert isinstance(catr_bricks[2], catbricks.SetVariableBrick)
+        assert isinstance(catr_bricks[3], catbricks.SetPenColorBrick)
+        assert catr_bricks[0].userVariable.getValue().formulaTree.value == "15.0"
+        assert catr_bricks[1].userVariable.getValue().formulaTree.value == "15.0"
+        assert catr_bricks[2].userVariable.getValue().formulaTree.value == "15.0"
+
+    #setPenSize
+    def test_can_convert_set_pen_size_block_with_integer(self):
+        scratch_block = ["penSize:", 32]
+        catr_bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+
+        assert isinstance(catr_bricks[0], catbricks.SetVariableBrick)
+        assert isinstance(catr_bricks[1], catbricks.SetPenSizeBrick)
+        assert catr_bricks[0].userVariable.getValue().formulaTree.value == "32.0"
+
+    #setPenSize
+    def test_can_convert_set_pen_size_block_with_formula(self):
+        scratch_block = ["penSize:", ["+", 2, 32]]
+        catr_bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+
+        assert isinstance(catr_bricks[0], catbricks.SetVariableBrick)
+        assert isinstance(catr_bricks[1], catbricks.SetPenSizeBrick)
+        assert catr_bricks[0].userVariable.getValue().formulaTree.value == "PLUS"
+        assert catr_bricks[0].userVariable.getValue().formulaTree.leftChild.value == "2"
+        assert catr_bricks[0].userVariable.getValue().formulaTree.rightChild.value == "32"
 
 class TestConvertProjects(common_testing.ProjectTestCase):
 

@@ -29,6 +29,7 @@ import zipfile
 import re
 from codecs import open
 
+from org.catrobat.catroid import ProjectManager
 import org.catrobat.catroid.common as catcommon
 import org.catrobat.catroid.content as catbase
 from org.catrobat.catroid.ui.fragment import SpriteFactory
@@ -168,13 +169,13 @@ class _ScratchToCatrobat(object):
         #
         # Scripts
         #
-        "whenGreenFlag": catbase.StartScript,
-        "whenIReceive": lambda message: catbase.BroadcastScript(message.lower()), # lower case to prevent case-sensitivity issues in Catrobat...
-        "whenKeyPressed": lambda key: catbase.BroadcastScript(_key_to_broadcast_message(key)),
-        "whenSceneStarts": lambda look_name: catbase.BroadcastScript(_background_look_to_broadcast_message(look_name)),
-        "whenClicked": catbase.WhenScript,
-        "whenCloned": catbase.WhenClonedScript,
-        "procDef": catbricks.UserBrick
+        scratch.SCRIPT_GREEN_FLAG: catbase.StartScript,
+        scratch.SCRIPT_RECEIVE: lambda message: catbase.BroadcastScript(message.lower()), # lower case to prevent case-sensitivity issues in Catrobat...
+        scratch.SCRIPT_KEY_PRESSED: lambda key: catbase.BroadcastScript(_key_to_broadcast_message(key)),
+        scratch.SCRIPT_SCENE_STARTS: lambda look_name: catbase.BroadcastScript(_background_look_to_broadcast_message(look_name)),
+        scratch.SCRIPT_CLICKED: catbase.WhenScript,
+        scratch.SCRIPT_CLONED: catbase.WhenClonedScript,
+        scratch.SCRIPT_PROC_DEF: catbricks.UserBrick
     }
 
     complete_mapping = dict({
@@ -280,8 +281,9 @@ class _ScratchToCatrobat(object):
         "createCloneOf": catbricks.CloneBrick,
         "deleteClone": catbricks.DeleteThisCloneBrick,
 
-        # UserBrick
-        "call": catbricks.UserBrick,
+        # custom block (user-defined)
+        "call": None,
+        "getParam": lambda variable_name, _: _variable_for(variable_name),
 
         # pen bricks
         "putPenDown": catbricks.PenDownBrick,
@@ -321,62 +323,102 @@ class _ScratchToCatrobat(object):
             assert False, "Missing script mapping for: " + scratch_script_name
         catrobat_script = cls.catrobat_script_class_for(scratch_script_name)
         # TODO: register handler!! -> _ScriptBlocksConversionTraverser
-        if scratch_script_name != "procDef":
+        if scratch_script_name != scratch.SCRIPT_PROC_DEF:
             return catrobat_script(*arguments)
 
         # ["procDef", "Function1 %n string: %s", ["number1", "string1"], [1, ""], true]
         assert len(arguments) == 4
-        assert isinstance(catrobat_script, catbricks.UserBrick)
-        user_script_definition_brick = catbricks.UserScriptDefinitionBrick()
-        user_brick = catrobat_script(user_script_definition_brick)
+        assert catrobat_script is catbricks.UserBrick
+
         scratch_function_header = arguments[0]
+        param_labels = arguments[1]
+        param_values = arguments[2]
+        assert param_labels == context.user_script_declared_labels_map[scratch_function_header]
+        return _create_user_brick(context, scratch_function_header, param_values, declare=True)
 
-        if context is not None:
-            if scratch_function_header in context.user_script_params_map:
-                continue # ignore duplicates
+def _create_user_brick(context, scratch_function_header, param_values, declare=False):
+    param_labels = context.user_script_declared_labels_map[scratch_function_header]
+    assert context is not None and isinstance(context, SpriteContext)
+    assert not param_labels or len(param_labels) == len(param_values)
+    is_user_script_defined = scratch_function_header not in context.user_script_definition_brick_map
 
-        # filter all % characters
-        filtered_scratch_function_header = scratch_function_header.replace("\\%", "")
-        num_of_params = filtered_scratch_function_header.count("%")
-        param_names = arguments[1]
-        param_default_values = arguments[2]
-        assert len(param_names) == num_of_params
+    if declare:
+        if scratch_function_header in context.user_script_declared_map:
+            raise common.ScratchtobatError("Encountered duplicate procDef having signature={}"
+                                           .format(scratch_function_header))
 
-        user_script_definition_brick_elements_list = user_script_definition_brick.getUserScriptDefinitionBrickElements()
-        user_brick_parameters_list = user_brick.getUserBrickParameters()
+        context.user_script_declared_map.add(scratch_function_header)
 
-        param_types = []
-        param_index = 0
-        for function_header_part in filtered_scratch_function_header.split():
-            # "label0 %n %s %b label1"
-            # ["number1", "string1", "boolean1"]
+    # filter all % characters
+    filtered_scratch_function_header = scratch_function_header.replace("\\%", "")
+    num_of_params = filtered_scratch_function_header.count("%")
+    function_header_parts = filtered_scratch_function_header.split()
+    num_function_header_parts = len(function_header_parts)
+    expected_param_types = [None] * num_of_params
+
+    if not is_user_script_defined:
+        user_script_definition_brick = context.user_script_definition_brick_map[scratch_function_header]
+        expected_param_types = context.user_script_params_map[scratch_function_header]
+    else:
+        user_script_definition_brick = catbricks.UserScriptDefinitionBrick()
+
+    assert len(param_values) == num_of_params
+    assert len(expected_param_types) == num_of_params
+    assert isinstance(user_script_definition_brick, catbricks.UserScriptDefinitionBrick)
+
+    user_brick = catbricks.UserBrick(user_script_definition_brick)
+    user_script_definition_brick_elements_list = user_script_definition_brick.getUserScriptDefinitionBrickElements()
+    user_brick_parameters_list = user_brick.getUserBrickParameters()
+
+    assert is_user_script_defined \
+           or user_script_definition_brick_elements_list.size() == num_function_header_parts
+
+    param_types = []
+    param_index = 0
+
+    # example: filtered_scratch_function_header = "label0 %n %s %b label1"
+    #          param_default_values = ["number1", "string1", "boolean1"]
+    for element_index, function_header_part in enumerate(function_header_parts):
+        if not function_header_part.startswith('%'):
+            if not is_user_script_defined:
+                continue
+
+            # TODO: decide when line-breaks are useful...
             user_script_definition_brick_element = catbricks.UserScriptDefinitionBrickElement()
-            if function_header_part.startswith('%'):
-                assert len(function_header_part) == 2
-                assert function_header_part in ['%n', '%s', '%b']
-                user_script_definition_brick_element.setIsVariable()
-                param_types += [function_header_part]
-
-                param_default_value = param_default_values[param_index]
-                param_default_value = int(param_default_value) if param_default_value in ['%n', '%b'] else str(param_default_value)
-                param_default_value_formula = catrobat.create_formula_with_value(param_default_value)
-                user_brick_parameter = catbricks.UserBrickParameter(param_default_value_formula)
-                user_brick_parameter.setParent(user_brick)
-                user_brick_parameter.setElement(user_script_definition_brick_element)
-                user_brick_parameters_list.add(user_brick_parameter)
-                param_index += 1
-            else:
-                # TODO: decide when line-breaks are useful...
-                user_script_definition_brick_element.setIsText()
-                user_script_definition_brick_element.setText(function_header_part)
-
+            user_script_definition_brick_element.setIsText()
+            user_script_definition_brick_element.setText(function_header_part)
             user_script_definition_brick_elements_list.add(user_script_definition_brick_element)
+            continue
 
-        if context is not None:
-            context.user_script_params_map[scratch_function_header] = param_types
+        assert len(function_header_part) == 2
+        assert function_header_part in {'%n', '%s', '%b'}
+        assert not expected_param_types[param_index] or expected_param_types[param_index] == function_header_part
 
-        return user_brick
+        if is_user_script_defined:
+            user_script_definition_brick_element = catbricks.UserScriptDefinitionBrickElement()
+            user_script_definition_brick_element.setIsVariable()
+            user_script_definition_brick_elements_list.add(user_script_definition_brick_element)
+        else:
+            user_script_definition_brick_element = user_script_definition_brick_elements_list.get(element_index)
 
+        user_script_definition_brick_element.setText(param_labels[param_index])
+        param_types += [function_header_part]
+        param_value = param_values[param_index]
+        if not isinstance(param_value, catformula.FormulaElement):
+            param_value = int(param_value) if param_value in {'%n', '%b'} else str(param_value)
+        param_value_formula = catrobat.create_formula_with_value(param_value)
+
+        user_brick_parameter = catbricks.UserBrickParameter(param_value_formula)
+        user_brick_parameter.setParent(user_brick)
+        user_brick_parameter.setElement(user_script_definition_brick_element)
+        user_brick_parameters_list.add(user_brick_parameter)
+        param_index += 1
+
+    if is_user_script_defined:
+        context.user_script_definition_brick_map[scratch_function_header] = user_script_definition_brick
+        context.user_script_params_map[scratch_function_header] = param_types
+
+    return user_brick
 
 def _create_variable_brick(value, user_variable, Class):
     assert Class in set([catbricks.SetVariableBrick, catbricks.ChangeVariableBrick])
@@ -441,9 +483,12 @@ class Context(object):
         return self._sprite_contexts
 
 class SpriteContext(object):
-    def __init__(self, name):
+    def __init__(self, name, user_script_declared_labels_map):
         self.name = name
         self.created_shared_global_answer_user_variable = False
+        self.user_script_definition_brick_map = {}
+        self.user_script_declared_map = set()
+        self.user_script_declared_labels_map = user_script_declared_labels_map
         self.user_script_params_map = {}
 
 class ScriptContext(object):
@@ -471,6 +516,7 @@ class Converter(object):
         _catr_project = catbase.Project(None, scratch_project.name)
         _catr_scene = catbase.Scene(None, CATROBAT_DEFAULT_SCENE_NAME, _catr_project)
         _catr_project.sceneList.add(_catr_scene)
+        ProjectManager.getInstance().setProject(_catr_project)
 
         self._scratch_object_converter = _ScratchObjectConverter(_catr_project, scratch_project,
                                                                  progress_bar, context)
@@ -614,7 +660,9 @@ class _ScratchObjectConverter(object):
         if not isinstance(scratch_object, scratch.Object):
             raise common.ScratchtobatError("Input must be of type={}, but is={}".format(scratch.Object, type(scratch_object)))
         sprite_name = scratch_object.name
-        sprite_context = SpriteContext(sprite_name)
+        scratch_user_scripts = filter(lambda s: s.type == scratch.SCRIPT_PROC_DEF, scratch_object.scripts)
+        scratch_user_script_declared_labels_map = dict(map(lambda s: (s.arguments[0], s.arguments[1]), scratch_user_scripts))
+        sprite_context = SpriteContext(sprite_name, scratch_user_script_declared_labels_map)
         sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, sprite_name)
         assert sprite_name == sprite.getName()
         log.info('-'*80)
@@ -665,7 +713,8 @@ class _ScratchObjectConverter(object):
                 assert isinstance(cat_instance, catbase.Script)
                 sprite.addScript(cat_instance)
             else:
-                sprite.addUserBrick(cat_instance)
+                #sprite.addUserBrick(cat_instance)
+                sprite.userBricks.add(cat_instance)
 
             if self._progress_bar != None:
                 self._progress_bar.update(ProgressType.CONVERT_SCRIPT)
@@ -826,11 +875,12 @@ class _ScratchObjectConverter(object):
         if sprite and not isinstance(sprite, catbase.Sprite):
             raise common.ScratchtobatError("Arg2 must be of type={}, but is={}".format(catbase.Sprite, type(sprite)))
 
-        log.debug("  script type: %s, args: %s", scratch_script.type, scratch_script.arguments)
+        log.info("  script type: %s, args: %s", scratch_script.type, scratch_script.arguments)
         try:
             cat_instance = _ScratchToCatrobat.create_script(scratch_script.type, scratch_script.arguments,
                                                             context)
         except:
+            log.exception("Unable to convert script! -> Replacing with StartScript")
             cat_instance = catbase.StartScript()
             cat_instance.addBrick(_placeholder_for_unmapped_bricks_to("UNSUPPORTED SCRIPT", scratch_script.type))
 
@@ -840,8 +890,7 @@ class _ScratchObjectConverter(object):
         assert isinstance(converted_bricks, list) and len(converted_bricks) == 1
         [converted_bricks] = converted_bricks
 
-#         print(map(catrobat.simple_name_for, converted_bricks))
-#         log.debug("   --> converted: <%s>", ", ".join(map(catrobat.simple_name_for, converted_bricks)))
+        log.debug("   --> converted: <%s>", ", ".join(map(catrobat.simple_name_for, converted_bricks)))
         ignored_blocks = 0
         for brick in converted_bricks:
             # Scratch behavior: blocks can be ignored e.g. if no arguments are set
@@ -853,7 +902,15 @@ class _ScratchObjectConverter(object):
                     assert isinstance(cat_instance, catbase.Script)
                     cat_instance.addBrick(brick)
                 else:
-                    cat_instance.appendBrickToScript(brick)
+                    # FIXME: add to class hierarchy!!
+                    # TODO: @Christian: use setUrl() instead after next catroid-class-hierarchy update!!!
+                    #       -> setUrl() will be available soon
+                    # UserBrick.appendBrickToScript()
+                    # UserScriptDefinitionBrick.appendBrickToScript()
+                    # UserScriptDefinitionBrick.getScriptSafe()
+                    # UserScriptDefinitionBrick.getUserScript()
+                    # Sprite.addUserBrick()
+                    cat_instance.getDefinitionBrick().getUserScript().addBrick(brick)
             except TypeError:
                 if isinstance(brick, (str, unicode)):
                     log.error("string brick: %s", brick)
@@ -1691,6 +1748,14 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "setRotationStyle")
     def _convert_set_rotation_style_block(self):
         [style] = self.arguments
-        set_rotation_style_brick = catbricks.SetRotationStyleBrick()
+        set_rotation_style_brick = self.CatrobatClass()
         set_rotation_style_brick.selection = ["left-right", "all around", "don't rotate"].index(style)
         return set_rotation_style_brick
+
+    @_register_handler(_block_name_to_handler_map, "call")
+    def _convert_call_block(self):
+        arguments = self.arguments
+        scratch_function_header = arguments[0]
+        param_values = arguments[1:]
+        sprite_context = self.script_context.sprite_context
+        return _create_user_brick(sprite_context, scratch_function_header, param_values, declare=False)

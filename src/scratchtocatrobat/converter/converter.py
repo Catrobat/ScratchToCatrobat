@@ -371,7 +371,7 @@ def _create_user_brick(context, scratch_function_header, param_values, declare=F
     user_brick_parameters_list = user_brick.getUserBrickParameters()
 
     assert is_user_script_defined \
-           or user_script_definition_brick_elements_list.size() == num_function_header_parts
+           or len(user_script_definition_brick_elements_list) == num_function_header_parts
 
     param_types = []
     param_index = 0

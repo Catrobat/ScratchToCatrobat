@@ -468,6 +468,7 @@ class_to_preserved_methods_mapping:
         - addScript
         - updateUserVariableReferencesInUserVariableBricks
         - getListWithAllBricks
+        - addUserBrick
     UserVariablesContainer:
         - addSpriteUserVariableToSprite
         - getOrCreateVariableListForSprite
@@ -591,8 +592,12 @@ class_to_preserved_methods_mapping:
         - updateUserBrickParametersAndVariables
         - updateUserVariableValues
         - updateUserBrickParameters
+        - appendBrickToScript
     UserScriptDefinitionBrick:
         - setUserBrick
+        - appendBrickToScript
+        - getScriptSafe
+        - getUserScript
     UserScriptDefinitionBrickElement:
         - getUserScriptDefinitionBrickElementList
         - isVariable
@@ -603,6 +608,7 @@ class_to_preserved_methods_mapping:
         - spriteExists
     XmlHeader:
         - setlandscapeMode
+        - setUrl
     NfcTagData:
         - compareTo
     WhenBackgroundChangesScript:
@@ -635,8 +641,6 @@ remove_methods_mapping:
         - setCommentedOut
     XStreamToSupportCatrobatLanguageVersion0991AndBefore:
         - updateCollisionReceiverBrickMessage
-    UserScriptDefinitionBrick:
-        - appendBrickToScript
     Sprite:
         - cloneUserBricks
     Script:

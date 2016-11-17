@@ -713,8 +713,7 @@ class _ScratchObjectConverter(object):
                 assert isinstance(cat_instance, catbase.Script)
                 sprite.addScript(cat_instance)
             else:
-                #sprite.addUserBrick(cat_instance)
-                sprite.userBricks.add(cat_instance)
+                sprite.addUserBrick(cat_instance)
 
             if self._progress_bar != None:
                 self._progress_bar.update(ProgressType.CONVERT_SCRIPT)
@@ -902,15 +901,7 @@ class _ScratchObjectConverter(object):
                     assert isinstance(cat_instance, catbase.Script)
                     cat_instance.addBrick(brick)
                 else:
-                    # FIXME: add to class hierarchy!!
-                    # TODO: @Christian: use setUrl() instead after next catroid-class-hierarchy update!!!
-                    #       -> setUrl() will be available soon
-                    # UserBrick.appendBrickToScript()
-                    # UserScriptDefinitionBrick.appendBrickToScript()
-                    # UserScriptDefinitionBrick.getScriptSafe()
-                    # UserScriptDefinitionBrick.getUserScript()
-                    # Sprite.addUserBrick()
-                    cat_instance.getDefinitionBrick().getUserScript().addBrick(brick)
+                    cat_instance.appendBrickToScript(brick)
             except TypeError:
                 if isinstance(brick, (str, unicode)):
                     log.error("string brick: %s", brick)

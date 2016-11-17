@@ -1638,7 +1638,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     # doAsk (with question as string)
     def test_can_convert_do_ask_with_question_as_string_block(self):
-        sprite_context = converter.SpriteContext(DUMMY_CATR_SPRITE.getName())
+        sprite_context = converter.SpriteContext(DUMMY_CATR_SPRITE.getName(), {})
         script_context = converter.ScriptContext(sprite_context)
         scratch_block = _, expected_question_string = ["doAsk", "What's your name?"]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE,
@@ -1666,7 +1666,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def test_can_convert_do_ask_with_question_as_formula_block(self):
         expected_left_operand = 1
         expected_right_operand = 2
-        sprite_context = converter.SpriteContext(DUMMY_CATR_SPRITE.getName())
+        sprite_context = converter.SpriteContext(DUMMY_CATR_SPRITE.getName(), {})
         script_context = converter.ScriptContext(sprite_context)
         scratch_block = _, expected_question_string = ["doAsk", ["+", expected_left_operand, expected_right_operand]]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE,
@@ -1704,7 +1704,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     # answer
     def test_can_convert_answer_block(self):
-        sprite_context = converter.SpriteContext(DUMMY_CATR_SPRITE.getName())
+        sprite_context = converter.SpriteContext(DUMMY_CATR_SPRITE.getName(), {})
         script_context = converter.ScriptContext(sprite_context)
         [formula_element] = self.block_converter._catrobat_bricks_from(["answer"], DUMMY_CATR_SPRITE,
                                                                        script_context)
@@ -1896,6 +1896,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         catr_bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE, script_context)
 
         assert len(catr_bricks) == 1
+        print type(catr_bricks[0])
         assert isinstance(catr_bricks[0], catbricks.UserBrick)
         user_brick = catr_bricks[0]
 

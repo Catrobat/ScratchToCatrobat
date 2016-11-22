@@ -1835,6 +1835,11 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def test_can_convert_set_pen_color_block_with_formula(self):
         scratch_block = ["penColor:", ["+", 5000, 32]]
         catr_bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+
+        assert isinstance(catr_bricks[0], catbricks.SetVariableBrick)
+        assert isinstance(catr_bricks[1], catbricks.SetVariableBrick)
+        assert isinstance(catr_bricks[2], catbricks.SetVariableBrick)
+
         blue_formula = catr_bricks[2].userVariable.getValue().formulaTree
         assert blue_formula.value == "MOD"
         assert blue_formula.rightChild.value == "256"
@@ -1842,11 +1847,24 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert blue_formula.leftChild.leftChild.value == "5000"
         assert blue_formula.leftChild.rightChild.value == "32"
 
-        #if blue is right, the rest should also be alright, because red and green build up on blue
+        green_formula = catr_bricks[1].userVariable.getValue().formulaTree
+        assert green_formula.value == "MOD"
+        assert green_formula.rightChild.value == "256"
+        assert green_formula.leftChild.rightChild.value == "DIVIDE"
+        assert green_formula.leftChild.rightChild.rightChild.value == "256"
+        assert green_formula.leftChild.rightChild.leftChild.rightChild.value == "MINUS"
+        assert green_formula.leftChild.rightChild.leftChild.rightChild.leftChild.value == "PLUS"
+        assert green_formula.leftChild.rightChild.leftChild.rightChild.leftChild.leftChild.value == "5000"
+        assert green_formula.leftChild.rightChild.leftChild.rightChild.leftChild.rightChild.value == "32"
+        assert green_formula.leftChild.rightChild.leftChild.rightChild.rightChild.rightChild.value == blue_formula.value
 
-        assert isinstance(catr_bricks[0], catbricks.SetVariableBrick)
-        assert isinstance(catr_bricks[1], catbricks.SetVariableBrick)
-        assert isinstance(catr_bricks[2], catbricks.SetVariableBrick)
+        red_formula = catr_bricks[0].userVariable.getValue().formulaTree
+        assert red_formula.value == "DIVIDE"
+        assert red_formula.rightChild.value == "256"
+        assert red_formula.leftChild.rightChild.value == "MINUS"
+        assert red_formula.leftChild.rightChild.rightChild.rightChild.value == green_formula.value
+        assert red_formula.leftChild.rightChild.leftChild.rightChild.value == "DIVIDE"
+
         assert isinstance(catr_bricks[3], catbricks.SetPenColorBrick)
 
     #setPenColor

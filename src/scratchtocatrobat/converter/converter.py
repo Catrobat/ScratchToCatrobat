@@ -198,6 +198,7 @@ class _ScratchToCatrobat(object):
         "forward:": catbricks.MoveNStepsBrick,
         "pointTowards:": catbricks.PointToBrick,
         "gotoX:y:": catbricks.PlaceAtBrick,
+        "gotoSpriteOrMouse:": lambda sprite: catbricks.GoToBrick(catbase.Sprite(sprite)) if(isinstance(sprite, basestring)) else catbricks.NoteBrick("Error: Not a valid parameter"),
         "glideSecs:toX:y:elapsed:from:": lambda duration, x_pos, y_pos: catbricks.GlideToBrick(x_pos, y_pos, _sec_to_msec(duration) if isinstance(duration, numbers.Number) else duration),
         "xpos:": catbricks.SetXBrick,
         "ypos:": catbricks.SetYBrick,

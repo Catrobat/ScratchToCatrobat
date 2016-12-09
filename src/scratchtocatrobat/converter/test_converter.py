@@ -1900,6 +1900,15 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert catr_bricks[0].userVariable.getValue().formulaTree.leftChild.value == "2"
         assert catr_bricks[0].userVariable.getValue().formulaTree.rightChild.value == "32"
 
+    #gotoSpriteOrMouse:
+    def test_can_convert_go_to_sprite_block(self):
+        test_sprite_name = "Abby"
+        scratch_block = ["gotoSpriteOrMouse:", test_sprite_name]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.GoToBrick)
+        assert catr_brick.destinationSprite.name == test_sprite_name
+
+
 class TestConvertProjects(common_testing.ProjectTestCase):
 
     def _test_project(self, project_name):

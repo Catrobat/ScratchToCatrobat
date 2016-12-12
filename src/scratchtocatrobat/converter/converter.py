@@ -198,6 +198,7 @@ class _ScratchToCatrobat(object):
         "forward:": catbricks.MoveNStepsBrick,
         "pointTowards:": catbricks.PointToBrick,
         "gotoX:y:": catbricks.PlaceAtBrick,
+        "gotoSpriteOrMouse:": catbricks.GoToBrick,
         "glideSecs:toX:y:elapsed:from:": lambda duration, x_pos, y_pos: catbricks.GlideToBrick(x_pos, y_pos, _sec_to_msec(duration) if isinstance(duration, numbers.Number) else duration),
         "xpos:": catbricks.SetXBrick,
         "ypos:": catbricks.SetYBrick,
@@ -1613,3 +1614,19 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         set_rotation_style_brick = catbricks.SetRotationStyleBrick()
         set_rotation_style_brick.selection = ["left-right", "all around", "don't rotate"].index(style)
         return set_rotation_style_brick
+
+
+    @_register_handler(_block_name_to_handler_map, "gotoSpriteOrMouse:")
+    def _convert_go_to_sprite_or_mouse_block(self):
+        [sprite], catr_brick = self.arguments, None
+        if sprite == "_mouse_":
+            catr_brick = self.CatrobatClass()
+            catr_brick.spinnerSelection = 0
+        elif sprite == "_random_":
+            catr_brick = self.CatrobatClass()
+            catr_brick.spinnerSelection = 1
+        elif isinstance(sprite, basestring):
+            catr_brick = self.CatrobatClass(catbase.Sprite(sprite))
+        else:
+            return catbricks.NoteBrick("Error: Not a valid parameter")
+        return catr_brick

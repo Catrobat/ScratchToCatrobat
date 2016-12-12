@@ -1619,13 +1619,13 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "gotoSpriteOrMouse:")
     def _convert_go_to_sprite_or_mouse_block(self):
         [sprite], catr_brick = self.arguments, None
-        if(sprite == "_mouse_"):
+        if sprite == "_mouse_":
             catr_brick = self.CatrobatClass()
             catr_brick.spinnerSelection = 0
-        elif(sprite == "_random_"):
+        elif sprite == "_random_":
             catr_brick = self.CatrobatClass()
             catr_brick.spinnerSelection = 1
-        elif(isinstance(sprite, basestring)):
+        elif isinstance(sprite, basestring):
             catr_brick = self.CatrobatClass(catbase.Sprite(sprite))
         else:
             return catbricks.NoteBrick("Error: Not a valid parameter")

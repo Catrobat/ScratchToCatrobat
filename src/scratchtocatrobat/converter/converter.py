@@ -1409,7 +1409,9 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             assert(_is_generated(variable_name))
             catrobat.add_user_variable(self.project, variable_name, self.sprite, self.sprite.getName())
             user_variable = self.scene.getDataContainer().getUserVariable(variable_name, self.sprite)
-            assert user_variable is not None and user_variable.getName() == variable_name, "variable: %s, sprite_name: %s" % (variable_name, self.sprite.getName())
+
+        assert user_variable is not None and user_variable.getName() == variable_name, \
+               "variable: %s, sprite_name: %s" % (variable_name, self.sprite.getName())
         return [self.CatrobatClass(value, user_variable)]
 
     @_register_handler(_block_name_to_handler_map, "say:duration:elapsed:from:")

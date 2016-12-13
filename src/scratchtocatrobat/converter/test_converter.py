@@ -1667,7 +1667,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         expected_right_operand = 2
         sprite_context = converter.SpriteContext(DUMMY_CATR_SPRITE.getName())
         script_context = converter.ScriptContext(sprite_context)
-        scratch_block = _, expected_question_string = ["doAsk", ["+", expected_left_operand, expected_right_operand]]
+        scratch_block = ["doAsk", ["+", expected_left_operand, expected_right_operand]]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE,
                                                                   script_context)
         assert sprite_context.created_shared_global_answer_user_variable is True

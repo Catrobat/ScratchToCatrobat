@@ -406,7 +406,7 @@ def _create_user_brick(context, scratch_function_header, param_values, declare=F
         param_types += [function_header_part]
         param_value = param_values[param_index]
         if not isinstance(param_value, catformula.FormulaElement):
-            param_value = int(param_value) if param_value in {'%n', '%b'} else str(param_value)
+            param_value = int(param_value) if function_header_part in {'%n', '%b'} else str(param_value)
         param_value_formula = catrobat.create_formula_with_value(param_value)
 
         user_brick_parameter = catbricks.UserBrickParameter(param_value_formula)

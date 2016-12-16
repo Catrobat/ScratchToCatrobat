@@ -202,6 +202,7 @@ class _ScratchToCatrobat(object):
         "forward:": catbricks.MoveNStepsBrick,
         "pointTowards:": catbricks.PointToBrick,
         "gotoX:y:": catbricks.PlaceAtBrick,
+        "gotoSpriteOrMouse:": catbricks.GoToBrick,
         "glideSecs:toX:y:elapsed:from:": lambda duration, x_pos, y_pos: catbricks.GlideToBrick(x_pos, y_pos, _sec_to_msec(duration) if isinstance(duration, numbers.Number) else duration),
         "xpos:": catbricks.SetXBrick,
         "ypos:": catbricks.SetYBrick,
@@ -1537,7 +1538,9 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             assert(_is_generated(variable_name))
             catrobat.add_user_variable(self.project, variable_name, self.sprite, self.sprite.getName())
             user_variable = self.scene.getDataContainer().getUserVariable(variable_name, self.sprite)
-            assert user_variable is not None and user_variable.getName() == variable_name, "variable: %s, sprite_name: %s" % (variable_name, self.sprite.getName())
+
+        assert user_variable is not None and user_variable.getName() == variable_name, \
+               "variable: %s, sprite_name: %s" % (variable_name, self.sprite.getName())
         return [self.CatrobatClass(value, user_variable)]
 
     @_register_handler(_block_name_to_handler_map, "say:duration:elapsed:from:")
@@ -1750,3 +1753,18 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         param_values = arguments[1:]
         sprite_context = self.script_context.sprite_context
         return _create_user_brick(sprite_context, scratch_function_header, param_values, declare=False)
+
+    @_register_handler(_block_name_to_handler_map, "gotoSpriteOrMouse:")
+    def _convert_go_to_sprite_or_mouse_block(self):
+        [sprite], catr_brick = self.arguments, None
+        if sprite == "_mouse_":
+            catr_brick = self.CatrobatClass()
+            catr_brick.spinnerSelection = 0
+        elif sprite == "_random_":
+            catr_brick = self.CatrobatClass()
+            catr_brick.spinnerSelection = 1
+        elif isinstance(sprite, basestring):
+            catr_brick = self.CatrobatClass(catbase.Sprite(sprite))
+        else:
+            return catbricks.NoteBrick("Error: Not a valid parameter")
+        return catr_brick

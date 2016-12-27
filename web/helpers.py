@@ -29,7 +29,7 @@ REDIS_LISTENING_CLIENT_JOB_KEY_TEMPLATE = "listeningClientsOfJob#{}"
 REDIS_JOB_CLIENT_KEY_TEMPLATE = "jobsOfClient#{}"
 
 
-# TODO: remove theses data of default programs and fetch/update dynamically
+# TODO: remove this data of default programs and fetch/update dynamically
 FEATURED_SCRATCH_PROGRAMS = [{
     "id": 11656680,
     "title": "Dress Up Tera",
@@ -53,6 +53,33 @@ FEATURED_SCRATCH_PROGRAMS = [{
     },
     "remix": {
       "root": 10007164
+    }
+}, {
+    "id": 12297764,
+    "title": "Full 8 Frame Felipebross Walk Cycle",
+    "description": "",
+    "instructions": "After a couple of months work he&#39;s now ready to use in his own game!  " \
+                    "follow this link: http://beta.scratch.mit.edu/projects/10118230\n\nWant an " \
+                    "animating Steve from Minecraft?  Take a look here: " \
+                    "http://scratch.mit.edu/projects/10128407/",
+    "author": {
+        "id": 2542801,
+        "username": "TheFroster"
+    },
+    "image": "https://cdn2.scratch.mit.edu/get_image/project/12297764_480x360.png",
+    "history": {
+        "created": "2013-09-11T00:13:19.000Z",
+        "modified": "2013-09-11T00:15:50.000Z",
+        "shared": "2013-09-11T00:13:49.000Z"
+    },
+    "stats": {
+        "views":154,
+        "loves":1,
+        "favorites":2,
+        "comments":0
+    },
+    "remix": {
+        "root": 10045024
     }
 }, {
     "id": 82443924,

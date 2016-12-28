@@ -296,6 +296,11 @@ class _ScratchToCatrobat(object):
         #"changePenSizeBy:": None,
         #"changePenHueBy:": None,
 
+        #name and number
+        "sceneName": catformula.Sensors.OBJECT_BACKGROUND_NAME,
+        "backgroundIndex": catformula.Sensors.OBJECT_BACKGROUND_NUMBER,
+        "costumeIndex": catformula.Sensors.OBJECT_LOOK_NUMBER,
+
         # WORKAROUND: using ROUND for Catrobat float => Scratch int
         "soundLevel": lambda *_args: catrobat.formula_element_for(catformula.Functions.ROUND,
                                        arguments=[catrobat.formula_element_for(catformula.Sensors.LOUDNESS)]),  # @UndefinedVariable

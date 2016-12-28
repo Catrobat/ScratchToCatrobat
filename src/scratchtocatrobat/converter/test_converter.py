@@ -2149,6 +2149,26 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert isinstance(catr_brick, catbricks.GoToBrick)
         assert catr_brick.spinnerSelection == 1
 
+    #sceneName
+    def test_can_convert_backdrop_name_brick(self):
+        scratch_block = ["sceneName"]
+        [formula] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(formula, catformula.FormulaElement)
+        assert formula.value == "OBJECT_BACKGROUND_NAME"
+
+    #backgroundIndex
+    def test_can_convert_background_index_brick(self):
+        scratch_block = ["backgroundIndex"]
+        [formula] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(formula, catformula.FormulaElement)
+        assert formula.value == "OBJECT_BACKGROUND_NUMBER"
+
+    #costumeIndex
+    def test_can_convert_costume_index_brick(self):
+        scratch_block = ["costumeIndex"]
+        [formula] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(formula, catformula.FormulaElement)
+        assert formula.value == "OBJECT_LOOK_NUMBER"
 
 class TestConvertProjects(common_testing.ProjectTestCase):
 

@@ -2170,6 +2170,13 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert isinstance(formula, catformula.FormulaElement)
         assert formula.value == "OBJECT_LOOK_NUMBER"
 
+    #scale
+    def test_can_convert_size_brick(self):
+        scratch_block = ["scale"]
+        [formula] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(formula, catformula.FormulaElement)
+        assert formula.value == "OBJECT_SIZE"
+
 class TestConvertProjects(common_testing.ProjectTestCase):
 
     def _test_project(self, project_name):

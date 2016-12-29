@@ -257,7 +257,7 @@ class _ScratchToCatrobat(object):
         "stopAllSounds": catbricks.StopAllSoundsBrick,
         "changeVolumeBy:": catbricks.ChangeVolumeByNBrick,
         "setVolumeTo:": catbricks.SetVolumeToBrick,
-        
+
         # bubble bricks
         "say:duration:elapsed:from:": catbricks.SayForBubbleBrick,
         "say:": catbricks.SayBubbleBrick,
@@ -270,7 +270,7 @@ class _ScratchToCatrobat(object):
         "xpos": catformula.Sensors.OBJECT_X,
         "ypos": catformula.Sensors.OBJECT_Y,
         "heading": catformula.Sensors.OBJECT_ROTATION,
-        "size": catformula.Sensors.OBJECT_SIZE,
+        "scale": catformula.Sensors.OBJECT_SIZE,
 
         # sensors
         "mousePressed": catformula.Sensors.FINGER_TOUCHED,
@@ -293,6 +293,7 @@ class _ScratchToCatrobat(object):
         "clearPenTrails": catbricks.ClearBackgroundBrick,
         "penColor:": catbricks.SetPenColorBrick,
         "penSize:": catbricks.SetPenSizeBrick,
+        "setPenHueTo:": None,
         #"changePenSizeBy:": None,
         #"changePenHueBy:": None,
 
@@ -300,9 +301,6 @@ class _ScratchToCatrobat(object):
         "sceneName": catformula.Sensors.OBJECT_BACKGROUND_NAME,
         "backgroundIndex": catformula.Sensors.OBJECT_BACKGROUND_NUMBER,
         "costumeIndex": catformula.Sensors.OBJECT_LOOK_NUMBER,
-
-        #scale
-        "scale": catformula.Sensors.OBJECT_SIZE,
 
         # WORKAROUND: using ROUND for Catrobat float => Scratch int
         "soundLevel": lambda *_args: catrobat.formula_element_for(catformula.Functions.ROUND,

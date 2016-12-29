@@ -1604,8 +1604,19 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         if len(base_sprite) == 0:
             return catbricks.NoteBrick("Can't convert Clone-Brick with no argument.")
 
+        if base_sprite == "_myself_":
+            print("Clone of ", self.sprite.name)
+            return self.CatrobatClass(self.sprite)
+
         if isinstance(base_sprite, basestring):
-            create_clone_of_brick = self.CatrobatClass(catbase.Sprite(base_sprite))
+            for sprite in self.scene.spriteList:
+                if sprite.name == base_sprite:
+                    print("Clone sprite: ", sprite.name)
+                    return self.CatrobatClass(sprite)
+            new_sprite = catbase.Sprite(base_sprite)
+            self.scene.spriteList.add(self.sprite)
+            self.scene.spriteList.add(new_sprite)
+            create_clone_of_brick = self.CatrobatClass(new_sprite)
             return create_clone_of_brick
 
     @_register_handler(_block_name_to_handler_map, "timeAndDate")

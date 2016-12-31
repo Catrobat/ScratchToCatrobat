@@ -477,6 +477,8 @@ def _sound_length_variable_name_for(resource_name):
 def _is_generated(variable_name):
     return variable_name.startswith(_GENERATED_VARIABLE_PREFIX)
 
+clone_sprites = []
+
 class Context(object):
     def __init__(self):
         self._sprite_contexts = []
@@ -670,7 +672,12 @@ class _ScratchObjectConverter(object):
         scratch_user_scripts = filter(lambda s: s.type == scratch.SCRIPT_PROC_DEF, scratch_object.scripts)
         scratch_user_script_declared_labels_map = dict(map(lambda s: (s.arguments[0], s.arguments[1]), scratch_user_scripts))
         sprite_context = SpriteContext(sprite_name, scratch_user_script_declared_labels_map)
+        
         sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, sprite_name)
+        for clone_sprite in clone_sprites:
+            if clone_sprite.name == sprite_name:
+                sprite = clone_sprite
+        
         assert sprite_name == sprite.getName()
         log.info('-'*80)
         log.info("Converting Sprite: '%s'", sprite.getName())
@@ -1613,9 +1620,10 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
                 if sprite.name == base_sprite:
                     print("Clone sprite: ", sprite.name)
                     return self.CatrobatClass(sprite)
-            new_sprite = catbase.Sprite(base_sprite)
-            self.scene.spriteList.add(self.sprite)
-            self.scene.spriteList.add(new_sprite)
+
+            new_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, base_sprite)
+            clone_sprites.append(new_sprite)
+
             create_clone_of_brick = self.CatrobatClass(new_sprite)
             return create_clone_of_brick
 

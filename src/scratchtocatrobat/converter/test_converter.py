@@ -1723,11 +1723,11 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME == user_variable.getName()
 
     # createCloneOf
-    def test_can_convert_create_clone_of_block(self):
+    def test_can_convert_create_clone_of_block_myself(self):
         sprite_name = '_myself_'
         scratch_block = ["createCloneOf", sprite_name]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        assert sprite_name == catr_brick.objectToClone.name
+        assert DUMMY_CATR_SPRITE.getName() == catr_brick.objectToClone.getName()
         assert isinstance(catr_brick, catbricks.CloneBrick)
 
     # createCloneOf 
@@ -1742,6 +1742,30 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         scratch_block = ["createCloneOf", ["-", 2, 1]]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.NoteBrick)
+
+    # createCloneOf
+    def test_fail_convert_create_clone_of_block_previous(self):
+        sprite_object = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, "Previous")
+        self.test_scene.spriteList.append(sprite_object)
+
+        scratch_block = ["createCloneOf", "Previous"]
+
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.CloneBrick)
+        assert catr_brick.objectToClone.getName() == "Previous"
+
+    # createCloneOf
+    def test_fail_convert_create_clone_of_block_afterwards(self):
+        #context = self.block_converter._context
+        context = converter.Context()
+        sprite_context = converter.SpriteContext(DUMMY_CATR_SPRITE.getName(), {})
+        sprite_context.context = context
+        script_context = converter.ScriptContext(sprite_context)
+        scratch_block = ["createCloneOf", "Afterwards"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE, script_context)
+        assert isinstance(catr_brick, catbricks.CloneBrick)
+        assert catr_brick.objectToClone.getName() == "Afterwards"
+        assert "Afterwards" in context.cloned_sprites
 
     # whenCloned
     def test_can_convert_when_cloned_block(self):

@@ -1765,7 +1765,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE, script_context)
         assert isinstance(catr_brick, catbricks.CloneBrick)
         assert catr_brick.objectToClone.getName() == "Afterwards"
-        assert "Afterwards" in context.cloned_sprites
+        assert "Afterwards" in context.upcoming_sprites
 
     # whenCloned
     def test_can_convert_when_cloned_block(self):
@@ -2150,12 +2150,26 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert expected_param_types == param_types
 
     #gotoSpriteOrMouse:
-    def test_can_convert_go_to_sprite_block_with_sprite(self):
-        test_sprite_name = "Abby"
+    def test_can_convert_go_to_sprite_block_with_sprite_afterwards(self):
+        test_sprite_name = "Afterwards"
         scratch_block = ["gotoSpriteOrMouse:", test_sprite_name]
+        context = converter.Context()
+        sprite_context = converter.SpriteContext(DUMMY_CATR_SPRITE.getName(), {})
+        sprite_context.context = context
+        script_context = converter.ScriptContext(sprite_context)
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE, script_context)
+        assert isinstance(catr_brick, catbricks.GoToBrick)
+        assert catr_brick.destinationSprite.getName() == test_sprite_name
+
+    #gotoSpriteOrMouse:
+    def test_can_convert_go_to_sprite_block_with_sprite_previous(self):
+        test_sprite_name = "Previous"
+        scratch_block = ["gotoSpriteOrMouse:", test_sprite_name]
+        sprite_object = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, "Previous")
+        self.test_scene.spriteList.append(sprite_object)
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.GoToBrick)
-        assert catr_brick.destinationSprite.name == test_sprite_name
+        assert catr_brick.destinationSprite.getName() == test_sprite_name
 
     #gotoSpriteOrMouse:
     def test_can_convert_go_to_sprite_block_with_mouse_position(self):

@@ -480,7 +480,7 @@ def _is_generated(variable_name):
 class Context(object):
     def __init__(self):
         self._sprite_contexts = []
-        self.cloned_sprites = {}
+        self.upcoming_sprites = {}
 
     def add_sprite_context(self, sprite_context):
         assert isinstance(sprite_context, SpriteContext)
@@ -675,8 +675,8 @@ class _ScratchObjectConverter(object):
 
         sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, sprite_name)
 
-        if sprite_name in self._context.cloned_sprites:
-            sprite = self._context.cloned_sprites[sprite_name]
+        if sprite_name in self._context.upcoming_sprites:
+            sprite = self._context.upcoming_sprites[sprite_name]
 
         if self._context is not None:
             sprite_context.context = self._context
@@ -1621,11 +1621,11 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             for sprite in self.scene.spriteList:
                 if sprite.getName() == base_sprite:
                     return self.CatrobatClass(sprite)
-            if base_sprite in self.script_context.sprite_context.context.cloned_sprites:
-                new_sprite = self.script_context.sprite_context.context.cloned_sprites[base_sprite]
+            if base_sprite in self.script_context.sprite_context.context.upcoming_sprites:
+                new_sprite = self.script_context.sprite_context.context.upcoming_sprites[base_sprite]
             else:
                 new_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, base_sprite)
-                self.script_context.sprite_context.context.cloned_sprites[new_sprite.getName()] = new_sprite
+                self.script_context.sprite_context.context.upcoming_sprites[new_sprite.getName()] = new_sprite
 
             create_clone_of_brick = self.CatrobatClass(new_sprite)
             return create_clone_of_brick
@@ -1784,15 +1784,25 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
     @_register_handler(_block_name_to_handler_map, "gotoSpriteOrMouse:")
     def _convert_go_to_sprite_or_mouse_block(self):
-        [sprite], catr_brick = self.arguments, None
-        if sprite == "_mouse_":
+        [base_sprite], catr_brick = self.arguments, None
+        if base_sprite == "_mouse_":
             catr_brick = self.CatrobatClass()
             catr_brick.spinnerSelection = 0
-        elif sprite == "_random_":
+        elif base_sprite == "_random_":
             catr_brick = self.CatrobatClass()
             catr_brick.spinnerSelection = 1
-        elif isinstance(sprite, basestring):
-            catr_brick = self.CatrobatClass(catbase.Sprite(sprite))
+        elif isinstance(base_sprite, basestring):
+            for sprite in self.scene.spriteList:
+                if sprite.getName() == base_sprite:
+                    return self.CatrobatClass(sprite)
+            if base_sprite in self.script_context.sprite_context.context.upcoming_sprites:
+                new_sprite = self.script_context.sprite_context.context.upcoming_sprites[base_sprite]
+            else:
+                new_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, base_sprite)
+                self.script_context.sprite_context.context.upcoming_sprites[new_sprite.getName()] = new_sprite
+
+            create_clone_of_brick = self.CatrobatClass(new_sprite)
+            return create_clone_of_brick
         else:
             return catbricks.NoteBrick("Error: Not a valid parameter")
         return catr_brick

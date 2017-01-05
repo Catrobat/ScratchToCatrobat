@@ -675,11 +675,10 @@ class _ScratchObjectConverter(object):
 
         sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, sprite_name)
 
-        if sprite_name in self._context.cloned_sprites:
-            sprite = self._context.cloned_sprites[sprite_name]
-
         if self._context is not None:
             sprite_context.context = self._context
+            if sprite_name in self._context.cloned_sprites:
+                sprite = self._context.cloned_sprites[sprite_name]
 
         assert sprite_name == sprite.getName()
         log.info('-'*80)

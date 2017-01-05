@@ -1768,7 +1768,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert isinstance(catr_brick, catbricks.CloneBrick)
         assert catr_brick.objectToClone.getName() == "Afterwards"
         assert "Afterwards" in context.cloned_sprites
-        assert isinstance(context.cloned_sprites["Afterwards"], catbase.Sprite)
+        assert catr_brick.objectToClone is context.cloned_sprites["Afterwards"]
 
     # whenCloned
     def test_can_convert_when_cloned_block(self):

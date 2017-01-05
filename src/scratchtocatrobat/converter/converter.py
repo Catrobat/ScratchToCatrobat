@@ -480,6 +480,7 @@ def _is_generated(variable_name):
 class Context(object):
     def __init__(self):
         self._sprite_contexts = []
+        self.cloned_sprites = {}
 
     def add_sprite_context(self, sprite_context):
         assert isinstance(sprite_context, SpriteContext)
@@ -497,6 +498,7 @@ class SpriteContext(object):
         self.user_script_declared_map = set()
         self.user_script_declared_labels_map = user_script_declared_labels_map
         self.user_script_params_map = {}
+        self.context = None
 
 class ScriptContext(object):
     def __init__(self, sprite_context):
@@ -670,7 +672,14 @@ class _ScratchObjectConverter(object):
         scratch_user_scripts = filter(lambda s: s.type == scratch.SCRIPT_PROC_DEF, scratch_object.scripts)
         scratch_user_script_declared_labels_map = dict(map(lambda s: (s.arguments[0], s.arguments[1]), scratch_user_scripts))
         sprite_context = SpriteContext(sprite_name, scratch_user_script_declared_labels_map)
+
         sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, sprite_name)
+
+        if self._context is not None:
+            sprite_context.context = self._context
+            if sprite_name in self._context.cloned_sprites:
+                sprite = self._context.cloned_sprites[sprite_name]
+
         assert sprite_name == sprite.getName()
         log.info('-'*80)
         log.info("Converting Sprite: '%s'", sprite.getName())
@@ -1604,8 +1613,20 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         if len(base_sprite) == 0:
             return catbricks.NoteBrick("Can't convert Clone-Brick with no argument.")
 
+        if base_sprite == "_myself_" or base_sprite == self.sprite.getName():
+            return self.CatrobatClass(self.sprite)
+
         if isinstance(base_sprite, basestring):
-            create_clone_of_brick = self.CatrobatClass(catbase.Sprite(base_sprite))
+            for sprite in self.scene.spriteList:
+                if sprite.getName() == base_sprite:
+                    return self.CatrobatClass(sprite)
+            if base_sprite in self.script_context.sprite_context.context.cloned_sprites:
+                new_sprite = self.script_context.sprite_context.context.cloned_sprites[base_sprite]
+            else:
+                new_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, base_sprite)
+                self.script_context.sprite_context.context.cloned_sprites[new_sprite.getName()] = new_sprite
+
+            create_clone_of_brick = self.CatrobatClass(new_sprite)
             return create_clone_of_brick
 
     @_register_handler(_block_name_to_handler_map, "timeAndDate")

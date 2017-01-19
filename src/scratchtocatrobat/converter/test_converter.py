@@ -2163,6 +2163,8 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE, script_context)
         assert isinstance(catr_brick, catbricks.GoToBrick)
         assert catr_brick.destinationSprite.getName() == test_sprite_name
+        assert "Afterwards" in context.upcoming_sprites
+        assert catr_brick.destinationSprite is context.upcoming_sprites["Afterwards"]
 
     #gotoSpriteOrMouse:
     def test_can_convert_go_to_sprite_block_with_sprite_previous(self):
@@ -2173,6 +2175,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.GoToBrick)
         assert catr_brick.destinationSprite.getName() == test_sprite_name
+        assert catr_brick.destinationSprite is sprite_object
 
     #gotoSpriteOrMouse:
     def test_can_convert_go_to_sprite_block_with_mouse_position(self):

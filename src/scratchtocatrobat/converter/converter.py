@@ -176,7 +176,7 @@ class _ScratchToCatrobat(object):
         scratch.SCRIPT_CLICKED: catbase.WhenScript,
         scratch.SCRIPT_CLONED: catbase.WhenClonedScript,
         scratch.SCRIPT_PROC_DEF: catbricks.UserBrick,
-        scratch.SCRIPT_SENSOR_GREATER_THAN: catbricks.WhenConditionBrick
+        scratch.SCRIPT_SENSOR_GREATER_THAN: None
     }
 
     complete_mapping = dict({
@@ -331,7 +331,35 @@ class _ScratchToCatrobat(object):
             assert False, "Missing script mapping for: " + scratch_script_name
         catrobat_script = cls.catrobat_script_class_for(scratch_script_name)
         # TODO: register handler!! -> _ScriptBlocksConversionTraverser
+        if scratch_script_name == scratch.SCRIPT_SENSOR_GREATER_THAN:
+            formula_element = catformula.FormulaElement(catElementType.OPERATOR, None, None)
+            formula_element.value = str(catformula.Operators.GREATER_THAN)
+            
+            if arguments[0] == 'timer':
+                formula_left_child = catformula.FormulaElement(catElementType.USER_VARIABLE, None, None)
+                formula_left_child.value = scratch.S2CC_TIMER_VARIABLE_NAME
+                formula_left_child.parent = formula_element
+                formula_element.setLeftChild(formula_left_child)
 
+            elif arguments[0] == 'loudness':
+                formula_left_child = catformula.FormulaElement(catElementType.SENSOR, None, None)
+                formula_left_child.value = str(catformula.Sensors.LOUDNESS)
+                formula_left_child.parent = formula_element
+                formula_element.setLeftChild(formula_left_child)
+
+            formula_right_child = catformula.FormulaElement(catElementType.NUMBER, None, None)
+            formula_right_child.value = str(arguments[1])
+            formula_right_child.parent = formula_element
+            formula_element.setRightChild(formula_right_child)
+
+            when_cond_brick = catbricks.WhenConditionBrick()
+            when_cond_brick.addAllowedBrickField(catbricks.Brick.BrickField.IF_CONDITION)
+            when_cond_brick.setFormulaWithBrickField(catbricks.Brick.BrickField.IF_CONDITION, catformula.Formula(formula_element))
+            
+            my_script = catbase.WhenConditionScript(when_cond_brick)
+            my_script.formulaMap = when_cond_brick.formulaMap
+            
+            return my_script
         if scratch_script_name != scratch.SCRIPT_PROC_DEF:
             return catrobat_script(*arguments)
 

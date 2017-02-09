@@ -175,7 +175,8 @@ class _ScratchToCatrobat(object):
         scratch.SCRIPT_SCENE_STARTS: lambda look_name: catbase.BroadcastScript(_background_look_to_broadcast_message(look_name)),
         scratch.SCRIPT_CLICKED: catbase.WhenScript,
         scratch.SCRIPT_CLONED: catbase.WhenClonedScript,
-        scratch.SCRIPT_PROC_DEF: catbricks.UserBrick
+        scratch.SCRIPT_PROC_DEF: catbricks.UserBrick,
+        scratch.SCRIPT_SENSOR_GREATER_THAN: catbricks.WhenConditionBrick
     }
 
     complete_mapping = dict({
@@ -330,6 +331,7 @@ class _ScratchToCatrobat(object):
             assert False, "Missing script mapping for: " + scratch_script_name
         catrobat_script = cls.catrobat_script_class_for(scratch_script_name)
         # TODO: register handler!! -> _ScriptBlocksConversionTraverser
+
         if scratch_script_name != scratch.SCRIPT_PROC_DEF:
             return catrobat_script(*arguments)
 

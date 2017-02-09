@@ -347,10 +347,15 @@ class _ScratchToCatrobat(object):
                 formula_left_child.parent = formula_element
                 formula_element.setLeftChild(formula_left_child)
 
-            formula_right_child = catformula.FormulaElement(catElementType.NUMBER, None, None)
-            formula_right_child.value = str(arguments[1])
-            formula_right_child.parent = formula_element
-            formula_element.setRightChild(formula_right_child)
+            if isinstance(arguments[1], int):
+                formula_right_child = catformula.FormulaElement(catElementType.NUMBER, None, None)
+                formula_right_child.value = str(arguments[1])
+                formula_right_child.parent = formula_element
+                formula_element.setRightChild(formula_right_child)
+
+            else:
+                #TODO the same thing for formulas
+                log.info("Formulas as arguments not implemented yet")
 
             when_cond_brick = catbricks.WhenConditionBrick()
             when_cond_brick.addAllowedBrickField(catbricks.Brick.BrickField.IF_CONDITION)

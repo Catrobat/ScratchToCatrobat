@@ -266,10 +266,40 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         self.assertEqual('Tapped', catr_script.getAction())
 
     #whenSensorGreaterThan
-    def test_can_convert_when_sensor_greater_than_script_with_formula(self):
+    def test_can_convert_when_loudness_greater_than_script_with_formula(self):
         scratch_script= scratch.Script([30, 355, [["whenSensorGreaterThan", "loudness", ["+", 2, 1]], ["say:", "Hello!"]]])
         catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE)
+        
         assert isinstance(catr_script, catbase.WhenConditionScript)
+        formula = catr_script.formulaMap[catbricks.Brick.BrickField.IF_CONDITION]
+        assert isinstance(formula, catformula.Formula)
+        
+        assert formula.formulaTree.value == str(catformula.Operators.GREATER_THAN)
+        assert formula.formulaTree.leftChild.value == str(catformula.Sensors.LOUDNESS)
+        assert formula.formulaTree.rightChild.value == str(catformula.Operators.PLUS)
+        assert formula.formulaTree.rightChild.leftChild.value == "2"
+        assert formula.formulaTree.rightChild.rightChild.value == "1"
+
+    #whenSensorGreaterThan
+    def test_can_convert_when_timer_greater_than_script_with_formula(self):
+        scratch_script= scratch.Script([30, 355, [["whenSensorGreaterThan", "timer", ["+", 2, 1]], ["say:", "Hello!"]]])
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE)
+        
+        assert isinstance(catr_script, catbase.WhenConditionScript)
+        formula = catr_script.formulaMap[catbricks.Brick.BrickField.IF_CONDITION]
+        assert isinstance(formula, catformula.Formula)
+        
+        assert formula.formulaTree.value == str(catformula.Operators.GREATER_THAN)
+        assert formula.formulaTree.leftChild.value == scratch.S2CC_TIMER_VARIABLE_NAME
+        assert formula.formulaTree.rightChild.value == str(catformula.Operators.PLUS)
+        assert formula.formulaTree.rightChild.leftChild.value == "2"
+        assert formula.formulaTree.rightChild.rightChild.value == "1"
+
+    #whenSensorGreaterThan
+    def test_can_convert_when_video_motion_greater_than_script_with_formula(self):
+        scratch_script= scratch.Script([30, 355, [["whenSensorGreaterThan", "video motion", ["+", 2, 1]], ["say:", "Hello!"]]])
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_script, catbase.StartScript)
 
     ###############################################################################################################
     #

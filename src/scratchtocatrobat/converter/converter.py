@@ -376,6 +376,10 @@ def _create_modified_formula_brick(sensor_type, unconverted_formula):
         formula_left_child.parent = formula_element
         formula_element.setLeftChild(formula_left_child)
 
+    else:
+        #TODO: Implement if ready. Other sensor types (up to now only video motion) not supported.
+        return None
+
     if isinstance(unconverted_formula, int):
         formula_right_child = catformula.FormulaElement(catElementType.NUMBER, None, None)
         formula_right_child.value = str(unconverted_formula)

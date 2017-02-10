@@ -332,39 +332,14 @@ class _ScratchToCatrobat(object):
         catrobat_script = cls.catrobat_script_class_for(scratch_script_name)
         # TODO: register handler!! -> _ScriptBlocksConversionTraverser
         if scratch_script_name == scratch.SCRIPT_SENSOR_GREATER_THAN:
-            formula_element = catformula.FormulaElement(catElementType.OPERATOR, None, None)
-            formula_element.value = str(catformula.Operators.GREATER_THAN)
-            
-            if arguments[0] == 'timer':
-                formula_left_child = catformula.FormulaElement(catElementType.USER_VARIABLE, None, None)
-                formula_left_child.value = scratch.S2CC_TIMER_VARIABLE_NAME
-                formula_left_child.parent = formula_element
-                formula_element.setLeftChild(formula_left_child)
-
-            elif arguments[0] == 'loudness':
-                formula_left_child = catformula.FormulaElement(catElementType.SENSOR, None, None)
-                formula_left_child.value = str(catformula.Sensors.LOUDNESS)
-                formula_left_child.parent = formula_element
-                formula_element.setLeftChild(formula_left_child)
-
-            if isinstance(arguments[1], int):
-                formula_right_child = catformula.FormulaElement(catElementType.NUMBER, None, None)
-                formula_right_child.value = str(arguments[1])
-                formula_right_child.parent = formula_element
-                formula_element.setRightChild(formula_right_child)
-
-            else:
-                #TODO the same thing for formulas
-                log.info("Formulas as arguments not implemented yet")
-
+            formula = _create_modified_formula_brick(arguments[0], arguments[1])
             when_cond_brick = catbricks.WhenConditionBrick()
             when_cond_brick.addAllowedBrickField(catbricks.Brick.BrickField.IF_CONDITION)
-            when_cond_brick.setFormulaWithBrickField(catbricks.Brick.BrickField.IF_CONDITION, catformula.Formula(formula_element))
-            
+            when_cond_brick.setFormulaWithBrickField(catbricks.Brick.BrickField.IF_CONDITION, formula)
             my_script = catbase.WhenConditionScript(when_cond_brick)
             my_script.formulaMap = when_cond_brick.formulaMap
-            
             return my_script
+
         if scratch_script_name != scratch.SCRIPT_PROC_DEF:
             return catrobat_script(*arguments)
 
@@ -377,6 +352,47 @@ class _ScratchToCatrobat(object):
         param_values = arguments[2]
         assert param_labels == context.user_script_declared_labels_map[scratch_function_header]
         return _create_user_brick(context, scratch_function_header, param_values, declare=True)
+
+def _create_modified_formula_brick(sensor_type, unconverted_formula):
+
+    def _create_catrobat_sprite_stub(name=None):
+        sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, "WCTDummy" if name is None else name)
+        looks = sprite.getLookDataList()
+        for lookname in ["look1", "look2", "look3"]:
+            looks.add(catrobat.create_lookdata(lookname, None))
+        return sprite
+
+    formula_element = catformula.FormulaElement(catElementType.OPERATOR, None, None)
+    formula_element.value = str(catformula.Operators.GREATER_THAN)
+    if sensor_type == 'timer':
+        formula_left_child = catformula.FormulaElement(catElementType.USER_VARIABLE, None, None)
+        formula_left_child.value = scratch.S2CC_TIMER_VARIABLE_NAME
+        formula_left_child.parent = formula_element
+        formula_element.setLeftChild(formula_left_child)
+
+    elif sensor_type == 'loudness':
+        formula_left_child = catformula.FormulaElement(catElementType.SENSOR, None, None)
+        formula_left_child.value = str(catformula.Sensors.LOUDNESS)
+        formula_left_child.parent = formula_element
+        formula_element.setLeftChild(formula_left_child)
+
+    if isinstance(unconverted_formula, int):
+        formula_right_child = catformula.FormulaElement(catElementType.NUMBER, None, None)
+        formula_right_child.value = str(unconverted_formula)
+        formula_right_child.parent = formula_element
+        formula_element.setRightChild(formula_right_child)
+
+    else:
+        test_project = catbase.Project(None, "__wct_test_project__")
+        test_scene = catbase.Scene(None, "Scene 1", test_project)
+        test_project.sceneList.add(test_scene)
+        tmp_block_conv = _ScratchObjectConverter(test_project, None)
+        dummy = _create_catrobat_sprite_stub()
+        [catr_brick] = tmp_block_conv._catrobat_bricks_from(unconverted_formula, dummy)
+        assert isinstance(catr_brick, catformula.FormulaElement)
+        formula_element.setRightChild(catr_brick)
+        
+    return catformula.Formula(formula_element)
 
 def _create_user_brick(context, scratch_function_header, param_values, declare=False):
     param_labels = context.user_script_declared_labels_map[scratch_function_header]

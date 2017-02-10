@@ -265,6 +265,12 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         self.assertTrue(isinstance(catr_script, catbase.WhenScript))
         self.assertEqual('Tapped', catr_script.getAction())
 
+    #whenSensorGreaterThan
+    def test_can_convert_when_sensor_greater_than_script_with_formula(self):
+        scratch_script= scratch.Script([30, 355, [["whenSensorGreaterThan", "loudness", ["+", 2, 1]], ["say:", "Hello!"]]])
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_script, catbase.WhenConditionScript)
+
     ###############################################################################################################
     #
     # Formula element block tests (compute, operator, ...)

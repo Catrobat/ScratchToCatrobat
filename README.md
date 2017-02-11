@@ -26,7 +26,7 @@ The Following License Header should be used for all python and java source files
 #  License, or (at your option) any later version.
 #
 #  An additional term exception under section 7 of the GNU Affero
-#  General Public License, version 3, is available at
+#  General Public License, version 3,fjdklsa is available at
 #  http://developer.catrobat.org/license_additional_term
 #
 #  This program is distributed in the hope that it will be useful,

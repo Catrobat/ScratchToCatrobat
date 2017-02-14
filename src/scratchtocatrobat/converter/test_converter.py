@@ -175,7 +175,7 @@ def _dummy_project():
 #
 #     def test_can_convert_script_to_catrobat_script_class(self):
 #         scratch_script = self.project.objects[1].scripts[0]
-#         catr_script = converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE)
+#         catr_script = converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
 #         assert catr_script
 #         expected_script_class = [catbase.StartScript]
 #         expected_brick_classes = [catbricks.WaitBrick, catbricks.NoteBrick, catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.LoopEndBrick]
@@ -237,7 +237,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def test_can_convert_broadcast_script(self):
         broadcast_message = "space"
         scratch_script = scratch.Script([30, 355, [["whenIReceive", broadcast_message], ["changeGraphicEffect:by:", "color", 25]]])
-        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE)
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
         self.assertTrue(isinstance(catr_script, catbase.BroadcastScript))
         self.assertEqual(broadcast_message, catr_script.getBroadcastMessage())
 
@@ -245,7 +245,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def test_can_convert_broadcast_script_by_ignoring_case_sensitive_broadcast_message(self):
         broadcast_message = "hElLo WOrLD" # mixed case letters...
         scratch_script = scratch.Script([30, 355, [["whenIReceive", broadcast_message], ["changeGraphicEffect:by:", "color", 25]]])
-        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE)
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
         self.assertTrue(isinstance(catr_script, catbase.BroadcastScript))
         self.assertNotEqual(catr_script.getBroadcastMessage(), broadcast_message)
         self.assertEqual(catr_script.getBroadcastMessage(), broadcast_message.lower())
@@ -253,7 +253,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     # whenKeyPressed
     def test_can_convert_keypressed_script(self):
         scratch_script = scratch.Script([30, 355, [["whenKeyPressed", "space"], ["changeGraphicEffect:by:", "color", 25]]])
-        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE)
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
         # KeyPressed-scripts are represented with broadcast-scripts with a special key-message
         self.assertTrue(isinstance(catr_script, catbase.BroadcastScript))
         self.assertEqual(converter._key_to_broadcast_message("space"), catr_script.getBroadcastMessage())
@@ -261,17 +261,17 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     # whenClicked
     def test_can_convert_whenclicked_script(self):
         scratch_script = scratch.Script([30, 355, [["whenClicked"], ["changeGraphicEffect:by:", "color", 25]]])
-        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE)
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
         self.assertTrue(isinstance(catr_script, catbase.WhenScript))
         self.assertEqual('Tapped', catr_script.getAction())
 
     #whenSensorGreaterThan
     def test_can_convert_when_loudness_greater_than_script_with_formula(self):
         scratch_script= scratch.Script([30, 355, [["whenSensorGreaterThan", "loudness", ["+", 2, 1]], ["say:", "Hello!"]]])
-        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE)
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
         
         assert isinstance(catr_script, catbase.WhenConditionScript)
-        formula = catr_script.formulaMap[catbricks.Brick.BrickField.IF_CONDITION]
+        formula = catr_script.formulaMap[catbricks.Brick.BrickField.IF_CONDITION] #@UndefinedVariable
         assert isinstance(formula, catformula.Formula)
         
         assert formula.formulaTree.value == str(catformula.Operators.GREATER_THAN)
@@ -283,10 +283,10 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     #whenSensorGreaterThan
     def test_can_convert_when_timer_greater_than_script_with_formula(self):
         scratch_script= scratch.Script([30, 355, [["whenSensorGreaterThan", "timer", ["+", 2, 1]], ["say:", "Hello!"]]])
-        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE)
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
         
         assert isinstance(catr_script, catbase.WhenConditionScript)
-        formula = catr_script.formulaMap[catbricks.Brick.BrickField.IF_CONDITION]
+        formula = catr_script.formulaMap[catbricks.Brick.BrickField.IF_CONDITION] #@UndefinedVariable
         assert isinstance(formula, catformula.Formula)
         
         assert formula.formulaTree.value == str(catformula.Operators.GREATER_THAN)
@@ -298,7 +298,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     #whenSensorGreaterThan
     def test_can_convert_when_video_motion_greater_than_script_with_formula(self):
         scratch_script= scratch.Script([30, 355, [["whenSensorGreaterThan", "video motion", ["+", 2, 1]], ["say:", "Hello!"]]])
-        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE)
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
         assert isinstance(catr_script, catbase.StartScript)
 
     ###############################################################################################################
@@ -1543,7 +1543,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         scene.addSprite(self.sprite_stub)
         project.sceneList.add(scene)
         converter._catr_project = project
-        catr_script = self.block_converter._catrobat_script_from(script, self.sprite_stub)
+        catr_script = self.block_converter._catrobat_script_from(script, self.sprite_stub, self.test_project)
         converter._catr_project = None
         stub_scripts = self.sprite_stub.scriptList
         assert stub_scripts.size() == 1
@@ -1810,7 +1810,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def test_can_convert_when_cloned_block(self):
         scratch_block = ["say:", "Hello!"]
         script = scratch.Script([30, 355, [['whenCloned'], scratch_block]])
-        catr_script = self.block_converter._catrobat_script_from(script, self.sprite_stub)
+        catr_script = self.block_converter._catrobat_script_from(script, self.sprite_stub, self.test_project)
         assert isinstance(catr_script, catbase.WhenClonedScript)
         assert isinstance(catr_script.getBrickList().get(0), catbricks.SayBubbleBrick)
 

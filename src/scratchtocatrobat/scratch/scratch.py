@@ -383,7 +383,7 @@ class Project(RawProject):
     Represents a complete Scratch project including all resource files.
     """
 
-    def __init__(self, project_base_path, name=None, id_=None, progress_bar=None):
+    def __init__(self, project_base_path, name=None, project_id=None, progress_bar=None):
         def read_md5_to_resource_path_mapping():
             md5_to_resource_path_map = {}
             # TODO: clarify that only files with extension are covered
@@ -401,11 +401,7 @@ class Project(RawProject):
 
         super(Project, self).__init__(self.raw_project_code_from_project_folder_path(project_base_path))
         self.project_base_path = project_base_path
-
-        if id_ != None:
-            self.project_id = id_
-        else:
-            self.project_id = self.get_info().get("projectID")
+        self.project_id = self.get_info().get("projectID") if project_id is None else project_id
 
         if not self.project_id:
             self.project_id = "0"
@@ -495,7 +491,8 @@ class Script(object):
 
     @classmethod
     def is_valid_script_input(cls, json_input):
-        if (isinstance(json_input, list) and len(json_input) == 3 and all(isinstance(positional_value, (int, float)) for positional_value in json_input[0:2]) and isinstance(json_input[2], list)):
+        are_all_positional_values_numbers = all(isinstance(positional_value, (int, float)) for positional_value in json_input[0:2])
+        if (isinstance(json_input, list) and len(json_input) == 3 and are_all_positional_values_numbers and isinstance(json_input[2], list)):
             # NOTE: could use a json validator instead
             script_content = json_input[2]
             if script_content[0][0] in SCRIPTS:
@@ -583,10 +580,12 @@ class ScriptElement(object):
     def __iter__(self):
         return iter(self.children)
 
-    def prettyprint(self, indent="", file_=sys.stdout):
-        print("{} {}".format(indent, self.name), file=file_)
+    def prettyprint(self, verbose=False, indent="", file_=sys.stdout):
+        label = "<{}>\n{} {}\n".format(self.__class__.__name__.upper(), indent, self.name) if verbose else self.name
+        label = self.name + ("\n" if verbose else "") if isinstance(self, BlockList) else label
+        print("{} {}".format(indent, label), file=file_)
         for child in self:
-            child.prettyprint(indent + "    ", file_=file_)
+            child.prettyprint(verbose, (indent + "    "), file_=file_)
 
     def __repr__(self):
         return "%s(%r)" % (self.__class__, self.__dict__)

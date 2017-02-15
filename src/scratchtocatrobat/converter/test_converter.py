@@ -282,13 +282,19 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     #whenSensorGreaterThan
     def test_can_convert_when_timer_greater_than_script_with_formula(self):
-        scratch_script= scratch.Script([30, 355, [["whenSensorGreaterThan", "timer", ["+", 2, 1]], ["say:", "Hello!"]]])
-        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
-        
+        raw_json = {u'objName': u'Sprite1', \
+                    u'scripts': [[30, 355, [[u'whenSensorGreaterThan', u'timer', [u'+', 2, 1]], \
+                                            [u'say:', u'Hello!']]]]}
+        sprite_obj = scratch.Object(raw_json)
+        workaround_info = sprite_obj.preprocess_object([sprite_obj.name])
+        assert workaround_info['add_timer_script_key'] == True
+
+        catr_script = self.block_converter._catrobat_script_from(sprite_obj.scripts[0], DUMMY_CATR_SPRITE, self.test_project)
+
         assert isinstance(catr_script, catbase.WhenConditionScript)
         formula = catr_script.formulaMap[catbricks.Brick.BrickField.IF_CONDITION] #@UndefinedVariable
         assert isinstance(formula, catformula.Formula)
-        
+
         assert formula.formulaTree.value == str(catformula.Operators.GREATER_THAN)
         assert formula.formulaTree.leftChild.value == scratch.S2CC_TIMER_VARIABLE_NAME
         assert formula.formulaTree.rightChild.value == str(catformula.Operators.PLUS)

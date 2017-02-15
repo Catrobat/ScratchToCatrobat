@@ -139,11 +139,11 @@ class Object(common.DictAccessWrapper):
 
         for script in self.scripts:
             if has_timer_reset_block(script.blocks): workaround_info[ADD_TIMER_RESET_SCRIPT_KEY] = True
-            if has_timer_block(script.blocks): workaround_info[ADD_TIMER_SCRIPT_KEY] = True
+            if has_timer_block(script.blocks) or 'timer' in script.arguments: workaround_info[ADD_TIMER_SCRIPT_KEY] = True
 
             script.blocks = replace_timer_blocks(script.blocks)
 
-            # parse again ScriptElement tree
+            # rebuild ScriptElement tree
             script.script_element = ScriptElement.from_raw_block(script.blocks)
 
         ############################################################################################

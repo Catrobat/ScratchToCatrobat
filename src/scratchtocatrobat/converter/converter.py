@@ -189,7 +189,8 @@ class _ScratchToCatrobat(object):
         scratch.SCRIPT_SCENE_STARTS: lambda look_name: catbase.BroadcastScript(_background_look_to_broadcast_message(look_name)),
         scratch.SCRIPT_CLICKED: catbase.WhenScript,
         scratch.SCRIPT_CLONED: catbase.WhenClonedScript,
-        scratch.SCRIPT_PROC_DEF: catbricks.UserBrick
+        scratch.SCRIPT_PROC_DEF: catbricks.UserBrick,
+        scratch.SCRIPT_SENSOR_GREATER_THAN: None
     }
 
     complete_mapping = dict({
@@ -339,11 +340,20 @@ class _ScratchToCatrobat(object):
         return catrobat_brick
 
     @classmethod
-    def create_script(cls, scratch_script_name, arguments, context=None):
+    def create_script(cls, scratch_script_name, arguments, catrobat_project, sprite, context=None):
         if scratch_script_name not in scratch.SCRIPTS:
             assert False, "Missing script mapping for: " + scratch_script_name
         catrobat_script = cls.catrobat_script_class_for(scratch_script_name)
         # TODO: register handler!! -> _ScriptBlocksConversionTraverser
+        if scratch_script_name == scratch.SCRIPT_SENSOR_GREATER_THAN:
+            formula = _create_modified_formula_brick(arguments[0], arguments[1], catrobat_project, sprite)
+            when_cond_brick = catbricks.WhenConditionBrick()
+            when_cond_brick.addAllowedBrickField(catbricks.Brick.BrickField.IF_CONDITION) #@UndefinedVariable
+            when_cond_brick.setFormulaWithBrickField(catbricks.Brick.BrickField.IF_CONDITION, formula) #@UndefinedVariable
+            my_script = catbase.WhenConditionScript(when_cond_brick)
+            my_script.formulaMap = when_cond_brick.formulaMap
+            return my_script
+
         if scratch_script_name != scratch.SCRIPT_PROC_DEF:
             return catrobat_script(*arguments)
 
@@ -356,6 +366,46 @@ class _ScratchToCatrobat(object):
         param_values = arguments[2]
         assert param_labels == context.user_script_declared_labels_map[scratch_function_header]
         return _create_user_brick(context, scratch_function_header, param_values, declare=True)
+
+def _create_modified_formula_brick(sensor_type, unconverted_formula, catrobat_project, sprite):
+
+    def _create_catrobat_sprite_stub(name=None):
+        sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, "WCTDummy" if name is None else name)
+        looks = sprite.getLookDataList()
+        for lookname in ["look1", "look2", "look3"]:
+            looks.add(catrobat.create_lookdata(lookname, None))
+        return sprite
+
+    formula_left_child = None
+    formula_right_child = None
+
+    if sensor_type == 'timer':
+        formula_left_child = catformula.FormulaElement(catElementType.USER_VARIABLE, None, None)
+        formula_left_child.value = scratch.S2CC_TIMER_VARIABLE_NAME
+
+    elif sensor_type == 'loudness':
+        formula_left_child = catformula.FormulaElement(catElementType.SENSOR, None, None)
+        formula_left_child.value = str(catformula.Sensors.LOUDNESS)
+
+    else:
+        #TODO: Implement if ready. Other sensor types (up to now only video motion) not supported.
+        raise common.ScratchtobatError("Unsupported sensor type '{}'".format(sensor_type))
+
+    if isinstance(unconverted_formula, int):
+        formula_right_child = catformula.FormulaElement(catElementType.NUMBER, None, None)
+        formula_right_child.value = str(unconverted_formula)
+
+    else:
+        test_project = catbase.Project(None, "__wct_test_project__")
+        test_scene = catbase.Scene(None, "Scene 1", test_project)
+        test_project.sceneList.add(test_scene)
+        tmp_block_conv = _ScratchObjectConverter(test_project, None)
+        dummy = _create_catrobat_sprite_stub()
+        [formula_right_child] = tmp_block_conv._catrobat_bricks_from(unconverted_formula, dummy)
+        assert isinstance(formula_right_child, catformula.FormulaElement)
+
+    traverser = _BlocksConversionTraverser(sprite, catrobat_project)
+    return catformula.Formula(traverser._converted_helper_brick_or_formula_element([formula_left_child, formula_right_child], ">"))
 
 def _create_user_brick(context, scratch_function_header, param_values, declare=False):
     param_labels = context.user_script_declared_labels_map[scratch_function_header]
@@ -505,7 +555,7 @@ class Context(object):
         return self._sprite_contexts
 
 class SpriteContext(object):
-    def __init__(self, name, user_script_declared_labels_map):
+    def __init__(self, name=None, user_script_declared_labels_map={}):
         self.name = name
         self.created_shared_global_answer_user_variable = False
         self.user_script_definition_brick_map = {}
@@ -515,8 +565,8 @@ class SpriteContext(object):
         self.context = None
 
 class ScriptContext(object):
-    def __init__(self, sprite_context):
-        self.sprite_context = sprite_context
+    def __init__(self, sprite_context=None):
+        self.sprite_context = sprite_context if sprite_context is not None else SpriteContext()
 
 def converted(scratch_project, progress_bar=None, context=None):
     return Converter.converted_project_for(scratch_project, progress_bar, context)
@@ -738,7 +788,8 @@ class _ScratchObjectConverter(object):
             assert user_variable is not None
 
         for scratch_script in scratch_object.scripts:
-            cat_instance = self._catrobat_script_from(scratch_script, sprite, sprite_context)
+            cat_instance = self._catrobat_script_from(scratch_script, sprite, self.__class__._catrobat_project,
+                                                      sprite_context)
             if not isinstance(cat_instance, catbricks.UserBrick):
                 assert isinstance(cat_instance, catbase.Script)
                 sprite.addScript(cat_instance)
@@ -898,7 +949,7 @@ class _ScratchObjectConverter(object):
         #       (also for "answer", i.e. _SHARED_GLOBAL_ANSWER_VARIABLE_NAME!!)
 
     @classmethod
-    def _catrobat_script_from(cls, scratch_script, sprite, context=None):
+    def _catrobat_script_from(cls, scratch_script, sprite, catrobat_project, context=None):
         if not isinstance(scratch_script, scratch.Script):
             raise common.ScratchtobatError("Arg1 must be of type={}, but is={}".format(scratch.Script, type(scratch_script)))
         if sprite and not isinstance(sprite, catbase.Sprite):
@@ -907,7 +958,7 @@ class _ScratchObjectConverter(object):
         log.info("  script type: %s, args: %s", scratch_script.type, scratch_script.arguments)
         try:
             cat_instance = _ScratchToCatrobat.create_script(scratch_script.type, scratch_script.arguments,
-                                                            context)
+                                                            catrobat_project, sprite, context)
         except:
             log.exception("Unable to convert script! -> Replacing with StartScript")
             cat_instance = catbase.StartScript()
@@ -1077,7 +1128,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     def __init__(self, catrobat_sprite, catrobat_project, script_context=None):
         assert catrobat_sprite is not None
         assert catrobat_project is not None
-        self.script_context = script_context if script_context is not None else ScriptContext(None)
+        self.script_context = script_context if script_context is not None else ScriptContext()
         self.script_element = None
         self.sprite = catrobat_sprite
         self.project = catrobat_project

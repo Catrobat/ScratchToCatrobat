@@ -50,7 +50,6 @@ from java.awt import Color
 import catrobat
 import mediaconverter
 
-
 _DEFAULT_FORMULA_ELEMENT = catformula.FormulaElement(catElementType.NUMBER, str(00001), None)  # @UndefinedVariable (valueOf)
 
 _GENERATED_VARIABLE_PREFIX = helpers.application_info("short_name") + ":"
@@ -61,9 +60,12 @@ _SUPPORTED_IMAGE_EXTENSIONS_BY_CATROBAT = {".gif", ".jpg", ".jpeg", ".png"}
 _SUPPORTED_SOUND_EXTENSIONS_BY_CATROBAT = {".mp3", ".wav"}
 
 CATROBAT_DEFAULT_SCENE_NAME = "Scene 1"
-UNSUPPORTED_SCRATCH_BRICK_NOTE_MESSAGE_PREFIX = "Missing brick for Scratch identifier: "
+UNSUPPORTED_SCRATCH_BLOCK_NOTE_MESSAGE_PREFIX_TEMPLATE = "Missing brick for Scratch identifier: [{}]"
+UNSUPPORTED_SCRATCH_FORMULA_BLOCK_NOTE_MESSAGE_PREFIX = "Missing formula element in brick: [{}] for Scratch identifier: [{}]"
+XML_CHARACTERS_TO_BE_REPLACED_MAPPING = { '"': '', '\'': '', '<': 'lessThan', '>': 'greaterThan', '&': 'AND' }
 
 log = logger.log
+
 
 class ConversionError(common.ScratchtobatError):
     pass
@@ -77,15 +79,27 @@ class UnmappedBlock(object):
     def __str__(self):
         return catrobat.simple_name_for(self.block_and_args)
 
-    def to_placeholder_brick(self):
-        return [_placeholder_for_unmapped_bricks_to(*self.block_and_args)]
+    def to_placeholder_brick(self, held_by_block_name=None):
+        return [_placeholder_for_unmapped_blocks_to(*self.block_and_args)] if held_by_block_name is None \
+               else [_placeholder_for_unmapped_formula_blocks_to(held_by_block_name, *self.block_and_args)]
+
+def _escape_arguments(arguments):
+    for k, v in XML_CHARACTERS_TO_BE_REPLACED_MAPPING.iteritems():
+        arguments = map(lambda arg: arg.replace(k, v) if isinstance(arg, basestring) else arg, arguments)
+    return arguments
 
 def _with_unmapped_blocks_replaced_as_default_formula_value(arguments):
-    return [_DEFAULT_FORMULA_ELEMENT if isinstance(argument, UnmappedBlock) else argument for argument in arguments]
+    return [_DEFAULT_FORMULA_ELEMENT if isinstance(argument, UnmappedBlock) else argument for argument in _escape_arguments(arguments)]
 
-def _placeholder_for_unmapped_bricks_to(*args):
-    arguments = ", ".join(map(catrobat.simple_name_for, args))
-    return catbricks.NoteBrick(UNSUPPORTED_SCRATCH_BRICK_NOTE_MESSAGE_PREFIX + arguments)
+def _arguments_string(args):
+    return ", ".join(map(catrobat.simple_name_for, _escape_arguments(args)))
+
+def _placeholder_for_unmapped_formula_blocks_to(held_by_block_name, *args):
+    escaped_held_by_block_name = _escape_arguments([held_by_block_name])[0]
+    return catbricks.NoteBrick(UNSUPPORTED_SCRATCH_FORMULA_BLOCK_NOTE_MESSAGE_PREFIX.format(escaped_held_by_block_name, _arguments_string(args)))
+
+def _placeholder_for_unmapped_blocks_to(*args):
+    return catbricks.NoteBrick(UNSUPPORTED_SCRATCH_BLOCK_NOTE_MESSAGE_PREFIX_TEMPLATE.format(_arguments_string(args)))
 
 def _key_to_broadcast_message(key_name):
     return "key " + key_name + " pressed"
@@ -243,7 +257,7 @@ class _ScratchToCatrobat(object):
         "setGraphicEffect:to:": lambda effect_type, value:
             catbricks.SetBrightnessBrick(value) if effect_type == 'brightness' else
             catbricks.SetTransparencyBrick(value) if effect_type == 'ghost' else
-            _placeholder_for_unmapped_bricks_to("setGraphicEffect:to:", effect_type, value),
+            _placeholder_for_unmapped_blocks_to("setGraphicEffect:to:", effect_type, value),
         "filterReset": catbricks.ClearGraphicEffectBrick,
         "changeSizeBy:": catbricks.ChangeSizeByNBrick,
         "setSizeTo:": catbricks.SetSizeToBrick,
@@ -948,7 +962,7 @@ class _ScratchObjectConverter(object):
         except:
             log.exception("Unable to convert script! -> Replacing with StartScript")
             cat_instance = catbase.StartScript()
-            cat_instance.addBrick(_placeholder_for_unmapped_bricks_to("UNSUPPORTED SCRIPT", scratch_script.type))
+            cat_instance.addBrick(_placeholder_for_unmapped_blocks_to("UNSUPPORTED SCRIPT", scratch_script.type))
 
         script_context = ScriptContext(context)
         converted_bricks = cls._catrobat_bricks_from(scratch_script.script_element, sprite, script_context)
@@ -1151,6 +1165,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         del self._stack[-1]
         if not isinstance(new_stack_values, list):
             new_stack_values = [new_stack_values]
+
         # TODO: simplify this...
         if len(self._child_stack) > 0 and len(new_stack_values) == len([val for val in new_stack_values if isinstance(val, catbricks.Brick)]):
             for brick_list in reversed(self._child_stack):
@@ -1178,6 +1193,11 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         if isinstance(self.script_element, scratch.Block):
             log.debug("    block to convert: %s, arguments: %s",
                       block_name, catrobat.simple_name_for(self.arguments))
+
+            unmapped_block_arguments = filter(lambda arg: isinstance(arg, UnmappedBlock), self.arguments)
+            unsupported_blocks = map(lambda unmapped_block: unmapped_block.to_placeholder_brick(self.block_name)[0], unmapped_block_arguments)
+            self.arguments = map(lambda arg: catrobat.create_formula_element_with_value(0) if isinstance(arg, UnmappedBlock) else arg, self.arguments)
+
             self.CatrobatClass = _ScratchToCatrobat.catrobat_brick_class_for(block_name)
             handler_method_name = self._block_name_to_handler_map.get(block_name)
             try:
@@ -1185,18 +1205,20 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
                     converted_element = getattr(self, handler_method_name)()
                 else:
                     converted_element = self._regular_block_conversion()
+                converted_element = converted_element if isinstance(converted_element, list) else [converted_element]
+                converted_element = unsupported_blocks + converted_element
             except Exception as e:
                 log.warn("  " + ">" * 78)
                 log.warn("  Replacing {0} with NoteBrick".format(block_name))
                 log.warn("  Exception: {0}, ".format(e.message), exc_info=1)
-                converted_element = _placeholder_for_unmapped_bricks_to(block_name)
+                converted_element = _placeholder_for_unmapped_blocks_to(block_name)
         elif isinstance(self.script_element, scratch.BlockValue):
             converted_element = [script_element.name]
         else:
             assert isinstance(self.script_element, scratch.BlockList)
             # TODO: readability
             converted_element = [[arg2 for arg1 in self.arguments \
-                                            for arg2 in (arg1.to_placeholder_brick() \
+                                            for arg2 in (arg1.to_placeholder_brick(self.block_name) \
                                                 if isinstance(arg1, UnmappedBlock) else [arg1])]]
         return converted_element
 
@@ -1573,7 +1595,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             # range Catrobat:     0 to 200% (default:   0%)
             return catbricks.SetColorBrick(catrobat.create_formula_with_value(value))
         else:
-            return _placeholder_for_unmapped_bricks_to("setGraphicEffect:to:", effect_type, value)
+            return _placeholder_for_unmapped_blocks_to("setGraphicEffect:to:", effect_type, value)
 
     @_register_handler(_block_name_to_handler_map, "changeGraphicEffect:by:")
     def _convert_change_graphic_effect_block(self):
@@ -1592,7 +1614,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             # range Catrobat:     0 to 200% (default:   0%)
             return catbricks.ChangeColorByNBrick(catrobat.create_formula_with_value(value))
         else:
-            return _placeholder_for_unmapped_bricks_to("changeGraphicEffect:by:", effect_type, value)
+            return _placeholder_for_unmapped_blocks_to("changeGraphicEffect:by:", effect_type, value)
 
     @_register_handler(_block_name_to_handler_map, "changeVar:by:", "setVar:to:")
     def _convert_variable_block(self):

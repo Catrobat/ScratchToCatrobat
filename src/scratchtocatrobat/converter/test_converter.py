@@ -2234,7 +2234,7 @@ class TestConvertProjects(common_testing.ProjectTestCase):
             scratch_project_dir = common_testing.get_test_project_path(project_name)
 
         scratch_project = scratch.Project(scratch_project_dir, name=project_name,
-                                          id_=common_testing.PROJECT_DUMMY_ID)
+                                          project_id=common_testing.PROJECT_DUMMY_ID)
 
         context = converter.Context()
         converted_project = converter.converted(scratch_project, None, context)

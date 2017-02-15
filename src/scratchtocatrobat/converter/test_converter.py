@@ -282,14 +282,30 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     #whenSensorGreaterThan
     def test_can_convert_when_timer_greater_than_script_with_formula(self):
-        raw_json = {u'objName': u'Sprite1', \
-                    u'scripts': [[30, 355, [[u'whenSensorGreaterThan', u'timer', [u'+', 2, 1]], \
-                                            [u'say:', u'Hello!']]]]}
-        sprite_obj = scratch.Object(raw_json)
-        workaround_info = sprite_obj.preprocess_object([sprite_obj.name])
-        assert workaround_info['add_timer_script_key'] == True
+        raw_json = {
+            "objName": "Stage",
+            "currentCostumeIndex": 0,
+            "penLayerMD5": "5c81a336fab8be57adc039a8a2b33ca9.png",
+            "penLayerID": 0,
+            "tempoBPM": 60,
+            "children": [{
+                    "objName": "Sprite1",
+                    "scripts": [[72, 132, [["whenSensorGreaterThan", "timer", ["+", 2, 1]], ["say:", "Hello!"]]]],
+                    "currentCostumeIndex": 0,
+                    "indexInLibrary": 1,
+                    "spriteInfo": {}}],
+                "info": {}
+        }
 
-        catr_script = self.block_converter._catrobat_script_from(sprite_obj.scripts[0], DUMMY_CATR_SPRITE, self.test_project)
+        raw_project = scratch.RawProject(raw_json)
+        workaround_info = raw_project.objects[1].preprocess_object([raw_project.objects[0].name, raw_project.objects[1].name])
+        assert workaround_info['add_timer_script_key'] == True
+        timer_background_workaround = [['whenGreenFlag'], ['doForever', \
+                                                           [['changeVar:by:', 'S2CC_timer', 0.1], \
+                                                           ['wait:elapsed:from:', 0.1]]]]
+        assert raw_project.objects[0].scripts[0].raw_script == timer_background_workaround
+
+        catr_script = self.block_converter._catrobat_script_from(raw_project.objects[1].scripts[0], DUMMY_CATR_SPRITE, self.test_project)
 
         assert isinstance(catr_script, catbase.WhenConditionScript)
         formula = catr_script.formulaMap[catbricks.Brick.BrickField.IF_CONDITION] #@UndefinedVariable

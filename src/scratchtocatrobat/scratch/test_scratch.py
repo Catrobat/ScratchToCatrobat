@@ -108,7 +108,7 @@ class ProjectExtractionTest(common_testing.BaseTestCase):
 
 class TestProjectInit(unittest.TestCase):
     def test_can_construct_on_correct_input(self):
-        assert scratch.Project(common_testing.get_test_project_path("simple"), name="dummy", id_=common_testing.PROJECT_DUMMY_ID)
+        assert scratch.Project(common_testing.get_test_project_path("simple"), name="dummy", project_id=common_testing.PROJECT_DUMMY_ID)
 
     def test_fail_on_non_existing_input_path(self):
         with self.assertRaises(EnvironmentError):
@@ -152,7 +152,7 @@ class TestProjectFunc(unittest.TestCase):
         assert project.listened_keys == set(["d", "c", "a", "4", "8"])
 
     def test_can_access_unused_resources_of_project(self):
-        project = scratch.Project(common_testing.get_test_project_path("simple"), name="simple", id_=common_testing.PROJECT_DUMMY_ID)
+        project = scratch.Project(common_testing.get_test_project_path("simple"), name="simple", project_id=common_testing.PROJECT_DUMMY_ID)
         assert len(project.unused_resource_paths) > 0
         expected_resources = ['0.png', '2.wav', '3.png', '4.png', '5.png', '6.png', '8.png']
         assert set(map(os.path.basename, project.unused_resource_paths)) == set(expected_resources)

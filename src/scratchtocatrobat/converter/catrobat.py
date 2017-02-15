@@ -39,6 +39,7 @@ PROGRAM_SOURCE_FILE_NAME = catcommon.Constants.PROJECTCODE_NAME
 
 _log = common.log
 
+
 def simple_name_for(brick):
     if isinstance(brick, (list, tuple)):
         return map(simple_name_for, brick)

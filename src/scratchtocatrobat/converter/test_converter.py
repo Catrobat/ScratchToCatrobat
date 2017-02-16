@@ -33,6 +33,7 @@ from scratchtocatrobat.tools import common
 from scratchtocatrobat.tools import common_testing
 from scratchtocatrobat.scratch import scratch
 from scratchtocatrobat.converter import converter
+from scratchtocatrobat.converter.converter import ScriptContext
 
 
 def create_catrobat_sprite_stub(name=None):
@@ -174,7 +175,7 @@ def _dummy_project():
 #
 #     def test_can_convert_script_to_catrobat_script_class(self):
 #         scratch_script = self.project.objects[1].scripts[0]
-#         catr_script = converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE)
+#         catr_script = converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
 #         assert catr_script
 #         expected_script_class = [catbase.StartScript]
 #         expected_brick_classes = [catbricks.WaitBrick, catbricks.NoteBrick, catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.LoopEndBrick]
@@ -236,7 +237,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def test_can_convert_broadcast_script(self):
         broadcast_message = "space"
         scratch_script = scratch.Script([30, 355, [["whenIReceive", broadcast_message], ["changeGraphicEffect:by:", "color", 25]]])
-        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE)
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
         self.assertTrue(isinstance(catr_script, catbase.BroadcastScript))
         self.assertEqual(broadcast_message, catr_script.getBroadcastMessage())
 
@@ -244,7 +245,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def test_can_convert_broadcast_script_by_ignoring_case_sensitive_broadcast_message(self):
         broadcast_message = "hElLo WOrLD" # mixed case letters...
         scratch_script = scratch.Script([30, 355, [["whenIReceive", broadcast_message], ["changeGraphicEffect:by:", "color", 25]]])
-        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE)
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
         self.assertTrue(isinstance(catr_script, catbase.BroadcastScript))
         self.assertNotEqual(catr_script.getBroadcastMessage(), broadcast_message)
         self.assertEqual(catr_script.getBroadcastMessage(), broadcast_message.lower())
@@ -252,7 +253,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     # whenKeyPressed
     def test_can_convert_keypressed_script(self):
         scratch_script = scratch.Script([30, 355, [["whenKeyPressed", "space"], ["changeGraphicEffect:by:", "color", 25]]])
-        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE)
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
         # KeyPressed-scripts are represented with broadcast-scripts with a special key-message
         self.assertTrue(isinstance(catr_script, catbase.BroadcastScript))
         self.assertEqual(converter._key_to_broadcast_message("space"), catr_script.getBroadcastMessage())
@@ -260,9 +261,67 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     # whenClicked
     def test_can_convert_whenclicked_script(self):
         scratch_script = scratch.Script([30, 355, [["whenClicked"], ["changeGraphicEffect:by:", "color", 25]]])
-        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE)
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
         self.assertTrue(isinstance(catr_script, catbase.WhenScript))
         self.assertEqual('Tapped', catr_script.getAction())
+
+    #whenSensorGreaterThan
+    def test_can_convert_when_loudness_greater_than_script_with_formula(self):
+        scratch_script= scratch.Script([30, 355, [["whenSensorGreaterThan", "loudness", ["+", 2, 1]], ["say:", "Hello!"]]])
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
+        
+        assert isinstance(catr_script, catbase.WhenConditionScript)
+        formula = catr_script.formulaMap[catbricks.Brick.BrickField.IF_CONDITION] #@UndefinedVariable
+        assert isinstance(formula, catformula.Formula)
+        
+        assert formula.formulaTree.value == str(catformula.Operators.GREATER_THAN)
+        assert formula.formulaTree.leftChild.value == str(catformula.Sensors.LOUDNESS)
+        assert formula.formulaTree.rightChild.value == str(catformula.Operators.PLUS)
+        assert formula.formulaTree.rightChild.leftChild.value == "2"
+        assert formula.formulaTree.rightChild.rightChild.value == "1"
+
+    #whenSensorGreaterThan
+    def test_can_convert_when_timer_greater_than_script_with_formula(self):
+        raw_json = {
+            "objName": "Stage",
+            "currentCostumeIndex": 0,
+            "penLayerMD5": "5c81a336fab8be57adc039a8a2b33ca9.png",
+            "penLayerID": 0,
+            "tempoBPM": 60,
+            "children": [{
+                    "objName": "Sprite1",
+                    "scripts": [[72, 132, [["whenSensorGreaterThan", "timer", ["+", 2, 1]], ["say:", "Hello!"]]]],
+                    "currentCostumeIndex": 0,
+                    "indexInLibrary": 1,
+                    "spriteInfo": {}}],
+                "info": {}
+        }
+
+        raw_project = scratch.RawProject(raw_json)
+        workaround_info = raw_project.objects[1].preprocess_object([raw_project.objects[0].name, raw_project.objects[1].name])
+        assert workaround_info['add_timer_script_key'] == True
+        timer_background_workaround = [['whenGreenFlag'], ['doForever', \
+                                                           [['changeVar:by:', 'S2CC_timer', 0.1], \
+                                                           ['wait:elapsed:from:', 0.1]]]]
+        assert raw_project.objects[0].scripts[0].raw_script == timer_background_workaround
+
+        catr_script = self.block_converter._catrobat_script_from(raw_project.objects[1].scripts[0], DUMMY_CATR_SPRITE, self.test_project)
+
+        assert isinstance(catr_script, catbase.WhenConditionScript)
+        formula = catr_script.formulaMap[catbricks.Brick.BrickField.IF_CONDITION] #@UndefinedVariable
+        assert isinstance(formula, catformula.Formula)
+
+        assert formula.formulaTree.value == str(catformula.Operators.GREATER_THAN)
+        assert formula.formulaTree.leftChild.value == scratch.S2CC_TIMER_VARIABLE_NAME
+        assert formula.formulaTree.rightChild.value == str(catformula.Operators.PLUS)
+        assert formula.formulaTree.rightChild.leftChild.value == "2"
+        assert formula.formulaTree.rightChild.rightChild.value == "1"
+
+    #whenSensorGreaterThan
+    def test_can_convert_when_video_motion_greater_than_script_with_formula(self):
+        scratch_script= scratch.Script([30, 355, [["whenSensorGreaterThan", "video motion", ["+", 2, 1]], ["say:", "Hello!"]]])
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
+        assert isinstance(catr_script, catbase.StartScript)
 
     ###############################################################################################################
     #
@@ -1506,7 +1565,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         scene.addSprite(self.sprite_stub)
         project.sceneList.add(scene)
         converter._catr_project = project
-        catr_script = self.block_converter._catrobat_script_from(script, self.sprite_stub)
+        catr_script = self.block_converter._catrobat_script_from(script, self.sprite_stub, self.test_project)
         converter._catr_project = None
         stub_scripts = self.sprite_stub.scriptList
         assert stub_scripts.size() == 1
@@ -1637,7 +1696,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     # doAsk (with question as string)
     def test_can_convert_do_ask_with_question_as_string_block(self):
-        sprite_context = converter.SpriteContext(DUMMY_CATR_SPRITE.getName())
+        sprite_context = converter.SpriteContext(DUMMY_CATR_SPRITE.getName(), {})
         script_context = converter.ScriptContext(sprite_context)
         scratch_block = _, expected_question_string = ["doAsk", "What's your name?"]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE,
@@ -1665,9 +1724,9 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def test_can_convert_do_ask_with_question_as_formula_block(self):
         expected_left_operand = 1
         expected_right_operand = 2
-        sprite_context = converter.SpriteContext(DUMMY_CATR_SPRITE.getName())
+        sprite_context = converter.SpriteContext(DUMMY_CATR_SPRITE.getName(), {})
         script_context = converter.ScriptContext(sprite_context)
-        scratch_block = _, expected_question_string = ["doAsk", ["+", expected_left_operand, expected_right_operand]]
+        scratch_block = ["doAsk", ["+", expected_left_operand, expected_right_operand]]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE,
                                                                   script_context)
         assert sprite_context.created_shared_global_answer_user_variable is True
@@ -1703,7 +1762,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     # answer
     def test_can_convert_answer_block(self):
-        sprite_context = converter.SpriteContext(DUMMY_CATR_SPRITE.getName())
+        sprite_context = converter.SpriteContext(DUMMY_CATR_SPRITE.getName(), {})
         script_context = converter.ScriptContext(sprite_context)
         [formula_element] = self.block_converter._catrobat_bricks_from(["answer"], DUMMY_CATR_SPRITE,
                                                                        script_context)
@@ -1722,12 +1781,13 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME == user_variable.getName()
 
     # createCloneOf
-    def test_can_convert_create_clone_of_block(self):
+    def test_can_convert_create_clone_of_block_myself(self):
         sprite_name = '_myself_'
         scratch_block = ["createCloneOf", sprite_name]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        assert sprite_name == catr_brick.objectToClone.name
         assert isinstance(catr_brick, catbricks.CloneBrick)
+        assert DUMMY_CATR_SPRITE.getName() == catr_brick.objectToClone.getName()
+        assert DUMMY_CATR_SPRITE is catr_brick.objectToClone
 
     # createCloneOf 
     def test_fail_convert_create_clone_of_block_with_empty_string_arg(self):
@@ -1742,11 +1802,37 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.NoteBrick)
 
+    # createCloneOf
+    def test_convert_create_clone_of_block_previous(self):
+        sprite_object = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, "Previous")
+        self.test_scene.spriteList.append(sprite_object)
+
+        scratch_block = ["createCloneOf", "Previous"]
+
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.CloneBrick)
+        assert catr_brick.objectToClone.getName() == "Previous"
+        assert sprite_object is catr_brick.objectToClone
+
+    # createCloneOf
+    def test_convert_create_clone_of_block_afterwards(self):
+        #context = self.block_converter._context
+        context = converter.Context()
+        sprite_context = converter.SpriteContext(DUMMY_CATR_SPRITE.getName(), {})
+        sprite_context.context = context
+        script_context = converter.ScriptContext(sprite_context)
+        scratch_block = ["createCloneOf", "Afterwards"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE, script_context)
+        assert isinstance(catr_brick, catbricks.CloneBrick)
+        assert catr_brick.objectToClone.getName() == "Afterwards"
+        assert "Afterwards" in context.upcoming_sprites
+        assert catr_brick.objectToClone is context.upcoming_sprites["Afterwards"]
+
     # whenCloned
     def test_can_convert_when_cloned_block(self):
         scratch_block = ["say:", "Hello!"]
         script = scratch.Script([30, 355, [['whenCloned'], scratch_block]])
-        catr_script = self.block_converter._catrobat_script_from(script, self.sprite_stub)
+        catr_script = self.block_converter._catrobat_script_from(script, self.sprite_stub, self.test_project)
         assert isinstance(catr_script, catbase.WhenClonedScript)
         assert isinstance(catr_script.getBrickList().get(0), catbricks.SayBubbleBrick)
 
@@ -1835,6 +1921,11 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def test_can_convert_set_pen_color_block_with_formula(self):
         scratch_block = ["penColor:", ["+", 5000, 32]]
         catr_bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+
+        assert isinstance(catr_bricks[0], catbricks.SetVariableBrick)
+        assert isinstance(catr_bricks[1], catbricks.SetVariableBrick)
+        assert isinstance(catr_bricks[2], catbricks.SetVariableBrick)
+
         blue_formula = catr_bricks[2].userVariable.getValue().formulaTree
         assert blue_formula.value == "MOD"
         assert blue_formula.rightChild.value == "256"
@@ -1842,11 +1933,24 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert blue_formula.leftChild.leftChild.value == "5000"
         assert blue_formula.leftChild.rightChild.value == "32"
 
-        #if blue is right, the rest should also be alright, because red and green build up on blue
+        green_formula = catr_bricks[1].userVariable.getValue().formulaTree
+        assert green_formula.value == "MOD"
+        assert green_formula.rightChild.value == "256"
+        assert green_formula.leftChild.rightChild.value == "DIVIDE"
+        assert green_formula.leftChild.rightChild.rightChild.value == "256"
+        assert green_formula.leftChild.rightChild.leftChild.rightChild.value == "MINUS"
+        assert green_formula.leftChild.rightChild.leftChild.rightChild.leftChild.value == "PLUS"
+        assert green_formula.leftChild.rightChild.leftChild.rightChild.leftChild.leftChild.value == "5000"
+        assert green_formula.leftChild.rightChild.leftChild.rightChild.leftChild.rightChild.value == "32"
+        assert green_formula.leftChild.rightChild.leftChild.rightChild.rightChild.rightChild.value == blue_formula.value
 
-        assert isinstance(catr_bricks[0], catbricks.SetVariableBrick)
-        assert isinstance(catr_bricks[1], catbricks.SetVariableBrick)
-        assert isinstance(catr_bricks[2], catbricks.SetVariableBrick)
+        red_formula = catr_bricks[0].userVariable.getValue().formulaTree
+        assert red_formula.value == "DIVIDE"
+        assert red_formula.rightChild.value == "256"
+        assert red_formula.leftChild.rightChild.value == "MINUS"
+        assert red_formula.leftChild.rightChild.rightChild.rightChild.value == green_formula.value
+        assert red_formula.leftChild.rightChild.leftChild.rightChild.value == "DIVIDE"
+
         assert isinstance(catr_bricks[3], catbricks.SetPenColorBrick)
 
     #setPenColor
@@ -1882,6 +1986,299 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert catr_bricks[0].userVariable.getValue().formulaTree.leftChild.value == "2"
         assert catr_bricks[0].userVariable.getValue().formulaTree.rightChild.value == "32"
 
+    #call
+    def test_can_convert_call_block_user_script_already_defined_simple(self):
+        function_header = "number1 %n number1"
+        expected_param_label = "param1"
+        expected_param_value = 1
+        scratch_block = ["call", function_header, expected_param_value]
+
+        scratch_user_script_declared_labels_map = { function_header: [expected_param_label] }
+        sprite_context = converter.SpriteContext(DUMMY_CATR_SPRITE.getName(), scratch_user_script_declared_labels_map)
+        script_context = converter.ScriptContext(sprite_context)
+        catr_bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE, script_context)
+
+        assert len(catr_bricks) == 1
+        assert isinstance(catr_bricks[0], catbricks.UserBrick)
+        user_brick = catr_bricks[0]
+
+        definition_brick = user_brick.getDefinitionBrick()
+        assert definition_brick is not None
+        assert isinstance(definition_brick, catbricks.UserScriptDefinitionBrick)
+        assert definition_brick.getUserScript() is not None
+        assert isinstance(definition_brick.getUserScript(), catbase.StartScript)
+
+        definition_brick_elements = definition_brick.getUserScriptDefinitionBrickElements()
+        assert len(definition_brick_elements) == 3
+        assert isinstance(definition_brick_elements[0], catbricks.UserScriptDefinitionBrickElement)
+        assert definition_brick_elements[0].isText()
+        assert definition_brick_elements[0].getText() == "number1"
+        assert isinstance(definition_brick_elements[1], catbricks.UserScriptDefinitionBrickElement)
+        assert definition_brick_elements[1].isVariable()
+        assert isinstance(definition_brick_elements[2], catbricks.UserScriptDefinitionBrickElement)
+        assert definition_brick_elements[2].isText()
+        assert definition_brick_elements[2].getText() == "number1"
+
+        user_brick_params = user_brick.getUserBrickParameters()
+        assert len(user_brick_params) == 1
+        assert isinstance(user_brick_params[0], catbricks.UserBrickParameter)
+        assert user_brick == user_brick_params[0].getParent()
+
+        formula_tree = user_brick_params[0].getFormulaWithBrickField(catbasebrick.BrickField.USER_BRICK).formulaTree # @UndefinedVariable
+        assert catformula.FormulaElement.ElementType.NUMBER == formula_tree.type
+        assert str(expected_param_value) == formula_tree.value
+        assert formula_tree.leftChild is None
+        assert formula_tree.rightChild is None
+
+        user_script_definition_brick = sprite_context.user_script_definition_brick_map[function_header]
+        assert user_script_definition_brick is not None
+        assert isinstance(user_script_definition_brick, catbricks.UserScriptDefinitionBrick)
+
+        param_types = sprite_context.user_script_params_map[function_header]
+        assert param_types is not None
+        assert isinstance(param_types, list)
+        assert len(param_types) == 1
+        assert param_types[0] == "%n"
+
+    #call
+    def test_can_convert_call_block_user_script_already_defined_complex(self):
+        function_header = "number1 %n string1 %s boolean1 %b"
+        expected_first_param_label = "param1"
+        expected_first_param_value = expected_first_param_operator, expected_first_param_left_operand, \
+                                     expected_first_param_right_operand = ["+", 1, 2]
+        expected_second_param_label = "param2"
+        expected_second_param_value = "This is a message"
+        expected_third_param_label = "param3"
+        expected_third_param_value = True
+        scratch_block = ["call", function_header, expected_first_param_value, expected_second_param_value, expected_third_param_value]
+
+        scratch_user_script_declared_labels_map = {
+            function_header: [
+                expected_first_param_label,
+                expected_second_param_label,
+                expected_third_param_label
+            ]
+        }
+        sprite_context = converter.SpriteContext(DUMMY_CATR_SPRITE.getName(), scratch_user_script_declared_labels_map)
+        script_context = converter.ScriptContext(sprite_context)
+        catr_bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE, script_context)
+
+        assert len(catr_bricks) == 1
+        assert isinstance(catr_bricks[0], catbricks.UserBrick)
+        user_brick = catr_bricks[0]
+
+        definition_brick = user_brick.getDefinitionBrick()
+        assert definition_brick is not None
+        assert isinstance(definition_brick, catbricks.UserScriptDefinitionBrick)
+        assert definition_brick.getUserScript() is not None
+        assert isinstance(definition_brick.getUserScript(), catbase.StartScript)
+
+        definition_brick_elements = definition_brick.getUserScriptDefinitionBrickElements()
+        assert len(definition_brick_elements) == 6
+        assert isinstance(definition_brick_elements[0], catbricks.UserScriptDefinitionBrickElement)
+        assert definition_brick_elements[0].isText()
+        assert definition_brick_elements[0].getText() == "number1"
+        assert isinstance(definition_brick_elements[1], catbricks.UserScriptDefinitionBrickElement)
+        assert definition_brick_elements[1].isVariable()
+        assert isinstance(definition_brick_elements[2], catbricks.UserScriptDefinitionBrickElement)
+        assert definition_brick_elements[2].isText()
+        assert definition_brick_elements[2].getText() == "string1"
+        assert isinstance(definition_brick_elements[3], catbricks.UserScriptDefinitionBrickElement)
+        assert definition_brick_elements[3].isVariable()
+        assert isinstance(definition_brick_elements[4], catbricks.UserScriptDefinitionBrickElement)
+        assert definition_brick_elements[4].isText()
+        assert definition_brick_elements[4].getText() == "boolean1"
+        assert isinstance(definition_brick_elements[5], catbricks.UserScriptDefinitionBrickElement)
+        assert definition_brick_elements[5].isVariable()
+
+        user_brick_params = user_brick.getUserBrickParameters()
+        assert len(user_brick_params) == 3
+        assert isinstance(user_brick_params[0], catbricks.UserBrickParameter)
+        assert user_brick == user_brick_params[0].getParent()
+        assert isinstance(user_brick_params[1], catbricks.UserBrickParameter)
+        assert user_brick == user_brick_params[1].getParent()
+        assert isinstance(user_brick_params[2], catbricks.UserBrickParameter)
+        assert user_brick == user_brick_params[2].getParent()
+
+        formula_tree = user_brick_params[0].getFormulaWithBrickField(catbasebrick.BrickField.USER_BRICK).formulaTree # @UndefinedVariable
+        assert catformula.FormulaElement.ElementType.OPERATOR == formula_tree.type
+        assert formula_tree.value == catformula.Operators.PLUS.toString() # @UndefinedVariable
+        assert formula_tree.leftChild is not None
+        assert formula_tree.rightChild is not None
+
+        formula_left_child = formula_tree.leftChild
+        assert formula_left_child.type == catformula.FormulaElement.ElementType.NUMBER
+        assert str(expected_first_param_left_operand) == formula_left_child.value
+        assert formula_left_child.leftChild is None
+        assert formula_left_child.rightChild is None
+
+        formula_right_child = formula_tree.rightChild
+        assert formula_right_child.type == catformula.FormulaElement.ElementType.NUMBER
+        assert str(expected_first_param_right_operand) == formula_right_child.value
+        assert formula_right_child.leftChild is None
+        assert formula_right_child.rightChild is None
+
+        formula_tree = user_brick_params[1].getFormulaWithBrickField(catbasebrick.BrickField.USER_BRICK).formulaTree # @UndefinedVariable
+        assert catformula.FormulaElement.ElementType.STRING == formula_tree.type
+        assert str(expected_second_param_value) == formula_tree.value
+        assert formula_tree.leftChild is None
+        assert formula_tree.rightChild is None
+
+        formula_tree = user_brick_params[2].getFormulaWithBrickField(catbasebrick.BrickField.USER_BRICK).formulaTree # @UndefinedVariable
+        assert catformula.FormulaElement.ElementType.NUMBER == formula_tree.type
+        assert str(int(expected_third_param_value)) == formula_tree.value
+        assert formula_tree.leftChild is None
+        assert formula_tree.rightChild is None
+
+        user_script_definition_brick = sprite_context.user_script_definition_brick_map[function_header]
+        assert user_script_definition_brick is not None
+        assert isinstance(user_script_definition_brick, catbricks.UserScriptDefinitionBrick)
+
+        param_types = sprite_context.user_script_params_map[function_header]
+        assert param_types is not None
+        assert isinstance(param_types, list)
+        assert len(param_types) == 3
+        assert param_types[0] == "%n"
+        assert param_types[1] == "%s"
+        assert param_types[2] == "%b"
+
+    #call
+    def test_can_convert_call_block_user_script_not_yet_defined_simple(self):
+        function_header = "number1 %n number1"
+        expected_param_label = "param1"
+        expected_param_value = 1
+        scratch_block = ["call", function_header, expected_param_value]
+
+        expected_user_script_definition_brick = catbricks.UserScriptDefinitionBrick()
+        user_script_definition_brick_elements_list = expected_user_script_definition_brick.getUserScriptDefinitionBrickElements()
+
+        first_user_script_definition_brick_element = catbricks.UserScriptDefinitionBrickElement()
+        first_user_script_definition_brick_element.setIsText()
+        first_user_script_definition_brick_element.setText("number1")
+        user_script_definition_brick_elements_list.add(first_user_script_definition_brick_element)
+
+        second_user_script_definition_brick_element = catbricks.UserScriptDefinitionBrickElement()
+        second_user_script_definition_brick_element.setIsVariable()
+        second_user_script_definition_brick_element.setText(expected_param_label)
+        user_script_definition_brick_elements_list.add(second_user_script_definition_brick_element)
+
+        third_user_script_definition_brick_element = catbricks.UserScriptDefinitionBrickElement()
+        third_user_script_definition_brick_element.setIsText()
+        third_user_script_definition_brick_element.setText("number1")
+        user_script_definition_brick_elements_list.add(third_user_script_definition_brick_element)
+
+        expected_param_types = ["%n"]
+        scratch_user_script_declared_labels_map = { function_header: [expected_param_label] }
+        sprite_context = converter.SpriteContext(DUMMY_CATR_SPRITE.getName(), scratch_user_script_declared_labels_map)
+        sprite_context.user_script_definition_brick_map[function_header] = expected_user_script_definition_brick
+        sprite_context.user_script_params_map[function_header] = expected_param_types
+        script_context = converter.ScriptContext(sprite_context)
+        catr_bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE, script_context)
+
+        assert len(catr_bricks) == 1
+        assert isinstance(catr_bricks[0], catbricks.UserBrick)
+        user_brick = catr_bricks[0]
+
+        definition_brick = user_brick.getDefinitionBrick()
+        assert definition_brick is not None
+        assert isinstance(definition_brick, catbricks.UserScriptDefinitionBrick)
+        assert definition_brick.getUserScript() is not None
+        assert isinstance(definition_brick.getUserScript(), catbase.StartScript)
+
+        definition_brick_elements = definition_brick.getUserScriptDefinitionBrickElements()
+        assert len(definition_brick_elements) == 3
+        assert id(first_user_script_definition_brick_element) == id(definition_brick_elements[0])
+        assert id(second_user_script_definition_brick_element) == id(definition_brick_elements[1])
+        assert id(third_user_script_definition_brick_element) == id(definition_brick_elements[2])
+
+        user_brick_params = user_brick.getUserBrickParameters()
+        assert len(user_brick_params) == 1
+        assert isinstance(user_brick_params[0], catbricks.UserBrickParameter)
+        assert user_brick == user_brick_params[0].getParent()
+
+        formula_tree = user_brick_params[0].getFormulaWithBrickField(catbasebrick.BrickField.USER_BRICK).formulaTree # @UndefinedVariable
+        assert catformula.FormulaElement.ElementType.NUMBER == formula_tree.type
+        assert str(expected_param_value) == formula_tree.value
+        assert formula_tree.leftChild is None
+        assert formula_tree.rightChild is None
+
+        user_script_definition_brick = sprite_context.user_script_definition_brick_map[function_header]
+        assert user_script_definition_brick is not None
+        assert id(expected_user_script_definition_brick) == id(user_script_definition_brick)
+
+        param_types = sprite_context.user_script_params_map[function_header]
+        assert param_types is not None
+        assert expected_param_types == param_types
+
+    #gotoSpriteOrMouse:
+    def test_can_convert_go_to_sprite_block_with_sprite_afterwards(self):
+        test_sprite_name = "Afterwards"
+        scratch_block = ["gotoSpriteOrMouse:", test_sprite_name]
+        context = converter.Context()
+        sprite_context = converter.SpriteContext(DUMMY_CATR_SPRITE.getName(), {})
+        sprite_context.context = context
+        script_context = converter.ScriptContext(sprite_context)
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE, script_context)
+        assert isinstance(catr_brick, catbricks.GoToBrick)
+        assert catr_brick.destinationSprite.getName() == test_sprite_name
+        assert "Afterwards" in context.upcoming_sprites
+        assert catr_brick.destinationSprite is context.upcoming_sprites["Afterwards"]
+
+    #gotoSpriteOrMouse:
+    def test_can_convert_go_to_sprite_block_with_sprite_previous(self):
+        test_sprite_name = "Previous"
+        scratch_block = ["gotoSpriteOrMouse:", test_sprite_name]
+        sprite_object = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, "Previous")
+        self.test_scene.spriteList.append(sprite_object)
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.GoToBrick)
+        assert catr_brick.destinationSprite.getName() == test_sprite_name
+        assert catr_brick.destinationSprite is sprite_object
+
+    #gotoSpriteOrMouse:
+    def test_can_convert_go_to_sprite_block_with_mouse_position(self):
+        test_sprite_name = "_mouse_"
+        scratch_block = ["gotoSpriteOrMouse:", test_sprite_name]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.GoToBrick)
+        assert catr_brick.spinnerSelection == 0
+
+    #gotoSpriteOrMouse:
+    def test_can_convert_go_to_sprite_block_with_random_position(self):
+        test_sprite_name = "_random_"
+        scratch_block = ["gotoSpriteOrMouse:", test_sprite_name]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.GoToBrick)
+        assert catr_brick.spinnerSelection == 1
+
+    #sceneName
+    def test_can_convert_backdrop_name_brick(self):
+        scratch_block = ["sceneName"]
+        [formula] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(formula, catformula.FormulaElement)
+        assert formula.value == "OBJECT_BACKGROUND_NAME"
+
+    #backgroundIndex
+    def test_can_convert_background_index_brick(self):
+        scratch_block = ["backgroundIndex"]
+        [formula] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(formula, catformula.FormulaElement)
+        assert formula.value == "OBJECT_BACKGROUND_NUMBER"
+
+    #costumeIndex
+    def test_can_convert_costume_index_brick(self):
+        scratch_block = ["costumeIndex"]
+        [formula] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(formula, catformula.FormulaElement)
+        assert formula.value == "OBJECT_LOOK_NUMBER"
+
+    #scale
+    def test_can_convert_size_brick(self):
+        scratch_block = ["scale"]
+        [formula] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(formula, catformula.FormulaElement)
+        assert formula.value == "OBJECT_SIZE"
+
 class TestConvertProjects(common_testing.ProjectTestCase):
 
     def _test_project(self, project_name):
@@ -1895,7 +2292,7 @@ class TestConvertProjects(common_testing.ProjectTestCase):
             scratch_project_dir = common_testing.get_test_project_path(project_name)
 
         scratch_project = scratch.Project(scratch_project_dir, name=project_name,
-                                          id_=common_testing.PROJECT_DUMMY_ID)
+                                          project_id=common_testing.PROJECT_DUMMY_ID)
 
         context = converter.Context()
         converted_project = converter.converted(scratch_project, None, context)

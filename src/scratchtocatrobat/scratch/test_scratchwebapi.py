@@ -35,10 +35,10 @@ TEST_PROJECT_ID_TO_TITLE_MAP = {
 }
 
 TEST_PROJECT_ID_TO_IMAGE_URL_MAP = {
-    "10205819": "https://cdn2.scratch.mit.edu/get_image/project/10205819_144x108.png?v=1368470695.0",
-    "10132588": "https://cdn2.scratch.mit.edu/get_image/project/10132588_144x108.png?v=1368129031.0",
-    "2365565" : "https://cdn2.scratch.mit.edu/get_image/project/2365565_144x108.png?v=1368072082.0",
-    "117300839": "https://cdn2.scratch.mit.edu/get_image/project/117300839_144x108.png?v=1469765618.94"
+    "10205819": "https://cdn2.scratch.mit.edu/get_image/project/10205819_144x108.png",
+    "10132588": "https://cdn2.scratch.mit.edu/get_image/project/10132588_144x108.png",
+    "2365565" : "https://cdn2.scratch.mit.edu/get_image/project/2365565_144x108.png",
+    "117300839": "https://cdn2.scratch.mit.edu/get_image/project/117300839_144x108.png"
 }
 
 TEST_PROJECT_ID_TO_OWNER_MAP = {

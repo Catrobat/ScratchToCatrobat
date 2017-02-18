@@ -133,6 +133,10 @@ def main():
                 _logger.warn("-"*80)
                 _logger.warn(" "*10 + "!!! DEBUG MODE ENABLED !!!")
                 _logger.warn("-"*80)
+            else:
+                _logger.warn("-"*80)
+                _logger.warn(" "*10 + "!!! PRODCTION MODE ENABLED !!!")
+                _logger.warn("-"*80)
 
             webapp = converterwebapp.ConverterWebApp(**settings)
             global web_server

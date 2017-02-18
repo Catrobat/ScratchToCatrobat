@@ -275,8 +275,8 @@ class RawProject(Object):
         # timer counter script
         script_blocks = [
             ["doForever", [
-              ["changeVar:by:", S2CC_TIMER_VARIABLE_NAME, 0.1],
-              ["wait:elapsed:from:", 0.1]
+              ["changeVar:by:", S2CC_TIMER_VARIABLE_NAME, 0.03],
+              ["wait:elapsed:from:", 0.03]
             ]]
         ]
         self.objects[0].scripts += [Script([0, 0, [[SCRIPT_GREEN_FLAG]] + script_blocks])]

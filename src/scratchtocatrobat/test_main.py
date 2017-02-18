@@ -67,6 +67,8 @@ class MainTest(common_testing.ProjectTestCase):
 
     def setUp(self):
         super(MainTest, self).setUp()
+        assert helpers.config.get("PATHS", "jython_home") is not None
+        os.environ["JYTHON_HOME"] = helpers.config.get("PATHS", "jython_home")
         self.test_environ = dict(os.environ)
 
     def assertMainSuccess(self, args, project_id):

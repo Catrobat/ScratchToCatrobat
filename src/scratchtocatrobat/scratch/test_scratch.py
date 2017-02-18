@@ -474,8 +474,8 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
         raw_project = scratch.RawProject(cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE)
         expected_background_object_script_data = [0, 0, [['whenGreenFlag'],
             ['doForever', [
-                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.1],
-                ['wait:elapsed:from:', 0.1]
+                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.03],
+                ['wait:elapsed:from:', 0.03]
             ]]
         ]]
         expected_first_object_script_data = [0, 0, [["whenGreenFlag"],
@@ -509,8 +509,8 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
         cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
         expected_background_object_script_data = [0, 0, [['whenGreenFlag'],
             ['doForever', [
-                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.1],
-                ['wait:elapsed:from:', 0.1]
+                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.03],
+                ['wait:elapsed:from:', 0.03]
             ]]
         ]]
         expected_first_object_script_data = [0, 0, [["whenGreenFlag"],
@@ -574,8 +574,8 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
         cls = self.__class__
         expected_background_object_scripts_data = [[0, 0, [['whenGreenFlag'],
             ['doForever', [
-                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.1],
-                ['wait:elapsed:from:', 0.1]
+                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.03],
+                ['wait:elapsed:from:', 0.03]
             ]]]
         ], [0, 0, [['whenIReceive', scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE],
             ['setVar:to:', scratch.S2CC_TIMER_VARIABLE_NAME, 0]
@@ -618,8 +618,8 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
         cls = self.__class__
         expected_background_object_scripts_data = [[0, 0, [['whenGreenFlag'],
             ['doForever', [
-                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.1],
-                ['wait:elapsed:from:', 0.1]
+                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.03],
+                ['wait:elapsed:from:', 0.03]
             ]]]
         ], [0, 0, [['whenIReceive', scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE],
             ['setVar:to:', scratch.S2CC_TIMER_VARIABLE_NAME, 0]
@@ -669,8 +669,8 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
             ["doBroadcastAndWait", scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE]
         ]], [0, 0, [['whenGreenFlag'],
             ['doForever', [
-                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.1],
-                ['wait:elapsed:from:', 0.1]
+                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.03],
+                ['wait:elapsed:from:', 0.03]
             ]]]
         ], [0, 0, [['whenIReceive', scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE],
             ['setVar:to:', scratch.S2CC_TIMER_VARIABLE_NAME, 0]

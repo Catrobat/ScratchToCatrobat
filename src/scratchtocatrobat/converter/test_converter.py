@@ -301,8 +301,8 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         workaround_info = raw_project.objects[1].preprocess_object([raw_project.objects[0].name, raw_project.objects[1].name])
         assert workaround_info['add_timer_script_key'] == True
         timer_background_workaround = [['whenGreenFlag'], ['doForever', \
-                                                           [['changeVar:by:', 'S2CC_timer', 0.1], \
-                                                           ['wait:elapsed:from:', 0.1]]]]
+                                                           [['changeVar:by:', 'S2CC_timer', 0.03], \
+                                                           ['wait:elapsed:from:', 0.03]]]]
         assert raw_project.objects[0].scripts[0].raw_script == timer_background_workaround
 
         catr_script = self.block_converter._catrobat_script_from(raw_project.objects[1].scripts[0], DUMMY_CATR_SPRITE, self.test_project)

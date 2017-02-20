@@ -36,7 +36,7 @@ HTTP_TIMEOUT = int(helpers.config.get("SCRATCH_API", "http_timeout"))
 HTTP_USER_AGENT = helpers.config.get("SCRATCH_API", "user_agent")
 SCRATCH_PROJECT_BASE_URL = helpers.config.get("SCRATCH_API", "project_base_url")
 SCRATCH_PROJECT_REMIX_TREE_URL_TEMPLATE = helpers.config.get("SCRATCH_API", "project_remix_tree_url_template")
-SCRATCH_PROJECT_IMAGE_URL_TEMPLATE = helpers.config.get("SCRATCH_API", "project_image_url_template")
+SCRATCH_PROJECT_IMAGE_BASE_URL = helpers.config.get("SCRATCH_API", "project_image_base_url")
 
 _log = logger.log
 _cached_jsoup_documents = {}
@@ -240,9 +240,6 @@ def request_is_project_available(project_id):
 def request_project_title_for(project_id):
     return extract_project_title_from_document(request_project_page_as_Jsoup_document_for(project_id))
 
-def request_project_image_url_for(project_id):
-    return extract_project_image_url_from_document(request_project_page_as_Jsoup_document_for(project_id))
-
 def request_project_owner_for(project_id):
     return extract_project_owner_from_document(request_project_page_as_Jsoup_document_for(project_id))
 
@@ -290,7 +287,7 @@ def request_project_remixes_for(project_id):
         return None
 
 def request_project_details_for(project_id):
-    return extract_project_details_from_document(request_project_page_as_Jsoup_document_for(project_id))
+    return extract_project_details_from_document(request_project_page_as_Jsoup_document_for(project_id), project_id)
 
 def request_project_visibility_state_for(project_id):
     return extract_project_visibilty_state_from_document(request_project_page_as_Jsoup_document_for(project_id))
@@ -347,7 +344,7 @@ def extract_project_remixes_from_data(tree_data, project_id):
         remix_data["id"] = remixed_program_id
         remix_data["title"] = unicode(remixed_program_data["title"]).strip().encode('utf-8').replace("  ", " ")
         remix_data["owner"] = unicode(remixed_program_data["username"]).strip()
-        remix_data["image"] = SCRATCH_PROJECT_IMAGE_URL_TEMPLATE.format(remixed_program_id, 144, 108)
+        remix_data["image"] = "{}{}.png".format(SCRATCH_PROJECT_IMAGE_BASE_URL, remixed_program_id)
         remixed_program_info += [remix_data]
     return remixed_program_info
 
@@ -360,7 +357,7 @@ def extract_project_visibilty_state_from_document(document):
     else:
         return ScratchProjectVisibiltyState.PUBLIC
 
-def extract_project_details_from_document(document, escape_quotes=True):
+def extract_project_details_from_document(document, project_id, escape_quotes=True):
     if document is None: return None
 
     title = extract_project_title_from_document(document)
@@ -371,9 +368,7 @@ def extract_project_details_from_document(document, escape_quotes=True):
     if owner is None: return None
     if escape_quotes: owner = owner.replace('"','\\"')
 
-    image_url = extract_project_image_url_from_document(document)
-    if image_url is None: return None
-
+    image_url = "{}{}.png".format(SCRATCH_PROJECT_IMAGE_BASE_URL, project_id)
     instructions = extract_project_instructions_from_document(document)
     if escape_quotes and instructions is not None: instructions = instructions.replace('"','\\"')
     notes_and_credits = extract_project_notes_and_credits_from_document(document)

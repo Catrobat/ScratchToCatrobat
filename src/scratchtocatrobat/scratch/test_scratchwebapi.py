@@ -35,10 +35,10 @@ TEST_PROJECT_ID_TO_TITLE_MAP = {
 }
 
 TEST_PROJECT_ID_TO_IMAGE_URL_MAP = {
-    "10205819": "https://cdn2.scratch.mit.edu/get_image/project/10205819_144x108.png",
-    "10132588": "https://cdn2.scratch.mit.edu/get_image/project/10132588_144x108.png",
-    "2365565" : "https://cdn2.scratch.mit.edu/get_image/project/2365565_144x108.png",
-    "117300839": "https://cdn2.scratch.mit.edu/get_image/project/117300839_144x108.png"
+    "10205819": "https://uploads.scratch.mit.edu/projects/thumbnails/10205819.png",
+    "10132588": "https://uploads.scratch.mit.edu/projects/thumbnails/10132588.png",
+    "2365565" : "https://uploads.scratch.mit.edu/projects/thumbnails/2365565.png",
+    "117300839": "https://uploads.scratch.mit.edu/projects/thumbnails/117300839.png"
 }
 
 TEST_PROJECT_ID_TO_OWNER_MAP = {
@@ -52,88 +52,88 @@ TEST_PROJECT_ID_TO_REMIXES_MAP = {
     "10205819"  : [{
         'id'   : 10211023,
         'owner': 'Amanda69',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/10211023_144x108.png',
+        'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/10211023.png',
         'title': "Dancin' in the Castle remake"
     }],
     "10132588"  : [],
     "2365565"   : [],
     "117300839" : [{
         'owner': u'apple502j',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/117443373_144x108.png',
+        'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/117443373.png',
         'title': '\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xef\xbc\x88\xe3\x81\x97\xe3' \
                  '\x81\x99\xe3\x81\x8e\xef\xbc\x89\xe3\x83\x8f\xe3\x82\xa6\xe3\x82\xb9',
         'id': 117443373
     }, {
         'owner': u'nono-san',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/117459825_144x108.png',
+        'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/117459825.png',
         'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
                  '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
                  '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
         'id': 117459825
     }, {
         'owner': u'fujiyama',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/117458670_144x108.png',
+        'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/117458670.png',
         'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
                  '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
                  '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
         'id': 117458670
     }, {
-        'owner': u'nono-san', 'image': 'https://cdn2.scratch.mit.edu/get_image/project/117462865_144x108.png',
+        'owner': u'nono-san', 'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/117462865.png',
         'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
                  '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
                  '\xa6\xe3\x82\xb9\xef\xbc\x89 remix-2',
         'id': 117462865
     }, {
         'owner': u'tomo37564',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/117526717_144x108.png',
+        'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/117526717.png',
         'title': '\xe3\x82\xab\xe3\x82\xaa\xe3\x82\xb9\xe3\x83\xbb\xe3\x82\xaa\xe3\x83\x96\xe3' \
                  '\x83\xbb\xe3\x83\xa4\xe3\x83\x8d\xe3\x82\xa6\xe3\x83\xa9 remix',
         'id': 117526717
     }, {
         'owner': u'MrUdonn',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/117542867_144x108.png',
+        'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/117542867.png',
         'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
                  '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
                  '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
         'id': 117542867
     }, {
         'owner': u'nono-san',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/117588399_144x108.png',
+        'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/117588399.png',
         'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
                  '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
                  '\xa6\xe3\x82\xb9\xef\xbc\x89 remix-3',
         'id': 117588399
     }, {
         'owner': u'punpo2007',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/117466753_144x108.png',
+        'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/117466753.png',
         'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
                  '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
                  '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
         'id': 117466753
     }, {
         'owner': u'nposss',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/117697631_144x108.png',
+        'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/117697631.png',
         'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b(\xe3' \
                  '\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82\xa6\xe3\x82' \
                  '\xb9) remix \xe3\x81\x8a\xe5\x8c\x96\xe3\x81\x91\xe5\xb1\x8b\xe6\x95\xb7',
         'id': 117697631
     }, {
         'owner': u'haya_tofu',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/117802666_144x108.png',
+        'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/117802666.png',
         'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
                  '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
                  '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
         'id': 117802666
     }, {
         'owner': u'Sabomeat',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/117742271_144x108.png',
+        'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/117742271.png',
         'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
                  '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
                  '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
         'id': 117742271
     }, {
         'owner': u'kanjitv',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/117805280_144x108.png',
+        'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/117805280.png',
         'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
                  '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
                  '\xa6\xe3\x82\xb9\xef\xbc\x89 \xe3\x83\xaa\xe3\x83\x9f\xe3\x83\x83\xe3\x82\xaf' \
@@ -141,102 +141,102 @@ TEST_PROJECT_ID_TO_REMIXES_MAP = {
         'id': 117805280
     }, {
         'owner': u'ikagirl1',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/117820941_144x108.png',
+        'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/117820941.png',
         'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
                  '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
                  '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
         'id': 117820941
     }, {
         'owner': u'kenta_suzuki',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/117909085_144x108.png',
+        'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/117909085.png',
         'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
                  '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
                  '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
         'id': 117909085
     }, {
         'owner': u'yuma08',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/118123925_144x108.png',
+        'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/118123925.png',
         'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
                  '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
                  '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
         'id': 118123925
     }, {
         'owner': u'takumigenki',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/118127784_144x108.png',
+        'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/118127784.png',
         'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
                  '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
                  '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
         'id': 118127784
     }, {
         'owner': u'rukiha',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/118556396_144x108.png',
+        'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/118556396.png',
         'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
                  '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
                  '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
         'id': 118556396
     }, {
         'owner': u'tyouhennzinn',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/118505858_144x108.png',
+        'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/118505858.png',
         'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
                  '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
                  '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
         'id': 118505858
     }, {
         'owner': u'naohiro1153',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/118661818_144x108.png',
+        'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/118661818.png',
         'title': '\xe3\x82\x84\xe3\x81\xb0\xe3\x81\x84\xe3\x80\x82\xe3\x82\x84\xe3\x81\xad\xe3' \
                  '\x81\x86\xe3\x82\x89',
         'id': 118661818
     }, {
         'owner': u'emimi27',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/118772082_144x108.png',
+        'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/118772082.png',
         'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
                  '\xbc\x88\xe5\x91\xaa\xe3\x81\x84\xe3\x81\xae\xe3\x83\x8f\xe3\x82\xa6\xe3\x82' \
                  '\xb9\xef\xbc\x89',
         'id': 118772082
     }, {
         'owner': u'mentosu',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/118424749_144x108.png',
+        'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/118424749.png',
         'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
                  '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
                  '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
         'id': 118424749
     }, {
         'owner': u'kenshin007',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/118914295_144x108.png',
+        'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/118914295.png',
         'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
                  '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
                  '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
         'id': 118914295
     }, {
         'owner': u'Ryomap',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/119203970_144x108.png',
+        'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/119203970.png',
         'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
                  '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
                  '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
         'id': 119203970
     }, {
         'owner': u'supertaku',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/119291555_144x108.png',
+        'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/119291555.png',
         'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
                  '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
                  '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
         'id': 119291555
     }, {
         'owner': u'cheechanGoGo',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/119292702_144x108.png',
+        'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/119292702.png',
         'title': '\xef\xbd\x8d\xe3\x80\x8d',
         'id': 119292702
     }, {
         'owner': u'katakanakana',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/120985495_144x108.png',
+        'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/120985495.png',
         'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\x08\xe8\xb6\x85\xe8\xb6\x85' \
                  '\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82\xa6\xe3' \
                  '\x82\xb9\xef\xbc\x89',
         'id': 120985495
     }, {
         'owner': u'Lily-co',
-        'image': 'https://cdn2.scratch.mit.edu/get_image/project/125370675_144x108.png',
+        'image': 'https://uploads.scratch.mit.edu/projects/thumbnails/125370675.png',
         'title': '\xe3\x82\x84\xe3\x81\xad\xe3\x81\x86\xe3\x82\x89\xe9\x83\xa8\xe5\xb1\x8b\xef' \
                  '\xbc\x88\xe3\x81\xb3\xe3\x81\xa3\xe3\x81\x8f\xe3\x82\x8a\xe3\x83\x8f\xe3\x82' \
                  '\xa6\xe3\x82\xb9\xef\xbc\x89 remix',
@@ -304,13 +304,6 @@ class WebApiTest(common_testing.BaseTestCase):
             assert extracted_project_title is not None
             assert extracted_project_title == expected_project_title, \
                    "'{}' is not equal to '{}'".format(extracted_project_title, expected_project_title)
-
-    def test_can_request_project_image_url_for_id(self):
-        for (project_id, expected_project_image_URL) in TEST_PROJECT_ID_TO_IMAGE_URL_MAP.iteritems():
-            extracted_project_image_URL = scratchwebapi.request_project_image_url_for(project_id)
-            assert extracted_project_image_URL is not None
-            assert extracted_project_image_URL == expected_project_image_URL, \
-                   "'{}' is not equal to '{}'".format(extracted_project_image_URL, expected_project_image_URL)
 
     def test_can_request_project_owner_for_id(self):
         for (project_id, expected_project_owner) in TEST_PROJECT_ID_TO_OWNER_MAP.iteritems():

@@ -39,7 +39,7 @@ FEATURED_SCRATCH_PROGRAMS = [{
       "id": 119198,
       "username": "Scratchteam"
     },
-    "image": "https://cdn2.scratch.mit.edu/get_image/project/11656680_480x360.png",
+    "image": "https://uploads.scratch.mit.edu/projects/thumbnails/11656680.png",
     "history": {
       "created": "2013-07-30T20:06:50.000Z",
       "modified": "2015-09-14T15:07:04.000Z",
@@ -66,7 +66,7 @@ FEATURED_SCRATCH_PROGRAMS = [{
         "id": 2542801,
         "username": "TheFroster"
     },
-    "image": "https://cdn2.scratch.mit.edu/get_image/project/12297764_480x360.png",
+    "image": "https://uploads.scratch.mit.edu/projects/thumbnails/12297764.png",
     "history": {
         "created": "2013-09-11T00:13:19.000Z",
         "modified": "2013-09-11T00:15:50.000Z",
@@ -104,7 +104,7 @@ FEATURED_SCRATCH_PROGRAMS = [{
       "id": 7648128,
       "username": "taffygirl13"
     },
-    "image": "https://cdn2.scratch.mit.edu/get_image/project/82443924_480x360.png",
+    "image": "https://uploads.scratch.mit.edu/projects/thumbnails/82443924.png",
     "history": {
       "created": "2015-10-14T22:46:08.000Z",
       "modified": "2016-07-11T20:46:20.000Z",
@@ -129,7 +129,7 @@ FEATURED_SCRATCH_PROGRAMS = [{
       "id": 3351683,
       "username": "Elsa_The_Conqueror"
     },
-    "image": "https://cdn2.scratch.mit.edu/get_image/project/18296306_480x360.png",
+    "image": "https://uploads.scratch.mit.edu/projects/thumbnails/18296306.png",
     "history": {
       "created": "2014-02-23T04:22:57.000Z",
       "modified": "2014-12-11T23:26:40.000Z",

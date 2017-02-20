@@ -412,7 +412,7 @@ class Project(RawProject):
             self.name = name if name is not None else scratchwebapi.request_project_title_for(self.project_id)
             self.instructions = scratchwebapi.request_project_instructions_for(self.project_id)
             self.notes_and_credits = scratchwebapi.request_project_notes_and_credits_for(self.project_id)
-            self.automatic_screenshot_image_url = scratchwebapi.request_project_image_url_for(self.project_id)
+            self.automatic_screenshot_image_url = "{}{}.png".format(scratchwebapi.SCRATCH_PROJECT_IMAGE_BASE_URL, self.project_id)
 
         if progress_bar != None: progress_bar.update(ProgressType.DETAILS) # details step passed
 

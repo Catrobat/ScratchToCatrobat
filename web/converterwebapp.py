@@ -247,7 +247,7 @@ class _ProjectHandler(tornado.web.RequestHandler):
             self.send_response_data(response.as_dict())
             return
 
-        project_info = scratchwebapi.extract_project_details_from_document(document, escape_quotes=True)
+        project_info = scratchwebapi.extract_project_details_from_document(document, project_id, escape_quotes=True)
         if project_info is None:
             _logger.error("Unable to parse project-info from web page: Invalid or empty HTML-content!")
             if project_id in cls.IN_PROGRESS_FUTURE_MAP: del cls.IN_PROGRESS_FUTURE_MAP[project_id]

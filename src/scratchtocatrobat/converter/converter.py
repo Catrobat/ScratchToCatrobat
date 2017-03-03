@@ -541,6 +541,10 @@ def _sound_length_variable_name_for(resource_name):
 def _is_generated(variable_name):
     return variable_name.startswith(_GENERATED_VARIABLE_PREFIX)
 
+def _test_function(test_name):
+    _log.info("TEST")
+    print "abc"
+
 class Context(object):
     def __init__(self):
         self._sprite_contexts = []
@@ -688,7 +692,7 @@ class Converter(object):
         #       Catrobat program is to insert it into the url-field!
         #       That's why the url of the Scratch program is assigned to the url-field here.
         #-------------------------------------------------------------------------------------------
-        xml_header.url = helpers.config.get("SCRATCH_API", "project_base_url") + scratch_project_id
+        xml_header.setRemixParentsUrlString(helpers.config.get("SCRATCH_API", "project_base_url") + scratch_project_id)
         # TODO: @Christian: use setUrl() instead after next catroid-class-hierarchy update!!!
         #       -> setUrl() will be available soon
 
@@ -711,7 +715,7 @@ class Converter(object):
         description += "\nMade with {} version {}.\nOriginal Scratch project => {}".format( \
                          helpers.application_info("name"), \
                          helpers.application_info("version"), \
-                         xml_header.getUrl())
+                         xml_header.getRemixParentsUrlString())
         xml_header.setDescription(description)
 
 class _ScratchObjectConverter(object):
@@ -1567,7 +1571,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         play_sound_brick = self.CatrobatClass()
         play_sound_brick.setSoundInfo(sound_data)
         return play_sound_brick
-    
+
     @_register_handler(_block_name_to_handler_map, "doPlaySoundAndWait")
     def _convert_sound_and_wait_block(self):
         [sound_name], sound_list = self.arguments, self.sprite.getSoundList()
@@ -1717,7 +1721,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         converted_time_or_date = switcher.get(time_or_date, "ERROR")
         if converted_time_or_date == "ERROR":
             return catbricks.NoteBrick("Can't convert Time-And-Date Block.")
-        time_formula = catformula.FormulaElement(catformula.FormulaElement.ElementType.SENSOR, 
+        time_formula = catformula.FormulaElement(catformula.FormulaElement.ElementType.SENSOR,
                                                  converted_time_or_date, None)
         if time_or_date == "day of week":
             time_formula = self._converted_helper_brick_or_formula_element([time_formula, 1], "+")
@@ -1790,9 +1794,9 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 #         r_, g_, b_ = old_color.getRed()/255.0, old_color.getGreen()/255.0, old_color.getBlue()/255.0
 #         Cmax, Cmin = max([r_, g_, b_]), min([r_, g_, b_])
 #         delta = Cmax - Cmin
-# 
+#
 #         h, s, v = 0, 0, Cmax
-# 
+#
 #         if delta == 0:
 #             h = 0
 #         elif Cmax == r_:
@@ -1801,21 +1805,21 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 #             h = 60*(((b_-r_)/delta)+2)
 #         elif Cmax == b_:
 #             h = 60*(((r_-g_)/delta)+4)
-# 
+#
 #         if Cmax == 0:
 #             s = 0
 #         else:
 #             s = delta/Cmax
-# 
+#
 #         if h + hue > 360:
 #             h = (h + hue) % 360
 #         else:
 #             h = h + hue
-# 
+#
 #         C = v*s
 #         X = C*(1-abs( ( (h/60) % 2) -1 ) )
 #         m = v - C
-# 
+#
 #         if h < 60 and h >= 0:
 #             r_, g_, b_ = C, X, 0
 #         if h < 120 and h >= 60:
@@ -1828,11 +1832,11 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 #             r_, g_, b_ = X, 0, C
 #         if h < 360 and h >= 300:
 #             r_, g_, b_ = C, 0, X
-# 
+#
 #         r, g, b = (r_ + m) * 255, (g_ + m) * 255, (b_ + m) * 255
 #         new_color = Color(int(r), int(g), int(b))
 #         return catbricks.SetPenColorBrick(new_color.getRed(), new_color.getGreen(), new_color.getBlue())
-# 
+#
 #     @_register_handler(_block_name_to_handler_map, "changePenSizeBy:")
 #     def _convert_change_pen_size_block(self):
 #         [size_add] = self.arguments

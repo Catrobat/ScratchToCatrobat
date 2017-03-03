@@ -129,6 +129,7 @@ class ProjectTestCase(BaseTestCase):
         header_tags = [FIELD_NAMES_TO_XML_NAMES[field] if field in FIELD_NAMES_TO_XML_NAMES else field for field in common.fields_of(catbase.XmlHeader) if field not in IGNORED_XML_HEADER_CLASS_FIELDS]
         mandatory_header_tags = set(header_tags) - set(OPTIONAL_HEADER_TAGS)
         for header_tag in header_tags:
+            header_tag = header_tag.replace("remixParentsUrlString", "url").replace("remixGrandparentsUrlString", "remixOf")
             tag = "header/" + header_tag
             xml_node = xml_root.find(tag)
             assert xml_node is not None, "XML file error: tag '{}' must be available".format(tag)

@@ -269,11 +269,11 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def test_can_convert_when_loudness_greater_than_script_with_formula(self):
         scratch_script= scratch.Script([30, 355, [["whenSensorGreaterThan", "loudness", ["+", 2, 1]], ["say:", "Hello!"]]])
         catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
-        
+
         assert isinstance(catr_script, catbase.WhenConditionScript)
         formula = catr_script.formulaMap[catbricks.Brick.BrickField.IF_CONDITION] #@UndefinedVariable
         assert isinstance(formula, catformula.Formula)
-        
+
         assert formula.formulaTree.value == str(catformula.Operators.GREATER_THAN)
         assert formula.formulaTree.leftChild.value == str(catformula.Sensors.LOUDNESS)
         assert formula.formulaTree.rightChild.value == str(catformula.Operators.PLUS)
@@ -1789,14 +1789,14 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert DUMMY_CATR_SPRITE.getName() == catr_brick.objectToClone.getName()
         assert DUMMY_CATR_SPRITE is catr_brick.objectToClone
 
-    # createCloneOf 
+    # createCloneOf
     def test_fail_convert_create_clone_of_block_with_empty_string_arg(self):
         sprite_name = ""
         scratch_block = ["createCloneOf", sprite_name]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.NoteBrick)
 
-    # createCloneOf 
+    # createCloneOf
     def test_fail_convert_create_clone_of_block_with_formula_arg(self):
         scratch_block = ["createCloneOf", ["-", 2, 1]]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)

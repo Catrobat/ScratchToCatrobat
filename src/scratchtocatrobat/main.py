@@ -80,7 +80,7 @@ def run_converter(scratch_project_file_or_url, output_dir,
         if show_version_only or show_info_only:
             helpers.print_info_or_version_screen(show_version_only, catrobat.CATROBAT_LANGUAGE_VERSION)
             return helpers.ExitCode.SUCCESS
-        elif latest_release_data:
+        elif latest_release_data and not web_mode: # suppress release-reminder in web-mode
             current_release_version = helpers.extract_version_number(tag_name)
             latest_release_version = helpers.extract_version_number(latest_release_data["tag_name"])
             if current_release_version < latest_release_version:

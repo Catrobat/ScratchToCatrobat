@@ -190,7 +190,8 @@ class _ScratchToCatrobat(object):
         scratch.SCRIPT_CLICKED: catbase.WhenScript,
         scratch.SCRIPT_CLONED: catbase.WhenClonedScript,
         scratch.SCRIPT_PROC_DEF: catbricks.UserBrick,
-        scratch.SCRIPT_SENSOR_GREATER_THAN: None
+        scratch.SCRIPT_SENSOR_GREATER_THAN: None,
+        scratch.SCRIPT_WHEN_BACKGROUND_SWITCHES_TO: None
     }
 
     complete_mapping = dict({
@@ -353,6 +354,16 @@ class _ScratchToCatrobat(object):
             my_script = catbase.WhenConditionScript(when_cond_brick)
             my_script.formulaMap = when_cond_brick.formulaMap
             return my_script
+
+        if scratch_script_name == scratch.SCRIPT_WHEN_BACKGROUND_SWITCHES_TO:
+            background = catrobat.background_sprite_of(catrobat_project.getDefaultScene())
+            background = sprite if background is None else background
+            assert catrobat.is_background_sprite(background)
+            for look in background.getLookDataList():
+                if arguments[0] == look.getLookName():
+                    background_changes_script = catbase.WhenBackgroundChangesScript()
+                    background_changes_script.setLook(look)
+                    return background_changes_script
 
         if scratch_script_name != scratch.SCRIPT_PROC_DEF:
             return catrobat_script(*arguments)
@@ -540,10 +551,6 @@ def _sound_length_variable_name_for(resource_name):
 
 def _is_generated(variable_name):
     return variable_name.startswith(_GENERATED_VARIABLE_PREFIX)
-
-def _test_function(test_name):
-    _log.info("TEST")
-    print "abc"
 
 class Context(object):
     def __init__(self):

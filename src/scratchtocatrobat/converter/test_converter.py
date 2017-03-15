@@ -317,6 +317,52 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert formula.formulaTree.rightChild.leftChild.value == "2"
         assert formula.formulaTree.rightChild.rightChild.value == "1"
 
+    #whenBackgroundSwitchesTo
+    def test_can_convert_when_background_switches_to_script_for_sprite(self):
+        scratch_script= scratch.Script([321, 89, [["whenSceneStarts", "look1"], ["say:", "Hello!"]]])
+        self.test_project.getDefaultScene().spriteList.add(self.sprite_stub)
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
+        assert isinstance(catr_script, catbase.WhenBackgroundChangesScript)
+        assert catr_script.getLook().name == "look1"
+        assert catr_script.getLook() == self.sprite_stub.getLookDataList()[0]
+        assert len(catr_script.getBrickList()) == 1
+        assert isinstance(catr_script.getBrickList()[0], catbricks.SayBubbleBrick)
+
+    #whenBackgroundSwitchesTo
+    def test_can_convert_when_background_switches_to_script_for_background(self):
+        raw_json = {
+            "objName": "Stage",
+            "scripts": [[47, 97, [["whenSceneStarts", "look1"]]]],
+            "costumes": [{
+                    "costumeName": "backdrop1",
+                    "baseLayerID": 3,
+                    "baseLayerMD5": "739b5e2a2435f6e1ec2993791b423146.png",
+                    "bitmapResolution": 1,
+                    "rotationCenterX": 240,
+                    "rotationCenterY": 180
+                }],
+            "children": [],
+            "currentCostumeIndex": 0,
+            "penLayerMD5": "5c81a336fab8be57adc039a8a2b33ca9.png",
+            "penLayerID": 0,
+            "tempoBPM": 60,
+                "info": {}
+        }
+
+        raw_project = scratch.RawProject(raw_json)
+        self.test_project.getDefaultScene().spriteList.add(self.sprite_stub)
+        catr_script = self.block_converter._catrobat_script_from(raw_project.objects[0].scripts[0], DUMMY_CATR_SPRITE, self.test_project)
+        assert isinstance(catr_script, catbase.WhenBackgroundChangesScript)
+        assert catr_script.getLook().name == "look1"
+        assert catr_script.getLook() == self.sprite_stub.getLookDataList()[0]
+        assert len(catr_script.getBrickList()) == 0
+
+    #whenBackgroundSwitchesTo
+    def test_fail_convert_when_background_switches_to_script(self):
+        scratch_script= scratch.Script([321, 89, [["whenSceneStarts", "look1"], ["say:", "Hello!"]]])
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
+        assert isinstance(catr_script, catbase.StartScript)
+
     #whenSensorGreaterThan
     def test_can_convert_when_video_motion_greater_than_script_with_formula(self):
         scratch_script= scratch.Script([30, 355, [["whenSensorGreaterThan", "video motion", ["+", 2, 1]], ["say:", "Hello!"]]])

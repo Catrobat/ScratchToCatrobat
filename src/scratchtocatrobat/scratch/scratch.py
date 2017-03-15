@@ -61,8 +61,8 @@ class JsonKeys(object):
 
 #PROJECT_SPECIFIC_KEYS = ["info", "currentCostumeIndex", "penLayerMD5", "tempoBPM", "videoAlpha", "children"]
 PROJECT_SPECIFIC_KEYS = ["info", "currentCostumeIndex", "penLayerMD5", "tempoBPM", "children"]
-SCRIPT_GREEN_FLAG, SCRIPT_RECEIVE, SCRIPT_KEY_PRESSED, SCRIPT_SENSOR_GREATER_THAN, SCRIPT_SCENE_STARTS, SCRIPT_CLICKED, SCRIPT_PROC_DEF, SCRIPT_CLONED = SCRIPTS = \
-    ["whenGreenFlag", "whenIReceive", "whenKeyPressed", "whenSensorGreaterThan", "whenSceneStarts", "whenClicked", "procDef", "whenCloned"]
+SCRIPT_GREEN_FLAG, SCRIPT_RECEIVE, SCRIPT_KEY_PRESSED, SCRIPT_SENSOR_GREATER_THAN, SCRIPT_SCENE_STARTS, SCRIPT_CLICKED, SCRIPT_PROC_DEF, SCRIPT_CLONED, SCRIPT_WHEN_BACKGROUND_SWITCHES_TO = SCRIPTS = \
+    ["whenGreenFlag", "whenIReceive", "whenKeyPressed", "whenSensorGreaterThan", "whenSceneStarts", "whenClicked", "procDef", "whenCloned", "whenSceneStarts"]
 STAGE_OBJECT_NAME = "Stage"
 STAGE_WIDTH_IN_PIXELS = 480
 STAGE_HEIGHT_IN_PIXELS = 360

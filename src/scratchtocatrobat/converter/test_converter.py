@@ -317,6 +317,19 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert formula.formulaTree.rightChild.leftChild.value == "2"
         assert formula.formulaTree.rightChild.rightChild.value == "1"
 
+    #whenBackgroundSwitchesTo
+    def test_can_convert_when_background_switches_to(self):
+        scratch_script= scratch.Script([321, 89, [["whenSceneStarts", "look1"], ["say:", "Hello!"]]])
+        self.test_project.getDefaultScene().spriteList.add(self.sprite_stub)
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
+        assert isinstance(catr_script, catbase.WhenBackgroundChangesScript)
+
+    #whenBackgroundSwitchesTo
+    def test_fail_convert_when_background_switches_to(self):
+        scratch_script= scratch.Script([321, 89, [["whenSceneStarts", "look1"], ["say:", "Hello!"]]])
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
+        assert isinstance(catr_script, catbase.StartScript)
+
     #whenSensorGreaterThan
     def test_can_convert_when_video_motion_greater_than_script_with_formula(self):
         scratch_script= scratch.Script([30, 355, [["whenSensorGreaterThan", "video motion", ["+", 2, 1]], ["say:", "Hello!"]]])

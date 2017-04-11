@@ -215,6 +215,13 @@ class RawProject(Object):
         self._verify_scratch_dictionary(dict_, data_origin)
         self.dict_ = dict_
         raw_child_objects = sorted(self.get_children(), key=lambda obj_data: obj_data.get("indexInLibrary", 0))
+        # for variable box objects
+        raw_variable_visibility_information = [var for var in raw_child_objects if "target" in var]
+        self._var_to_visibility_map = dict()
+        for info in raw_variable_visibility_information:
+            self._var_to_visibility_map[info["label"]] = info["visible"]
+        print("222")
+        print(self._var_to_visibility_map)
         self.raw_objects = [child for child in raw_child_objects if "objName" in child]
         self.objects = [Object(raw_object) for raw_object in [dict_] + self.raw_objects]
         self.resource_names = [self._resource_name_from(raw_resource) for raw_resource in self._raw_resources()]

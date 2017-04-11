@@ -583,6 +583,26 @@ class Converter(object):
         catrobat_project = converter._converted_catrobat_program(progress_bar, context)
         assert catrobat.is_background_sprite(catrobat_project.getDefaultScene().getSpriteList().get(0))
         return ConvertedProject(catrobat_project, scratch_project)
+    
+    def _add_bricks_for_visible_variables(self, catrobat_scene):
+        scratch_project = self.scratch_project
+        brick_list = []
+        for var in scratch_project._var_to_visibility_map:
+            # create bricks
+            if(scratch_project._var_to_visibility_map.get(var)):    
+                actual_var = _ScratchObjectConverter._catrobat_scene.getDataContainer().getUserVariable(var, None)
+                show_variable_brick = catbricks.ShowTextBrick(0, 0)
+                show_variable_brick.setUserVariableName(var)
+                show_variable_brick.setUserVariable(actual_var)
+                brick_list.append(show_variable_brick)
+                
+        when_started_script = catbase.StartScript()
+        when_started_script.getBrickList().addAll(brick_list)
+        # Add to stage
+        print("l602 create bricks for visible variables")
+        
+        catrobat_scene.getSpriteList().get(0).addScript(when_started_script)
+        return
 
     def _converted_catrobat_program(self, progress_bar=None, context=None):
         scratch_project = self.scratch_project
@@ -595,10 +615,12 @@ class Converter(object):
                                                                  progress_bar, context)
         self._add_global_user_lists_to(_catr_scene)
         self._add_converted_sprites_to(_catr_scene)
+        
         self._add_key_sprites_to(_catr_scene, self.scratch_project.listened_keys)
         self._update_xml_header(_catr_project.getXmlHeader(), scratch_project.project_id,
                                 scratch_project.name, scratch_project.instructions,
                                 scratch_project.notes_and_credits)
+        self._add_bricks_for_visible_variables(_catr_scene)
         return _catr_project
 
     def _add_global_user_lists_to(self, catrobat_scene):
@@ -723,6 +745,10 @@ class _ScratchObjectConverter(object):
         _ScratchObjectConverter._catrobat_project = catrobat_project
         _ScratchObjectConverter._catrobat_scene = catrobat_project.getDefaultScene()
         _ScratchObjectConverter._scratch_project = scratch_project
+        # construct variable boxes here?
+        print("l727")
+        print(scratch_project._var_to_visibility_map)
+        
         self._progress_bar = progress_bar
         self._context = context
 

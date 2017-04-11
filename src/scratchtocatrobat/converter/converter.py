@@ -575,6 +575,14 @@ def converted(scratch_project, progress_bar=None, context=None):
 class Converter(object):
 
     def __init__(self, scratch_project):
+        self.visible_var_X = -50
+        self.visible_var_Y =  50
+        self.visible_var_X_init = -50
+        self.visible_var_Y_init =  50
+        self.visible_var_position_step_Y = 5
+        self.visible_var_position_step_X = 10
+        self.visible_var_position_threshold_Y = -50
+        self.visible_var_position_threshold_X =  50
         self.scratch_project = scratch_project
 
     @classmethod
@@ -591,16 +599,26 @@ class Converter(object):
             # create bricks
             if(scratch_project._var_to_visibility_map.get(var)):    
                 actual_var = _ScratchObjectConverter._catrobat_scene.getDataContainer().getUserVariable(var, None)
-                show_variable_brick = catbricks.ShowTextBrick(0, 0)
+                show_variable_brick = catbricks.ShowTextBrick(self.visible_var_X, self.visible_var_Y)
                 show_variable_brick.setUserVariableName(var)
                 show_variable_brick.setUserVariable(actual_var)
                 brick_list.append(show_variable_brick)
+            
+            # for each further var move position
+            self.visible_var_Y -= self.visible_var_position_step_Y
+            
+            if self.visible_var_Y <= self.visible_var_position_threshold_Y:
+                self.visible_var_Y = self.visible_var_Y_init
+                self.visible_var_X += self.visible_var_position_step_X
+                
+                if self.visible_var_X >= self.visible_var_position_threshold_X:
+                    log.info("Too many visible variables")
+                    break
                 
         when_started_script = catbase.StartScript()
         when_started_script.getBrickList().addAll(brick_list)
-        # Add to stage
-        print("l602 create bricks for visible variables")
         
+        # Add to stage
         catrobat_scene.getSpriteList().get(0).addScript(when_started_script)
         return
 
@@ -745,9 +763,6 @@ class _ScratchObjectConverter(object):
         _ScratchObjectConverter._catrobat_project = catrobat_project
         _ScratchObjectConverter._catrobat_scene = catrobat_project.getDefaultScene()
         _ScratchObjectConverter._scratch_project = scratch_project
-        # construct variable boxes here?
-        print("l727")
-        print(scratch_project._var_to_visibility_map)
         
         self._progress_bar = progress_bar
         self._context = context

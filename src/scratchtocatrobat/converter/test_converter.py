@@ -2278,6 +2278,13 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         [formula] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(formula, catformula.FormulaElement)
         assert formula.value == "OBJECT_SIZE"
+        
+    def test_can_convert_visible_variables(self):
+        # need testproject with
+        # background sprite
+        # at least one visible variable
+        # 
+        assert False
 
 class TestConvertProjects(common_testing.ProjectTestCase):
 

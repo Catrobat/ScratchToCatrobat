@@ -633,7 +633,6 @@ class Converter(object):
                                                                  progress_bar, context)
         self._add_global_user_lists_to(_catr_scene)
         self._add_converted_sprites_to(_catr_scene)
-        
         self._add_key_sprites_to(_catr_scene, self.scratch_project.listened_keys)
         self._update_xml_header(_catr_project.getXmlHeader(), scratch_project.project_id,
                                 scratch_project.name, scratch_project.instructions,
@@ -763,7 +762,6 @@ class _ScratchObjectConverter(object):
         _ScratchObjectConverter._catrobat_project = catrobat_project
         _ScratchObjectConverter._catrobat_scene = catrobat_project.getDefaultScene()
         _ScratchObjectConverter._scratch_project = scratch_project
-        
         self._progress_bar = progress_bar
         self._context = context
 

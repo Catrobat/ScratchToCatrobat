@@ -575,14 +575,14 @@ def converted(scratch_project, progress_bar=None, context=None):
 class Converter(object):
 
     def __init__(self, scratch_project):
-        self.visible_var_X = -50
-        self.visible_var_Y =  50
-        self.visible_var_X_init = -50
-        self.visible_var_Y_init =  50
-        self.visible_var_position_step_Y = 5
-        self.visible_var_position_step_X = 10
-        self.visible_var_position_threshold_Y = -50
-        self.visible_var_position_threshold_X =  50
+        self.visible_var_X = -220
+        self.visible_var_Y =  170
+        self.visible_var_X_init = -220
+        self.visible_var_Y_init =  170
+        self.visible_var_position_step_Y = 40
+        self.visible_var_position_step_X = 40
+        self.visible_var_position_threshold_Y = -170
+        self.visible_var_position_threshold_X =  220
         self.scratch_project = scratch_project
 
     @classmethod

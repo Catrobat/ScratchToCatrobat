@@ -1327,11 +1327,16 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert isinstance(catr_brick, catbricks.InsertItemIntoUserListBrick)
 
         formula_tree_index = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.INSERT_ITEM_INTO_USERLIST_INDEX).formulaTree # @UndefinedVariable
-        assert formula_tree_index.type == catformula.FormulaElement.ElementType.FUNCTION
-        assert formula_tree_index.value == "NUMBER_OF_ITEMS"
-        assert formula_tree_index.leftChild
-        assert formula_tree_index.rightChild == None
-        formula_element_left_child = formula_tree_index.leftChild
+        assert formula_tree_index.type == catformula.FormulaElement.ElementType.OPERATOR
+        assert formula_tree_index.value == "PLUS"
+        assert formula_tree_index.leftChild.type == catformula.FormulaElement.ElementType.FUNCTION
+        assert formula_tree_index.leftChild.value == "NUMBER_OF_ITEMS"
+        assert formula_tree_index.leftChild.rightChild == None
+        assert formula_tree_index.rightChild.type == catformula.FormulaElement.ElementType.NUMBER
+        assert formula_tree_index.rightChild.value == "1"
+        assert formula_tree_index.rightChild.leftChild == None
+        assert formula_tree_index.rightChild.rightChild == None
+        formula_element_left_child = formula_tree_index.leftChild.leftChild
         assert formula_element_left_child.type == catformula.FormulaElement.ElementType.USER_LIST
         assert formula_element_left_child.value == self._name_of_test_list
         assert formula_element_left_child.leftChild == None

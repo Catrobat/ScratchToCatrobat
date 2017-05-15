@@ -1522,7 +1522,8 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     def _convert_insert_at_of_list_block(self):
         [value, position, list_name] = self.arguments
         if position == "last":
-            index_formula = catrobat.create_formula_with_value(self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:"))
+            index_fe_linecount = self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:")
+            index_formula = catrobat.create_formula_with_value(self._converted_helper_brick_or_formula_element([index_fe_linecount, 1], "+"))
         elif position == "random":
             start_formula_element = catformula.FormulaElement(catElementType.NUMBER, "1", None) # first index of list
             end_formula_element = self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:")

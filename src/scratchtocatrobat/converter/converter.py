@@ -62,7 +62,7 @@ _SUPPORTED_SOUND_EXTENSIONS_BY_CATROBAT = {".mp3", ".wav"}
 CATROBAT_DEFAULT_SCENE_NAME = "Scene 1"
 UNSUPPORTED_SCRATCH_BLOCK_NOTE_MESSAGE_PREFIX_TEMPLATE = "Missing brick for Scratch identifier: [{}]"
 UNSUPPORTED_SCRATCH_FORMULA_BLOCK_NOTE_MESSAGE_PREFIX = "Missing formula element in brick: [{}] for Scratch identifier: [{}]"
-XML_CHARACTERS_TO_BE_REPLACED_MAPPING = { '"': '', '\'': '', '<': 'lessThan', '>': 'greaterThan', '&': 'AND' }
+XML_CHARACTERS_TO_BE_REPLACED_MAPPING = {'\'': '', '<': 'lessThan', '>': 'greaterThan', '&': 'AND' }
 
 log = logger.log
 
@@ -1209,7 +1209,6 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             unmapped_block_arguments = filter(lambda arg: isinstance(arg, UnmappedBlock), self.arguments)
             unsupported_blocks = map(lambda unmapped_block: unmapped_block.to_placeholder_brick(self.block_name)[0], unmapped_block_arguments)
             self.arguments = map(lambda arg: catrobat.create_formula_element_with_value(0) if isinstance(arg, UnmappedBlock) else arg, self.arguments)
-
             self.CatrobatClass = _ScratchToCatrobat.catrobat_brick_class_for(block_name)
             handler_method_name = self._block_name_to_handler_map.get(block_name)
             try:

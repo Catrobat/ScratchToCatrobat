@@ -62,7 +62,6 @@ _SUPPORTED_SOUND_EXTENSIONS_BY_CATROBAT = {".mp3", ".wav"}
 CATROBAT_DEFAULT_SCENE_NAME = "Scene 1"
 UNSUPPORTED_SCRATCH_BLOCK_NOTE_MESSAGE_PREFIX_TEMPLATE = "Missing brick for Scratch identifier: [{}]"
 UNSUPPORTED_SCRATCH_FORMULA_BLOCK_NOTE_MESSAGE_PREFIX = "Missing formula element in brick: [{}] for Scratch identifier: [{}]"
-XML_CHARACTERS_TO_BE_REPLACED_MAPPING = {'\'': '', '<': 'lessThan', '>': 'greaterThan', '&': 'AND' }
 
 log = logger.log
 
@@ -83,20 +82,15 @@ class UnmappedBlock(object):
         return [_placeholder_for_unmapped_blocks_to(*self.block_and_args)] if held_by_block_name is None \
                else [_placeholder_for_unmapped_formula_blocks_to(held_by_block_name, *self.block_and_args)]
 
-def _escape_arguments(arguments):
-    for k, v in XML_CHARACTERS_TO_BE_REPLACED_MAPPING.iteritems():
-        arguments = map(lambda arg: arg.replace(k, v) if isinstance(arg, basestring) else arg, arguments)
-    return arguments
-
 def _with_unmapped_blocks_replaced_as_default_formula_value(arguments):
-    return [_DEFAULT_FORMULA_ELEMENT if isinstance(argument, UnmappedBlock) else argument for argument in _escape_arguments(arguments)]
+    return [_DEFAULT_FORMULA_ELEMENT if isinstance(argument, UnmappedBlock) else argument for argument in arguments]
 
 def _arguments_string(args):
-    return ", ".join(map(catrobat.simple_name_for, _escape_arguments(args)))
+    return ", ".join(map(catrobat.simple_name_for, args))
 
 def _placeholder_for_unmapped_formula_blocks_to(held_by_block_name, *args):
-    escaped_held_by_block_name = _escape_arguments([held_by_block_name])[0]
-    return catbricks.NoteBrick(UNSUPPORTED_SCRATCH_FORMULA_BLOCK_NOTE_MESSAGE_PREFIX.format(escaped_held_by_block_name, _arguments_string(args)))
+    held_by_block_name = [held_by_block_name][0]
+    return catbricks.NoteBrick(UNSUPPORTED_SCRATCH_FORMULA_BLOCK_NOTE_MESSAGE_PREFIX.format(held_by_block_name, _arguments_string(args)))
 
 def _placeholder_for_unmapped_blocks_to(*args):
     return catbricks.NoteBrick(UNSUPPORTED_SCRATCH_BLOCK_NOTE_MESSAGE_PREFIX_TEMPLATE.format(_arguments_string(args)))

@@ -62,7 +62,6 @@ _SUPPORTED_SOUND_EXTENSIONS_BY_CATROBAT = {".mp3", ".wav"}
 CATROBAT_DEFAULT_SCENE_NAME = "Scene 1"
 UNSUPPORTED_SCRATCH_BLOCK_NOTE_MESSAGE_PREFIX_TEMPLATE = "Missing brick for Scratch identifier: [{}]"
 UNSUPPORTED_SCRATCH_FORMULA_BLOCK_NOTE_MESSAGE_PREFIX = "Missing formula element in brick: [{}] for Scratch identifier: [{}]"
-XML_CHARACTERS_TO_BE_REPLACED_MAPPING = { '"': '', '\'': '', '<': 'lessThan', '>': 'greaterThan', '&': 'AND' }
 
 log = logger.log
 
@@ -83,20 +82,15 @@ class UnmappedBlock(object):
         return [_placeholder_for_unmapped_blocks_to(*self.block_and_args)] if held_by_block_name is None \
                else [_placeholder_for_unmapped_formula_blocks_to(held_by_block_name, *self.block_and_args)]
 
-def _escape_arguments(arguments):
-    for k, v in XML_CHARACTERS_TO_BE_REPLACED_MAPPING.iteritems():
-        arguments = map(lambda arg: arg.replace(k, v) if isinstance(arg, basestring) else arg, arguments)
-    return arguments
-
 def _with_unmapped_blocks_replaced_as_default_formula_value(arguments):
-    return [_DEFAULT_FORMULA_ELEMENT if isinstance(argument, UnmappedBlock) else argument for argument in _escape_arguments(arguments)]
+    return [_DEFAULT_FORMULA_ELEMENT if isinstance(argument, UnmappedBlock) else argument for argument in arguments]
 
 def _arguments_string(args):
-    return ", ".join(map(catrobat.simple_name_for, _escape_arguments(args)))
+    return ", ".join(map(catrobat.simple_name_for, args))
 
 def _placeholder_for_unmapped_formula_blocks_to(held_by_block_name, *args):
-    escaped_held_by_block_name = _escape_arguments([held_by_block_name])[0]
-    return catbricks.NoteBrick(UNSUPPORTED_SCRATCH_FORMULA_BLOCK_NOTE_MESSAGE_PREFIX.format(escaped_held_by_block_name, _arguments_string(args)))
+    held_by_block_name = [held_by_block_name][0]
+    return catbricks.NoteBrick(UNSUPPORTED_SCRATCH_FORMULA_BLOCK_NOTE_MESSAGE_PREFIX.format(held_by_block_name, _arguments_string(args)))
 
 def _placeholder_for_unmapped_blocks_to(*args):
     return catbricks.NoteBrick(UNSUPPORTED_SCRATCH_BLOCK_NOTE_MESSAGE_PREFIX_TEMPLATE.format(_arguments_string(args)))
@@ -245,7 +239,8 @@ class _ScratchToCatrobat(object):
         # looks
         "lookLike:": catbricks.SetLookBrick,
         "nextCostume": catbricks.NextLookBrick,
-        "startScene": catbricks.BroadcastBrick,
+        "startScene": catbricks.SetBackgroundBrick,
+        "startSceneAndWait": catbricks.SetBackgroundAndWaitBrick,
         "nextScene": catbricks.NextLookBrick,  # only allowed in scene object so same as nextLook
 
         # video
@@ -1208,7 +1203,6 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             unmapped_block_arguments = filter(lambda arg: isinstance(arg, UnmappedBlock), self.arguments)
             unsupported_blocks = map(lambda unmapped_block: unmapped_block.to_placeholder_brick(self.block_name)[0], unmapped_block_arguments)
             self.arguments = map(lambda arg: catrobat.create_formula_element_with_value(0) if isinstance(arg, UnmappedBlock) else arg, self.arguments)
-
             self.CatrobatClass = _ScratchToCatrobat.catrobat_brick_class_for(block_name)
             handler_method_name = self._block_name_to_handler_map.get(block_name)
             try:
@@ -1412,9 +1406,15 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "startScene")
     def _convert_scene_block(self):
         [look_name] = self.arguments
-        # TODO: implement!
-        #if look_name == "next backdrop": => use NextLookBrick
-        #if look_name == "previous backdrop": => not sure...
+
+        #TODO: If SetBackgroundBrick gets Formula as accepted argument for Constructor,
+        #      then extend this register_handler accordingly.
+
+        if look_name == "next backdrop":
+            return catbricks.NextLookBrick()
+        if look_name == "previous backdrop":
+            return catbricks.PreviousLookBrick()
+
         background_sprite = catrobat.background_sprite_of(self.scene)
         if not background_sprite:
             assert catrobat.is_background_sprite(self.sprite)
@@ -1423,15 +1423,37 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         if not matching_looks:
             raise ConversionError("Background does not contain look with name: {}".format(look_name))
         assert len(matching_looks) == 1
-        [matching_look] = matching_looks
-        look_message = _background_look_to_broadcast_message(look_name)
-        broadcast_brick = self.CatrobatClass(look_message)
-        broadcast_script = catbase.BroadcastScript(look_message)
-        set_look_brick = catbricks.SetLookBrick()
-        set_look_brick.setLook(matching_look)
-        broadcast_script.addBrick(set_look_brick)
-        background_sprite.addScript(broadcast_script)
-        return [broadcast_brick]
+
+        switch_background_brick = self.CatrobatClass()
+        switch_background_brick.setLook(matching_looks[0])
+
+        return switch_background_brick
+
+    @_register_handler(_block_name_to_handler_map, "startSceneAndWait")
+    def _convert_scene_and_wait_block(self):
+        [look_name] = self.arguments
+
+        #TODO: If SetBackgroundBrick gets Formula as accepted argument for Constructor,
+        #      then extend this register_handler accordingly.
+
+        if look_name == "next backdrop":
+            return catbricks.NextLookBrick()
+        if look_name == "previous backdrop":
+            return catbricks.PreviousLookBrick()
+
+        background_sprite = catrobat.background_sprite_of(self.scene)
+        if not background_sprite:
+            assert catrobat.is_background_sprite(self.sprite)
+            background_sprite = self.sprite
+        matching_looks = [_ for _ in background_sprite.getLookDataList() if _.getLookName() == look_name]
+        if not matching_looks:
+            raise ConversionError("Background does not contain look with name: {}".format(look_name))
+        assert len(matching_looks) == 1
+
+        switch_background_brick = self.CatrobatClass()
+        switch_background_brick.setLook(matching_looks[0])
+
+        return switch_background_brick
 
     @_register_handler(_block_name_to_handler_map, "doIf")
     def _convert_if_block(self):
@@ -1500,7 +1522,8 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     def _convert_insert_at_of_list_block(self):
         [value, position, list_name] = self.arguments
         if position == "last":
-            index_formula = catrobat.create_formula_with_value(self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:"))
+            index_fe_linecount = self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:")
+            index_formula = catrobat.create_formula_with_value(self._converted_helper_brick_or_formula_element([index_fe_linecount, 1], "+"))
         elif position == "random":
             start_formula_element = catformula.FormulaElement(catElementType.NUMBER, "1", None) # first index of list
             end_formula_element = self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:")

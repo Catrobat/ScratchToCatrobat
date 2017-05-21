@@ -1334,7 +1334,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.AddItemToUserListBrick)
 
-        formula_tree_index = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.LIST_ADD_ITEM).formulaTree
+        formula_tree_index = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.LIST_ADD_ITEM).formulaTree # @UndefinedVariable
         assert formula_tree_index.type == catformula.FormulaElement.ElementType.STRING
         assert formula_tree_index.value == "DummyString"
 

@@ -237,8 +237,12 @@ def formula_element_for(catrobat_enum, arguments=[]):
             assert len(arguments) == 2 and arguments[0] != None and arguments[1] == None
             arguments[0], arguments[1] = arguments[1], arguments[0] # swap leftChild and rightChild
 
+        arguments = [catformula.FormulaElement(catformula.FormulaElement.ElementType.STRING, str(arg), None)
+                      if isinstance(arg, unicode) else arg for arg in arguments]
+
         formula_element = catformula.FormulaElement(element_type, enum_name, formula_parent, *arguments)  # @UndefinedVariable (valueOf)
         for formula_child in arguments:
             if formula_child is not None:
                 formula_child.parent = formula_element
+
     return formula_element

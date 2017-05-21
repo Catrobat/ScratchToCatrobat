@@ -209,7 +209,7 @@ class _ScratchToCatrobat(object):
         "doRepeat": catbricks.RepeatBrick,
         "doUntil": catbricks.RepeatUntilBrick,
         "doWaitUntil": lambda condition: catbricks.WaitUntilBrick(catrobat.create_formula_with_value(condition)),
-        "stopScripts": lambda subject: catbricks.StopScriptBrick(["this script", "all", "other scripts in sprite"].index(subject)),
+        "stopScripts": lambda subject: catbricks.StopScriptBrick(["this script", "all", "other scripts in sprite"].index(subject) if subject != "other scripts in stage" else 2),
 
         # motion
         "turnRight:": catbricks.TurnRightBrick,

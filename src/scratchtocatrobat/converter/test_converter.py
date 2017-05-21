@@ -895,6 +895,14 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert isinstance(catr_brick, catbricks.StopScriptBrick)
         assert expected_index_of_option == catr_brick.spinnerSelection
 
+    # stopScripts ("other scripts in stage")
+    def test_can_convert_stop_scripts_with_option_other_scripts_in_stage_block(self):
+        expected_index_of_option = 2
+        scratch_block = ["stopScripts", "other scripts in stage"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.StopScriptBrick)
+        assert expected_index_of_option == catr_brick.spinnerSelection
+
     # setRotationStyle ("left-right")
     def test_can_convert_set_rotation_style_with_option_left_right_block(self):
         expected_index_of_option = 0

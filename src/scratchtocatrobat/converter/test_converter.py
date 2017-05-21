@@ -1324,28 +1324,11 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         value = "DummyString"
         scratch_block = ["insert:at:ofList:", value, "last", self._name_of_test_list]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        assert isinstance(catr_brick, catbricks.InsertItemIntoUserListBrick)
+        assert isinstance(catr_brick, catbricks.AddItemToUserListBrick)
 
-        formula_tree_index = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.INSERT_ITEM_INTO_USERLIST_INDEX).formulaTree # @UndefinedVariable
-        assert formula_tree_index.type == catformula.FormulaElement.ElementType.OPERATOR
-        assert formula_tree_index.value == "PLUS"
-        assert formula_tree_index.leftChild.type == catformula.FormulaElement.ElementType.FUNCTION
-        assert formula_tree_index.leftChild.value == "NUMBER_OF_ITEMS"
-        assert formula_tree_index.leftChild.rightChild == None
-        assert formula_tree_index.rightChild.type == catformula.FormulaElement.ElementType.NUMBER
-        assert formula_tree_index.rightChild.value == "1"
-        assert formula_tree_index.rightChild.leftChild == None
-        assert formula_tree_index.rightChild.rightChild == None
-        formula_element_left_child = formula_tree_index.leftChild.leftChild
-        assert formula_element_left_child.type == catformula.FormulaElement.ElementType.USER_LIST
-        assert formula_element_left_child.value == self._name_of_test_list
-        assert formula_element_left_child.leftChild == None
-        assert formula_element_left_child.rightChild == None
-        formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.INSERT_ITEM_INTO_USERLIST_VALUE).formulaTree # @UndefinedVariable
-        assert formula_tree_value.type == catformula.FormulaElement.ElementType.STRING
-        assert formula_tree_value.value == value
-        assert formula_tree_value.leftChild == None
-        assert formula_tree_value.rightChild == None
+        formula_tree_index = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.LIST_ADD_ITEM).formulaTree
+        assert formula_tree_index.type == catformula.FormulaElement.ElementType.STRING
+        assert formula_tree_index.value == "DummyString"
 
     # insert:at:ofList:
     def test_can_convert_insert_at_random_position_in_list_block(self):

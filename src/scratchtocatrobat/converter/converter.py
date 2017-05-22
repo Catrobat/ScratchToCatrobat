@@ -62,7 +62,6 @@ _SUPPORTED_SOUND_EXTENSIONS_BY_CATROBAT = {".mp3", ".wav"}
 CATROBAT_DEFAULT_SCENE_NAME = "Scene 1"
 UNSUPPORTED_SCRATCH_BLOCK_NOTE_MESSAGE_PREFIX_TEMPLATE = "Missing brick for Scratch identifier: [{}]"
 UNSUPPORTED_SCRATCH_FORMULA_BLOCK_NOTE_MESSAGE_PREFIX = "Missing formula element in brick: [{}] for Scratch identifier: [{}]"
-XML_CHARACTERS_TO_BE_REPLACED_MAPPING = { '"': '', '\'': '', '<': 'lessThan', '>': 'greaterThan', '&': 'AND' }
 
 log = logger.log
 
@@ -83,20 +82,15 @@ class UnmappedBlock(object):
         return [_placeholder_for_unmapped_blocks_to(*self.block_and_args)] if held_by_block_name is None \
                else [_placeholder_for_unmapped_formula_blocks_to(held_by_block_name, *self.block_and_args)]
 
-def _escape_arguments(arguments):
-    for k, v in XML_CHARACTERS_TO_BE_REPLACED_MAPPING.iteritems():
-        arguments = map(lambda arg: arg.replace(k, v) if isinstance(arg, basestring) else arg, arguments)
-    return arguments
-
 def _with_unmapped_blocks_replaced_as_default_formula_value(arguments):
-    return [_DEFAULT_FORMULA_ELEMENT if isinstance(argument, UnmappedBlock) else argument for argument in _escape_arguments(arguments)]
+    return [_DEFAULT_FORMULA_ELEMENT if isinstance(argument, UnmappedBlock) else argument for argument in arguments]
 
 def _arguments_string(args):
-    return ", ".join(map(catrobat.simple_name_for, _escape_arguments(args)))
+    return ", ".join(map(catrobat.simple_name_for, args))
 
 def _placeholder_for_unmapped_formula_blocks_to(held_by_block_name, *args):
-    escaped_held_by_block_name = _escape_arguments([held_by_block_name])[0]
-    return catbricks.NoteBrick(UNSUPPORTED_SCRATCH_FORMULA_BLOCK_NOTE_MESSAGE_PREFIX.format(escaped_held_by_block_name, _arguments_string(args)))
+    held_by_block_name = [held_by_block_name][0]
+    return catbricks.NoteBrick(UNSUPPORTED_SCRATCH_FORMULA_BLOCK_NOTE_MESSAGE_PREFIX.format(held_by_block_name, _arguments_string(args)))
 
 def _placeholder_for_unmapped_blocks_to(*args):
     return catbricks.NoteBrick(UNSUPPORTED_SCRATCH_BLOCK_NOTE_MESSAGE_PREFIX_TEMPLATE.format(_arguments_string(args)))
@@ -209,7 +203,7 @@ class _ScratchToCatrobat(object):
         "doRepeat": catbricks.RepeatBrick,
         "doUntil": catbricks.RepeatUntilBrick,
         "doWaitUntil": lambda condition: catbricks.WaitUntilBrick(catrobat.create_formula_with_value(condition)),
-        "stopScripts": lambda subject: catbricks.StopScriptBrick(["this script", "all", "other scripts in sprite"].index(subject)),
+        "stopScripts": lambda subject: catbricks.StopScriptBrick(["this script", "all", "other scripts in sprite"].index(subject) if subject != "other scripts in stage" else 2),
 
         # motion
         "turnRight:": catbricks.TurnRightBrick,
@@ -1209,7 +1203,6 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             unmapped_block_arguments = filter(lambda arg: isinstance(arg, UnmappedBlock), self.arguments)
             unsupported_blocks = map(lambda unmapped_block: unmapped_block.to_placeholder_brick(self.block_name)[0], unmapped_block_arguments)
             self.arguments = map(lambda arg: catrobat.create_formula_element_with_value(0) if isinstance(arg, UnmappedBlock) else arg, self.arguments)
-
             self.CatrobatClass = _ScratchToCatrobat.catrobat_brick_class_for(block_name)
             handler_method_name = self._block_name_to_handler_map.get(block_name)
             try:
@@ -1529,7 +1522,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     def _convert_insert_at_of_list_block(self):
         [value, position, list_name] = self.arguments
         if position == "last":
-            index_formula = catrobat.create_formula_with_value(self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:"))
+            return self._converted_helper_brick_or_formula_element([value, list_name], "append:toList:")
         elif position == "random":
             start_formula_element = catformula.FormulaElement(catElementType.NUMBER, "1", None) # first index of list
             end_formula_element = self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:")

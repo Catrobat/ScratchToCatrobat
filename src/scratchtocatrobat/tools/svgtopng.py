@@ -335,15 +335,15 @@ def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
         if "height=\"" in read_line and not check_height:
             _log.info(read_line)
             height = re.search("(?<=height\=\").*?\"", read_line).group(0)
-            height = int(height[0:len(height)-1])
-            _log.info(height)
+            height = re.sub(r"px", "", height, 1) if "px" in height else height
+            height = float(height[0:len(height)-1])
             check_height = True
 
         if "width=\"" in read_line and not check_width:
             _log.info(read_line)
             width = re.search("(?<=width\=\").*?\"", read_line).group(0)
-            width = int(width[0:len(width)-1])
-            _log.info(width)
+            width = re.sub(r"px", "", width, 1) if "px" in width else width
+            width = float(width[0:len(width)-1])
             check_width = True
 
         if "viewBox" in read_line:
@@ -355,19 +355,16 @@ def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
             if view_box_values[1] != 0:
                 view_box_values[3] = abs(view_box_values[3]) + abs(view_box_values[1])
                 view_box_values[1] = 0
-
             read_line = re.sub(r"viewBox=\"[\-|0-9| ]+\"", "", read_line, 1)
             read_line = re.sub(r"width=\"[0-9]+\"", "width=\""+ str(view_box_values[2]) + "\"",
                                read_line, 1)
             read_line = re.sub(r"height=\"[0-9]+\"", "height=\""+ str(view_box_values[3]) + "\"",
                                read_line, 1)
-            check = True
 
         if "g id=\"ID" in read_line and not check_main_transform:
             if "transform=" in read_line:
                 _log.debug(read_line)
                 read_line = re.sub(r"transform=\"matrix(.*)\"", "", read_line, 1)
-                _log.debug(read_line)
                 check_main_transform = True
 
         if "text id=\"ID" in read_line and not check_text_transform:
@@ -376,8 +373,8 @@ def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
                 read_line = re.sub(r"transform=\"matrix(.*)\"", "", read_line, 1)
                 read_line = re.sub(r"x=\"[0-9]+.[0-9]+\"", "x=\"0\"", read_line, 1)
                 read_line = re.sub(r"y=\"[0-9]+.[0-9]+\"", "y=\""+ str(height/2.0) +"\"", read_line, 1)
-                _log.debug(read_line)
                 check_text_transform = True
+
         write_str += read_line + "\n"
 
     buffered_reader.close()

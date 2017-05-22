@@ -333,14 +333,12 @@ def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
             break
 
         if "height=\"" in read_line and not check_height:
-            _log.info(read_line)
             height = re.search("(?<=height\=\").*?\"", read_line).group(0)
             height = re.sub(r"px", "", height, 1) if "px" in height else height
             height = float(height[0:len(height)-1])
             check_height = True
 
         if "width=\"" in read_line and not check_width:
-            _log.info(read_line)
             width = re.search("(?<=width\=\").*?\"", read_line).group(0)
             width = re.sub(r"px", "", width, 1) if "px" in width else width
             width = float(width[0:len(width)-1])
@@ -363,13 +361,11 @@ def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
 
         if "g id=\"ID" in read_line and not check_main_transform:
             if "transform=" in read_line:
-                _log.debug(read_line)
                 read_line = re.sub(r"transform=\"matrix(.*)\"", "", read_line, 1)
                 check_main_transform = True
 
         if "text id=\"ID" in read_line and not check_text_transform:
             if "transform=" in read_line:
-                _log.debug(read_line)
                 read_line = re.sub(r"transform=\"matrix(.*)\"", "", read_line, 1)
                 read_line = re.sub(r"x=\"[0-9]+.[0-9]+\"", "x=\"0\"", read_line, 1)
                 read_line = re.sub(r"y=\"[0-9]+.[0-9]+\"", "y=\""+ str(height/2.0) +"\"", read_line, 1)

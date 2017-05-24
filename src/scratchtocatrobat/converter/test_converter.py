@@ -269,11 +269,11 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def test_can_convert_when_loudness_greater_than_script_with_formula(self):
         scratch_script= scratch.Script([30, 355, [["whenSensorGreaterThan", "loudness", ["+", 2, 1]], ["say:", "Hello!"]]])
         catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
-        
+
         assert isinstance(catr_script, catbase.WhenConditionScript)
         formula = catr_script.formulaMap[catbricks.Brick.BrickField.IF_CONDITION] #@UndefinedVariable
         assert isinstance(formula, catformula.Formula)
-        
+
         assert formula.formulaTree.value == str(catformula.Operators.GREATER_THAN)
         assert formula.formulaTree.leftChild.value == str(catformula.Sensors.LOUDNESS)
         assert formula.formulaTree.rightChild.value == str(catformula.Operators.PLUS)
@@ -316,6 +316,52 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert formula.formulaTree.rightChild.value == str(catformula.Operators.PLUS)
         assert formula.formulaTree.rightChild.leftChild.value == "2"
         assert formula.formulaTree.rightChild.rightChild.value == "1"
+
+    #whenBackgroundSwitchesTo
+    def test_can_convert_when_background_switches_to_script_for_sprite(self):
+        scratch_script= scratch.Script([321, 89, [["whenSceneStarts", "look1"], ["say:", "Hello!"]]])
+        self.test_project.getDefaultScene().spriteList.add(self.sprite_stub)
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
+        assert isinstance(catr_script, catbase.WhenBackgroundChangesScript)
+        assert catr_script.getLook().getLookName() == "look1"
+        assert catr_script.getLook() == self.sprite_stub.getLookDataList()[0]
+        assert len(catr_script.getBrickList()) == 1
+        assert isinstance(catr_script.getBrickList()[0], catbricks.SayBubbleBrick)
+
+    #whenBackgroundSwitchesTo
+    def test_can_convert_when_background_switches_to_script_for_background(self):
+        raw_json = {
+            "objName": "Stage",
+            "scripts": [[47, 97, [["whenSceneStarts", "look1"]]]],
+            "costumes": [{
+                    "costumeName": "backdrop1",
+                    "baseLayerID": 3,
+                    "baseLayerMD5": "739b5e2a2435f6e1ec2993791b423146.png",
+                    "bitmapResolution": 1,
+                    "rotationCenterX": 240,
+                    "rotationCenterY": 180
+                }],
+            "children": [],
+            "currentCostumeIndex": 0,
+            "penLayerMD5": "5c81a336fab8be57adc039a8a2b33ca9.png",
+            "penLayerID": 0,
+            "tempoBPM": 60,
+                "info": {}
+        }
+
+        raw_project = scratch.RawProject(raw_json)
+        self.test_project.getDefaultScene().spriteList.add(self.sprite_stub)
+        catr_script = self.block_converter._catrobat_script_from(raw_project.objects[0].scripts[0], DUMMY_CATR_SPRITE, self.test_project)
+        assert isinstance(catr_script, catbase.WhenBackgroundChangesScript)
+        assert catr_script.getLook().getLookName() == "look1"
+        assert catr_script.getLook() == self.sprite_stub.getLookDataList()[0]
+        assert len(catr_script.getBrickList()) == 0
+
+    #whenBackgroundSwitchesTo
+    def test_fail_convert_when_background_switches_to_script(self):
+        scratch_script= scratch.Script([321, 89, [["whenSceneStarts", "look1"], ["say:", "Hello!"]]])
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
+        assert isinstance(catr_script, catbase.StartScript)
 
     #whenSensorGreaterThan
     def test_can_convert_when_video_motion_greater_than_script_with_formula(self):
@@ -849,6 +895,14 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert isinstance(catr_brick, catbricks.StopScriptBrick)
         assert expected_index_of_option == catr_brick.spinnerSelection
 
+    # stopScripts ("other scripts in stage")
+    def test_can_convert_stop_scripts_with_option_other_scripts_in_stage_block(self):
+        expected_index_of_option = 2
+        scratch_block = ["stopScripts", "other scripts in stage"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.StopScriptBrick)
+        assert expected_index_of_option == catr_brick.spinnerSelection
+
     # setRotationStyle ("left-right")
     def test_can_convert_set_rotation_style_with_option_left_right_block(self):
         expected_index_of_option = 0
@@ -1278,23 +1332,11 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         value = "DummyString"
         scratch_block = ["insert:at:ofList:", value, "last", self._name_of_test_list]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        assert isinstance(catr_brick, catbricks.InsertItemIntoUserListBrick)
+        assert isinstance(catr_brick, catbricks.AddItemToUserListBrick)
 
-        formula_tree_index = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.INSERT_ITEM_INTO_USERLIST_INDEX).formulaTree # @UndefinedVariable
-        assert formula_tree_index.type == catformula.FormulaElement.ElementType.FUNCTION
-        assert formula_tree_index.value == "NUMBER_OF_ITEMS"
-        assert formula_tree_index.leftChild
-        assert formula_tree_index.rightChild == None
-        formula_element_left_child = formula_tree_index.leftChild
-        assert formula_element_left_child.type == catformula.FormulaElement.ElementType.USER_LIST
-        assert formula_element_left_child.value == self._name_of_test_list
-        assert formula_element_left_child.leftChild == None
-        assert formula_element_left_child.rightChild == None
-        formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.INSERT_ITEM_INTO_USERLIST_VALUE).formulaTree # @UndefinedVariable
-        assert formula_tree_value.type == catformula.FormulaElement.ElementType.STRING
-        assert formula_tree_value.value == value
-        assert formula_tree_value.leftChild == None
-        assert formula_tree_value.rightChild == None
+        formula_tree_index = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.LIST_ADD_ITEM).formulaTree # @UndefinedVariable
+        assert formula_tree_index.type == catformula.FormulaElement.ElementType.STRING
+        assert formula_tree_index.value == "DummyString"
 
     # insert:at:ofList:
     def test_can_convert_insert_at_random_position_in_list_block(self):
@@ -1558,23 +1600,47 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     # startScene
     def test_can_convert_startscene_block(self):
-        scratch_block = _, look_name = ["startScene", "look1"]
-        script = scratch.Script([30, 355, [['whenGreenFlag'], scratch_block]])
-        project = catbase.Project(None, "TestDummyProject")
-        scene = catbase.Scene(None, "Scene 1", project)
-        scene.addSprite(self.sprite_stub)
-        project.sceneList.add(scene)
-        converter._catr_project = project
-        catr_script = self.block_converter._catrobat_script_from(script, self.sprite_stub, self.test_project)
-        converter._catr_project = None
-        stub_scripts = self.sprite_stub.scriptList
-        assert stub_scripts.size() == 1
-        assert isinstance(stub_scripts.get(0), catbase.BroadcastScript)
+        scratch_script= scratch.Script([321, 89, [["whenSceneStarts", "look1"], ["startScene", "look2"]]])
+        self.test_project.getDefaultScene().spriteList.add(self.sprite_stub)
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
+        assert isinstance(catr_script.getBrickList()[0], catbricks.SetBackgroundBrick)
+        assert catr_script.getBrickList()[0].getLook().getLookName() == "look2"
+        assert catr_script.getBrickList()[0].getLook() == self.sprite_stub.getLookDataList()[1]
+        assert len(catr_script.getBrickList()) == 1
 
-        expected_msg = converter._background_look_to_broadcast_message(look_name)
-        assert expected_msg, stub_scripts.get(0).getBroadcastMessage()
-        assert isinstance(catr_script.getBrickList().get(0), catbricks.BroadcastBrick)
-        assert expected_msg, catr_script.getBrickList().get(0).getBroadcastMessage()
+    # startScene
+    def test_can_convert_startscene_next_backdrop_block(self):
+        scratch_block = ["startScene", "next backdrop"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.NextLookBrick)
+
+    # startScene
+    def test_can_convert_startscene_previous_backdrop_block(self):
+        scratch_block = ["startScene", "previous backdrop"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.PreviousLookBrick)
+
+    # startSceneAndWait
+    def test_can_convert_startscene_wait_block(self):
+        scratch_script= scratch.Script([321, 89, [["whenSceneStarts", "look1"], ["startSceneAndWait", "look2"]]])
+        self.test_project.getDefaultScene().spriteList.add(self.sprite_stub)
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
+        assert isinstance(catr_script.getBrickList()[0], catbricks.SetBackgroundBrick)
+        assert catr_script.getBrickList()[0].getLook().getLookName() == "look2"
+        assert catr_script.getBrickList()[0].getLook() == self.sprite_stub.getLookDataList()[1]
+        assert len(catr_script.getBrickList()) == 1
+
+    # startSceneAndWait
+    def test_can_convert_startscene_wait_next_backdrop_block(self):
+        scratch_block = ["startSceneAndWait", "next backdrop"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.NextLookBrick)
+
+    # startSceneAndWait
+    def test_can_convert_startscene_wait_previous_backdrop_block(self):
+        scratch_block = ["startSceneAndWait", "previous backdrop"]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.PreviousLookBrick)
 
     # sayBubbleBrick
     def test_can_convert_say_bubble_brick(self):
@@ -1789,14 +1855,14 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert DUMMY_CATR_SPRITE.getName() == catr_brick.objectToClone.getName()
         assert DUMMY_CATR_SPRITE is catr_brick.objectToClone
 
-    # createCloneOf 
+    # createCloneOf
     def test_fail_convert_create_clone_of_block_with_empty_string_arg(self):
         sprite_name = ""
         scratch_block = ["createCloneOf", sprite_name]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.NoteBrick)
 
-    # createCloneOf 
+    # createCloneOf
     def test_fail_convert_create_clone_of_block_with_formula_arg(self):
         scratch_block = ["createCloneOf", ["-", 2, 1]]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)

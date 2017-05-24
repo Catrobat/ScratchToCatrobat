@@ -2277,14 +2277,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         scratch_block = ["scale"]
         [formula] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(formula, catformula.FormulaElement)
-        assert formula.value == "OBJECT_SIZE"
-        
-    def test_can_convert_visible_variables(self):
-        # need testproject with
-        # background sprite
-        # at least one visible variable
-        # 
-        assert False
+        assert formula.value == "OBJECT_SIZE"    
 
 class TestConvertProjects(common_testing.ProjectTestCase):
 
@@ -2307,6 +2300,10 @@ class TestConvertProjects(common_testing.ProjectTestCase):
         self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, project_name,
                                                           unused_scratch_resources=scratch_project.unused_resource_names)
         return converted_project.catrobat_program
+    
+    def test_can_convert_visible_variables(self):
+        catrobat_program = self._test_project("visible_variables")
+        #TODO: test if variable bricks are generated
 
     # full_test_no_var
     def test_can_convert_project_without_variables(self):

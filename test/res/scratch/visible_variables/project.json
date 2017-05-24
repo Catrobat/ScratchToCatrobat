@@ -1,0 +1,300 @@
+{
+	"objName": "Stage",
+	"variables": [{
+			"name": "a",
+			"value": 0,
+			"isPersistent": false
+		},
+		{
+			"name": "b",
+			"value": "45",
+			"isPersistent": false
+		},
+		{
+			"name": "c",
+			"value": "999",
+			"isPersistent": false
+		},
+		{
+			"name": "d",
+			"value": 0,
+			"isPersistent": false
+		},
+		{
+			"name": "e",
+			"value": 0,
+			"isPersistent": false
+		},
+		{
+			"name": "f",
+			"value": 0,
+			"isPersistent": false
+		},
+		{
+			"name": "g",
+			"value": "56",
+			"isPersistent": false
+		},
+		{
+			"name": "h",
+			"value": 0,
+			"isPersistent": false
+		},
+		{
+			"name": "i",
+			"value": "60",
+			"isPersistent": false
+		},
+		{
+			"name": "j",
+			"value": "42",
+			"isPersistent": false
+		},
+		{
+			"name": "k",
+			"value": 0,
+			"isPersistent": false
+		},
+		{
+			"name": "l",
+			"value": "1",
+			"isPersistent": false
+		}],
+	"sounds": [{
+			"soundName": "pop",
+			"soundID": 1,
+			"md5": "83a9787d4cb6f3b7632b4ddfebf74367.wav",
+			"sampleCount": 258,
+			"rate": 11025,
+			"format": ""
+		}],
+	"costumes": [{
+			"costumeName": "backdrop1",
+			"baseLayerID": 3,
+			"baseLayerMD5": "739b5e2a2435f6e1ec2993791b423146.png",
+			"bitmapResolution": 1,
+			"rotationCenterX": 240,
+			"rotationCenterY": 180
+		}],
+	"currentCostumeIndex": 0,
+	"penLayerMD5": "5c81a336fab8be57adc039a8a2b33ca9.png",
+	"penLayerID": 0,
+	"tempoBPM": 60,
+	"videoAlpha": 0.5,
+	"children": [{
+			"objName": "Sprite1",
+			"sounds": [{
+					"soundName": "meow",
+					"soundID": 0,
+					"md5": "83c36d806dc92327b9e7049a565c6bff.wav",
+					"sampleCount": 18688,
+					"rate": 22050,
+					"format": ""
+				}],
+			"costumes": [{
+					"costumeName": "costume1",
+					"baseLayerID": 1,
+					"baseLayerMD5": "09dc888b0b7df19f70d81588ae73420e.svg",
+					"bitmapResolution": 1,
+					"rotationCenterX": 47,
+					"rotationCenterY": 55
+				},
+				{
+					"costumeName": "costume2",
+					"baseLayerID": 2,
+					"baseLayerMD5": "3696356a03a8d938318876a593572843.svg",
+					"bitmapResolution": 1,
+					"rotationCenterX": 47,
+					"rotationCenterY": 55
+				}],
+			"currentCostumeIndex": 0,
+			"scratchX": 0,
+			"scratchY": 0,
+			"scale": 1,
+			"direction": 90,
+			"rotationStyle": "normal",
+			"isDraggable": false,
+			"indexInLibrary": 1,
+			"visible": true,
+			"spriteInfo": {
+			}
+		},
+		{
+			"target": "Stage",
+			"cmd": "getVar:",
+			"param": "a",
+			"color": 15629590,
+			"label": "a",
+			"mode": 1,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 5,
+			"y": 5,
+			"visible": true
+		},
+		{
+			"target": "Stage",
+			"cmd": "getVar:",
+			"param": "b",
+			"color": 15629590,
+			"label": "b",
+			"mode": 1,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 5,
+			"y": 32,
+			"visible": true
+		},
+		{
+			"target": "Stage",
+			"cmd": "getVar:",
+			"param": "c",
+			"color": 15629590,
+			"label": "c",
+			"mode": 1,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 5,
+			"y": 59,
+			"visible": true
+		},
+		{
+			"target": "Stage",
+			"cmd": "getVar:",
+			"param": "d",
+			"color": 15629590,
+			"label": "d",
+			"mode": 1,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 5,
+			"y": 86,
+			"visible": true
+		},
+		{
+			"target": "Stage",
+			"cmd": "getVar:",
+			"param": "e",
+			"color": 15629590,
+			"label": "e",
+			"mode": 1,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 5,
+			"y": 113,
+			"visible": true
+		},
+		{
+			"target": "Stage",
+			"cmd": "getVar:",
+			"param": "f",
+			"color": 15629590,
+			"label": "f",
+			"mode": 1,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 5,
+			"y": 140,
+			"visible": true
+		},
+		{
+			"target": "Stage",
+			"cmd": "getVar:",
+			"param": "g",
+			"color": 15629590,
+			"label": "g",
+			"mode": 1,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 5,
+			"y": 167,
+			"visible": true
+		},
+		{
+			"target": "Stage",
+			"cmd": "getVar:",
+			"param": "h",
+			"color": 15629590,
+			"label": "h",
+			"mode": 1,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 5,
+			"y": 194,
+			"visible": true
+		},
+		{
+			"target": "Stage",
+			"cmd": "getVar:",
+			"param": "i",
+			"color": 15629590,
+			"label": "i",
+			"mode": 1,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 5,
+			"y": 221,
+			"visible": true
+		},
+		{
+			"target": "Stage",
+			"cmd": "getVar:",
+			"param": "j",
+			"color": 15629590,
+			"label": "j",
+			"mode": 1,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 5,
+			"y": 248,
+			"visible": true
+		},
+		{
+			"target": "Stage",
+			"cmd": "getVar:",
+			"param": "k",
+			"color": 15629590,
+			"label": "k",
+			"mode": 1,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 5,
+			"y": 275,
+			"visible": true
+		},
+		{
+			"target": "Stage",
+			"cmd": "getVar:",
+			"param": "l",
+			"color": 15629590,
+			"label": "l",
+			"mode": 1,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 5,
+			"y": 302,
+			"visible": true
+		}],
+	"info": {
+		"userAgent": "Mozilla\/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit\/537.36 (KHTML, like Gecko) Chrome\/58.0.3029.110 Safari\/537.36",
+		"videoOn": false,
+		"swfVersion": "v456",
+		"flashVersion": "WIN 25,0,0,171",
+		"hasCloudData": false,
+		"scriptCount": 0,
+		"projectID": "162880207",
+		"spriteCount": 1
+	}
+}

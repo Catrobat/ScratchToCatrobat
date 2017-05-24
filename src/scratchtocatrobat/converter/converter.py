@@ -515,7 +515,6 @@ def _get_or_create_shared_global_answer_variable(project, data_container, script
 # TODO: refactor _key_* functions to be used just once
 def _key_image_path_for(key):
     key_images_path = os.path.join(common.get_project_base_path(), 'resources', 'images', 'keys')
-    print(key)
     for key_filename in os.listdir(key_images_path):
         basename, _ = os.path.splitext(key_filename)
         if basename.lower().endswith("_" + "_".join(key.split())):

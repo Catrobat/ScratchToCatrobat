@@ -34,7 +34,6 @@ from scratchtocatrobat.tools import common_testing
 from scratchtocatrobat.scratch import scratch
 from scratchtocatrobat.converter import converter
 from scratchtocatrobat.converter.converter import ScriptContext
-from email.mime import base
 
 
 def create_catrobat_sprite_stub(name=None):

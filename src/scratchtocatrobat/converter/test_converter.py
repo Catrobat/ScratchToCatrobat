@@ -34,6 +34,7 @@ from scratchtocatrobat.tools import common_testing
 from scratchtocatrobat.scratch import scratch
 from scratchtocatrobat.converter import converter
 from scratchtocatrobat.converter.converter import ScriptContext
+from email.mime import base
 
 
 def create_catrobat_sprite_stub(name=None):
@@ -2343,11 +2344,11 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         scratch_block = ["scale"]
         [formula] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(formula, catformula.FormulaElement)
-        assert formula.value == "OBJECT_SIZE"    
+        assert formula.value == "OBJECT_SIZE"
 
 class TestConvertProjects(common_testing.ProjectTestCase):
-
-    def _test_project(self, project_name):
+    
+    def _load_test_scratch_project(self, project_name):
         if os.path.splitext(project_name)[1]:
             tempdir = common.TemporaryDirectory()
             scratch_project_dir = tempdir.name
@@ -2359,7 +2360,11 @@ class TestConvertProjects(common_testing.ProjectTestCase):
 
         scratch_project = scratch.Project(scratch_project_dir, name=project_name,
                                           project_id=common_testing.PROJECT_DUMMY_ID)
-
+        return scratch_project
+        
+    def _test_project(self, project_name):
+        
+        scratch_project = self._load_test_scratch_project(project_name)
         context = converter.Context()
         converted_project = converter.converted(scratch_project, None, context)
         catrobat_zip_file_name = converted_project.save_as_catrobat_package_to(self._testresult_folder_path)
@@ -2367,9 +2372,37 @@ class TestConvertProjects(common_testing.ProjectTestCase):
                                                           unused_scratch_resources=scratch_project.unused_resource_names)
         return converted_project.catrobat_program
     
+    # Checks if the visible variables in the scratch program are converted into set variable and show test bricks in the converted project
+    # This is done by comparing 2 sets where one of them is filtered due to the variables visibility
     def test_can_convert_visible_variables(self):
+        scratch_project = self._load_test_scratch_project("visible_variables")
+        visibility_map = scratch_project._var_to_visibility_map
         catrobat_program = self._test_project("visible_variables")
-        #TODO: test if variable bricks are generated
+        set_success = False
+        show_success = False
+        scene = catrobat_program.getDefaultScene()
+        sprite = scene.getSpriteList()[0] # should always be the background sprite
+        scripts = sprite.getScriptList()
+        base_list = list(catrobat_program.getProjectVariables())
+        visibility_filtered_base_list = list(base_list)
+        for var in base_list:
+            if not visibility_map.get(var.getName()):
+                visibility_filtered_base_list.remove(var)
+        for script in scripts:
+            set_variables_list = list(base_list)
+            show_variables_list = list(visibility_filtered_base_list)
+            if isinstance(script, catbase.StartScript):
+                bricks = script.getBrickList()
+                for brick in bricks:
+                    if isinstance(brick, catbricks.SetVariableBrick):
+                        set_variables_list.remove(brick.getUserVariable())
+                    if isinstance(brick, catbricks.ShowTextBrick):
+                        show_variables_list.remove(brick.getUserVariable())
+                if len(set_variables_list) == 0:
+                    set_success = True
+                if len(show_variables_list) == 0:
+                    show_success = True
+        assert set_success and show_success
 
     # full_test_no_var
     def test_can_convert_project_without_variables(self):

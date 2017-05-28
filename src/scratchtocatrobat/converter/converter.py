@@ -288,6 +288,7 @@ class _ScratchToCatrobat(object):
         "mouseX": catformula.Sensors.FINGER_X,
         "mouseY": catformula.Sensors.FINGER_Y,
         "timeAndDate": None,
+        "touching:": None,
 
         # clone
         "createCloneOf": catbricks.CloneBrick,
@@ -1967,3 +1968,17 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         else:
             return catbricks.NoteBrick("Error: Not a valid parameter")
         return go_to_brick
+
+    @_register_handler(_block_name_to_handler_map, "touching:")
+    def _convert_touching(self):
+        arguments = self.arguments
+        if arguments[0] == "_mouse_":
+            formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
+            formula_element.value = str(catformula.Sensors.COLLIDES_WITH_FINGER)
+        elif arguments[0] == "_edge_":
+            formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
+            formula_element.value = str(catformula.Sensors.COLLIDES_WITH_EDGE)
+        else:
+            formula_element = catformula.FormulaElement(catElementType.COLLISION_FORMULA, None, None)
+            formula_element.value = arguments[0]
+        return formula_element

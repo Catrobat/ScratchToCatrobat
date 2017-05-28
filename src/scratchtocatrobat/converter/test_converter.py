@@ -2347,7 +2347,6 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert formula.value == "OBJECT_SIZE"
 
 class TestConvertProjects(common_testing.ProjectTestCase):
-    
     def _load_test_scratch_project(self, project_name):
         if os.path.splitext(project_name)[1]:
             tempdir = common.TemporaryDirectory()
@@ -2361,9 +2360,8 @@ class TestConvertProjects(common_testing.ProjectTestCase):
         scratch_project = scratch.Project(scratch_project_dir, name=project_name,
                                           project_id=common_testing.PROJECT_DUMMY_ID)
         return scratch_project
-        
+
     def _test_project(self, project_name):
-        
         scratch_project = self._load_test_scratch_project(project_name)
         context = converter.Context()
         converted_project = converter.converted(scratch_project, None, context)
@@ -2371,7 +2369,7 @@ class TestConvertProjects(common_testing.ProjectTestCase):
         self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, project_name,
                                                           unused_scratch_resources=scratch_project.unused_resource_names)
         return converted_project.catrobat_program
-    
+
     # Checks if the visible variables in the scratch program are converted into set variable and show test bricks in the converted project
     # This is done by comparing 2 sets where one of them is filtered due to the variables visibility
     def test_can_convert_visible_variables(self):

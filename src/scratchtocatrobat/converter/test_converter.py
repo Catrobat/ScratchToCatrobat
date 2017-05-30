@@ -700,6 +700,31 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert value2_formula_element.leftChild == None
         assert value2_formula_element.rightChild == None
 
+    #--------------------------------------------------------------------------------------------------------------
+    # touching formula tests
+    #--------------------------------------------------------------------------------------------------------------
+
+    def test_can_convert_touching_block_mouse(self):
+        scratch_block = ['touching:', '_mouse_']
+        [catr_formula_element] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_formula_element, catformula.FormulaElement)
+        assert str(catr_formula_element.getElementType()) == 'SENSOR'
+        assert catr_formula_element.getValue() == 'COLLIDES_WITH_FINGER'
+    
+    def test_can_convert_touching_block_edge(self):
+        scratch_block = ['touching:', '_edge_']
+        [catr_formula_element] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_formula_element, catformula.FormulaElement)
+        assert str(catr_formula_element.getElementType()) == 'SENSOR'
+        assert catr_formula_element.getValue() == 'COLLIDES_WITH_EDGE'
+    
+    def test_can_convert_touching_block_object(self):
+        scratch_block = ['touching:', '_some_object_']
+        [catr_formula_element] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_formula_element, catformula.FormulaElement)
+        assert str(catr_formula_element.getElementType()) == 'COLLISION_FORMULA'
+        assert catr_formula_element.getValue() == '_some_object_'
+
     ###############################################################################################################
     #
     # Brick block tests

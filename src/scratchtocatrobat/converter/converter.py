@@ -49,7 +49,6 @@ from java.awt import Color
 
 import catrobat
 import mediaconverter
-import user
 
 _DEFAULT_FORMULA_ELEMENT = catformula.FormulaElement(catElementType.NUMBER, str(00001), None)  # @UndefinedVariable (valueOf)
 

@@ -2077,7 +2077,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert catr_bricks[0].userVariable.getValue().formulaTree.value == "PLUS"
         assert catr_bricks[0].userVariable.getValue().formulaTree.leftChild.value == "2"
         assert catr_bricks[0].userVariable.getValue().formulaTree.rightChild.value == "32"
-        
+
     def test_can_convert_set_variable_with_list(self):
         variable_name = "test_var"
         project = self.block_converter._catrobat_project

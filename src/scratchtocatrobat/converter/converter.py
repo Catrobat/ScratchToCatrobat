@@ -583,14 +583,14 @@ class Converter(object):
 
     def __init__(self, scratch_project):
         self.visible_var_X = -220
-        self.visible_var_Y =  170
+        self.visible_var_Y = 170
         self.visible_var_X_init = -220
-        self.visible_var_Y_init =  170
+        self.visible_var_Y_init = 170
         self.visible_var_position_step_Y = 40
-        self.visible_var_position_step_X = 80 # 40
+        self.visible_var_position_step_X = 80
         self.visible_var_position_threshold_Y = -20
-        self.visible_var_position_threshold_X =  220
-        self.scratch_project = scratch_project 
+        self.visible_var_position_threshold_X = 220
+        self.scratch_project = scratch_project
 
     @classmethod
     def converted_project_for(cls, scratch_project, progress_bar=None, context=None):
@@ -598,34 +598,26 @@ class Converter(object):
         catrobat_project = converter._converted_catrobat_program(progress_bar, context)
         assert catrobat.is_background_sprite(catrobat_project.getDefaultScene().getSpriteList().get(0))
         return ConvertedProject(catrobat_project, scratch_project)
-    
+
     def _add_bricks_for_visible_variables(self, catrobat_scene):
         scratch_project = self.scratch_project
         brick_list = []
         for var in scratch_project._var_to_visibility_map:
-            # create bricks
-            if(scratch_project._var_to_visibility_map.get(var)):    
+            if(scratch_project._var_to_visibility_map.get(var)):
                 actual_var = _ScratchObjectConverter._catrobat_scene.getDataContainer().getUserVariable(var, None)
                 show_variable_brick = catbricks.ShowTextBrick(self.visible_var_X, self.visible_var_Y)
                 show_variable_brick.setUserVariableName(var)
                 show_variable_brick.setUserVariable(actual_var)
                 brick_list.append(show_variable_brick)
-            
-            # for each further var move position
             self.visible_var_Y -= self.visible_var_position_step_Y
-            
             if self.visible_var_Y <= self.visible_var_position_threshold_Y:
                 self.visible_var_Y = self.visible_var_Y_init
                 self.visible_var_X += self.visible_var_position_step_X
-                
                 if self.visible_var_X >= self.visible_var_position_threshold_X:
                     log.info("Too many visible variables")
                     break
-                
         when_started_script = catbase.StartScript()
         when_started_script.getBrickList().addAll(brick_list)
-        
-        # Add to stage
         catrobat_scene.getSpriteList().get(0).addScript(when_started_script)
         return
 
@@ -661,33 +653,28 @@ class Converter(object):
         for scratch_object in self.scratch_project.objects:
             catr_sprite = self._scratch_object_converter(scratch_object)
             catrobat_scene.addSprite(catr_sprite)
-      
-    @staticmethod      
+
+    @staticmethod
     def _place_key_brick(key, x_pos, y_pos, catrobat_scene):
-       
         key_filename = _key_filename_for(key)
         key_message = _key_to_broadcast_message(key)
-
         key_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, key_message)
         key_look = catcommon.LookData()
         key_look.setLookName(key_message)
         key_look.setLookFilename(key_filename)
         key_sprite.getLookDataList().add(key_look)
-
-        # initialize key images
         when_started_script = catbase.StartScript()
         set_look_brick = catbricks.SetLookBrick()
-        set_look_brick.setLook(key_look)        
+        set_look_brick.setLook(key_look)
         place_at_brick = catbricks.PlaceAtBrick(x_pos, y_pos)
         bricks = [place_at_brick, set_look_brick, catbricks.SetSizeToBrick(33)]
         when_started_script.getBrickList().addAll(bricks)
         key_sprite.addScript(when_started_script)
-
         when_tapped_script = catbase.WhenScript()
         when_tapped_script.addBrick(catbricks.BroadcastBrick(key_message))
         key_sprite.addScript(when_tapped_script)
         catrobat_scene.addSprite(key_sprite)
-        
+
     # TODO: make it more explicit that this depends on the conversion code for "whenKeyPressed" Scratch block
     @staticmethod
     def _add_key_sprites_to(catrobat_scene, listened_keys):
@@ -695,28 +682,23 @@ class Converter(object):
         x_offset = -20
         space_letters_width_offset = 4
         letters_per_row = 12
-        space_exists = False        
-        # handle space
+        space_exists = False
         if "space" in listened_keys:
             space_exists = True
             listened_keys.remove("space")
-            
         for idx, key in enumerate(listened_keys):
             if space_exists and idx > 3:
                 idx = idx + space_letters_width_offset
             width_pos = idx % letters_per_row
             height_pos = int(idx / letters_per_row) + 1
-            
             y_pos = -(scratch.STAGE_HEIGHT_IN_PIXELS / 2) + y_offset + 40 * height_pos
             x_pos = -(scratch.STAGE_WIDTH_IN_PIXELS / 2) + x_offset + 40 * (width_pos + 1)
-            
             Converter._place_key_brick(key, x_pos, y_pos,catrobat_scene)
-            
         if space_exists:
             listened_keys.add("space")
             y_pos = -(scratch.STAGE_HEIGHT_IN_PIXELS / 2) + y_offset + 40
             x_pos = 0
-            Converter._place_key_brick("space", x_pos, y_pos, catrobat_scene)         
+            Converter._place_key_brick("space", x_pos, y_pos, catrobat_scene)
 
     @staticmethod
     def _update_xml_header(xml_header, scratch_project_id, program_name, scratch_project_instructions,

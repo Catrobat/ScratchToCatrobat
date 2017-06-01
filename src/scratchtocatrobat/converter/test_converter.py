@@ -2086,6 +2086,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         catr_bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_bricks[0], catbricks.SetVariableBrick)
         assert catr_bricks[0].getFormulas()[0].getFormulaTree().getElementType() == catElementType.USER_LIST
+        assert catr_bricks[0].getFormulas()[0].getFormulaTree().getValue() == self._name_of_test_list
 
     #call
     def test_can_convert_call_block_user_script_already_defined_simple(self):

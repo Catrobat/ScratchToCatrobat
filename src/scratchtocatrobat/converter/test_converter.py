@@ -27,6 +27,7 @@ from org.catrobat.catroid.ui.fragment import SpriteFactory
 import org.catrobat.catroid.content.bricks as catbricks
 import org.catrobat.catroid.content.bricks.Brick as catbasebrick
 import org.catrobat.catroid.formulaeditor as catformula
+import org.catrobat.catroid.formulaeditor.FormulaElement.ElementType as catElementType
 
 from scratchtocatrobat.converter import catrobat
 from scratchtocatrobat.tools import common
@@ -699,6 +700,31 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert value2_formula_element.value == str(value2)
         assert value2_formula_element.leftChild == None
         assert value2_formula_element.rightChild == None
+
+    #--------------------------------------------------------------------------------------------------------------
+    # touching formula tests
+    #--------------------------------------------------------------------------------------------------------------
+
+    def test_can_convert_touching_block_mouse(self):
+        scratch_block = ['touching:', '_mouse_']
+        [catr_formula_element] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_formula_element, catformula.FormulaElement)
+        assert str(catr_formula_element.getElementType()) == 'SENSOR'
+        assert catr_formula_element.getValue() == 'COLLIDES_WITH_FINGER'
+    
+    def test_can_convert_touching_block_edge(self):
+        scratch_block = ['touching:', '_edge_']
+        [catr_formula_element] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_formula_element, catformula.FormulaElement)
+        assert str(catr_formula_element.getElementType()) == 'SENSOR'
+        assert catr_formula_element.getValue() == 'COLLIDES_WITH_EDGE'
+    
+    def test_can_convert_touching_block_object(self):
+        scratch_block = ['touching:', '_some_object_']
+        [catr_formula_element] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_formula_element, catformula.FormulaElement)
+        assert str(catr_formula_element.getElementType()) == 'COLLISION_FORMULA'
+        assert catr_formula_element.getValue() == '_some_object_'
 
     ###############################################################################################################
     #
@@ -2051,6 +2077,16 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert catr_bricks[0].userVariable.getValue().formulaTree.value == "PLUS"
         assert catr_bricks[0].userVariable.getValue().formulaTree.leftChild.value == "2"
         assert catr_bricks[0].userVariable.getValue().formulaTree.rightChild.value == "32"
+
+    def test_can_convert_set_variable_with_list(self):
+        variable_name = "test_var"
+        project = self.block_converter._catrobat_project
+        catrobat.add_user_variable(project, variable_name, DUMMY_CATR_SPRITE, DUMMY_CATR_SPRITE.getName())
+        scratch_block = ["setVar:to:", "test_var", ["contentsOfList:", self._name_of_test_list]]
+        catr_bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_bricks[0], catbricks.SetVariableBrick)
+        assert catr_bricks[0].getFormulas()[0].getFormulaTree().getElementType() == catElementType.USER_LIST
+        assert catr_bricks[0].getFormulas()[0].getFormulaTree().getValue() == self._name_of_test_list
 
     #call
     def test_can_convert_call_block_user_script_already_defined_simple(self):

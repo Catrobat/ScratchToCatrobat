@@ -233,6 +233,7 @@ class _ScratchToCatrobat(object):
         "insert:at:ofList:": catbricks.InsertItemIntoUserListBrick,
         "deleteLine:ofList:": catbricks.DeleteItemOfUserListBrick,
         "setLine:ofList:to:": catbricks.ReplaceItemInUserListBrick,
+        "contentsOfList:": None,
         #"showList:": catbricks.*, # TODO: implement this as soon as Catrobat supports this...
         #"hideList:": catbricks.*, # TODO: implement this as soon as Catrobat supports this...
 
@@ -288,6 +289,7 @@ class _ScratchToCatrobat(object):
         "mouseX": catformula.Sensors.FINGER_X,
         "mouseY": catformula.Sensors.FINGER_Y,
         "timeAndDate": None,
+        "touching:": None,
 
         # clone
         "createCloneOf": catbricks.CloneBrick,
@@ -1356,6 +1358,14 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         formula_element.setRightChild(right_formula_elem)
         return formula_element
 
+    @_register_handler(_block_name_to_handler_map, "contentsOfList:")
+    def _convert_contents_of_list_block(self):
+        list_name = self.arguments[0]
+        user_list = catrobat.find_global_or_sprite_user_list_by_name(self.scene, self.sprite, list_name)
+        assert user_list is not None
+        list_formula_element = catformula.FormulaElement(catElementType.USER_LIST, list_name, None)
+        return list_formula_element
+
     @_register_handler(_block_name_to_handler_map, "stringLength:")
     def _convert_string_length_block(self):
         [value] = self.arguments
@@ -1910,3 +1920,17 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         else:
             return catbricks.NoteBrick("Error: Not a valid parameter")
         return go_to_brick
+
+    @_register_handler(_block_name_to_handler_map, "touching:")
+    def _convert_touching(self):
+        arguments = self.arguments
+        if arguments[0] == "_mouse_":
+            formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
+            formula_element.value = str(catformula.Sensors.COLLIDES_WITH_FINGER)
+        elif arguments[0] == "_edge_":
+            formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
+            formula_element.value = str(catformula.Sensors.COLLIDES_WITH_EDGE)
+        else:
+            formula_element = catformula.FormulaElement(catElementType.COLLISION_FORMULA, None, None)
+            formula_element.value = arguments[0]
+        return formula_element

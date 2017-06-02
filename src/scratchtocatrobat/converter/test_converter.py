@@ -2394,8 +2394,7 @@ class TestConvertProjects(common_testing.ProjectTestCase):
                                                           unused_scratch_resources=scratch_project.unused_resource_names)
         return converted_project.catrobat_program
 
-    # Checks if the visible variables in the scratch program are converted into set variable and show test bricks in the converted project
-    # This is done by comparing 2 sets where one of them is filtered due to the variables visibility
+    # Checks if the visible global or local variables in the scratch program are converted into show test bricks in the converted project
     def test_can_convert_visible_variables(self):
         scratch_project = self._load_test_scratch_project("visible_variables")
         visibility_map = scratch_project._var_to_visibility_map
@@ -2405,11 +2404,10 @@ class TestConvertProjects(common_testing.ProjectTestCase):
         sprite_list = scene.getSpriteList()
         for sprite in sprite_list:
             sprite_name = sprite.getName()
-            # TODO: rewrite
+            # TODO: rewrite when there is a general name for the background sprite in the code
             if sprite_name == "Hintergrund":
                 sprite_name = "Stage"
             sprite_dict[sprite_name] = sprite
-        
         for var in visibility_map:
             if visibility_map.get(var)[0]:
                 target_sprite = visibility_map.get(var)[1]

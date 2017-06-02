@@ -606,11 +606,10 @@ class Converter(object):
         sprite_list = catrobat_scene.getSpriteList()
         for sprite in sprite_list:
             sprite_name = sprite.getName()
-            # TODO: rewrite
+            # TODO: rewrite when there is a general name for the background sprite in the code
             if sprite_name == "Hintergrund":
                 sprite_name = "Stage"
             sprite_dict[sprite_name] = sprite
-
         for var in scratch_project._var_to_visibility_map:
             if(scratch_project._var_to_visibility_map.get(var)[0]):
                 target_sprite = scratch_project._var_to_visibility_map.get(var)[1]

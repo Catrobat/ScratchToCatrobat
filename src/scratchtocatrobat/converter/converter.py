@@ -616,8 +616,6 @@ class Converter(object):
                 target_sprite = scratch_project._var_to_visibility_map.get(var)[1]
                 sprite_object = sprite_dict[target_sprite]
                 var_object = _ScratchObjectConverter._catrobat_scene.getDataContainer().getUserVariable(var, sprite_object)
-                print("variable found for: " + var)
-                print(var_object.getName())
                 show_variable_brick = catbricks.ShowTextBrick(self.visible_var_X, self.visible_var_Y)
                 show_variable_brick.setUserVariableName(var)
                 show_variable_brick.setUserVariable(var_object)

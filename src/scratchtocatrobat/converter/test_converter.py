@@ -2400,31 +2400,30 @@ class TestConvertProjects(common_testing.ProjectTestCase):
         scratch_project = self._load_test_scratch_project("visible_variables")
         visibility_map = scratch_project._var_to_visibility_map
         catrobat_program = self._test_project("visible_variables")
-        set_success = False
-        show_success = False
         scene = catrobat_program.getDefaultScene()
-        sprite = scene.getSpriteList()[0] # should always be the background sprite
-        scripts = sprite.getScriptList()
-        base_list = list(catrobat_program.getProjectVariables())
-        visibility_filtered_base_list = list(base_list)
-        for var in base_list:
-            if not visibility_map.get(var.getName()):
-                visibility_filtered_base_list.remove(var)
-        for script in scripts:
-            set_variables_list = list(base_list)
-            show_variables_list = list(visibility_filtered_base_list)
-            if isinstance(script, catbase.StartScript):
-                bricks = script.getBrickList()
-                for brick in bricks:
-                    if isinstance(brick, catbricks.SetVariableBrick):
-                        set_variables_list.remove(brick.getUserVariable())
-                    if isinstance(brick, catbricks.ShowTextBrick):
-                        show_variables_list.remove(brick.getUserVariable())
-                if len(set_variables_list) == 0:
-                    set_success = True
-                if len(show_variables_list) == 0:
-                    show_success = True
-        assert set_success and show_success
+        sprite_dict = dict()
+        sprite_list = scene.getSpriteList()
+        for sprite in sprite_list:
+            sprite_name = sprite.getName()
+            # TODO: rewrite
+            if sprite_name == "Hintergrund":
+                sprite_name = "Stage"
+            sprite_dict[sprite_name] = sprite
+        
+        for var in visibility_map:
+            if visibility_map.get(var)[0]:
+                target_sprite = visibility_map.get(var)[1]
+                sprite_object = sprite_dict[target_sprite]
+                scripts = sprite_object.getScriptList()
+                found_show_var = False
+                for script in scripts:
+                    if isinstance(script, catbase.StartScript):
+                        bricks = script.getBrickList()
+                        for brick in bricks:
+                            if isinstance(brick, catbricks.ShowTextBrick):
+                                if brick.getUserVariable().getName() == var:
+                                    found_show_var = True
+                assert found_show_var
 
     # full_test_no_var
     def test_can_convert_project_without_variables(self):

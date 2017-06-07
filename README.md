@@ -17,7 +17,7 @@ The Following License Header should be used for all python and java source files
 ## License Header for Python source files
 <pre lang="python"><code>
 #  ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
-#  Copyright (C) 2013-2015 The Catrobat Team
+#  Copyright (C) 2013-2017 The Catrobat Team
 #  (http://developer.catrobat.org/credits)
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -42,7 +42,7 @@ The Following License Header should be used for all python and java source files
 <pre lang="java"><code>
 /*
  * ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
- * Copyright (C) 2013-2015 The Catrobat Team
+ * Copyright (C) 2013-2017 The Catrobat Team
  * (http://developer.catrobat.org/credits)
  *
  * This program is free software: you can redistribute it and/or modify

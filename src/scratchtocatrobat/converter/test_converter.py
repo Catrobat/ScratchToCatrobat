@@ -35,6 +35,8 @@ from scratchtocatrobat.scratch import scratch
 from scratchtocatrobat.converter import converter
 from scratchtocatrobat.converter.converter import ScriptContext
 
+BACKGROUND_LOCALIZED_GERMAN_NAME = "Hintergrund"
+BACKGROUND_ORIGINAL_NAME = "Stage"
 
 def create_catrobat_sprite_stub(name=None):
     sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, "Dummy" if name is None else name)
@@ -2400,18 +2402,15 @@ class TestConvertProjects(common_testing.ProjectTestCase):
         visibility_map = scratch_project._var_to_visibility_map
         catrobat_program = self._test_project("visible_variables")
         scene = catrobat_program.getDefaultScene()
-        sprite_dict = dict()
+        sprite_dict = {}
         sprite_list = scene.getSpriteList()
         for sprite in sprite_list:
             sprite_name = sprite.getName()
-            # TODO: rewrite when there is a general name for the background sprite in the code
-            if sprite_name == "Hintergrund":
-                sprite_name = "Stage"
+            sprite_name = sprite_name.replace(BACKGROUND_LOCALIZED_GERMAN_NAME, BACKGROUND_ORIGINAL_NAME)
             sprite_dict[sprite_name] = sprite
-        for var in visibility_map:
-            if visibility_map.get(var)[0]:
-                target_sprite = visibility_map.get(var)[1]
-                sprite_object = sprite_dict[target_sprite]
+        for var, (visible, sprite_name) in visibility_map.iteritems():
+            if visible:
+                sprite_object = sprite_dict[sprite_name]
                 scripts = sprite_object.getScriptList()
                 found_show_var = False
                 for script in scripts:

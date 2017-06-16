@@ -63,6 +63,9 @@ CATROBAT_DEFAULT_SCENE_NAME = "Scene 1"
 UNSUPPORTED_SCRATCH_BLOCK_NOTE_MESSAGE_PREFIX_TEMPLATE = "Missing brick for Scratch identifier: [{}]"
 UNSUPPORTED_SCRATCH_FORMULA_BLOCK_NOTE_MESSAGE_PREFIX = "Missing formula element in brick: [{}] for Scratch identifier: [{}]"
 
+BACKGROUND_LOCALIZED_GERMAN_NAME = "Hintergrund"
+BACKGROUND_ORIGINAL_NAME = "Stage"
+
 log = logger.log
 
 
@@ -601,26 +604,23 @@ class Converter(object):
 
     def _add_bricks_for_visible_variables(self, catrobat_scene):
         scratch_project = self.scratch_project
-        brick_dict = dict()
-        sprite_dict = dict()
+        brick_dict = {}
+        sprite_dict = {}
         sprite_list = catrobat_scene.getSpriteList()
         for sprite in sprite_list:
             sprite_name = sprite.getName()
-            # TODO: rewrite when there is a general name for the background sprite in the code
-            if sprite_name == "Hintergrund":
-                sprite_name = "Stage"
+            sprite_name = sprite_name.replace(BACKGROUND_LOCALIZED_GERMAN_NAME, BACKGROUND_ORIGINAL_NAME)
             sprite_dict[sprite_name] = sprite
-        for var in scratch_project._var_to_visibility_map:
-            if(scratch_project._var_to_visibility_map.get(var)[0]):
-                target_sprite = scratch_project._var_to_visibility_map.get(var)[1]
-                sprite_object = sprite_dict[target_sprite]
+        for var, (visible, target_sprite_name) in scratch_project._var_to_visibility_map.iteritems():
+            if visible:
+                sprite_object = sprite_dict[target_sprite_name]
                 var_object = _ScratchObjectConverter._catrobat_scene.getDataContainer().getUserVariable(var, sprite_object)
                 show_variable_brick = catbricks.ShowTextBrick(self.visible_var_X, self.visible_var_Y)
                 show_variable_brick.setUserVariableName(var)
                 show_variable_brick.setUserVariable(var_object)
-                if target_sprite not in brick_dict.keys():
-                    brick_dict[target_sprite] = []
-                brick_dict[target_sprite].append(show_variable_brick)
+                if target_sprite_name not in brick_dict:
+                    brick_dict[target_sprite_name] = []
+                brick_dict[target_sprite_name].append(show_variable_brick)
             self.visible_var_Y -= self.visible_var_position_step_Y
             if self.visible_var_Y <= self.visible_var_position_threshold_Y:
                 self.visible_var_Y = self.visible_var_Y_init
@@ -630,14 +630,9 @@ class Converter(object):
                     break
         for sprite in sprite_list:
             sprite_name = sprite.getName()
-            # TODO: rewrite when there is a general name for the background sprite in the code
-            if sprite_name == "Hintergrund":
-                sprite_name = "Stage"
-            if sprite_name in brick_dict.keys():
-                when_started_script = catbase.StartScript()
-                when_started_script.getBrickList().addAll(brick_dict[sprite_name])
-                sprite.addScript(when_started_script)
-        return
+            sprite_name = sprite_name.replace(BACKGROUND_LOCALIZED_GERMAN_NAME, BACKGROUND_ORIGINAL_NAME)
+            if sprite_name in brick_dict:
+                catrobat.add_to_start_script(brick_dict[sprite_name], sprite)
 
     def _converted_catrobat_program(self, progress_bar=None, context=None):
         scratch_project = self.scratch_project

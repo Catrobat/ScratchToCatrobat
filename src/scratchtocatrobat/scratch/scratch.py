@@ -216,6 +216,7 @@ class RawProject(Object):
         self.dict_ = dict_
         raw_child_objects = sorted(self.get_children(), key=lambda obj_data: obj_data.get("indexInLibrary", 0))
         raw_variable_visibility_information = [var for var in raw_child_objects if "target" in var]
+        #preprocessing for conversion of visible variables
         self._var_to_visibility_map = dict()
         for info in raw_variable_visibility_information:
             self._var_to_visibility_map[info["param"]] = (info["visible"], info["target"])

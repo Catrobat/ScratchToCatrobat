@@ -1017,11 +1017,9 @@ class _ScratchObjectConverter(object):
             sprite_name = sprite_name.replace(BACKGROUND_LOCALIZED_GERMAN_NAME, BACKGROUND_ORIGINAL_NAME)
             sprite_dict[sprite_name] = sprite
         for var, (visible, target_sprite_name) in scratch_project._var_to_visibility_map.iteritems():
-            print(var)
             if visible:
                 # problem: from here, the rest of the method will be ignored after some iterations and the test fails
                 sprite_object = sprite_dict[target_sprite_name]
-                print(sprite_object)
                 var_object = _ScratchObjectConverter._catrobat_scene.getDataContainer().getUserVariable(var, sprite_object)
                 show_variable_brick = catbricks.ShowTextBrick(sprite_context.visible_var_X, sprite_context.visible_var_Y)
                 show_variable_brick.setUserVariableName(var)

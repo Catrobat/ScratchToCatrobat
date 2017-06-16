@@ -573,6 +573,15 @@ class SpriteContext(object):
         self.user_script_declared_labels_map = user_script_declared_labels_map
         self.user_script_params_map = {}
         self.context = None
+        # visible variables init positions and step sizes
+        self.visible_var_X = -220
+        self.visible_var_Y = 170
+        self.visible_var_X_init = -220
+        self.visible_var_Y_init = 170
+        self.visible_var_position_step_Y = 40
+        self.visible_var_position_step_X = 80
+        self.visible_var_position_threshold_Y = -20
+        self.visible_var_position_threshold_X = 220
 
 class ScriptContext(object):
     def __init__(self, sprite_context=None):
@@ -585,14 +594,6 @@ def converted(scratch_project, progress_bar=None, context=None):
 class Converter(object):
 
     def __init__(self, scratch_project):
-        self.visible_var_X = -220
-        self.visible_var_Y = 170
-        self.visible_var_X_init = -220
-        self.visible_var_Y_init = 170
-        self.visible_var_position_step_Y = 40
-        self.visible_var_position_step_X = 80
-        self.visible_var_position_threshold_Y = -20
-        self.visible_var_position_threshold_X = 220
         self.scratch_project = scratch_project
 
     @classmethod
@@ -603,36 +604,37 @@ class Converter(object):
         return ConvertedProject(catrobat_project, scratch_project)
 
     def _add_bricks_for_visible_variables(self, catrobat_scene):
-        scratch_project = self.scratch_project
-        brick_dict = {}
-        sprite_dict = {}
-        sprite_list = catrobat_scene.getSpriteList()
-        for sprite in sprite_list:
-            sprite_name = sprite.getName()
-            sprite_name = sprite_name.replace(BACKGROUND_LOCALIZED_GERMAN_NAME, BACKGROUND_ORIGINAL_NAME)
-            sprite_dict[sprite_name] = sprite
-        for var, (visible, target_sprite_name) in scratch_project._var_to_visibility_map.iteritems():
-            if visible:
-                sprite_object = sprite_dict[target_sprite_name]
-                var_object = _ScratchObjectConverter._catrobat_scene.getDataContainer().getUserVariable(var, sprite_object)
-                show_variable_brick = catbricks.ShowTextBrick(self.visible_var_X, self.visible_var_Y)
-                show_variable_brick.setUserVariableName(var)
-                show_variable_brick.setUserVariable(var_object)
-                if target_sprite_name not in brick_dict:
-                    brick_dict[target_sprite_name] = []
-                brick_dict[target_sprite_name].append(show_variable_brick)
-            self.visible_var_Y -= self.visible_var_position_step_Y
-            if self.visible_var_Y <= self.visible_var_position_threshold_Y:
-                self.visible_var_Y = self.visible_var_Y_init
-                self.visible_var_X += self.visible_var_position_step_X
-                if self.visible_var_X >= self.visible_var_position_threshold_X:
-                    log.info("Too many visible variables")
-                    break
-        for sprite in sprite_list:
-            sprite_name = sprite.getName()
-            sprite_name = sprite_name.replace(BACKGROUND_LOCALIZED_GERMAN_NAME, BACKGROUND_ORIGINAL_NAME)
-            if sprite_name in brick_dict:
-                catrobat.add_to_start_script(brick_dict[sprite_name], sprite)
+        pass
+#         scratch_project = self.scratch_project
+#         brick_dict = {}
+#         sprite_dict = {}
+#         sprite_list = catrobat_scene.getSpriteList()
+#         for sprite in sprite_list:
+#             sprite_name = sprite.getName()
+#             sprite_name = sprite_name.replace(BACKGROUND_LOCALIZED_GERMAN_NAME, BACKGROUND_ORIGINAL_NAME)
+#             sprite_dict[sprite_name] = sprite
+#         for var, (visible, target_sprite_name) in scratch_project._var_to_visibility_map.iteritems():
+#             if visible:
+#                 sprite_object = sprite_dict[target_sprite_name]
+#                 var_object = _ScratchObjectConverter._catrobat_scene.getDataContainer().getUserVariable(var, sprite_object)
+#                 show_variable_brick = catbricks.ShowTextBrick(self.visible_var_X, self.visible_var_Y)
+#                 show_variable_brick.setUserVariableName(var)
+#                 show_variable_brick.setUserVariable(var_object)
+#                 if target_sprite_name not in brick_dict:
+#                     brick_dict[target_sprite_name] = []
+#                 brick_dict[target_sprite_name].append(show_variable_brick)
+#             self.visible_var_Y -= self.visible_var_position_step_Y
+#             if self.visible_var_Y <= self.visible_var_position_threshold_Y:
+#                 self.visible_var_Y = self.visible_var_Y_init
+#                 self.visible_var_X += self.visible_var_position_step_X
+#                 if self.visible_var_X >= self.visible_var_position_threshold_X:
+#                     log.info("Too many visible variables")
+#                     break
+#         for sprite in sprite_list:
+#             sprite_name = sprite.getName()
+#             sprite_name = sprite_name.replace(BACKGROUND_LOCALIZED_GERMAN_NAME, BACKGROUND_ORIGINAL_NAME)
+#             if sprite_name in brick_dict:
+#                 catrobat.add_to_start_script(brick_dict[sprite_name], sprite)
 
     def _converted_catrobat_program(self, progress_bar=None, context=None):
         scratch_project = self.scratch_project
@@ -1004,8 +1006,40 @@ class _ScratchObjectConverter(object):
                 log.error("Cannot assign initialization value {} to shared global answer user variable {}"
                           .format(scratch_variable["name"], scratch_variable["value"]))
 
-        # TODO: Add ShowVariable Bricks for variables that are visible
+        # Add ShowVariable Bricks for variables that are visible
         #       (also for "answer", i.e. _SHARED_GLOBAL_ANSWER_VARIABLE_NAME!!)
+        brick_dict = {}
+        sprite_dict = {}
+        sprite_list = catrobat_scene.getSpriteList()
+        for sprite in sprite_list:
+            sprite_name = sprite.getName()
+            sprite_name = sprite_name.replace(BACKGROUND_LOCALIZED_GERMAN_NAME, BACKGROUND_ORIGINAL_NAME)
+            sprite_dict[sprite_name] = sprite
+        for var, (visible, target_sprite_name) in scratch_project._var_to_visibility_map.iteritems():
+            print(var)
+            if visible:
+                # problem: from here, the rest of the method will be ignored after some iterations and the test fails
+                sprite_object = sprite_dict[target_sprite_name]
+                print(sprite_object)
+                var_object = _ScratchObjectConverter._catrobat_scene.getDataContainer().getUserVariable(var, sprite_object)
+                show_variable_brick = catbricks.ShowTextBrick(sprite_context.visible_var_X, sprite_context.visible_var_Y)
+                show_variable_brick.setUserVariableName(var)
+                show_variable_brick.setUserVariable(var_object)
+                if target_sprite_name not in brick_dict:
+                    brick_dict[target_sprite_name] = []
+                brick_dict[target_sprite_name].append(show_variable_brick)
+            sprite_context.visible_var_Y -= sprite_context.visible_var_position_step_Y
+            if sprite_context.visible_var_Y <= sprite_context.visible_var_position_threshold_Y:
+                sprite_context.visible_var_Y = sprite_context.visible_var_Y_init
+                sprite_context.visible_var_X += sprite_context.visible_var_position_step_X
+                if sprite_context.visible_var_X >= sprite_context.visible_var_position_threshold_X:
+                    log.info("Too many visible variables")
+                    #break
+        for sprite in sprite_list:
+            sprite_name = sprite.getName()
+            sprite_name = sprite_name.replace(BACKGROUND_LOCALIZED_GERMAN_NAME, BACKGROUND_ORIGINAL_NAME)
+            if sprite_name in brick_dict:
+                catrobat.add_to_start_script(brick_dict[sprite_name], sprite)
 
     @classmethod
     def _catrobat_script_from(cls, scratch_script, sprite, catrobat_project, context=None):

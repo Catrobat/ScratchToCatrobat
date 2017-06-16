@@ -1,6 +1,6 @@
 <img title="Scratch2Catrobat" src="https://cloud.githubusercontent.com/assets/3843968/9567706/5a084d76-4f35-11e5-9e3b-5a49256fde86.png" width=595 />
 
-[![Version](https://img.shields.io/badge/version-0.8.1-blue.svg)](https://img.shields.io/badge/version-0.8.1-blue.svg)
+[![Version](https://img.shields.io/badge/version-0.8.1b-blue.svg)](https://img.shields.io/badge/version-0.8.1b-blue.svg)
 
 A tool for converting Scratch projects into Catrobat programs.
 
@@ -17,7 +17,7 @@ The Following License Header should be used for all python and java source files
 ## License Header for Python source files
 <pre lang="python"><code>
 #  ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
-#  Copyright (C) 2013-2017 The Catrobat Team
+#  Copyright (C) 2013-2015 The Catrobat Team
 #  (http://developer.catrobat.org/credits)
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -42,7 +42,7 @@ The Following License Header should be used for all python and java source files
 <pre lang="java"><code>
 /*
  * ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
- * Copyright (C) 2013-2017 The Catrobat Team
+ * Copyright (C) 2013-2015 The Catrobat Team
  * (http://developer.catrobat.org/credits)
  *
  * This program is free software: you can redistribute it and/or modify

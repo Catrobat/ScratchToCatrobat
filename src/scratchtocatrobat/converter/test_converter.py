@@ -1,5 +1,5 @@
 #  ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
-#  Copyright (C) 2013-2015 The Catrobat Team
+#  Copyright (C) 2013-2017 The Catrobat Team
 #  (http://developer.catrobat.org/credits)
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -27,6 +27,7 @@ from org.catrobat.catroid.ui.fragment import SpriteFactory
 import org.catrobat.catroid.content.bricks as catbricks
 import org.catrobat.catroid.content.bricks.Brick as catbasebrick
 import org.catrobat.catroid.formulaeditor as catformula
+import org.catrobat.catroid.formulaeditor.FormulaElement.ElementType as catElementType
 
 from scratchtocatrobat.converter import catrobat
 from scratchtocatrobat.tools import common
@@ -2078,6 +2079,16 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert catr_bricks[0].userVariable.getValue().formulaTree.value == "PLUS"
         assert catr_bricks[0].userVariable.getValue().formulaTree.leftChild.value == "2"
         assert catr_bricks[0].userVariable.getValue().formulaTree.rightChild.value == "32"
+
+    def test_can_convert_set_variable_with_list(self):
+        variable_name = "test_var"
+        project = self.block_converter._catrobat_project
+        catrobat.add_user_variable(project, variable_name, DUMMY_CATR_SPRITE, DUMMY_CATR_SPRITE.getName())
+        scratch_block = ["setVar:to:", "test_var", ["contentsOfList:", self._name_of_test_list]]
+        catr_bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_bricks[0], catbricks.SetVariableBrick)
+        assert catr_bricks[0].getFormulas()[0].getFormulaTree().getElementType() == catElementType.USER_LIST
+        assert catr_bricks[0].getFormulas()[0].getFormulaTree().getValue() == self._name_of_test_list
 
     #call
     def test_can_convert_call_block_user_script_already_defined_simple(self):

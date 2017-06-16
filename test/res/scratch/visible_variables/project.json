@@ -1,0 +1,248 @@
+{
+	"objName": "Stage",
+	"variables": [{
+			"name": "a",
+			"value": 0,
+			"isPersistent": false
+		},
+		{
+			"name": "b",
+			"value": "45",
+			"isPersistent": false
+		},
+		{
+			"name": "local_ball_2",
+			"value": 0,
+			"isPersistent": false
+		}],
+	"sounds": [{
+			"soundName": "pop",
+			"soundID": 1,
+			"md5": "83a9787d4cb6f3b7632b4ddfebf74367.wav",
+			"sampleCount": 258,
+			"rate": 11025,
+			"format": ""
+		}],
+	"costumes": [{
+			"costumeName": "backdrop1",
+			"baseLayerID": 8,
+			"baseLayerMD5": "739b5e2a2435f6e1ec2993791b423146.png",
+			"bitmapResolution": 1,
+			"rotationCenterX": 240,
+			"rotationCenterY": 180
+		}],
+	"currentCostumeIndex": 0,
+	"penLayerMD5": "5c81a336fab8be57adc039a8a2b33ca9.png",
+	"penLayerID": 0,
+	"tempoBPM": 60,
+	"videoAlpha": 0.5,
+	"children": [{
+			"objName": "Sprite1",
+			"variables": [{
+					"name": "local_sprite1",
+					"value": 0,
+					"isPersistent": false
+				},
+				{
+					"name": "local_sprite1_2",
+					"value": 0,
+					"isPersistent": false
+				}],
+			"sounds": [{
+					"soundName": "meow",
+					"soundID": 0,
+					"md5": "83c36d806dc92327b9e7049a565c6bff.wav",
+					"sampleCount": 18688,
+					"rate": 22050,
+					"format": ""
+				}],
+			"costumes": [{
+					"costumeName": "costume1",
+					"baseLayerID": 1,
+					"baseLayerMD5": "09dc888b0b7df19f70d81588ae73420e.svg",
+					"bitmapResolution": 1,
+					"rotationCenterX": 47,
+					"rotationCenterY": 55
+				},
+				{
+					"costumeName": "costume2",
+					"baseLayerID": 2,
+					"baseLayerMD5": "3696356a03a8d938318876a593572843.svg",
+					"bitmapResolution": 1,
+					"rotationCenterX": 47,
+					"rotationCenterY": 55
+				}],
+			"currentCostumeIndex": 0,
+			"scratchX": 0,
+			"scratchY": 0,
+			"scale": 1,
+			"direction": 90,
+			"rotationStyle": "normal",
+			"isDraggable": false,
+			"indexInLibrary": 1,
+			"visible": true,
+			"spriteInfo": {
+			}
+		},
+		{
+			"target": "Stage",
+			"cmd": "getVar:",
+			"param": "a",
+			"color": 15629590,
+			"label": "a",
+			"mode": 1,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 5,
+			"y": 5,
+			"visible": true
+		},
+		{
+			"target": "Stage",
+			"cmd": "getVar:",
+			"param": "b",
+			"color": 15629590,
+			"label": "b",
+			"mode": 1,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 5,
+			"y": 32,
+			"visible": true
+		},
+		{
+			"target": "Sprite1",
+			"cmd": "getVar:",
+			"param": "local_sprite1",
+			"color": 15629590,
+			"label": "Sprite1: local_sprite1",
+			"mode": 1,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 75,
+			"y": 5,
+			"visible": true
+		},
+		{
+			"objName": "Ball",
+			"variables": [{
+					"name": "local_ball",
+					"value": 0,
+					"isPersistent": false
+				}],
+			"sounds": [{
+					"soundName": "pop",
+					"soundID": 1,
+					"md5": "83a9787d4cb6f3b7632b4ddfebf74367.wav",
+					"sampleCount": 258,
+					"rate": 11025,
+					"format": ""
+				}],
+			"costumes": [{
+					"costumeName": "ball-a",
+					"baseLayerID": 3,
+					"baseLayerMD5": "10117ddaefa98d819f2b1df93805622f.svg",
+					"bitmapResolution": 1,
+					"rotationCenterX": 22,
+					"rotationCenterY": 22
+				},
+				{
+					"costumeName": "ball-b",
+					"baseLayerID": 4,
+					"baseLayerMD5": "6e6330cad7750ea7e9dc88402661deb8.svg",
+					"bitmapResolution": 1,
+					"rotationCenterX": 22,
+					"rotationCenterY": 22
+				},
+				{
+					"costumeName": "ball-c",
+					"baseLayerID": 5,
+					"baseLayerMD5": "bb45ed5db278f15c17c012c34a6b160f.svg",
+					"bitmapResolution": 1,
+					"rotationCenterX": 22,
+					"rotationCenterY": 22
+				},
+				{
+					"costumeName": "ball-d",
+					"baseLayerID": 6,
+					"baseLayerMD5": "5d494659deae5c0de06b5885f5524276.svg",
+					"bitmapResolution": 1,
+					"rotationCenterX": 22,
+					"rotationCenterY": 22
+				},
+				{
+					"costumeName": "ball-e",
+					"baseLayerID": 7,
+					"baseLayerMD5": "e80c98bc62fd32e8df81642af11ffb1a.svg",
+					"bitmapResolution": 1,
+					"rotationCenterX": 22,
+					"rotationCenterY": 22
+				}],
+			"currentCostumeIndex": 0,
+			"scratchX": 75,
+			"scratchY": 17,
+			"scale": 1,
+			"direction": 90,
+			"rotationStyle": "normal",
+			"isDraggable": false,
+			"indexInLibrary": 2,
+			"visible": true,
+			"spriteInfo": {
+			}
+		},
+		{
+			"target": "Ball",
+			"cmd": "getVar:",
+			"param": "local_ball",
+			"color": 15629590,
+			"label": "Ball: local_ball",
+			"mode": 1,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 5,
+			"y": 59,
+			"visible": true
+		},
+		{
+			"target": "Sprite1",
+			"cmd": "getVar:",
+			"param": "local_sprite1_2",
+			"color": 15629590,
+			"label": "Sprite1: local_sprite1_2",
+			"mode": 1,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 5,
+			"y": 86,
+			"visible": true
+		},
+		{
+			"target": "Stage",
+			"cmd": "getVar:",
+			"param": "local_ball_2",
+			"color": 15629590,
+			"label": "local_ball_2",
+			"mode": 1,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 5,
+			"y": 113,
+			"visible": true
+		}],
+	"info": {
+		"videoOn": false,
+		"projectID": "162880207",
+		"flashVersion": "WIN 25,0,0,171",
+		"userAgent": "Mozilla\/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit\/537.36 (KHTML, like Gecko) Chrome\/58.0.3029.110 Safari\/537.36",
+		"scriptCount": 0,
+		"swfVersion": "v456",
+		"hasCloudData": false,
+		"spriteCount": 2
+	}
+}

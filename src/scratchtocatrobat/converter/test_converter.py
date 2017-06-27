@@ -2410,7 +2410,7 @@ class TestConvertProjects(common_testing.ProjectTestCase):
     # Checks if the visible global or local variables in the scratch program are converted into show test bricks in the converted project
     def test_can_convert_visible_variables(self):
         scratch_project = self._load_test_scratch_project("visible_variables")
-        visibility_map = scratch_project._var_to_visibility_map
+        sprite_to_vars_map = scratch_project._sprite_to_var_dict
         catrobat_program = self._test_project("visible_variables")
         scene = catrobat_program.getDefaultScene()
         sprite_dict = {}
@@ -2419,19 +2419,20 @@ class TestConvertProjects(common_testing.ProjectTestCase):
             sprite_name = sprite.getName()
             sprite_name = sprite_name.replace(BACKGROUND_LOCALIZED_GERMAN_NAME, BACKGROUND_ORIGINAL_NAME)
             sprite_dict[sprite_name] = sprite
-        for var, (visible, sprite_name) in visibility_map.iteritems():
-            if visible:
-                sprite_object = sprite_dict[sprite_name]
-                scripts = sprite_object.getScriptList()
-                found_show_var = False
-                for script in scripts:
-                    if isinstance(script, catbase.StartScript):
-                        bricks = script.getBrickList()
-                        for brick in bricks:
-                            if isinstance(brick, catbricks.ShowTextBrick):
-                                if brick.getUserVariable().getName() == var:
-                                    found_show_var = True
-                assert found_show_var
+        for sprite_name, variable_list in sprite_to_vars_map.iteritems():
+            sprite_object = sprite_dict[sprite_name]
+            for var, visible in variable_list:
+                if visible:
+                    scripts = sprite_object.getScriptList()
+                    found_show_var = False
+                    for script in scripts:
+                        if isinstance(script, catbase.StartScript):
+                            bricks = script.getBrickList()
+                            for brick in bricks:
+                                if isinstance(brick, catbricks.ShowTextBrick):
+                                    if brick.getUserVariable().getName() == var:
+                                        found_show_var = True
+                    assert found_show_var
 
     # full_test_no_var
     def test_can_convert_project_without_variables(self):

@@ -218,6 +218,7 @@ class RawProject(Object):
         raw_variable_visibility_information = [var for var in raw_child_objects if "target" in var]
         #preprocessing for conversion of visible variables
         self._sprite_to_var_dict = {}
+        # preprocessing
         for info in raw_variable_visibility_information:
             if info["param"]:
                 if info["target"] not in self._sprite_to_var_dict:

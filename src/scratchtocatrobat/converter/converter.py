@@ -69,14 +69,13 @@ BACKGROUND_ORIGINAL_NAME = "Stage"
 log = logger.log
 
 # global position variables for visible variable positioning
-visible_var_X = -220
-visible_var_Y = 170
-visible_var_X_init = -220
-visible_var_Y_init = 170
-visible_var_position_step_Y = 40
-visible_var_position_step_X = 80
-visible_var_position_threshold_Y = -20
-visible_var_position_threshold_X = 220
+VISIBLE_VAR_X_INIT = -220
+VISIBLE_VAR_Y_INIT = 170
+VISIBLE_VAR_POSITION_STEP_X = 80
+VISIBLE_VAR_POSITION_STEP_Y = 40
+VISIBLE_VAR_POSITION_THRESHOLD_X = 220
+VISIBLE_VAR_POSITION_THRESHOLD_Y = -20
+
 
 class ConversionError(common.ScratchtobatError):
     pass
@@ -565,6 +564,8 @@ class Context(object):
     def __init__(self):
         self._sprite_contexts = []
         self.upcoming_sprites = {}
+        self.visible_var_X = VISIBLE_VAR_X_INIT
+        self.visible_var_Y = VISIBLE_VAR_Y_INIT
 
     def add_sprite_context(self, sprite_context):
         assert isinstance(sprite_context, SpriteContext)
@@ -976,32 +977,25 @@ class _ScratchObjectConverter(object):
 
         # Add ShowVariable Bricks for variables that are visible
         #       (also for "answer", i.e. _SHARED_GLOBAL_ANSWER_VARIABLE_NAME!!)
-
-        global visible_var_X
-        global visible_var_Y
-        global visible_var_X_init
-        global visible_var_Y_init
-        global visible_var_position_step_Y
-        global visible_var_position_step_X
-        global visible_var_position_threshold_Y
-        global visible_var_position_threshold_X 
-
         sprite_name = sprite.getName()
         sprite_name = sprite_name.replace(BACKGROUND_LOCALIZED_GERMAN_NAME, BACKGROUND_ORIGINAL_NAME)
         local_sprite_variables = scratch_project._sprite_to_var_dict[sprite_name]
+        context = sprite_context.context
+        if context is None: return
+
         for var, visible in local_sprite_variables:
-            if visible:
-                var_object = _ScratchObjectConverter._catrobat_scene.getDataContainer().getUserVariable(var, sprite)
-                show_variable_brick = catbricks.ShowTextBrick(visible_var_X, visible_var_Y)
-                show_variable_brick.setUserVariableName(var)
-                show_variable_brick.setUserVariable(var_object)
-                visible_var_Y -= visible_var_position_step_Y
-                if visible_var_Y <= visible_var_position_threshold_Y:
-                    visible_var_Y = visible_var_Y_init
-                    visible_var_X += visible_var_position_step_X
-                if visible_var_X >= visible_var_position_threshold_X:
-                    log.info("Too many visible variables")
-                catrobat.add_to_start_script([show_variable_brick], sprite)
+            if not visible: continue
+            var_object = _ScratchObjectConverter._catrobat_scene.getDataContainer().getUserVariable(var, sprite)
+            show_variable_brick = catbricks.ShowTextBrick(context.visible_var_X, context.visible_var_Y)
+            show_variable_brick.setUserVariableName(var)
+            show_variable_brick.setUserVariable(var_object)
+            context.visible_var_Y -= VISIBLE_VAR_POSITION_STEP_Y
+            if context.visible_var_Y <= VISIBLE_VAR_POSITION_THRESHOLD_Y:
+                context.visible_var_Y = VISIBLE_VAR_Y_INIT
+                context.visible_var_X += VISIBLE_VAR_POSITION_STEP_X
+            if context.visible_var_X >= VISIBLE_VAR_POSITION_THRESHOLD_X:
+                log.info("Too many visible variables")
+            catrobat.add_to_start_script([show_variable_brick], sprite)
 
     @classmethod
     def _catrobat_script_from(cls, scratch_script, sprite, catrobat_project, context=None):

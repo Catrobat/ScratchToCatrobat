@@ -34,10 +34,10 @@ from scratchtocatrobat.tools import common
 from scratchtocatrobat.tools import common_testing
 from scratchtocatrobat.scratch import scratch
 from scratchtocatrobat.converter import converter
-from scratchtocatrobat.converter.converter import ScriptContext
 
 BACKGROUND_LOCALIZED_GERMAN_NAME = "Hintergrund"
 BACKGROUND_ORIGINAL_NAME = "Stage"
+
 
 def create_catrobat_sprite_stub(name=None):
     sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, "Dummy" if name is None else name)

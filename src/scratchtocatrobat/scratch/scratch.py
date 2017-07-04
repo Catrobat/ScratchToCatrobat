@@ -215,12 +215,20 @@ class RawProject(Object):
         self._verify_scratch_dictionary(dict_, data_origin)
         self.dict_ = dict_
         raw_child_objects = sorted(self.get_children(), key=lambda obj_data: obj_data.get("indexInLibrary", 0))
+        raw_variable_visibility_information = [var for var in raw_child_objects if "target" in var]
+        #preprocessing for conversion of visible variables
+        self._sprite_to_var_dict = {}
+        # preprocessing
+        for info in raw_variable_visibility_information:
+            if info["param"]:
+                if info["target"] not in self._sprite_to_var_dict:
+                    self._sprite_to_var_dict[info["target"]] = [(info["param"], info["visible"])]
+                else:
+                    self._sprite_to_var_dict[info["target"]].append((info["param"], info["visible"]))
         self.raw_objects = [child for child in raw_child_objects if "objName" in child]
         self.objects = [Object(raw_object) for raw_object in [dict_] + self.raw_objects]
         self.resource_names = [self._resource_name_from(raw_resource) for raw_resource in self._raw_resources()]
         self.unique_resource_names = list(set(self.resource_names))
-
-        # preprocessing
         add_timer_script = False
         add_timer_reset_script = False
         sprite_name_sprite_mapping = dict(map(lambda obj: (obj.get_objName(), obj), self.objects))
@@ -231,7 +239,6 @@ class RawProject(Object):
             if workaround_info[ADD_TIMER_SCRIPT_KEY]: add_timer_script = True
             if workaround_info[ADD_TIMER_RESET_SCRIPT_KEY]: add_timer_reset_script = True
             position_script_to_be_added |= workaround_info[ADD_POSITION_SCRIPT_TO_OBJECTS_KEY]
-
         if add_timer_script: self._add_timer_script_to_stage_object()
         if add_timer_script and add_timer_reset_script: self._add_timer_reset_script_to_stage_object()
         for destination_sprite_name in position_script_to_be_added:

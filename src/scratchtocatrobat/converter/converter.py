@@ -63,8 +63,20 @@ CATROBAT_DEFAULT_SCENE_NAME = "Scene 1"
 UNSUPPORTED_SCRATCH_BLOCK_NOTE_MESSAGE_PREFIX_TEMPLATE = "Missing brick for Scratch identifier: [{}]"
 UNSUPPORTED_SCRATCH_FORMULA_BLOCK_NOTE_MESSAGE_PREFIX = "Missing formula element in brick: [{}] for Scratch identifier: [{}]"
 
+BACKGROUND_LOCALIZED_GERMAN_NAME = "Hintergrund"
+BACKGROUND_ORIGINAL_NAME = "Stage"
+
 log = logger.log
 
+# global position variables for visible variable positioning
+visible_var_X = -220
+visible_var_Y = 170
+visible_var_X_init = -220
+visible_var_Y_init = 170
+visible_var_position_step_Y = 40
+visible_var_position_step_X = 80
+visible_var_position_threshold_Y = -20
+visible_var_position_threshold_X = 220
 
 class ConversionError(common.ScratchtobatError):
     pass
@@ -525,7 +537,7 @@ def _key_image_path_for(key):
     key_images_path = os.path.join(common.get_project_base_path(), 'resources', 'images', 'keys')
     for key_filename in os.listdir(key_images_path):
         basename, _ = os.path.splitext(key_filename)
-        if basename.lower().endswith("_".join(key.split())):
+        if basename.lower().endswith("_" + "_".join(key.split())):
             return os.path.join(key_images_path, key_filename)
     assert False, "Key '%s' not found in %s" % (key, os.listdir(key_images_path))
 
@@ -624,43 +636,51 @@ class Converter(object):
             catr_sprite = self._scratch_object_converter(scratch_object)
             catrobat_scene.addSprite(catr_sprite)
 
+    @staticmethod
+    def _place_key_brick(key, x_pos, y_pos, catrobat_scene):
+        key_filename = _key_filename_for(key)
+        key_message = _key_to_broadcast_message(key)
+        key_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, key_message)
+        key_look = catcommon.LookData()
+        key_look.setLookName(key_message)
+        key_look.setLookFilename(key_filename)
+        key_sprite.getLookDataList().add(key_look)
+        when_started_script = catbase.StartScript()
+        set_look_brick = catbricks.SetLookBrick()
+        set_look_brick.setLook(key_look)
+        place_at_brick = catbricks.PlaceAtBrick(x_pos, y_pos)
+        bricks = [place_at_brick, set_look_brick, catbricks.SetSizeToBrick(33)]
+        when_started_script.getBrickList().addAll(bricks)
+        key_sprite.addScript(when_started_script)
+        when_tapped_script = catbase.WhenScript()
+        when_tapped_script.addBrick(catbricks.BroadcastBrick(key_message))
+        key_sprite.addScript(when_tapped_script)
+        catrobat_scene.addSprite(key_sprite)
+
     # TODO: make it more explicit that this depends on the conversion code for "whenKeyPressed" Scratch block
     @staticmethod
     def _add_key_sprites_to(catrobat_scene, listened_keys):
-        height_pos = 1
+        y_offset = -20
+        x_offset = -20
+        space_letters_width_offset = 4
+        letters_per_row = 12
+        space_exists = False
+        if "space" in listened_keys:
+            space_exists = True
+            listened_keys.remove("space")
         for idx, key in enumerate(listened_keys):
-            width_pos = idx
-            key_filename = _key_filename_for(key)
-            key_message = _key_to_broadcast_message(key)
-
-            key_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, key_message)
-            key_look = catcommon.LookData()
-            key_look.setLookName(key_message)
-            key_look.setLookFilename(key_filename)
-            key_sprite.getLookDataList().add(key_look)
-
-            # initialize key images in left upper corner
-            when_started_script = catbase.StartScript()
-            set_look_brick = catbricks.SetLookBrick()
-            set_look_brick.setLook(key_look)
-
-            # special handling wider button
-            if key == "space":
-                width_pos = 0
-                height_pos = 2
-            y_pos = (scratch.STAGE_HEIGHT_IN_PIXELS / 2) - 40 * height_pos
-            x_pos = -(scratch.STAGE_WIDTH_IN_PIXELS / 2) + 40 * (width_pos + 1)
-            place_at_brick = catbricks.PlaceAtBrick(x_pos, y_pos)
-
-            bricks = [place_at_brick, set_look_brick, catbricks.SetSizeToBrick(33)]
-            when_started_script.getBrickList().addAll(bricks)
-            key_sprite.addScript(when_started_script)
-
-            when_tapped_script = catbase.WhenScript()
-            when_tapped_script.addBrick(catbricks.BroadcastBrick(key_message))
-            key_sprite.addScript(when_tapped_script)
-
-            catrobat_scene.addSprite(key_sprite)
+            if space_exists and idx > 3:
+                idx = idx + space_letters_width_offset
+            width_pos = idx % letters_per_row
+            height_pos = int(idx / letters_per_row) + 1
+            y_pos = -(scratch.STAGE_HEIGHT_IN_PIXELS / 2) + y_offset + 40 * height_pos
+            x_pos = -(scratch.STAGE_WIDTH_IN_PIXELS / 2) + x_offset + 40 * (width_pos + 1)
+            Converter._place_key_brick(key, x_pos, y_pos,catrobat_scene)
+        if space_exists:
+            listened_keys.add("space")
+            y_pos = -(scratch.STAGE_HEIGHT_IN_PIXELS / 2) + y_offset + 40
+            x_pos = 0
+            Converter._place_key_brick("space", x_pos, y_pos, catrobat_scene)
 
     @staticmethod
     def _update_xml_header(xml_header, scratch_project_id, program_name, scratch_project_instructions,
@@ -814,7 +834,8 @@ class _ScratchObjectConverter(object):
             self._add_default_behaviour_to(sprite, sprite_context, self._catrobat_scene,
                                            self._catrobat_project, scratch_object,
                                            self._scratch_project, costume_resolution)
-        except:
+        except Exception, e:
+            log.error("exception: " + str(e))
             log.error("Cannot add default behaviour to sprite object {}".format(sprite_name))
 
         log.info('')
@@ -953,8 +974,34 @@ class _ScratchObjectConverter(object):
                 log.error("Cannot assign initialization value {} to shared global answer user variable {}"
                           .format(scratch_variable["name"], scratch_variable["value"]))
 
-        # TODO: Add ShowVariable Bricks for variables that are visible
+        # Add ShowVariable Bricks for variables that are visible
         #       (also for "answer", i.e. _SHARED_GLOBAL_ANSWER_VARIABLE_NAME!!)
+
+        global visible_var_X
+        global visible_var_Y
+        global visible_var_X_init
+        global visible_var_Y_init
+        global visible_var_position_step_Y
+        global visible_var_position_step_X
+        global visible_var_position_threshold_Y
+        global visible_var_position_threshold_X 
+
+        sprite_name = sprite.getName()
+        sprite_name = sprite_name.replace(BACKGROUND_LOCALIZED_GERMAN_NAME, BACKGROUND_ORIGINAL_NAME)
+        local_sprite_variables = scratch_project._sprite_to_var_dict[sprite_name]
+        for var, visible in local_sprite_variables:
+            if visible:
+                var_object = _ScratchObjectConverter._catrobat_scene.getDataContainer().getUserVariable(var, sprite)
+                show_variable_brick = catbricks.ShowTextBrick(visible_var_X, visible_var_Y)
+                show_variable_brick.setUserVariableName(var)
+                show_variable_brick.setUserVariable(var_object)
+                visible_var_Y -= visible_var_position_step_Y
+                if visible_var_Y <= visible_var_position_threshold_Y:
+                    visible_var_Y = visible_var_Y_init
+                    visible_var_X += visible_var_position_step_X
+                if visible_var_X >= visible_var_position_threshold_X:
+                    log.info("Too many visible variables")
+                catrobat.add_to_start_script([show_variable_brick], sprite)
 
     @classmethod
     def _catrobat_script_from(cls, scratch_script, sprite, catrobat_project, context=None):

@@ -36,6 +36,7 @@ from java.io import PrintWriter
 from java.util import StringTokenizer
 from javax.swing import ImageIcon
 import java.awt.Color
+import xml.etree.cElementTree as ET
 
 _BATIK_CLI_JAR = "batik-rasterizer.jar"
 _log = logging.getLogger(__name__)
@@ -319,65 +320,13 @@ def _create_buffered_image(image):
 
 
 def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
-    write_str = ""
-    file_reader = FileReader(svg_input_path)
-    buffered_reader = BufferedReader(file_reader)
-    read_line = ""
-
-    check_main_transform, check_text_transform, check_width, check_height  = False, False, False, False
-    width, height = 0,0
-    while True:
-        read_line = buffered_reader.readLine()
-
-        if read_line is None:
-            break
-
-        if "height=\"" in read_line and not check_height:
-            height = re.search("(?<=height\=\").*?\"", read_line).group(0)
-            height = re.sub(r"px", "", height, 1) if "px" in height else height
-            height = float(height[0:len(height)-1])
-            check_height = True
-
-        if "width=\"" in read_line and not check_width:
-            width = re.search("(?<=width\=\").*?\"", read_line).group(0)
-            width = re.sub(r"px", "", width, 1) if "px" in width else width
-            width = float(width[0:len(width)-1])
-            check_width = True
-
-        if "viewBox" in read_line:
-            view_box_content = _get_viewbox_content(read_line)
-            view_box_values = _get_viewbox_values(view_box_content)
-            if view_box_values[0] != 0:
-                view_box_values[2] = abs(view_box_values[2]) + abs(view_box_values[0])
-                view_box_values[0] = 0
-            if view_box_values[1] != 0:
-                view_box_values[3] = abs(view_box_values[3]) + abs(view_box_values[1])
-                view_box_values[1] = 0
-            read_line = re.sub(r"viewBox=\"[\-|0-9| ]+\"", "", read_line, 1)
-            read_line = re.sub(r"width=\"[0-9]+\"", "width=\""+ str(view_box_values[2]) + "\"",
-                               read_line, 1)
-            read_line = re.sub(r"height=\"[0-9]+\"", "height=\""+ str(view_box_values[3]) + "\"",
-                               read_line, 1)
-
-        if "g id=\"ID" in read_line and not check_main_transform:
-            if "transform=" in read_line:
-                read_line = re.sub(r"transform=\"matrix(.*)\"", "", read_line, 1)
-                check_main_transform = True
-
-        if "text id=\"ID" in read_line and not check_text_transform:
-            if "transform=" in read_line:
-                read_line = re.sub(r"transform=\"matrix(.*)\"", "", read_line, 1)
-                read_line = re.sub(r"x=\"[0-9]+.[0-9]+\"", "x=\"0\"", read_line, 1)
-                read_line = re.sub(r"y=\"[0-9]+.[0-9]+\"", "y=\""+ str(height/2.0) +"\"", read_line, 1)
-                check_text_transform = True
-
-        write_str += read_line + "\n"
-
-    buffered_reader.close()
-    file_reader.close()
-    file_writer = PrintWriter(svg_output_path)
-    file_writer.print(write_str)
-    file_writer.close()
+    tree = ET.parse(svg_input_path)
+    root = tree.getroot()
+    for child in root:
+        if re.search('.*text', child.tag) != None:
+            child.attrib['x'] = '3'
+            child.attrib['y'] = '22'
+    tree.write(svg_output_path)
 
 
 def _get_viewbox_values(view_box_str):

@@ -219,7 +219,7 @@ class RawProject(Object):
         raw_variable_information = [var for var in raw_child_objects if "target" in var]
         #preprocessing for conversion of visible variables
         self._sprite_to_var_dict = {}
-        self.implemented_commands = ["soundLevel"]
+        self.implemented_commands = ["soundLevel", "scale"]
         self._sprite_to_command_var_dict = {}
         for info in raw_variable_information:
             if info["cmd"] in self.implemented_commands and info["visible"]:

@@ -1003,6 +1003,7 @@ class _ScratchObjectConverter(object):
         sprite_name = sprite_name.replace(BACKGROUND_LOCALIZED_GERMAN_NAME, BACKGROUND_ORIGINAL_NAME)
         local_sprite_variables = scratch_project._sprite_to_var_dict[sprite_name]
         context = sprite_context.context
+        if context is None: return
         local_sprite_commands = scratch_project._sprite_to_command_var_dict[sprite_name]
         if len(local_sprite_commands) >= 1:
             loop_start = catbricks.ForeverBrick()
@@ -1012,31 +1013,56 @@ class _ScratchObjectConverter(object):
             wait_pos = len(exclusive_start_script.getBrickList()) - 1
             wait_brick = catbricks.WaitBrick(100)
             exclusive_start_script.getBrickList().addAll(wait_pos, [wait_brick])
-        if context is None: return
+            
+        print("commands: ")
+        print(local_sprite_commands)
+        
+        def get_unique_var_name(name_to_check):
+            match_count = 2
+            taken = True
+            test_name = name_to_check
+            while taken:
+                taken = _ScratchObjectConverter._variable_exists(test_name, scratch_project) 
+                if taken:
+                    test_name = name_to_check + str(match_count)
+                    match_count += 1
+            return test_name
+        
         for cmd in local_sprite_commands:
             # switch for commands
+            var_base_name = "s2cc: " + sprite.getName() + ": " + cmd
+            var_name = get_unique_var_name(var_base_name)
+            generated_var = catrobat.add_user_variable(catrobat_project, var_name)
             if cmd == "soundLevel":
                 # create variable and link it to loudness formula
                 print("convert soundLevel")
-                dummy_var_name = "scratch_convert_loudness"
-                match_count = 2
-                taken = True
-                test_name = dummy_var_name
-                while taken:
-                    taken = _ScratchObjectConverter._variable_exists(test_name, scratch_project) 
-                    if taken:
-                        test_name = dummy_var_name + str(match_count)
-                        match_count += 1
-                generated_var = catrobat.add_user_variable(catrobat_project, test_name)
                 #create formula
                 loudness_formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
                 loudness_formula_element.value = str(catformula.Sensors.LOUDNESS)
                 generated_var.setValue(loudness_formula_element)
                 show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
                 set_var_brick = catbricks.SetVariableBrick(catformula.Formula(loudness_formula_element), generated_var)
+                
+                ##### maybe generalize after the switch
                 exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
                 position = len(exclusive_start_script.getBrickList()) - 2 # minus endloopbrick and waitbrick
                 exclusive_start_script.getBrickList().addAll(position, [set_var_brick])
+                ####
+                
+            if cmd == "scale":
+                print("convert scale")
+                scale_formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
+                scale_formula_element.value = str(catformula.Sensors.OBJECT_SIZE)
+                generated_var.setValue(scale_formula_element)
+                show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
+                set_var_brick = catbricks.SetVariableBrick(catformula.Formula(scale_formula_element), generated_var)
+                
+                ##### maybe generalize after the switch
+                exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
+                position = len(exclusive_start_script.getBrickList()) - 2 # minus endloopbrick and waitbrick
+                exclusive_start_script.getBrickList().addAll(position, [set_var_brick])
+                ####
+                
         for var, visible in local_sprite_variables:
             if not visible: continue
             var_object = _ScratchObjectConverter._catrobat_scene.getDataContainer().getUserVariable(var, sprite)

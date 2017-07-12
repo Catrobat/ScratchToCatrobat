@@ -871,6 +871,27 @@ class _ScratchObjectConverter(object):
         sound_resource_name = scratch_sound[scratchkeys.SOUND_NAME]
         soundinfo.setSoundFileName(mediaconverter.catrobat_resource_file_name_for(sound_md5_filename, sound_resource_name))
         return soundinfo
+    @staticmethod
+    def _variable_exists(var, scratch_project):
+        sprite_dict = scratch_project._sprite_to_var_dict
+        for _, var_list in sprite_dict.iteritems():
+            var_dict = dict(var_list)
+            if var in var_dict:
+                return True
+        return False
+    
+    @staticmethod
+    def _create_show_text_brick_and_update_positions(var_object, context):
+        show_variable_brick = catbricks.ShowTextBrick(context.visible_var_X, context.visible_var_Y)
+        show_variable_brick.setUserVariableName(var_object.getName())
+        show_variable_brick.setUserVariable(var_object)
+        context.visible_var_Y -= VISIBLE_VAR_POSITION_STEP_Y
+        if context.visible_var_Y <= VISIBLE_VAR_POSITION_THRESHOLD_Y:
+            context.visible_var_Y = VISIBLE_VAR_Y_INIT
+            context.visible_var_X += VISIBLE_VAR_POSITION_STEP_X
+        if context.visible_var_X >= VISIBLE_VAR_POSITION_THRESHOLD_X:
+                log.info("Too many visible variables")
+        return show_variable_brick
 
     @staticmethod
     def _add_default_behaviour_to(sprite, sprite_context, catrobat_scene, catrobat_project,
@@ -974,28 +995,56 @@ class _ScratchObjectConverter(object):
             except:
                 log.error("Cannot assign initialization value {} to shared global answer user variable {}"
                           .format(scratch_variable["name"], scratch_variable["value"]))
-
+        # Add Visibility for CMDs like "loudness ect.." stcc-35
         # Add ShowVariable Bricks for variables that are visible
         #       (also for "answer", i.e. _SHARED_GLOBAL_ANSWER_VARIABLE_NAME!!)
+        exclusive_start_script = catbase.StartScript()
         sprite_name = sprite.getName()
         sprite_name = sprite_name.replace(BACKGROUND_LOCALIZED_GERMAN_NAME, BACKGROUND_ORIGINAL_NAME)
         local_sprite_variables = scratch_project._sprite_to_var_dict[sprite_name]
         context = sprite_context.context
+        local_sprite_commands = scratch_project._sprite_to_command_var_dict[sprite_name]
+        if len(local_sprite_commands) >= 1:
+            loop_start = catbricks.ForeverBrick()
+            loop_end = catbricks.LoopEndBrick(loop_start)
+            loop_bricks = [loop_start, loop_end]
+            exclusive_start_script.getBrickList().addAll(0, loop_bricks)
+            wait_pos = len(exclusive_start_script.getBrickList()) - 1
+            wait_brick = catbricks.WaitBrick(100)
+            exclusive_start_script.getBrickList().addAll(wait_pos, [wait_brick])
         if context is None: return
-
+        for cmd in local_sprite_commands:
+            # switch for commands
+            if cmd == "soundLevel":
+                # create variable and link it to loudness formula
+                print("convert soundLevel")
+                dummy_var_name = "scratch_convert_loudness"
+                match_count = 2
+                taken = True
+                test_name = dummy_var_name
+                while taken:
+                    taken = _ScratchObjectConverter._variable_exists(test_name, scratch_project) 
+                    if taken:
+                        test_name = dummy_var_name + str(match_count)
+                        match_count += 1
+                generated_var = catrobat.add_user_variable(catrobat_project, test_name)
+                #create formula
+                loudness_formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
+                loudness_formula_element.value = str(catformula.Sensors.LOUDNESS)
+                generated_var.setValue(loudness_formula_element)
+                show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
+                set_var_brick = catbricks.SetVariableBrick(catformula.Formula(loudness_formula_element), generated_var)
+                exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
+                position = len(exclusive_start_script.getBrickList()) - 2 # minus endloopbrick and waitbrick
+                exclusive_start_script.getBrickList().addAll(position, [set_var_brick])
         for var, visible in local_sprite_variables:
             if not visible: continue
             var_object = _ScratchObjectConverter._catrobat_scene.getDataContainer().getUserVariable(var, sprite)
-            show_variable_brick = catbricks.ShowTextBrick(context.visible_var_X, context.visible_var_Y)
-            show_variable_brick.setUserVariableName(var)
-            show_variable_brick.setUserVariable(var_object)
-            context.visible_var_Y -= VISIBLE_VAR_POSITION_STEP_Y
-            if context.visible_var_Y <= VISIBLE_VAR_POSITION_THRESHOLD_Y:
-                context.visible_var_Y = VISIBLE_VAR_Y_INIT
-                context.visible_var_X += VISIBLE_VAR_POSITION_STEP_X
-            if context.visible_var_X >= VISIBLE_VAR_POSITION_THRESHOLD_X:
-                log.info("Too many visible variables")
-            catrobat.add_to_start_script([show_variable_brick], sprite)
+            show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(var_object, context)
+            exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
+        if len(exclusive_start_script.getBrickList()) >= 1:
+            print("adding exclusive script")
+            sprite.addScript(exclusive_start_script)
 
     @classmethod
     def _catrobat_script_from(cls, scratch_script, sprite, catrobat_project, context=None):

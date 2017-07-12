@@ -31,6 +31,7 @@ from scratchtocatrobat.scratch import scratchwebapi
 from scratchtocatrobat.tools import helpers
 from scratchtocatrobat.tools.helpers import ProgressType
 from scratchtocatrobat.scratch import scriptcodemodifier
+import cmd
 
 _log = common.log
 
@@ -215,16 +216,24 @@ class RawProject(Object):
         self._verify_scratch_dictionary(dict_, data_origin)
         self.dict_ = dict_
         raw_child_objects = sorted(self.get_children(), key=lambda obj_data: obj_data.get("indexInLibrary", 0))
-        raw_variable_visibility_information = [var for var in raw_child_objects if "target" in var]
+        raw_variable_information = [var for var in raw_child_objects if "target" in var]
         #preprocessing for conversion of visible variables
         self._sprite_to_var_dict = {}
-        # preprocessing
-        for info in raw_variable_visibility_information:
-            if info["param"]:
+        self.implemented_commands = ["soundLevel"]
+        self._sprite_to_command_var_dict = {}
+        for info in raw_variable_information:
+            if info["cmd"] in self.implemented_commands and info["visible"]:
+                print("Found implemented cmd: " + info["cmd"] + "\n")
+                if info["target"] not in self._sprite_to_command_var_dict:
+                    self._sprite_to_command_var_dict[info["target"]] = [info["cmd"]]
+                else:
+                    self._sprite_to_command_var_dict[info["target"]].append(info["cmd"])
+            elif info["param"]:
                 if info["target"] not in self._sprite_to_var_dict:
                     self._sprite_to_var_dict[info["target"]] = [(info["param"], info["visible"])]
                 else:
                     self._sprite_to_var_dict[info["target"]].append((info["param"], info["visible"]))
+        print(self._sprite_to_command_var_dict)
         self.raw_objects = [child for child in raw_child_objects if "objName" in child]
         self.objects = [Object(raw_object) for raw_object in [dict_] + self.raw_objects]
         self.resource_names = [self._resource_name_from(raw_resource) for raw_resource in self._raw_resources()]

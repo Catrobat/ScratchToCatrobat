@@ -874,7 +874,6 @@ class _ScratchObjectConverter(object):
     @staticmethod
     def _variable_exists(var, scratch_project):
         sprite_dict = scratch_project._sprite_to_var_dict
-        print(sprite_dict)
         for _, var_list in sprite_dict.iteritems():
             var_dict = dict(var_list)
             if var in var_dict:
@@ -1077,6 +1076,36 @@ class _ScratchObjectConverter(object):
                     generated_var.setValue(date_formula_element)
                     show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
                     set_var_brick = catbricks.SetVariableBrick(catformula.Formula(date_formula_element), generated_var)
+                    ##### maybe generalize after the switch
+                    exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
+                    position = len(exclusive_start_script.getBrickList()) - 2 # minus endloopbrick and waitbrick
+                    exclusive_start_script.getBrickList().addAll(position, [set_var_brick])
+                if cmd == "xpos":
+                    position_formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
+                    position_formula_element.value = str(catformula.Sensors.OBJECT_X)
+                    generated_var.setValue(position_formula_element)
+                    show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
+                    set_var_brick = catbricks.SetVariableBrick(catformula.Formula(position_formula_element), generated_var)
+                    ##### maybe generalize after the switch
+                    exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
+                    position = len(exclusive_start_script.getBrickList()) - 2 # minus endloopbrick and waitbrick
+                    exclusive_start_script.getBrickList().addAll(position, [set_var_brick])
+                if cmd == "ypos":
+                    position_formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
+                    position_formula_element.value = str(catformula.Sensors.OBJECT_Y)
+                    generated_var.setValue(position_formula_element)
+                    show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
+                    set_var_brick = catbricks.SetVariableBrick(catformula.Formula(position_formula_element), generated_var)
+                    ##### maybe generalize after the switch
+                    exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
+                    position = len(exclusive_start_script.getBrickList()) - 2 # minus endloopbrick and waitbrick
+                    exclusive_start_script.getBrickList().addAll(position, [set_var_brick])
+                if cmd == "heading":
+                    position_formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
+                    position_formula_element.value = str(catformula.Sensors.OBJECT_ROTATION)
+                    generated_var.setValue(position_formula_element)
+                    show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
+                    set_var_brick = catbricks.SetVariableBrick(catformula.Formula(position_formula_element), generated_var)
                     ##### maybe generalize after the switch
                     exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
                     position = len(exclusive_start_script.getBrickList()) - 2 # minus endloopbrick and waitbrick

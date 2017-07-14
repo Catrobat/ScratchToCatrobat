@@ -1110,6 +1110,27 @@ class _ScratchObjectConverter(object):
                     exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
                     position = len(exclusive_start_script.getBrickList()) - 2 # minus endloopbrick and waitbrick
                     exclusive_start_script.getBrickList().addAll(position, [set_var_brick])
+                if cmd == "costumeIndex":
+                    formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
+                    formula_element.value = str(catformula.Sensors.OBJECT_LOOK_NUMBER)
+                    generated_var.setValue(formula_element)
+                    show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
+                    set_var_brick = catbricks.SetVariableBrick(catformula.Formula(formula_element), generated_var)
+                    ##### maybe generalize after the switch
+                    exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
+                    position = len(exclusive_start_script.getBrickList()) - 2 # minus endloopbrick and waitbrick
+                    exclusive_start_script.getBrickList().addAll(position, [set_var_brick])
+                if cmd == "sceneName":
+                    formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
+                    formula_element.value = str(catformula.Sensors.OBJECT_BACKGROUND_NAME)
+                    generated_var.setValue(formula_element)
+                    show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
+                    set_var_brick = catbricks.SetVariableBrick(catformula.Formula(formula_element), generated_var)
+                    ##### maybe generalize after the switch
+                    exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
+                    position = len(exclusive_start_script.getBrickList()) - 2 # minus endloopbrick and waitbrick
+                    exclusive_start_script.getBrickList().addAll(position, [set_var_brick])
+                    
         if local_sprite_variables is not None:
             for var, visible in local_sprite_variables:
                 if not visible: continue

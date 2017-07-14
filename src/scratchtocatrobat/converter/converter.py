@@ -49,6 +49,7 @@ from java.awt import Color
 
 import catrobat
 import mediaconverter
+from _threading_local import local
 
 _DEFAULT_FORMULA_ELEMENT = catformula.FormulaElement(catElementType.NUMBER, str(00001), None)  # @UndefinedVariable (valueOf)
 
@@ -871,9 +872,11 @@ class _ScratchObjectConverter(object):
         sound_resource_name = scratch_sound[scratchkeys.SOUND_NAME]
         soundinfo.setSoundFileName(mediaconverter.catrobat_resource_file_name_for(sound_md5_filename, sound_resource_name))
         return soundinfo
+    # TODO: umschreiben!!
     @staticmethod
     def _variable_exists(var, scratch_project):
         sprite_dict = scratch_project._sprite_to_var_dict
+        print(sprite_dict)
         for _, var_list in sprite_dict.iteritems():
             var_dict = dict(var_list)
             if var in var_dict:
@@ -899,6 +902,7 @@ class _ScratchObjectConverter(object):
         # some initial Scratch settings are done with a general JSON configuration instead with blocks. Here the equivalent bricks are added for Catrobat.
         implicit_bricks_to_add = []
 
+
         # create AddItemToUserListBrick bricks to populate user lists with their default values
         # global lists will be populated in StartScript of background/stage sprite object
         if scratch_object.is_stage() and scratch_object.get_lists() is not None:
@@ -911,7 +915,6 @@ class _ScratchObjectConverter(object):
                 for value in global_user_list_data["contents"]:
                     catr_value_formula = catrobat.create_formula_with_value(value)
                     implicit_bricks_to_add += [catbricks.AddItemToUserListBrick(catr_value_formula, catr_user_list)]
-
         if not scratch_object.is_stage() and scratch_object.get_lists() is not None:
             for user_list_data in scratch_object.get_lists():
                 list_name = user_list_data["listName"]
@@ -934,7 +937,6 @@ class _ScratchObjectConverter(object):
                 set_look_brick = catbricks.SetLookBrick()
                 set_look_brick.setLook(spriteStartupLook)
                 implicit_bricks_to_add += [set_look_brick]
-
         # object's scratchX and scratchY Keys determine position
         x_pos = int(scratch_object.get_scratchX() or 0)
         y_pos = int(scratch_object.get_scratchY() or 0)
@@ -946,7 +948,6 @@ class _ScratchObjectConverter(object):
             object_scale = object_relative_scale * 100.0 / costume_resolution
             if object_scale != 100.0:
                 implicit_bricks_to_add += [catbricks.SetSizeToBrick(object_scale)]
-
         object_rotation_in_degrees = float(scratch_object.get_direction() or 90.0)
         number_of_full_object_rotations = int(round(object_rotation_in_degrees/360.0))
         effective_object_rotation_in_degrees = object_rotation_in_degrees - 360.0 * number_of_full_object_rotations
@@ -971,7 +972,6 @@ class _ScratchObjectConverter(object):
 
         if len(implicit_bricks_to_add) > 0:
             catrobat.add_to_start_script(implicit_bricks_to_add, sprite)
-
         # initialization of object's variables
         for scratch_variable in scratch_object.get_variables():
             if scratch_variable["name"] == _SHARED_GLOBAL_ANSWER_VARIABLE_NAME:
@@ -983,7 +983,6 @@ class _ScratchObjectConverter(object):
             except:
                 log.error("Cannot assign initialization value {} to user variable {}"
                           .format(scratch_variable["name"], scratch_variable["value"]))
-
         # if this sprite object contains a script that first added AskBrick or accessed the
         # (global) answer variable, the (global) answer variable gets initialized by adding a
         # SetVariable brick with an empty string-initialization value (i.e. "")
@@ -1001,11 +1000,15 @@ class _ScratchObjectConverter(object):
         exclusive_start_script = catbase.StartScript()
         sprite_name = sprite.getName()
         sprite_name = sprite_name.replace(BACKGROUND_LOCALIZED_GERMAN_NAME, BACKGROUND_ORIGINAL_NAME)
-        local_sprite_variables = scratch_project._sprite_to_var_dict[sprite_name]
         context = sprite_context.context
         if context is None: return
-        local_sprite_commands = scratch_project._sprite_to_command_var_dict[sprite_name]
-        if len(local_sprite_commands) >= 1:
+        local_sprite_variables = None
+        if sprite_name in scratch_project._sprite_to_var_dict:
+            local_sprite_variables = scratch_project._sprite_to_var_dict[sprite_name]
+        local_sprite_commands = None
+        if sprite_name in scratch_project._sprite_to_command_var_dict:
+            local_sprite_commands = scratch_project._sprite_to_command_var_dict[sprite_name]
+        if local_sprite_commands is not None and len(local_sprite_commands) >= 1:
             loop_start = catbricks.ForeverBrick()
             loop_end = catbricks.LoopEndBrick(loop_start)
             loop_bricks = [loop_start, loop_end]
@@ -1013,10 +1016,6 @@ class _ScratchObjectConverter(object):
             wait_pos = len(exclusive_start_script.getBrickList()) - 1
             wait_brick = catbricks.WaitBrick(100)
             exclusive_start_script.getBrickList().addAll(wait_pos, [wait_brick])
-            
-        print("commands: ")
-        print(local_sprite_commands)
-        
         def get_unique_var_name(name_to_check):
             match_count = 2
             taken = True
@@ -1027,49 +1026,72 @@ class _ScratchObjectConverter(object):
                     test_name = name_to_check + str(match_count)
                     match_count += 1
             return test_name
-        
-        for cmd in local_sprite_commands:
-            # switch for commands
-            var_base_name = "s2cc: " + sprite.getName() + ": " + cmd
-            var_name = get_unique_var_name(var_base_name)
-            generated_var = catrobat.add_user_variable(catrobat_project, var_name)
-            if cmd == "soundLevel":
-                # create variable and link it to loudness formula
-                print("convert soundLevel")
-                #create formula
-                loudness_formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
-                loudness_formula_element.value = str(catformula.Sensors.LOUDNESS)
-                generated_var.setValue(loudness_formula_element)
-                show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
-                set_var_brick = catbricks.SetVariableBrick(catformula.Formula(loudness_formula_element), generated_var)
-                
-                ##### maybe generalize after the switch
+
+        if local_sprite_commands is not None:
+            for cmd, param in local_sprite_commands:
+                # switch for commands
+                var_base_name = "s2cc: " + sprite.getName() + ": " + cmd
+                if param is not None:
+                    var_base_name = var_base_name + ": " + param
+                var_name = get_unique_var_name(var_base_name)
+                generated_var = catrobat.add_user_variable(catrobat_project, var_name)
+                if cmd == "soundLevel":
+                    # create variable and link it to loudness formula
+                    #create formula
+                    rounding_function = catformula.FormulaElement(catElementType.FUNCTION, None, None)
+                    loudness_formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
+                    loudness_formula_element.value = str(catformula.Sensors.LOUDNESS)
+                    rounding_function.value = str(catformula.Functions.ROUND)
+                    rounding_function.setLeftChild(loudness_formula_element)
+                    generated_var.setValue(catformula.Formula(rounding_function))
+                    show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
+                    set_var_brick = catbricks.SetVariableBrick(catformula.Formula(rounding_function), generated_var)
+                    ##### maybe generalize after the switch
+                    exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
+                    position = len(exclusive_start_script.getBrickList()) - 2 # minus endloopbrick and waitbrick
+                    exclusive_start_script.getBrickList().addAll(position, [set_var_brick])
+                    ####
+                if cmd == "scale":
+                    scale_formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
+                    scale_formula_element.value = str(catformula.Sensors.OBJECT_SIZE)
+                    generated_var.setValue(scale_formula_element)
+                    show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
+                    set_var_brick = catbricks.SetVariableBrick(catformula.Formula(scale_formula_element), generated_var)
+                    ##### maybe generalize after the switch
+                    exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
+                    position = len(exclusive_start_script.getBrickList()) - 2 # minus endloopbrick and waitbrick
+                    exclusive_start_script.getBrickList().addAll(position, [set_var_brick])
+                    ####
+                if cmd == "timeAndDate":
+                    date_formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
+                    if param == "year":
+                        date_formula_element.value = str(catformula.Sensors.DATE_YEAR)
+                    if param == "month":
+                        date_formula_element.value = str(catformula.Sensors.DATE_MONTH)
+                    if param == "date":
+                        date_formula_element.value = str(catformula.Sensors.DATE_DAY)
+                    if param == "day of week":
+                        date_formula_element.value = str(catformula.Sensors.DATE_WEEKDAY)
+                    if param == "hour":
+                        date_formula_element.value = str(catformula.Sensors.TIME_HOUR)
+                    if param == "minute":
+                        date_formula_element.value = str(catformula.Sensors.TIME_MINUTE)
+                    if param == "second":
+                        date_formula_element.value = str(catformula.Sensors.TIME_SECOND)
+                    generated_var.setValue(date_formula_element)
+                    show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
+                    set_var_brick = catbricks.SetVariableBrick(catformula.Formula(date_formula_element), generated_var)
+                    ##### maybe generalize after the switch
+                    exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
+                    position = len(exclusive_start_script.getBrickList()) - 2 # minus endloopbrick and waitbrick
+                    exclusive_start_script.getBrickList().addAll(position, [set_var_brick])
+        if local_sprite_variables is not None:
+            for var, visible in local_sprite_variables:
+                if not visible: continue
+                var_object = _ScratchObjectConverter._catrobat_scene.getDataContainer().getUserVariable(var, sprite)
+                show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(var_object, context)
                 exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
-                position = len(exclusive_start_script.getBrickList()) - 2 # minus endloopbrick and waitbrick
-                exclusive_start_script.getBrickList().addAll(position, [set_var_brick])
-                ####
-                
-            if cmd == "scale":
-                print("convert scale")
-                scale_formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
-                scale_formula_element.value = str(catformula.Sensors.OBJECT_SIZE)
-                generated_var.setValue(scale_formula_element)
-                show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
-                set_var_brick = catbricks.SetVariableBrick(catformula.Formula(scale_formula_element), generated_var)
-                
-                ##### maybe generalize after the switch
-                exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
-                position = len(exclusive_start_script.getBrickList()) - 2 # minus endloopbrick and waitbrick
-                exclusive_start_script.getBrickList().addAll(position, [set_var_brick])
-                ####
-                
-        for var, visible in local_sprite_variables:
-            if not visible: continue
-            var_object = _ScratchObjectConverter._catrobat_scene.getDataContainer().getUserVariable(var, sprite)
-            show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(var_object, context)
-            exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
         if len(exclusive_start_script.getBrickList()) >= 1:
-            print("adding exclusive script")
             sprite.addScript(exclusive_start_script)
 
     @classmethod

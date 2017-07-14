@@ -204,7 +204,6 @@ class Object(common.DictAccessWrapper):
     def __iter__(self):
         return iter(self.scripts)
 
-
 class RawProject(Object):
     """
     Represents the raw Scratch project structure.
@@ -219,15 +218,15 @@ class RawProject(Object):
         raw_variable_information = [var for var in raw_child_objects if "target" in var]
         #preprocessing for conversion of visible variables
         self._sprite_to_var_dict = {}
-        self.implemented_commands = ["soundLevel", "scale"]
+        self.implemented_commands = ["soundLevel", "scale", "timeAndDate"]
         self._sprite_to_command_var_dict = {}
         for info in raw_variable_information:
             if info["cmd"] in self.implemented_commands and info["visible"]:
                 print("Found implemented cmd: " + info["cmd"] + "\n")
                 if info["target"] not in self._sprite_to_command_var_dict:
-                    self._sprite_to_command_var_dict[info["target"]] = [info["cmd"]]
+                    self._sprite_to_command_var_dict[info["target"]] = [(info["cmd"], info["param"])]
                 else:
-                    self._sprite_to_command_var_dict[info["target"]].append(info["cmd"])
+                    self._sprite_to_command_var_dict[info["target"]].append((info["cmd"], info["param"]))
             elif info["param"]:
                 if info["target"] not in self._sprite_to_var_dict:
                     self._sprite_to_var_dict[info["target"]] = [(info["param"], info["visible"])]

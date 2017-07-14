@@ -49,8 +49,6 @@ from java.awt import Color
 
 import catrobat
 import mediaconverter
-from _threading_local import local
-
 _DEFAULT_FORMULA_ELEMENT = catformula.FormulaElement(catElementType.NUMBER, str(00001), None)  # @UndefinedVariable (valueOf)
 
 _GENERATED_VARIABLE_PREFIX = helpers.application_info("short_name") + ":"
@@ -901,8 +899,6 @@ class _ScratchObjectConverter(object):
                                   scratch_object, scratch_project, costume_resolution):
         # some initial Scratch settings are done with a general JSON configuration instead with blocks. Here the equivalent bricks are added for Catrobat.
         implicit_bricks_to_add = []
-
-
         # create AddItemToUserListBrick bricks to populate user lists with their default values
         # global lists will be populated in StartScript of background/stage sprite object
         if scratch_object.is_stage() and scratch_object.get_lists() is not None:

@@ -34,7 +34,9 @@ from scratchtocatrobat.tools import common
 from scratchtocatrobat.tools import common_testing
 from scratchtocatrobat.scratch import scratch
 from scratchtocatrobat.converter import converter
-from scratchtocatrobat.converter.converter import ScriptContext
+
+BACKGROUND_LOCALIZED_GERMAN_NAME = "Hintergrund"
+BACKGROUND_ORIGINAL_NAME = "Stage"
 
 
 def create_catrobat_sprite_stub(name=None):
@@ -2382,8 +2384,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert formula.value == "OBJECT_SIZE"
 
 class TestConvertProjects(common_testing.ProjectTestCase):
-
-    def _test_project(self, project_name):
+    def _load_test_scratch_project(self, project_name):
         if os.path.splitext(project_name)[1]:
             tempdir = common.TemporaryDirectory()
             scratch_project_dir = tempdir.name
@@ -2395,13 +2396,42 @@ class TestConvertProjects(common_testing.ProjectTestCase):
 
         scratch_project = scratch.Project(scratch_project_dir, name=project_name,
                                           project_id=common_testing.PROJECT_DUMMY_ID)
+        return scratch_project
 
+    def _test_project(self, project_name):
+        scratch_project = self._load_test_scratch_project(project_name)
         context = converter.Context()
         converted_project = converter.converted(scratch_project, None, context)
         catrobat_zip_file_name = converted_project.save_as_catrobat_package_to(self._testresult_folder_path)
         self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, project_name,
                                                           unused_scratch_resources=scratch_project.unused_resource_names)
         return converted_project.catrobat_program
+
+    # Checks if the visible global or local variables in the scratch program are converted into show test bricks in the converted project
+    def test_can_convert_visible_variables(self):
+        scratch_project = self._load_test_scratch_project("visible_variables")
+        sprite_to_vars_map = scratch_project._sprite_to_var_dict
+        catrobat_program = self._test_project("visible_variables")
+        scene = catrobat_program.getDefaultScene()
+        sprite_dict = {}
+        sprite_list = scene.getSpriteList()
+        for sprite in sprite_list:
+            sprite_name = sprite.getName()
+            sprite_name = sprite_name.replace(BACKGROUND_LOCALIZED_GERMAN_NAME, BACKGROUND_ORIGINAL_NAME)
+            sprite_dict[sprite_name] = sprite
+        for sprite_name, variable_list in sprite_to_vars_map.iteritems():
+            sprite_object = sprite_dict[sprite_name]
+            for var, visible in variable_list:
+                if not visible: continue
+                scripts = sprite_object.getScriptList()
+                found_show_var = False
+                for script in scripts:
+                    if not isinstance(script, catbase.StartScript): continue
+                    bricks = script.getBrickList()
+                    found_show_var = len(filter(lambda brick: isinstance(brick, catbricks.ShowTextBrick) \
+                                                and brick.getUserVariable().getName() == var, bricks)) > 0
+                    if found_show_var: break
+                assert found_show_var
 
     # full_test_no_var
     def test_can_convert_project_without_variables(self):

@@ -1024,122 +1024,67 @@ class _ScratchObjectConverter(object):
                     var_base_name = var_base_name + ": " + param
                 var_name = get_unique_var_name(var_base_name)
                 generated_var = None
-                if cmd != "answer":
+                formula_element = None
+                if cmd != "answer" and cmd != "timer":
                     generated_var = catrobat.add_user_variable(catrobat_project, var_name)
                 if cmd == "answer":
                     if _ScratchObjectConverter._variable_exists(_SHARED_GLOBAL_ANSWER_VARIABLE_NAME, catrobat_project):
                         generated_var = [x for x in catrobat_project.getProjectVariables() if x.getName() == _SHARED_GLOBAL_ANSWER_VARIABLE_NAME][0]
                     else:
-                        generated_var = catrobat.add_user_variable(catrobat_project, _SHARED_GLOBAL_ANSWER_VARIABLE_NAME)                    
-                    show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
-                    exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
-                if cmd == "timer":
+                        generated_var = catrobat.add_user_variable(catrobat_project, _SHARED_GLOBAL_ANSWER_VARIABLE_NAME)
+                elif cmd == "timer":
                     if _ScratchObjectConverter._variable_exists("S2CC_timer", catrobat_project):
                         generated_var = [x for x in catrobat_project.getProjectVariables() if x.getName() == "S2CC_timer"][0]
                     else:
-                        generated_var = catrobat.add_user_variable(catrobat_project, "S2CC_timer")                    
-                    show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
-                    exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
-                if cmd == "soundLevel":
+                        generated_var = catrobat.add_user_variable(catrobat_project, "S2CC_timer")
+                elif cmd == "soundLevel":
                     # create variable and link it to loudness formula
-                    #create formula
-                    rounding_function = catformula.FormulaElement(catElementType.FUNCTION, None, None)
-                    loudness_formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
-                    loudness_formula_element.value = str(catformula.Sensors.LOUDNESS)
-                    rounding_function.value = str(catformula.Functions.ROUND)
-                    rounding_function.setLeftChild(loudness_formula_element)
-                    generated_var.setValue(catformula.Formula(rounding_function))
-                    show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
-                    set_var_brick = catbricks.SetVariableBrick(catformula.Formula(rounding_function), generated_var)
-                    ##### maybe generalize after the switch
-                    exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
-                    position = len(exclusive_start_script.getBrickList()) - 2 # minus endloopbrick and waitbrick
-                    exclusive_start_script.getBrickList().addAll(position, [set_var_brick])
-                    ####
-                if cmd == "scale":
-                    scale_formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
-                    scale_formula_element.value = str(catformula.Sensors.OBJECT_SIZE)
-                    generated_var.setValue(scale_formula_element)
-                    show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
-                    set_var_brick = catbricks.SetVariableBrick(catformula.Formula(scale_formula_element), generated_var)
-                    ##### maybe generalize after the switch
-                    exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
-                    position = len(exclusive_start_script.getBrickList()) - 2 # minus endloopbrick and waitbrick
-                    exclusive_start_script.getBrickList().addAll(position, [set_var_brick])
-                    ####
-                if cmd == "timeAndDate":
-                    date_formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
+                    formula_element = catformula.FormulaElement(catElementType.FUNCTION, None, None)
+                    inner_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
+                    inner_element.value = str(catformula.Sensors.LOUDNESS)
+                    formula_element.value = str(catformula.Functions.ROUND)
+                    formula_element.setLeftChild(inner_element)
+                elif cmd == "scale":
+                    formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
+                    formula_element.value = str(catformula.Sensors.OBJECT_SIZE)
+                elif cmd == "timeAndDate":
+                    formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
                     if param == "year":
-                        date_formula_element.value = str(catformula.Sensors.DATE_YEAR)
-                    if param == "month":
-                        date_formula_element.value = str(catformula.Sensors.DATE_MONTH)
-                    if param == "date":
-                        date_formula_element.value = str(catformula.Sensors.DATE_DAY)
-                    if param == "day of week":
-                        date_formula_element.value = str(catformula.Sensors.DATE_WEEKDAY)
-                    if param == "hour":
-                        date_formula_element.value = str(catformula.Sensors.TIME_HOUR)
-                    if param == "minute":
-                        date_formula_element.value = str(catformula.Sensors.TIME_MINUTE)
-                    if param == "second":
-                        date_formula_element.value = str(catformula.Sensors.TIME_SECOND)
-                    generated_var.setValue(date_formula_element)
-                    show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
-                    set_var_brick = catbricks.SetVariableBrick(catformula.Formula(date_formula_element), generated_var)
-                    ##### maybe generalize after the switch
-                    exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
-                    position = len(exclusive_start_script.getBrickList()) - 2 # minus endloopbrick and waitbrick
-                    exclusive_start_script.getBrickList().addAll(position, [set_var_brick])
-                if cmd == "xpos":
-                    position_formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
-                    position_formula_element.value = str(catformula.Sensors.OBJECT_X)
-                    generated_var.setValue(position_formula_element)
-                    show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
-                    set_var_brick = catbricks.SetVariableBrick(catformula.Formula(position_formula_element), generated_var)
-                    ##### maybe generalize after the switch
-                    exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
-                    position = len(exclusive_start_script.getBrickList()) - 2 # minus endloopbrick and waitbrick
-                    exclusive_start_script.getBrickList().addAll(position, [set_var_brick])
-                if cmd == "ypos":
-                    position_formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
-                    position_formula_element.value = str(catformula.Sensors.OBJECT_Y)
-                    generated_var.setValue(position_formula_element)
-                    show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
-                    set_var_brick = catbricks.SetVariableBrick(catformula.Formula(position_formula_element), generated_var)
-                    ##### maybe generalize after the switch
-                    exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
-                    position = len(exclusive_start_script.getBrickList()) - 2 # minus endloopbrick and waitbrick
-                    exclusive_start_script.getBrickList().addAll(position, [set_var_brick])
+                        formula_element.value = str(catformula.Sensors.DATE_YEAR)
+                    elif param == "month":
+                        formula_element.value = str(catformula.Sensors.DATE_MONTH)
+                    elif param == "date":
+                        formula_element.value = str(catformula.Sensors.DATE_DAY)
+                    elif param == "day of week":
+                        formula_element.value = str(catformula.Sensors.DATE_WEEKDAY)
+                    elif param == "hour":
+                        formula_element.value = str(catformula.Sensors.TIME_HOUR)
+                    elif param == "minute":
+                        formula_element.value = str(catformula.Sensors.TIME_MINUTE)
+                    elif param == "second":
+                        formula_element.value = str(catformula.Sensors.TIME_SECOND)
+                elif cmd == "xpos":
+                    formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
+                    formula_element.value = str(catformula.Sensors.OBJECT_X)
+                elif cmd == "ypos":
+                    formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
+                    formula_element.value = str(catformula.Sensors.OBJECT_Y)
                 if cmd == "heading":
-                    position_formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
-                    position_formula_element.value = str(catformula.Sensors.OBJECT_ROTATION)
-                    generated_var.setValue(position_formula_element)
-                    show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
-                    set_var_brick = catbricks.SetVariableBrick(catformula.Formula(position_formula_element), generated_var)
-                    ##### maybe generalize after the switch
-                    exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
-                    position = len(exclusive_start_script.getBrickList()) - 2 # minus endloopbrick and waitbrick
-                    exclusive_start_script.getBrickList().addAll(position, [set_var_brick])
-                if cmd == "costumeIndex":
+                    formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
+                    formula_element.value = str(catformula.Sensors.OBJECT_ROTATION)
+                elif cmd == "costumeIndex":
                     formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
                     formula_element.value = str(catformula.Sensors.OBJECT_LOOK_NUMBER)
-                    generated_var.setValue(formula_element)
-                    show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
-                    set_var_brick = catbricks.SetVariableBrick(catformula.Formula(formula_element), generated_var)
-                    ##### maybe generalize after the switch
-                    exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
-                    position = len(exclusive_start_script.getBrickList()) - 2 # minus endloopbrick and waitbrick
-                    exclusive_start_script.getBrickList().addAll(position, [set_var_brick])
-                if cmd == "sceneName":
+                elif cmd == "sceneName":
                     formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
                     formula_element.value = str(catformula.Sensors.OBJECT_BACKGROUND_NAME)
+                if cmd != "answer" and cmd != "timer":
                     generated_var.setValue(formula_element)
-                    show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
                     set_var_brick = catbricks.SetVariableBrick(catformula.Formula(formula_element), generated_var)
-                    ##### maybe generalize after the switch
-                    exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
                     position = len(exclusive_start_script.getBrickList()) - 2 # minus endloopbrick and waitbrick
                     exclusive_start_script.getBrickList().addAll(position, [set_var_brick])
+                show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
+                exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
         if local_sprite_variables is not None:
             for var, visible in local_sprite_variables:
                 if not visible: continue

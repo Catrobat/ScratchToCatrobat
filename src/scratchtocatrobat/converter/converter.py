@@ -1033,6 +1033,13 @@ class _ScratchObjectConverter(object):
                         generated_var = catrobat.add_user_variable(catrobat_project, _SHARED_GLOBAL_ANSWER_VARIABLE_NAME)                    
                     show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
                     exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
+                if cmd == "timer":
+                    if _ScratchObjectConverter._variable_exists("S2CC_timer", catrobat_project):
+                        generated_var = [x for x in catrobat_project.getProjectVariables() if x.getName() == "S2CC_timer"][0]
+                    else:
+                        generated_var = catrobat.add_user_variable(catrobat_project, "S2CC_timer")                    
+                    show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
+                    exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
                 if cmd == "soundLevel":
                     # create variable and link it to loudness formula
                     #create formula

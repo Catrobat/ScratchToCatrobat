@@ -870,15 +870,9 @@ class _ScratchObjectConverter(object):
         sound_resource_name = scratch_sound[scratchkeys.SOUND_NAME]
         soundinfo.setSoundFileName(mediaconverter.catrobat_resource_file_name_for(sound_md5_filename, sound_resource_name))
         return soundinfo
-    # TODO: umschreiben!!
     @staticmethod
-    def _variable_exists(var, scratch_project):
-        sprite_dict = scratch_project._sprite_to_var_dict
-        for _, var_list in sprite_dict.iteritems():
-            var_dict = dict(var_list)
-            if var in var_dict:
-                return True
-        return False
+    def _variable_exists(var, catrobat_project):
+        return var in [check_var.getName() for check_var in catrobat_project.getProjectVariables()]
     
     @staticmethod
     def _create_show_text_brick_and_update_positions(var_object, context):
@@ -1016,7 +1010,7 @@ class _ScratchObjectConverter(object):
             taken = True
             test_name = name_to_check
             while taken:
-                taken = _ScratchObjectConverter._variable_exists(test_name, scratch_project) 
+                taken = _ScratchObjectConverter._variable_exists(test_name, catrobat_project) 
                 if taken:
                     test_name = name_to_check + str(match_count)
                     match_count += 1
@@ -1029,7 +1023,16 @@ class _ScratchObjectConverter(object):
                 if param is not None:
                     var_base_name = var_base_name + ": " + param
                 var_name = get_unique_var_name(var_base_name)
-                generated_var = catrobat.add_user_variable(catrobat_project, var_name)
+                generated_var = None
+                if cmd != "answer":
+                    generated_var = catrobat.add_user_variable(catrobat_project, var_name)
+                if cmd == "answer":
+                    if _ScratchObjectConverter._variable_exists(_SHARED_GLOBAL_ANSWER_VARIABLE_NAME, catrobat_project):
+                        generated_var = [x for x in catrobat_project.getProjectVariables() if x.getName() == _SHARED_GLOBAL_ANSWER_VARIABLE_NAME][0]
+                    else:
+                        generated_var = catrobat.add_user_variable(catrobat_project, _SHARED_GLOBAL_ANSWER_VARIABLE_NAME)                    
+                    show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
+                    exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
                 if cmd == "soundLevel":
                     # create variable and link it to loudness formula
                     #create formula
@@ -1130,7 +1133,6 @@ class _ScratchObjectConverter(object):
                     exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
                     position = len(exclusive_start_script.getBrickList()) - 2 # minus endloopbrick and waitbrick
                     exclusive_start_script.getBrickList().addAll(position, [set_var_brick])
-                    
         if local_sprite_variables is not None:
             for var, visible in local_sprite_variables:
                 if not visible: continue

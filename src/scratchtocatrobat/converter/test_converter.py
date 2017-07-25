@@ -27,6 +27,7 @@ from org.catrobat.catroid.ui.fragment import SpriteFactory
 import org.catrobat.catroid.content.bricks as catbricks
 import org.catrobat.catroid.content.bricks.Brick as catbasebrick
 import org.catrobat.catroid.formulaeditor as catformula
+from scratchtocatrobat.tools import helpers
 import org.catrobat.catroid.formulaeditor.FormulaElement.ElementType as catElementType
 
 from scratchtocatrobat.converter import catrobat
@@ -37,7 +38,8 @@ from scratchtocatrobat.converter import converter
 
 BACKGROUND_LOCALIZED_GERMAN_NAME = "Hintergrund"
 BACKGROUND_ORIGINAL_NAME = "Stage"
-
+_GENERATED_VARIABLE_PREFIX = helpers.application_info("short_name") + ":"
+_SHARED_GLOBAL_ANSWER_VARIABLE_NAME = _GENERATED_VARIABLE_PREFIX + "global_answer"
 
 def create_catrobat_sprite_stub(name=None):
     sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, "Dummy" if name is None else name)
@@ -2432,6 +2434,65 @@ class TestConvertProjects(common_testing.ProjectTestCase):
                                                 and brick.getUserVariable().getName() == var, bricks)) > 0
                     if found_show_var: break
                 assert found_show_var
+    def test_can_convert_visible_commands(self):
+        scratch_project = self._load_test_scratch_project("visible_commands")
+        sprite_to_command_map = scratch_project._sprite_to_command_var_dict
+        catrobat_program = self._test_project("visible_commands")
+        scene = catrobat_program.getDefaultScene()
+        sprite_dict = {}
+        sprite_list = scene.getSpriteList()
+        implemented_commands = scratch_project.implemented_commands
+        command_convert_dict = scratch_project.command_convert_dict
+        show_found = 0
+        for sprite in sprite_list:
+            sprite_name = sprite.getName()
+            sprite_name = sprite_name.replace(BACKGROUND_LOCALIZED_GERMAN_NAME, BACKGROUND_ORIGINAL_NAME)
+            sprite_dict[sprite_name] = sprite
+        for sprite_name, command_list in sprite_to_command_map.iteritems():
+            sprite_object = sprite_dict[sprite_name]
+            for cmd, param in command_list:
+                scripts = sprite_object.getScriptList()
+                for script in scripts:
+                    if not isinstance(script, catbase.StartScript): continue
+                    bricks = script.getBrickList()
+                    have_loop_start = False
+                    have_loop_end = False
+                    need_loop = False
+                    for brick in bricks:
+                        if isinstance(brick, catbricks.ShowTextBrick):
+                            var_name = brick.getUserVariable().getName()
+                            sprite_name = sprite_name.replace(BACKGROUND_ORIGINAL_NAME, BACKGROUND_LOCALIZED_GERMAN_NAME)
+                            cmd_var_name = "s2cc: " + sprite_name + ": " + cmd
+                            if cmd == "answer":
+                                cmd_var_name = _SHARED_GLOBAL_ANSWER_VARIABLE_NAME
+                            if cmd == "timer":
+                                cmd_var_name =  scratch.S2CC_TIMER_VARIABLE_NAME
+                            if param is not None:
+                                cmd_var_name += ": " + param
+                            if var_name == cmd_var_name:
+                                show_found += 1
+                        elif isinstance(brick, catbricks.SetVariableBrick):
+                            var_name = brick.getUserVariable().getName()
+                            sprite_name = sprite_name.replace(BACKGROUND_ORIGINAL_NAME, BACKGROUND_LOCALIZED_GERMAN_NAME)
+                            cmd_var_name = "s2cc: " + sprite_name + ": " + cmd
+                            if var_name == cmd_var_name:
+                                need_loop = True
+                                formulas = brick.getFormulas()
+                                formula_value_list = [form.getRoot().getValue() for form in formulas]
+                                key = None
+                                if param is not None:
+                                    key = (cmd, param)
+                                else:
+                                    key = cmd
+                                assert str(formula_value_list[0]) == str(command_convert_dict[key][1])
+                        elif isinstance(brick, catbricks.ForeverBrick):
+                            have_loop_start = True
+                        elif isinstance(brick, catbricks.LoopEndBrick):
+                            have_loop_end = True
+                    assert not need_loop or (have_loop_start and have_loop_end)
+
+        show_text_brick_to_find = len(implemented_commands) + 6
+        assert show_found == show_text_brick_to_find
 
     # full_test_no_var
     def test_can_convert_project_without_variables(self):

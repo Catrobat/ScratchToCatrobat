@@ -997,7 +997,15 @@ class _ScratchObjectConverter(object):
         local_sprite_commands = None
         if sprite_name in scratch_project._sprite_to_command_var_dict:
             local_sprite_commands = scratch_project._sprite_to_command_var_dict[sprite_name]
-        if local_sprite_commands is not None and len(local_sprite_commands) >= 1:
+        
+        commands_without_loop = ["answer", "timer"]
+        def isLoopNeeded():
+            for (command, _) in local_sprite_commands:
+                if command not in commands_without_loop:
+                    return True
+            return False
+        
+        if local_sprite_commands is not None and len(local_sprite_commands) >= 1 and isLoopNeeded():
             loop_start = catbricks.ForeverBrick()
             loop_end = catbricks.LoopEndBrick(loop_start)
             loop_bricks = [loop_start, loop_end]
@@ -1016,68 +1024,37 @@ class _ScratchObjectConverter(object):
                     match_count += 1
             return test_name
 
+        command_convert_dict = scratch_project.command_convert_dict
         if local_sprite_commands is not None:
             for cmd, param in local_sprite_commands:
                 # switch for commands
                 var_base_name = "s2cc: " + sprite.getName() + ": " + cmd
+                command_dict_key = None
                 if param is not None:
                     var_base_name = var_base_name + ": " + param
+                    command_dict_key = (cmd, param)
+                else:
+                    command_dict_key = cmd
                 var_name = get_unique_var_name(var_base_name)
                 generated_var = None
                 formula_element = None
                 if cmd != "answer" and cmd != "timer":
                     generated_var = catrobat.add_user_variable(catrobat_project, var_name)
+                    formula_type = command_convert_dict[command_dict_key][0]
+                    formula_value = command_convert_dict[command_dict_key][1]
                 if cmd == "answer":
                     if _ScratchObjectConverter._variable_exists(_SHARED_GLOBAL_ANSWER_VARIABLE_NAME, catrobat_project):
                         generated_var = [x for x in catrobat_project.getProjectVariables() if x.getName() == _SHARED_GLOBAL_ANSWER_VARIABLE_NAME][0]
                     else:
                         generated_var = catrobat.add_user_variable(catrobat_project, _SHARED_GLOBAL_ANSWER_VARIABLE_NAME)
                 elif cmd == "timer":
-                    if _ScratchObjectConverter._variable_exists("S2CC_timer", catrobat_project):
-                        generated_var = [x for x in catrobat_project.getProjectVariables() if x.getName() == "S2CC_timer"][0]
+                    if _ScratchObjectConverter._variable_exists(scratch.S2CC_TIMER_VARIABLE_NAME, catrobat_project):
+                        generated_var = [x for x in catrobat_project.getProjectVariables() if x.getName() == scratch.S2CC_TIMER_VARIABLE_NAME][0]
                     else:
-                        generated_var = catrobat.add_user_variable(catrobat_project, "S2CC_timer")
-                elif cmd == "soundLevel":
-                    # create variable and link it to loudness formula
-                    formula_element = catformula.FormulaElement(catElementType.FUNCTION, None, None)
-                    inner_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
-                    inner_element.value = str(catformula.Sensors.LOUDNESS)
-                    formula_element.value = str(catformula.Functions.ROUND)
-                    formula_element.setLeftChild(inner_element)
-                elif cmd == "scale":
-                    formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
-                    formula_element.value = str(catformula.Sensors.OBJECT_SIZE)
-                elif cmd == "timeAndDate":
-                    formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
-                    if param == "year":
-                        formula_element.value = str(catformula.Sensors.DATE_YEAR)
-                    elif param == "month":
-                        formula_element.value = str(catformula.Sensors.DATE_MONTH)
-                    elif param == "date":
-                        formula_element.value = str(catformula.Sensors.DATE_DAY)
-                    elif param == "day of week":
-                        formula_element.value = str(catformula.Sensors.DATE_WEEKDAY)
-                    elif param == "hour":
-                        formula_element.value = str(catformula.Sensors.TIME_HOUR)
-                    elif param == "minute":
-                        formula_element.value = str(catformula.Sensors.TIME_MINUTE)
-                    elif param == "second":
-                        formula_element.value = str(catformula.Sensors.TIME_SECOND)
-                elif cmd == "xpos":
-                    formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
-                    formula_element.value = str(catformula.Sensors.OBJECT_X)
-                elif cmd == "ypos":
-                    formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
-                    formula_element.value = str(catformula.Sensors.OBJECT_Y)
-                if cmd == "heading":
-                    formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
-                    formula_element.value = str(catformula.Sensors.OBJECT_ROTATION)
-                elif cmd == "costumeIndex":
-                    formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
-                    formula_element.value = str(catformula.Sensors.OBJECT_LOOK_NUMBER)
-                elif cmd == "sceneName":
-                    formula_element = catformula.FormulaElement(catElementType.SENSOR, None, None)
-                    formula_element.value = str(catformula.Sensors.OBJECT_BACKGROUND_NAME)
+                        generated_var = catrobat.add_user_variable(catrobat_project, scratch.S2CC_TIMER_VARIABLE_NAME)
+                else:
+                    formula_element = catformula.FormulaElement(formula_type, None, None)
+                    formula_element.value = str(formula_value)
                 if cmd != "answer" and cmd != "timer":
                     generated_var.setValue(formula_element)
                     set_var_brick = catbricks.SetVariableBrick(catformula.Formula(formula_element), generated_var)

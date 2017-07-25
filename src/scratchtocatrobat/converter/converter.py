@@ -49,6 +49,7 @@ from java.awt import Color
 
 import catrobat
 import mediaconverter
+
 _DEFAULT_FORMULA_ELEMENT = catformula.FormulaElement(catElementType.NUMBER, str(00001), None)  # @UndefinedVariable (valueOf)
 
 _GENERATED_VARIABLE_PREFIX = helpers.application_info("short_name") + ":"
@@ -972,6 +973,7 @@ class _ScratchObjectConverter(object):
             except:
                 log.error("Cannot assign initialization value {} to user variable {}"
                           .format(scratch_variable["name"], scratch_variable["value"]))
+
         # if this sprite object contains a script that first added AskBrick or accessed the
         # (global) answer variable, the (global) answer variable gets initialized by adding a
         # SetVariable brick with an empty string-initialization value (i.e. "")

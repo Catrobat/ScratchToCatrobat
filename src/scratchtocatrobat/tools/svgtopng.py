@@ -325,7 +325,7 @@ def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
     for child in root:
         if re.search('.*}g', child.tag) != None:
             if 'transform' in child.attrib:
-                matrix_transform_attrib = child.attrib.get('transform')
+                matrix_transform_attrib = child.attrib['transform']
                 matrix_transform_attrib = re.sub(r"matrix\([0-9]+(.[0-9]*)?,( [0-9]+(.[0-9]*)?,){3}", "matrix(1, 0, 0, 1,", matrix_transform_attrib)
                 child.attrib['transform'] = matrix_transform_attrib
             break

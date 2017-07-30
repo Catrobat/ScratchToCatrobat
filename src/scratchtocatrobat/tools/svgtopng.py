@@ -322,6 +322,13 @@ def _create_buffered_image(image):
 def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
     tree = ET.parse(svg_input_path)
     root = tree.getroot()
+
+    #exception is thrown if height or width is less or equal zero
+    if 'height' in root.attrib and int((root.attrib['height']).replace('px', '')) <= 0:
+        root.attrib['height'] = '1'
+    if 'width' in root.attrib and int((root.attrib['width']).replace('px', '')) <= 0:
+        root.attrib['width'] = '1'
+
     for child in root:
         if re.search('.*}g', child.tag) != None:
             if 'transform' in child.attrib:
@@ -329,10 +336,28 @@ def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
                 matrix_transform_attrib = re.sub(r"matrix\([0-9]+(.[0-9]*)?,( [0-9]+(.[0-9]*)?,){3}", "matrix(1, 0, 0, 1,", matrix_transform_attrib)
                 child.attrib['transform'] = matrix_transform_attrib
             break
+
     for child in root:
         if re.search('.*}text', child.tag) != None:
             child.attrib['x'] = '3'
             child.attrib['y'] = '22'
+
+            list_of_text_parts = (child.text).split('\n')
+            child.text = (child.text).replace(child.text, '')
+            namespace_tag = (child.tag).replace('text', '')
+            dy_value = 0
+            if 'font-size' in child.attrib:
+                dy_font_size = int(child.attrib['font-size'])
+            else:
+                dy_font_size = 12 # default value
+            for text_part in list_of_text_parts:
+                ET.SubElement(child, namespace_tag + 'tspan', x = '0', dy = str(dy_value))
+                dy_value = dy_value + dy_font_size
+            tspan_list = child.findall(namespace_tag + 'tspan')
+            i = 0
+            for tspan_element in tspan_list:
+                tspan_element.text = list_of_text_parts[i]
+                i = i + 1
     tree.write(svg_output_path)
 
 

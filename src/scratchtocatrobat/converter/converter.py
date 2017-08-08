@@ -983,11 +983,11 @@ class _ScratchObjectConverter(object):
         context = sprite_context.context
         if context is None: return
 
-        for var, visible in local_sprite_variables:
-            if not visible: continue
-            var_object = _ScratchObjectConverter._catrobat_scene.getDataContainer().getUserVariable(var, sprite)
+        for variable_name, is_visible in local_sprite_variables:
+            if not is_visible: continue
+            var_object = _ScratchObjectConverter._catrobat_scene.getDataContainer().getUserVariable(variable_name, sprite)
             show_variable_brick = catbricks.ShowTextBrick(context.visible_var_X, context.visible_var_Y)
-            show_variable_brick.setUserVariableName(var)
+            show_variable_brick.setUserVariableName(variable_name)
             show_variable_brick.setUserVariable(var_object)
             context.visible_var_Y -= VISIBLE_VAR_POSITION_STEP_Y
             if context.visible_var_Y <= VISIBLE_VAR_POSITION_THRESHOLD_Y:

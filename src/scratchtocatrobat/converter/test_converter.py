@@ -20,6 +20,8 @@
 #  along with this program.  If not, see http://www.gnu.org/licenses/.
 import os
 import unittest
+import re
+from time import sleep
 
 import org.catrobat.catroid.common as catcommon
 import org.catrobat.catroid.content as catbase
@@ -28,10 +30,12 @@ import org.catrobat.catroid.content.bricks as catbricks
 import org.catrobat.catroid.content.bricks.Brick as catbasebrick
 import org.catrobat.catroid.formulaeditor as catformula
 import org.catrobat.catroid.formulaeditor.FormulaElement.ElementType as catElementType
+import xml.etree.cElementTree as ET
 
 from scratchtocatrobat.converter import catrobat
 from scratchtocatrobat.tools import common
 from scratchtocatrobat.tools import common_testing
+from scratchtocatrobat.tools import svgtopng
 from scratchtocatrobat.scratch import scratch
 from scratchtocatrobat.converter import converter
 
@@ -2454,6 +2458,35 @@ class TestConvertProjects(common_testing.ProjectTestCase):
     def test_can_convert_project_with_unusued_files(self):
         self._test_project("simple")
 
+    def test_can_rewrite_svg_matrix(self):
+        tree = ET.parse("test/res/scratch/Wizard_Spells/3.svg")
+        root = tree.getroot()
+        for child in root:
+            if re.search('.*}g', child.tag) != None:
+                if 'transform' in child.attrib:
+                    assert(child.attrib['transform'] == "matrix(1.5902323722839355, 0, 0, 1.5902323722839355, -0.5, 0.5)")
+        svgtopng._parse_and_rewrite_svg_file("test/res/scratch/Wizard_Spells/3.svg","test/res/scratch/Wizard_Spells/3_changed.svg")
+        tree = ET.parse("test/res/scratch/Wizard_Spells/3_changed.svg")
+        root = tree.getroot()
+        for child in root:
+            if re.search('.*}g', child.tag) != None:
+                if 'transform' in child.attrib:
+                    assert(child.attrib['transform'] == "matrix(1, 0, 0, 1, -0.5, 0.5)")
+
+    def test_can_rewrite_svg_text_position(self):
+        tree = ET.parse("test/res/scratch/Wizard_Spells/6.svg")
+        root = tree.getroot()
+        for child in root:
+            if re.search('.*}text', child.tag) != None:
+                assert(child.attrib['x'] == '147.5')
+                assert(child.attrib['y'] == '146.1')
+        svgtopng._parse_and_rewrite_svg_file("test/res/scratch/Wizard_Spells/6.svg","test/res/scratch/Wizard_Spells/6_changed.svg")
+        tree = ET.parse("test/res/scratch/Wizard_Spells/6_changed.svg")
+        root = tree.getroot()
+        for child in root:
+            if re.search('.*}text', child.tag) != None:
+                assert(child.attrib['x'] == '3')
+                assert(child.attrib['y'] == '22')
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']

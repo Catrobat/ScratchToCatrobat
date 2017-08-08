@@ -1073,7 +1073,7 @@ class _ScratchObjectConverter(object):
                 show_variable_brick, add_note_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(var_object, context)
                 exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
         if add_note_brick:
-            note_brick = catbricks.NoteBrick("Too many variables visible. Can't show everyone!")
+            note_brick = catbricks.NoteBrick("Visible variables out of bounds! Too many visible.")
             exclusive_start_script.getBrickList().addAll(0, [note_brick])
         if len(exclusive_start_script.getBrickList()) >= 1:
             sprite.addScript(exclusive_start_script)

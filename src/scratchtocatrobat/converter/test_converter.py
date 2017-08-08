@@ -2490,7 +2490,6 @@ class TestConvertProjects(common_testing.ProjectTestCase):
                         elif isinstance(brick, catbricks.LoopEndBrick):
                             have_loop_end = True
                     assert not need_loop or (have_loop_start and have_loop_end)
-
         show_text_brick_to_find = len(implemented_commands) + 6
         assert show_found == show_text_brick_to_find
 

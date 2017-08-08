@@ -880,13 +880,15 @@ class _ScratchObjectConverter(object):
         show_variable_brick = catbricks.ShowTextBrick(context.visible_var_X, context.visible_var_Y)
         show_variable_brick.setUserVariableName(var_object.getName())
         show_variable_brick.setUserVariable(var_object)
+        add_note_brick = False
         context.visible_var_Y -= VISIBLE_VAR_POSITION_STEP_Y
         if context.visible_var_Y <= VISIBLE_VAR_POSITION_THRESHOLD_Y:
             context.visible_var_Y = VISIBLE_VAR_Y_INIT
             context.visible_var_X += VISIBLE_VAR_POSITION_STEP_X
         if context.visible_var_X >= VISIBLE_VAR_POSITION_THRESHOLD_X:
                 log.info("Too many visible variables")
-        return show_variable_brick
+                add_note_brick = True
+        return show_variable_brick, add_note_brick
 
     @staticmethod
     def _add_default_behaviour_to(sprite, sprite_context, catrobat_scene, catrobat_project,
@@ -1025,7 +1027,7 @@ class _ScratchObjectConverter(object):
                     test_name = name_to_check + str(match_count)
                     match_count += 1
             return test_name
-
+        add_note_brick = False 
         command_convert_dict = scratch_project.command_convert_dict
         if local_sprite_commands is not None:
             for cmd, param in local_sprite_commands:
@@ -1062,14 +1064,17 @@ class _ScratchObjectConverter(object):
                     set_var_brick = catbricks.SetVariableBrick(catformula.Formula(formula_element), generated_var)
                     position = len(exclusive_start_script.getBrickList()) - 2 # minus endloopbrick and waitbrick
                     exclusive_start_script.getBrickList().addAll(position, [set_var_brick])
-                show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
+                show_variable_brick, add_note_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
                 exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
         if local_sprite_variables is not None:
             for var, visible in local_sprite_variables:
                 if not visible: continue
                 var_object = _ScratchObjectConverter._catrobat_scene.getDataContainer().getUserVariable(var, sprite)
-                show_variable_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(var_object, context)
+                show_variable_brick, add_note_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(var_object, context)
                 exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
+        if add_note_brick:
+            note_brick = catbricks.NoteBrick("Too many variables visible. Can't show everyone!")
+            exclusive_start_script.getBrickList().addAll(0, [note_brick])
         if len(exclusive_start_script.getBrickList()) >= 1:
             sprite.addScript(exclusive_start_script)
 

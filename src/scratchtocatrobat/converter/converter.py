@@ -871,10 +871,7 @@ class _ScratchObjectConverter(object):
         sound_resource_name = scratch_sound[scratchkeys.SOUND_NAME]
         soundinfo.setSoundFileName(mediaconverter.catrobat_resource_file_name_for(sound_md5_filename, sound_resource_name))
         return soundinfo
-    @staticmethod
-    def _variable_exists(var, catrobat_project):
-        return var in [check_var.getName() for check_var in catrobat_project.getProjectVariables()]
-    
+
     @staticmethod
     def _create_show_text_brick_and_update_positions(var_object, context):
         show_variable_brick = catbricks.ShowTextBrick(context.visible_var_X, context.visible_var_Y)
@@ -1001,15 +998,15 @@ class _ScratchObjectConverter(object):
         local_sprite_commands = None
         if sprite_name in scratch_project._sprite_to_command_var_dict:
             local_sprite_commands = scratch_project._sprite_to_command_var_dict[sprite_name]
-        
+
         commands_without_loop = ["answer", "timer"]
-        def isLoopNeeded():
+        def is_loop_needed():
             for (command, _) in local_sprite_commands:
                 if command not in commands_without_loop:
                     return True
             return False
-        
-        if local_sprite_commands is not None and len(local_sprite_commands) >= 1 and isLoopNeeded():
+
+        if local_sprite_commands is not None and len(local_sprite_commands) >= 1 and is_loop_needed():
             loop_start = catbricks.ForeverBrick()
             loop_end = catbricks.LoopEndBrick(loop_start)
             loop_bricks = [loop_start, loop_end]
@@ -1017,16 +1014,18 @@ class _ScratchObjectConverter(object):
             wait_pos = len(exclusive_start_script.getBrickList()) - 1
             wait_brick = catbricks.WaitBrick(100)
             exclusive_start_script.getBrickList().addAll(wait_pos, [wait_brick])
+
         def get_unique_var_name(name_to_check):
             match_count = 2
             taken = True
             test_name = name_to_check
             while taken:
-                taken = _ScratchObjectConverter._variable_exists(test_name, catrobat_project) 
+                taken = catrobat._variable_exists(test_name, catrobat_project) 
                 if taken:
                     test_name = name_to_check + str(match_count)
                     match_count += 1
             return test_name
+
         add_note_brick = False 
         command_convert_dict = scratch_project.command_convert_dict
         if local_sprite_commands is not None:
@@ -1047,12 +1046,12 @@ class _ScratchObjectConverter(object):
                     formula_type = command_convert_dict[command_dict_key][0]
                     formula_value = command_convert_dict[command_dict_key][1]
                 if cmd == "answer":
-                    if _ScratchObjectConverter._variable_exists(_SHARED_GLOBAL_ANSWER_VARIABLE_NAME, catrobat_project):
+                    if catrobat._variable_exists(_SHARED_GLOBAL_ANSWER_VARIABLE_NAME, catrobat_project):
                         generated_var = [x for x in catrobat_project.getProjectVariables() if x.getName() == _SHARED_GLOBAL_ANSWER_VARIABLE_NAME][0]
                     else:
                         generated_var = catrobat.add_user_variable(catrobat_project, _SHARED_GLOBAL_ANSWER_VARIABLE_NAME)
                 elif cmd == "timer":
-                    if _ScratchObjectConverter._variable_exists(scratch.S2CC_TIMER_VARIABLE_NAME, catrobat_project):
+                    if catrobat._variable_exists(scratch.S2CC_TIMER_VARIABLE_NAME, catrobat_project):
                         generated_var = [x for x in catrobat_project.getProjectVariables() if x.getName() == scratch.S2CC_TIMER_VARIABLE_NAME][0]
                     else:
                         generated_var = catrobat.add_user_variable(catrobat_project, scratch.S2CC_TIMER_VARIABLE_NAME)
@@ -1130,7 +1129,6 @@ class _ScratchObjectConverter(object):
         traverser = _BlocksConversionTraverser(catrobat_sprite, cls._catrobat_project, script_context)
         traverser.traverse(scratch_blocks)
         return traverser.converted_bricks
-
 
 class ConvertedProject(object):
 

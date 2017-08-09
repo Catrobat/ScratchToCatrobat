@@ -2438,6 +2438,7 @@ class TestConvertProjects(common_testing.ProjectTestCase):
                                                 and brick.getUserVariable().getName() == var, bricks)) > 0
                     if found_show_var: break
                 assert found_show_var
+
     def test_can_convert_visible_commands(self):
         scratch_project = self._load_test_scratch_project("visible_commands")
         sprite_to_command_map = scratch_project._sprite_to_command_var_dict

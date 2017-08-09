@@ -31,6 +31,8 @@ from scratchtocatrobat.scratch import scratchwebapi
 from scratchtocatrobat.tools import helpers
 from scratchtocatrobat.tools.helpers import ProgressType
 from scratchtocatrobat.scratch import scriptcodemodifier
+import org.catrobat.catroid.formulaeditor.FormulaElement.ElementType as catElementType
+import org.catrobat.catroid.formulaeditor as catformula
 
 _log = common.log
 
@@ -203,7 +205,6 @@ class Object(common.DictAccessWrapper):
     def __iter__(self):
         return iter(self.scripts)
 
-
 class RawProject(Object):
     """
     Represents the raw Scratch project structure.
@@ -215,12 +216,33 @@ class RawProject(Object):
         self._verify_scratch_dictionary(dict_, data_origin)
         self.dict_ = dict_
         raw_child_objects = sorted(self.get_children(), key=lambda obj_data: obj_data.get("indexInLibrary", 0))
-        raw_variable_visibility_information = [var for var in raw_child_objects if "target" in var]
+        raw_variable_information = [var for var in raw_child_objects if "target" in var]
         #preprocessing for conversion of visible variables
         self._sprite_to_var_dict = {}
-        # preprocessing
-        for info in raw_variable_visibility_information:
-            if info["param"]:
+        self.implemented_commands = ["soundLevel", "scale", "timeAndDate", "xpos", "ypos", "heading", "costumeIndex", "sceneName", "answer", "timer"]
+        self.command_convert_dict = {"soundLevel":(catElementType.SENSOR, catformula.Sensors.LOUDNESS), 
+                                     "scale":(catElementType.SENSOR, catformula.Sensors.OBJECT_SIZE),
+                                    ("timeAndDate", "year"):(catElementType.SENSOR, catformula.Sensors.DATE_YEAR),
+                                    ("timeAndDate", "month"):(catElementType.SENSOR, catformula.Sensors.DATE_MONTH),
+                                    ("timeAndDate", "date"):(catElementType.SENSOR, catformula.Sensors.DATE_DAY),
+                                    ("timeAndDate", "day of week"):(catElementType.SENSOR, catformula.Sensors.DATE_WEEKDAY),
+                                    ("timeAndDate", "hour"):(catElementType.SENSOR, catformula.Sensors.TIME_HOUR),
+                                    ("timeAndDate", "minute"):(catElementType.SENSOR, catformula.Sensors.TIME_MINUTE),
+                                    ("timeAndDate", "second"):(catElementType.SENSOR, catformula.Sensors.TIME_SECOND),
+                                    "xpos":(catElementType.SENSOR, catformula.Sensors.OBJECT_X), 
+                                    "ypos":(catElementType.SENSOR, catformula.Sensors.OBJECT_Y), 
+                                    "heading":(catElementType.SENSOR, catformula.Sensors.OBJECT_ROTATION), 
+                                    "costumeIndex":(catElementType.SENSOR, catformula.Sensors.OBJECT_LOOK_NUMBER), 
+                                    "sceneName":(catElementType.SENSOR, catformula.Sensors.OBJECT_BACKGROUND_NAME), 
+                                    "answer":None, "timer":None}
+        self._sprite_to_command_var_dict = {}
+        for info in raw_variable_information:
+            if info["cmd"] in self.implemented_commands and info["visible"]:
+                if info["target"] not in self._sprite_to_command_var_dict:
+                    self._sprite_to_command_var_dict[info["target"]] = [(info["cmd"], info["param"])]
+                else:
+                    self._sprite_to_command_var_dict[info["target"]].append((info["cmd"], info["param"]))
+            elif info["param"]:
                 if info["target"] not in self._sprite_to_var_dict:
                     self._sprite_to_var_dict[info["target"]] = [(info["param"], info["visible"])]
                 else:

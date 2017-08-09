@@ -873,11 +873,25 @@ class _ScratchObjectConverter(object):
         return soundinfo
 
     @staticmethod
+    def _create_show_text_brick_and_update_positions(var_object, context):
+        show_variable_brick = catbricks.ShowTextBrick(context.visible_var_X, context.visible_var_Y)
+        show_variable_brick.setUserVariableName(var_object.getName())
+        show_variable_brick.setUserVariable(var_object)
+        add_note_brick = False
+        context.visible_var_Y -= VISIBLE_VAR_POSITION_STEP_Y
+        if context.visible_var_Y <= VISIBLE_VAR_POSITION_THRESHOLD_Y:
+            context.visible_var_Y = VISIBLE_VAR_Y_INIT
+            context.visible_var_X += VISIBLE_VAR_POSITION_STEP_X
+        if context.visible_var_X >= VISIBLE_VAR_POSITION_THRESHOLD_X:
+                log.info("Too many visible variables")
+                add_note_brick = True
+        return show_variable_brick, add_note_brick
+
+    @staticmethod
     def _add_default_behaviour_to(sprite, sprite_context, catrobat_scene, catrobat_project,
                                   scratch_object, scratch_project, costume_resolution):
         # some initial Scratch settings are done with a general JSON configuration instead with blocks. Here the equivalent bricks are added for Catrobat.
         implicit_bricks_to_add = []
-
         # create AddItemToUserListBrick bricks to populate user lists with their default values
         # global lists will be populated in StartScript of background/stage sprite object
         if scratch_object.is_stage() and scratch_object.get_lists() is not None:
@@ -890,7 +904,6 @@ class _ScratchObjectConverter(object):
                 for value in global_user_list_data["contents"]:
                     catr_value_formula = catrobat.create_formula_with_value(value)
                     implicit_bricks_to_add += [catbricks.AddItemToUserListBrick(catr_value_formula, catr_user_list)]
-
         if not scratch_object.is_stage() and scratch_object.get_lists() is not None:
             for user_list_data in scratch_object.get_lists():
                 list_name = user_list_data["listName"]
@@ -913,7 +926,6 @@ class _ScratchObjectConverter(object):
                 set_look_brick = catbricks.SetLookBrick()
                 set_look_brick.setLook(spriteStartupLook)
                 implicit_bricks_to_add += [set_look_brick]
-
         # object's scratchX and scratchY Keys determine position
         x_pos = int(scratch_object.get_scratchX() or 0)
         y_pos = int(scratch_object.get_scratchY() or 0)
@@ -925,7 +937,6 @@ class _ScratchObjectConverter(object):
             object_scale = object_relative_scale * 100.0 / costume_resolution
             if object_scale != 100.0:
                 implicit_bricks_to_add += [catbricks.SetSizeToBrick(object_scale)]
-
         object_rotation_in_degrees = float(scratch_object.get_direction() or 90.0)
         number_of_full_object_rotations = int(round(object_rotation_in_degrees/360.0))
         effective_object_rotation_in_degrees = object_rotation_in_degrees - 360.0 * number_of_full_object_rotations
@@ -950,7 +961,6 @@ class _ScratchObjectConverter(object):
 
         if len(implicit_bricks_to_add) > 0:
             catrobat.add_to_start_script(implicit_bricks_to_add, sprite)
-
         # initialization of object's variables
         for scratch_variable in scratch_object.get_variables():
             if scratch_variable["name"] == _SHARED_GLOBAL_ANSWER_VARIABLE_NAME:
@@ -974,28 +984,98 @@ class _ScratchObjectConverter(object):
             except:
                 log.error("Cannot assign initialization value {} to shared global answer user variable {}"
                           .format(scratch_variable["name"], scratch_variable["value"]))
-
+        # Add Visibility for CMDs like "loudness ect.." stcc-35
         # Add ShowVariable Bricks for variables that are visible
         #       (also for "answer", i.e. _SHARED_GLOBAL_ANSWER_VARIABLE_NAME!!)
+        exclusive_start_script = catbase.StartScript()
         sprite_name = sprite.getName()
         sprite_name = sprite_name.replace(BACKGROUND_LOCALIZED_GERMAN_NAME, BACKGROUND_ORIGINAL_NAME)
-        local_sprite_variables = scratch_project._sprite_to_var_dict[sprite_name]
         context = sprite_context.context
         if context is None: return
+        local_sprite_variables = None
+        if sprite_name in scratch_project._sprite_to_var_dict:
+            local_sprite_variables = scratch_project._sprite_to_var_dict[sprite_name]
+        local_sprite_commands = None
+        if sprite_name in scratch_project._sprite_to_command_var_dict:
+            local_sprite_commands = scratch_project._sprite_to_command_var_dict[sprite_name]
 
-        for variable_name, is_visible in local_sprite_variables:
-            if not is_visible: continue
-            var_object = _ScratchObjectConverter._catrobat_scene.getDataContainer().getUserVariable(variable_name, sprite)
-            show_variable_brick = catbricks.ShowTextBrick(context.visible_var_X, context.visible_var_Y)
-            show_variable_brick.setUserVariableName(variable_name)
-            show_variable_brick.setUserVariable(var_object)
-            context.visible_var_Y -= VISIBLE_VAR_POSITION_STEP_Y
-            if context.visible_var_Y <= VISIBLE_VAR_POSITION_THRESHOLD_Y:
-                context.visible_var_Y = VISIBLE_VAR_Y_INIT
-                context.visible_var_X += VISIBLE_VAR_POSITION_STEP_X
-            if context.visible_var_X >= VISIBLE_VAR_POSITION_THRESHOLD_X:
-                log.info("Too many visible variables")
-            catrobat.add_to_start_script([show_variable_brick], sprite)
+        commands_without_loop = ["answer", "timer"]
+        def is_loop_needed():
+            for (command, _) in local_sprite_commands:
+                if command not in commands_without_loop:
+                    return True
+            return False
+
+        if local_sprite_commands is not None and len(local_sprite_commands) >= 1 and is_loop_needed():
+            loop_start = catbricks.ForeverBrick()
+            loop_end = catbricks.LoopEndBrick(loop_start)
+            loop_bricks = [loop_start, loop_end]
+            exclusive_start_script.getBrickList().addAll(0, loop_bricks)
+            wait_pos = len(exclusive_start_script.getBrickList()) - 1
+            wait_brick = catbricks.WaitBrick(100)
+            exclusive_start_script.getBrickList().addAll(wait_pos, [wait_brick])
+
+        def get_unique_var_name(name_to_check):
+            match_count = 2
+            taken = True
+            test_name = name_to_check
+            while taken:
+                taken = catrobat._variable_exists(test_name, catrobat_project) 
+                if taken:
+                    test_name = name_to_check + str(match_count)
+                    match_count += 1
+            return test_name
+
+        add_note_brick = False 
+        command_convert_dict = scratch_project.command_convert_dict
+        if local_sprite_commands is not None:
+            for cmd, param in local_sprite_commands:
+                # switch for commands
+                var_base_name = "s2cc: " + sprite.getName() + ": " + cmd
+                command_dict_key = None
+                if param is not None:
+                    var_base_name = var_base_name + ": " + param
+                    command_dict_key = (cmd, param)
+                else:
+                    command_dict_key = cmd
+                var_name = get_unique_var_name(var_base_name)
+                generated_var = None
+                formula_element = None
+                if cmd != "answer" and cmd != "timer":
+                    generated_var = catrobat.add_user_variable(catrobat_project, var_name)
+                    formula_type = command_convert_dict[command_dict_key][0]
+                    formula_value = command_convert_dict[command_dict_key][1]
+                if cmd == "answer":
+                    if catrobat._variable_exists(_SHARED_GLOBAL_ANSWER_VARIABLE_NAME, catrobat_project):
+                        generated_var = [x for x in catrobat_project.getProjectVariables() if x.getName() == _SHARED_GLOBAL_ANSWER_VARIABLE_NAME][0]
+                    else:
+                        generated_var = catrobat.add_user_variable(catrobat_project, _SHARED_GLOBAL_ANSWER_VARIABLE_NAME)
+                elif cmd == "timer":
+                    if catrobat._variable_exists(scratch.S2CC_TIMER_VARIABLE_NAME, catrobat_project):
+                        generated_var = [x for x in catrobat_project.getProjectVariables() if x.getName() == scratch.S2CC_TIMER_VARIABLE_NAME][0]
+                    else:
+                        generated_var = catrobat.add_user_variable(catrobat_project, scratch.S2CC_TIMER_VARIABLE_NAME)
+                else:
+                    formula_element = catformula.FormulaElement(formula_type, None, None)
+                    formula_element.value = str(formula_value)
+                if cmd != "answer" and cmd != "timer":
+                    generated_var.setValue(formula_element)
+                    set_var_brick = catbricks.SetVariableBrick(catformula.Formula(formula_element), generated_var)
+                    position = len(exclusive_start_script.getBrickList()) - 2 # minus endloopbrick and waitbrick
+                    exclusive_start_script.getBrickList().addAll(position, [set_var_brick])
+                show_variable_brick, add_note_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(generated_var, context)
+                exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
+        if local_sprite_variables is not None:
+            for var, visible in local_sprite_variables:
+                if not visible: continue
+                var_object = _ScratchObjectConverter._catrobat_scene.getDataContainer().getUserVariable(var, sprite)
+                show_variable_brick, add_note_brick = _ScratchObjectConverter._create_show_text_brick_and_update_positions(var_object, context)
+                exclusive_start_script.getBrickList().addAll(0, [show_variable_brick])
+        if add_note_brick:
+            note_brick = catbricks.NoteBrick("Visible variables out of bounds! Too many visible.")
+            exclusive_start_script.getBrickList().addAll(0, [note_brick])
+        if len(exclusive_start_script.getBrickList()) >= 1:
+            sprite.addScript(exclusive_start_script)
 
     @classmethod
     def _catrobat_script_from(cls, scratch_script, sprite, catrobat_project, context=None):
@@ -1049,7 +1129,6 @@ class _ScratchObjectConverter(object):
         traverser = _BlocksConversionTraverser(catrobat_sprite, cls._catrobat_project, script_context)
         traverser.traverse(scratch_blocks)
         return traverser.converted_bricks
-
 
 class ConvertedProject(object):
 

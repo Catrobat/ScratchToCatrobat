@@ -100,6 +100,9 @@ def _sprite_of(scene, sprite_name):
             break
     return sprite
 
+def _variable_exists(var, catrobat_project):
+    return var in [check_var.getName() for check_var in catrobat_project.getProjectVariables()]
+
 def find_global_or_sprite_user_list_by_name(scene, sprite, list_name):
     return scene.getDataContainer().getUserList(list_name, sprite)
 

@@ -750,7 +750,6 @@ class _ScratchObjectConverter(object):
     def __init__(self, catrobat_project, scratch_project, progress_bar=None, context=None):
         # TODO: refactor static
         _ScratchObjectConverter._catrobat_project = catrobat_project
-        _ScratchObjectConverter._catrobat_scene = catrobat_project.getDefaultScene()
         _ScratchObjectConverter._scratch_project = scratch_project
         self._progress_bar = progress_bar
         self._context = context
@@ -765,17 +764,18 @@ class _ScratchObjectConverter(object):
         scratch_user_scripts = filter(lambda s: s.type == scratch.SCRIPT_PROC_DEF, scratch_object.scripts)
         scratch_user_script_declared_labels_map = dict(map(lambda s: (s.arguments[0], s.arguments[1]), scratch_user_scripts))
         sprite_context = SpriteContext(sprite_name, scratch_user_script_declared_labels_map)
-
+        catrobat_scene = self._catrobat_project.getDefaultScene()
+        data_container = catrobat_scene.getDataContainer()
         sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, sprite_name)
+        assert sprite_name == sprite.getName()
 
         if self._context is not None:
             sprite_context.context = self._context
             if sprite_name in self._context.upcoming_sprites:
                 sprite = self._context.upcoming_sprites[sprite_name]
 
-        assert sprite_name == sprite.getName()
         log.info('-'*80)
-        log.info("Converting Sprite: '%s'", sprite.getName())
+        log.info("Converting Sprite: '%s'", sprite_name)
         log.info('-'*80)
 
         # rename if sprite is background
@@ -799,10 +799,9 @@ class _ScratchObjectConverter(object):
             sprite_sounds.add(self._catrobat_sound_from(scratch_sound))
 
         if not scratch_object.is_stage() and scratch_object.get_lists() is not None:
-            catr_data_container = self._catrobat_scene.getDataContainer()
             for user_list_data in scratch_object.get_lists():
                 assert len(user_list_data["listName"]) > 0
-                catr_data_container.addSpriteUserListToSprite(sprite, user_list_data["listName"])
+                data_container.addSpriteUserListToSprite(sprite, user_list_data["listName"])
                 # TODO: check if user list has been added...
 
         for scratch_variable in scratch_object.get_variables():
@@ -813,11 +812,11 @@ class _ScratchObjectConverter(object):
                     sprite_name=sprite.getName() if not scratch_object.is_stage() else None
             )
             assert user_variable is not None
-            user_variable = self._catrobat_scene.getDataContainer().getUserVariable(scratch_variable["name"], sprite)
+            user_variable = data_container.getUserVariable(scratch_variable["name"], sprite)
             assert user_variable is not None
 
         for scratch_script in scratch_object.scripts:
-            cat_instance = self._catrobat_script_from(scratch_script, sprite, self.__class__._catrobat_project,
+            cat_instance = self._catrobat_script_from(scratch_script, sprite, self._catrobat_project,
                                                       sprite_context)
             if not isinstance(cat_instance, catbricks.UserBrick):
                 assert isinstance(cat_instance, catbase.Script)
@@ -832,7 +831,7 @@ class _ScratchObjectConverter(object):
             self._context.add_sprite_context(sprite_context)
 
         try:
-            self._add_default_behaviour_to(sprite, sprite_context, self._catrobat_scene,
+            self._add_default_behaviour_to(sprite, sprite_context, catrobat_scene,
                                            self._catrobat_project, scratch_object,
                                            self._scratch_project, costume_resolution)
         except Exception, e:
@@ -972,23 +971,23 @@ class _ScratchObjectConverter(object):
                                                               _SHARED_GLOBAL_ANSWER_VARIABLE_NAME,
                                                               "", sprite)
             except:
-                log.error("Cannot assign initialization value {} to shared global answer user variable {}"
-                          .format(scratch_variable["name"], scratch_variable["value"]))
+                log.error("Cannot assign initialization value {} to shared global answer user variable"
+                          .format(_SHARED_GLOBAL_ANSWER_VARIABLE_NAME))
 
         # Add ShowVariable Bricks for variables that are visible
         #       (also for "answer", i.e. _SHARED_GLOBAL_ANSWER_VARIABLE_NAME!!)
         sprite_name = sprite.getName()
         sprite_name = sprite_name.replace(BACKGROUND_LOCALIZED_GERMAN_NAME, BACKGROUND_ORIGINAL_NAME)
-        local_sprite_variables = scratch_project._sprite_to_var_dict[sprite_name]
+        local_sprite_variables = scratch_project.sprite_variables_map[sprite_name]
         context = sprite_context.context
         if context is None: return
 
         for variable_name, is_visible in local_sprite_variables:
             if not is_visible: continue
-            var_object = _ScratchObjectConverter._catrobat_scene.getDataContainer().getUserVariable(variable_name, sprite)
+            user_variable = catrobat_scene.getDataContainer().getUserVariable(variable_name, sprite)
             show_variable_brick = catbricks.ShowTextBrick(context.visible_var_X, context.visible_var_Y)
             show_variable_brick.setUserVariableName(variable_name)
-            show_variable_brick.setUserVariable(var_object)
+            show_variable_brick.setUserVariable(user_variable)
             context.visible_var_Y -= VISIBLE_VAR_POSITION_STEP_Y
             if context.visible_var_Y <= VISIBLE_VAR_POSITION_THRESHOLD_Y:
                 context.visible_var_Y = VISIBLE_VAR_Y_INIT

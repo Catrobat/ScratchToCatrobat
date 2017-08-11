@@ -214,18 +214,19 @@ class RawProject(Object):
         assert self.is_stage()
         self._verify_scratch_dictionary(dict_, data_origin)
         self.dict_ = dict_
-        raw_child_objects = sorted(self.get_children(), key=lambda obj_data: obj_data.get("indexInLibrary", 0))
-        raw_variable_visibility_information = [var for var in raw_child_objects if "target" in var]
-        #preprocessing for conversion of visible variables
-        self._sprite_to_var_dict = {}
-        # preprocessing
-        for info in raw_variable_visibility_information:
-            if info["param"]:
-                if info["target"] not in self._sprite_to_var_dict:
-                    self._sprite_to_var_dict[info["target"]] = [(info["param"], info["visible"])]
-                else:
-                    self._sprite_to_var_dict[info["target"]].append((info["param"], info["visible"]))
-        self.raw_objects = [child for child in raw_child_objects if "objName" in child]
+
+        # preprocessing for conversion of visible variables
+        self.sprite_variables_map = {}
+        raw_variables_data = filter(lambda var: "target" in var, self.get_children())
+        for info in raw_variables_data:
+            if not info["param"]: continue
+            sprite_name = info["target"]
+            if sprite_name not in self.sprite_variables_map:
+                self.sprite_variables_map[sprite_name] = []
+            self.sprite_variables_map[sprite_name] += [(info["param"], info["visible"])]
+
+        self.raw_objects = sorted(filter(lambda obj_data: "objName" in obj_data, self.get_children()),
+                                  key=lambda obj_data: obj_data.get("indexInLibrary", 0))
         self.objects = [Object(raw_object) for raw_object in [dict_] + self.raw_objects]
         self.resource_names = [self._resource_name_from(raw_resource) for raw_resource in self._raw_resources()]
         self.unique_resource_names = list(set(self.resource_names))

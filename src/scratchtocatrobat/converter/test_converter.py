@@ -223,7 +223,8 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         self._name_of_test_list = "my_test_list"
         self.block_converter = converter._ScratchObjectConverter(self.test_project, None)
         # create and add user list for user list bricks to project
-        self.block_converter._catrobat_scene.getDataContainer().addProjectUserList(self._name_of_test_list)
+        data_container = self.block_converter._catrobat_project.getDefaultScene().getDataContainer()
+        data_container.addProjectUserList(self._name_of_test_list)
         # create dummy sprite
         self.sprite_stub = create_catrobat_background_sprite_stub()
 
@@ -2414,7 +2415,7 @@ class TestConvertProjects(common_testing.ProjectTestCase):
     # Checks if the visible global or local variables in the scratch program are converted into show test bricks in the converted project
     def test_can_convert_visible_variables(self):
         scratch_project = self._load_test_scratch_project("visible_variables")
-        sprite_to_vars_map = scratch_project._sprite_to_var_dict
+        sprite_to_vars_map = scratch_project.sprite_variables_map
         catrobat_program = self._test_project("visible_variables")
         scene = catrobat_program.getDefaultScene()
         sprite_dict = {}

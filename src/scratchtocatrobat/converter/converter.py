@@ -129,6 +129,11 @@ def is_math_operator(key):
     all_keys = cls.math_unary_operators_mapping.keys() + cls.math_binary_operators_mapping.keys()
     return key in all_keys
 
+def is_supported_block(key):
+    cls = _ScratchToCatrobat
+    all_keys = cls.complete_mapping.keys()
+    return key in all_keys
+
 # note: for Scratch blocks without mapping placeholder Catrobat bricks will be added
 class _ScratchToCatrobat(object):
 
@@ -982,8 +987,7 @@ class _ScratchObjectConverter(object):
         context = sprite_context.context
         if context is None: return
 
-        for variable_name, is_visible in local_sprite_variables:
-            if not is_visible: continue
+        for variable_name in local_sprite_variables:
             user_variable = catrobat_scene.getDataContainer().getUserVariable(variable_name, sprite)
             show_variable_brick = catbricks.ShowTextBrick(context.visible_var_X, context.visible_var_Y)
             show_variable_brick.setUserVariableName(variable_name)

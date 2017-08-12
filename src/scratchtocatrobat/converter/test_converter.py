@@ -2426,15 +2426,14 @@ class TestConvertProjects(common_testing.ProjectTestCase):
             sprite_dict[sprite_name] = sprite
         for sprite_name, variable_list in sprite_to_vars_map.iteritems():
             sprite_object = sprite_dict[sprite_name]
-            for var, visible in variable_list:
-                if not visible: continue
+            for variable in variable_list:
                 scripts = sprite_object.getScriptList()
                 found_show_var = False
                 for script in scripts:
                     if not isinstance(script, catbase.StartScript): continue
                     bricks = script.getBrickList()
                     found_show_var = len(filter(lambda brick: isinstance(brick, catbricks.ShowTextBrick) \
-                                                and brick.getUserVariable().getName() == var, bricks)) > 0
+                                                and brick.getUserVariable().getName() == variable, bricks)) > 0
                     if found_show_var: break
                 assert found_show_var
 

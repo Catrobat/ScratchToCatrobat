@@ -1031,17 +1031,57 @@ class TestShowSensorBlockWorkarounds(unittest.TestCase):
             # validate
             assert len(raw_project.objects) == 2
             [background_object, first_object] = raw_project.objects
-    
+
             # background object
             assert len(background_object.scripts) == 0
-    
+
             # first object
             assert len(first_object.scripts) == 1
             script = first_object.scripts[0]
             expected_script = scratch.Script(expected_first_object_script_data)
             assert script == expected_script
-    
-            # global variables
+
+            # sprite variables
+            first_object_variables = first_object._dict_object["variables"]
+            assert len(first_object_variables) == 1
+            assert first_object_variables[0] == { "name": variable_name, "value": 0, "isPersistent": False }
+
+    def test_convert_show_sensor_with_parameter_block(self):
+        cls = self.__class__
+        sprite_name = "Sprite1"
+        original_child_objects = cls.SENSOR_HELPER_OBJECTS_DATA_TEMPLATE["children"]
+        for command_name, param in [("timeAndDate", "minute"), ("timeAndDate", "second")]:
+            cls.SENSOR_HELPER_OBJECTS_DATA_TEMPLATE["children"] = original_child_objects[:]
+            cls.SENSOR_HELPER_OBJECTS_DATA_TEMPLATE["children"] += [{
+                "target": sprite_name,
+                "cmd": command_name,
+                "param": param,
+                "visible": True
+            }]
+
+            raw_project = scratch.RawProject(cls.SENSOR_HELPER_OBJECTS_DATA_TEMPLATE)
+            variable_name = scratch.S2CC_SENSOR_PREFIX + "{}_{}{}".format(sprite_name, command_name, "_" + param if param else "")
+            expected_first_object_script_data = [0, 0, [['whenGreenFlag'],
+                ['doForever', [
+                    ["setVar:to:", variable_name, [command_name, param]],
+                    ["wait:elapsed:from:", 0.25]
+                ]]
+            ]]
+
+            # validate
+            assert len(raw_project.objects) == 2
+            [background_object, first_object] = raw_project.objects
+
+            # background object
+            assert len(background_object.scripts) == 0
+
+            # first object
+            assert len(first_object.scripts) == 1
+            script = first_object.scripts[0]
+            expected_script = scratch.Script(expected_first_object_script_data)
+            assert script == expected_script
+
+            # sprite variables
             first_object_variables = first_object._dict_object["variables"]
             assert len(first_object_variables) == 1
             assert first_object_variables[0] == { "name": variable_name, "value": 0, "isPersistent": False }

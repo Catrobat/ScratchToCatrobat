@@ -20,11 +20,8 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-import ast
 from command import Command
-from websocketserver.protocol.message.base.error_message import ErrorMessage
 from websocketserver.protocol.message.base.info_message import InfoMessage
-from websocketserver.protocol.job import Job
 import helpers as webhelpers
 from scratchtocatrobat.tools import helpers
 from schedule_job_command import get_jobs_of_client

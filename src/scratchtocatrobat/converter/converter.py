@@ -1975,3 +1975,4 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             formula_element = catformula.FormulaElement(catElementType.COLLISION_FORMULA, None, None)
             formula_element.value = arguments[0]
         return formula_element
+

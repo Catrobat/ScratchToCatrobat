@@ -523,13 +523,12 @@ def _create_variable_brick(value, user_variable, Class):
 def _variable_for(variable_name):
     return catformula.FormulaElement(catElementType.USER_VARIABLE, variable_name, None)  # @UndefinedVariable
 
-def _get_or_create_shared_global_answer_variable(project, data_container, script_context):
+def _get_or_create_shared_global_answer_variable(project, data_container):
     shared_global_answer_user_variable = data_container.getUserVariable(_SHARED_GLOBAL_ANSWER_VARIABLE_NAME, None)
     if shared_global_answer_user_variable is None:
         assert(_is_generated(_SHARED_GLOBAL_ANSWER_VARIABLE_NAME))
         catrobat.add_user_variable(project, _SHARED_GLOBAL_ANSWER_VARIABLE_NAME, None, None)
         shared_global_answer_user_variable = data_container.getUserVariable(_SHARED_GLOBAL_ANSWER_VARIABLE_NAME, None)
-        script_context.sprite_context.created_shared_global_answer_user_variable = True
 
     assert shared_global_answer_user_variable is not None \
     and shared_global_answer_user_variable.getName() == _SHARED_GLOBAL_ANSWER_VARIABLE_NAME, \
@@ -583,7 +582,6 @@ class Context(object):
 class SpriteContext(object):
     def __init__(self, name=None, user_script_declared_labels_map={}):
         self.name = name
-        self.created_shared_global_answer_user_variable = False
         self.user_script_definition_brick_map = {}
         self.user_script_declared_map = set()
         self.user_script_declared_labels_map = user_script_declared_labels_map
@@ -970,11 +968,11 @@ class _ScratchObjectConverter(object):
         # if this sprite object contains a script that first added AskBrick or accessed the
         # (global) answer variable, the (global) answer variable gets initialized by adding a
         # SetVariable brick with an empty string-initialization value (i.e. "")
-        if sprite_context.created_shared_global_answer_user_variable:
+        data_container = catrobat_scene.getDataContainer()
+        shared_global_answer_user_variable = data_container.getUserVariable(_SHARED_GLOBAL_ANSWER_VARIABLE_NAME, None)
+        if shared_global_answer_user_variable is not None and scratch_object.is_stage():
             try:
-                _assign_initialization_value_to_user_variable(catrobat_scene,
-                                                              _SHARED_GLOBAL_ANSWER_VARIABLE_NAME,
-                                                              "", sprite)
+                _assign_initialization_value_to_user_variable(catrobat_scene, _SHARED_GLOBAL_ANSWER_VARIABLE_NAME, "", sprite)
             except:
                 log.error("Cannot assign initialization value {} to shared global answer user variable"
                           .format(_SHARED_GLOBAL_ANSWER_VARIABLE_NAME))
@@ -1752,17 +1750,13 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         [question] = self.arguments
         data_container = self.scene.getDataContainer()
         question_formula = catrobat.create_formula_with_value(question)
-        shared_global_answer_user_variable = _get_or_create_shared_global_answer_variable(self.project,
-                                                                                          data_container,
-                                                                                          self.script_context)
+        shared_global_answer_user_variable = _get_or_create_shared_global_answer_variable(self.project, data_container)
         return self.CatrobatClass(question_formula, shared_global_answer_user_variable)
 
     @_register_handler(_block_name_to_handler_map, "answer")
     def _convert_answer_block(self):
         data_container = self.scene.getDataContainer()
-        shared_global_answer_user_variable = _get_or_create_shared_global_answer_variable(self.project,
-                                                                                          data_container,
-                                                                                          self.script_context)
+        shared_global_answer_user_variable = _get_or_create_shared_global_answer_variable(self.project, data_container)
         return _variable_for(shared_global_answer_user_variable.getName())
 
     @_register_handler(_block_name_to_handler_map, "createCloneOf")

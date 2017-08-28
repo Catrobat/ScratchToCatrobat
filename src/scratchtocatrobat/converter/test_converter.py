@@ -21,7 +21,6 @@
 import os
 import unittest
 import re
-from time import sleep
 
 import org.catrobat.catroid.common as catcommon
 import org.catrobat.catroid.content as catbase
@@ -309,7 +308,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         workaround_info = raw_project.objects[1].preprocess_object([raw_project.objects[0].name, raw_project.objects[1].name])
         assert workaround_info['add_timer_script_key'] == True
         timer_background_workaround = [['whenGreenFlag'], ['doForever', \
-                                                           [['changeVar:by:', 'S2CC_timer', 0.03], \
+                                                           [['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.03],
                                                            ['wait:elapsed:from:', 0.03]]]]
         assert raw_project.objects[0].scripts[0].raw_script == timer_background_workaround
 
@@ -1798,9 +1797,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         sprite_context = converter.SpriteContext(DUMMY_CATR_SPRITE.getName(), {})
         script_context = converter.ScriptContext(sprite_context)
         scratch_block = _, expected_question_string = ["doAsk", "What's your name?"]
-        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE,
-                                                                  script_context)
-        assert sprite_context.created_shared_global_answer_user_variable is True
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE, script_context)
         assert isinstance(catr_brick, catbricks.AskBrick)
 
         formula_tree = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.ASK_QUESTION).formulaTree # @UndefinedVariable
@@ -1828,7 +1825,6 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         scratch_block = ["doAsk", ["+", expected_left_operand, expected_right_operand]]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE,
                                                                   script_context)
-        assert sprite_context.created_shared_global_answer_user_variable is True
         assert isinstance(catr_brick, catbricks.AskBrick)
 
         formula_tree = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.ASK_QUESTION).formulaTree # @UndefinedVariable
@@ -1865,7 +1861,6 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         script_context = converter.ScriptContext(sprite_context)
         [formula_element] = self.block_converter._catrobat_bricks_from(["answer"], DUMMY_CATR_SPRITE,
                                                                        script_context)
-        assert sprite_context.created_shared_global_answer_user_variable is True
         assert isinstance(formula_element, catformula.FormulaElement)
         assert catformula.FormulaElement.ElementType.USER_VARIABLE == formula_element.type
         assert converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME == formula_element.value
@@ -1874,8 +1869,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
         project = self.block_converter._catrobat_project
         data_container = project.getDefaultScene().getDataContainer()
-        user_variable = data_container.getUserVariable(converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME,
-                                                       DUMMY_CATR_SPRITE)
+        user_variable = data_container.getUserVariable(converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME, DUMMY_CATR_SPRITE)
         assert user_variable is not None
         assert converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME == user_variable.getName()
 

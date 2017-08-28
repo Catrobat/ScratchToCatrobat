@@ -542,8 +542,16 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
         assert len(global_variables) == 1
         assert global_variables[0] == { "name": scratch.S2CC_TIMER_VARIABLE_NAME, "value": 0, "isPersistent": False }
 
-    def test_reset_timer_block_with_non_existant_timer_block_should_be_ignored(self):
+    def test_reset_timer_block_with_non_existant_timer_block_should_automatically_add_timer_script(self):
         cls = self.__class__
+        expected_background_object_scripts_data = [[0, 0, [['whenGreenFlag'],
+            ['doForever', [
+                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.03],
+                ['wait:elapsed:from:', 0.03]
+            ]]]
+        ], [0, 0, [['whenIReceive', scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE],
+            ['setVar:to:', scratch.S2CC_TIMER_VARIABLE_NAME, 0]
+        ]]]
         script_data = [0, 0, [["whenGreenFlag"], ["timerReset"]]]
         cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
         expected_first_object_script_data = [0, 0, [["whenGreenFlag"],
@@ -558,7 +566,13 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
         [background_object, first_object] = raw_project.objects
 
         # background object
-        assert len(background_object.scripts) == 0
+        assert len(background_object.scripts) == 2
+        script = background_object.scripts[0]
+        expected_script = scratch.Script(expected_background_object_scripts_data[0])
+        assert script == expected_script
+        script = background_object.scripts[1]
+        expected_script = scratch.Script(expected_background_object_scripts_data[1])
+        assert script == expected_script
 
         # first object
         assert len(first_object.scripts) == 1
@@ -568,7 +582,8 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
 
         # global variables
         global_variables = background_object._dict_object["variables"]
-        assert len(global_variables) == 0
+        assert len(global_variables) == 1
+        assert global_variables[0] == { "name": scratch.S2CC_TIMER_VARIABLE_NAME, "value": 0, "isPersistent": False }
 
     def test_reset_timer_block_with_existant_timer_block_in_same_object_must_NOT_be_ignored(self):
         cls = self.__class__

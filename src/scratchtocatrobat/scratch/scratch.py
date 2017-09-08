@@ -66,11 +66,12 @@ SCRIPT_GREEN_FLAG, SCRIPT_RECEIVE, SCRIPT_KEY_PRESSED, SCRIPT_SENSOR_GREATER_THA
 STAGE_OBJECT_NAME = "Stage"
 STAGE_WIDTH_IN_PIXELS = 480
 STAGE_HEIGHT_IN_PIXELS = 360
-S2CC_TIMER_VARIABLE_NAME = "S2CC_timer"
-S2CC_TIMER_RESET_BROADCAST_MESSAGE = "S2CC_reset_timer"
-S2CC_POSITION_X_VARIABLE_NAME_PREFIX = "S2CC_position_x_"
-S2CC_POSITION_Y_VARIABLE_NAME_PREFIX = "S2CC_position_y_"
-S2CC_GETATTRIBUTE_PREFIX = "S2CC_getattribute_"
+S2CC_TIMER_VARIABLE_NAME = "S2CC:timer"
+S2CC_TIMER_RESET_BROADCAST_MESSAGE = "S2CC:timer:reset"
+S2CC_POSITION_X_VARIABLE_NAME_PREFIX = "S2CC:pos_x_"
+S2CC_POSITION_Y_VARIABLE_NAME_PREFIX = "S2CC:pos_y_"
+S2CC_SENSOR_PREFIX = "S2CC:sensor_"
+S2CC_GETATTRIBUTE_PREFIX = "S2CC:getattribute_"
 ADD_TIMER_SCRIPT_KEY = "add_timer_script_key"
 ADD_TIMER_RESET_SCRIPT_KEY = "add_timer_reset_script_key"
 ADD_POSITION_SCRIPT_TO_OBJECTS_KEY = "add_position_script_to_objects_key"
@@ -276,45 +277,64 @@ class RawProject(Object):
         assert self.is_stage()
         self._verify_scratch_dictionary(dict_, data_origin)
         self.dict_ = dict_
-        raw_child_objects = sorted(self.get_children(), key=lambda obj_data: obj_data.get("indexInLibrary", 0))
-        raw_variable_visibility_information = [var for var in raw_child_objects if "target" in var]
-        #preprocessing for conversion of visible variables
-        self._sprite_to_var_dict = {}
-        # preprocessing
-        for info in raw_variable_visibility_information:
-            if info["param"]:
-                if info["target"] not in self._sprite_to_var_dict:
-                    self._sprite_to_var_dict[info["target"]] = [(info["param"], info["visible"])]
-                else:
-                    self._sprite_to_var_dict[info["target"]].append((info["param"], info["visible"]))
-        self.raw_objects = [child for child in raw_child_objects if "objName" in child]
+        raw_variables_and_sensors_data = filter(lambda var: "target" in var, self.get_children())
+
+        # preprocessing for conversion of visible variables
+        self.sprite_variables_map = {}
+        sprite_sensors_map = {}
+        for info in raw_variables_and_sensors_data:
+            assert "target" in info and "param" in info and "visible" in info
+            if not info["visible"]: continue
+            sprite_name = info["target"]
+            if info["cmd"] == "getVar:":
+                # case variable
+                if sprite_name not in self.sprite_variables_map:
+                    self.sprite_variables_map[sprite_name] = []
+                self.sprite_variables_map[sprite_name] += [info["param"]]
+            else:
+                # case sensor
+                if sprite_name not in sprite_sensors_map:
+                    sprite_sensors_map[sprite_name] = []
+                sprite_sensors_map[sprite_name] += [(info["cmd"], info["param"])]
+
+        self.raw_objects = sorted(filter(lambda obj_data: "objName" in obj_data, self.get_children()),
+                                  key=lambda obj_data: obj_data.get("indexInLibrary", 0))
         self.objects = [Object(raw_object) for raw_object in [dict_] + self.raw_objects]
         self.resource_names = [self._resource_name_from(raw_resource) for raw_resource in self._raw_resources()]
         self.unique_resource_names = list(set(self.resource_names))
-        add_timer_script = False
-        add_timer_reset_script = False
+        is_add_timer_script = False
+        is_add_timer_reset_script = False
         sprite_name_sprite_mapping = dict(map(lambda obj: (obj.get_objName(), obj), self.objects))
         all_sprite_names = sprite_name_sprite_mapping.keys()
         position_script_to_be_added = set()
         update_attribute_script_to_be_added = {}
         for scratch_object in self.objects:
             workaround_info = scratch_object.preprocess_object(all_sprite_names)
-            if workaround_info[ADD_TIMER_SCRIPT_KEY]: add_timer_script = True
-            if workaround_info[ADD_TIMER_RESET_SCRIPT_KEY]: add_timer_reset_script = True
+            if workaround_info[ADD_TIMER_SCRIPT_KEY]: is_add_timer_script = True
+            if workaround_info[ADD_TIMER_RESET_SCRIPT_KEY]: is_add_timer_reset_script = True
             position_script_to_be_added |= workaround_info[ADD_POSITION_SCRIPT_TO_OBJECTS_KEY]
+
             for sprite_name, sensor_names_set in workaround_info[ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY].iteritems():
                 if sprite_name not in update_attribute_script_to_be_added: update_attribute_script_to_be_added[sprite_name] = set()
                 update_attribute_script_to_be_added[sprite_name] |= sensor_names_set
-        if add_timer_script: self._add_timer_script_to_stage_object()
-        if add_timer_script and add_timer_reset_script: self._add_timer_reset_script_to_stage_object()
+        if is_add_timer_script or is_add_timer_reset_script: self._add_timer_script_to_stage_object()
+        if is_add_timer_reset_script: self._add_timer_reset_script_to_stage_object()
+
         for destination_sprite_name in position_script_to_be_added:
             sprite_object = sprite_name_sprite_mapping[destination_sprite_name]
             assert sprite_object is not None
             self._add_update_position_script_to_object(sprite_object)
+
+        for sprite_name, sensors_info in sprite_sensors_map.iteritems():
+            sprite_object = sprite_name_sprite_mapping[sprite_name]
+            assert sprite_object is not None
+            self._add_sensor_variables_and_update_script_to_object(sprite_object, sensors_info, is_add_timer_script)
+
         for sprite_name, sensor_names in update_attribute_script_to_be_added.iteritems():
             sprite_object = sprite_name_sprite_mapping[sprite_name]
             assert sprite_object is not None
             self._add_update_attribute_script_to_object(sprite_object, sensor_names)
+
 
     def _add_update_position_script_to_object(self, sprite_object):
         # add global variables for positions!
@@ -381,6 +401,41 @@ class RawProject(Object):
         # timer reset script
         script_blocks = [["setVar:to:", S2CC_TIMER_VARIABLE_NAME, 0]]
         self.objects[0].scripts += [Script([0, 0, [[SCRIPT_RECEIVE, S2CC_TIMER_RESET_BROADCAST_MESSAGE]] + script_blocks])]
+
+    def _add_sensor_variables_and_update_script_to_object(self, sprite_object, sensors_info, is_add_timer_script):
+        from scratchtocatrobat.converter import converter
+        forever_loop_body_blocks = []
+        sprite_name = sprite_object.get_objName()
+        for command, param in sensors_info:
+            if not converter.is_supported_block(command) and command != "timer":
+                continue
+
+            if sprite_name not in self.sprite_variables_map:
+                self.sprite_variables_map[sprite_name] = []
+
+            stage_object = self.objects[0]
+            if command == "timer":
+                variable_name = S2CC_TIMER_VARIABLE_NAME
+                self.sprite_variables_map[sprite_name] += [variable_name]
+                if not is_add_timer_script:
+                    self._add_timer_script_to_stage_object()
+                continue
+            elif command == "answer":
+                variable_name = converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME
+                self.sprite_variables_map[sprite_name] += [variable_name]
+                stage_object._dict_object["variables"].append({ "name": variable_name, "value": "", "isPersistent": False })
+                continue
+
+            variable_name = S2CC_SENSOR_PREFIX + "{}_{}{}".format(sprite_name, command, "_" + param if param else "")
+            self.sprite_variables_map[sprite_name] += [variable_name]
+            sprite_object._dict_object["variables"].append({ "name": variable_name, "value": 0, "isPersistent": False })
+            reporter_block = [command] if param is None else [command, param]
+            forever_loop_body_blocks += [["setVar:to:", variable_name, reporter_block]]
+
+        if len(forever_loop_body_blocks) == 0: return
+        forever_loop_body_blocks += [["wait:elapsed:from:", 0.25]]
+        script_blocks = [["doForever", forever_loop_body_blocks]]
+        sprite_object.scripts += [Script([0, 0, [[SCRIPT_GREEN_FLAG]] + script_blocks])]
 
     def __iter__(self):
         return iter(self.objects)

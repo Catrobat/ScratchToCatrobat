@@ -208,6 +208,7 @@ class Object(common.DictAccessWrapper):
                 "size": "scale",
                 "costume name": "costumeName",
                 # not supported at the moment -> automatically replaced with NoteBrick by converter
+                "costume name": "costumeName",
                 "volume": "volume"
             }
             new_block_list = []

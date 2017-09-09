@@ -1214,34 +1214,6 @@ class TestGetAttributeBlockWorkarounds(unittest.TestCase):
             "info": {}
         }
 
-    def test_convert_attribute_of_same_object_block(self):
-        cls = self.__class__
-        sprite_name = "Sprite1"
-        for attribute_name, sensor_name in cls.ATTRIBUTE_NAME_TO_SENSOR_NAME_MAP.iteritems():
-            first_script_data = [0, 0, [["whenGreenFlag"],
-                ["wait:elapsed:from:", 2],
-                ["setVar:to:", "result", ["getAttribute:of:", attribute_name, sprite_name]]
-            ]]
-            self.root_info["children"][0]["scripts"] = [first_script_data]
-            raw_project = scratch.RawProject(self.root_info)
-            first_script_data[2][2][2] = [sensor_name]
-            expected_first_object_first_script_data = first_script_data
-
-            # validate
-            assert len(raw_project.objects) == 2
-            [background_object, first_object] = raw_project.objects
-
-            # scripts of sprite objects
-            assert len(background_object.scripts) == 0
-            assert len(first_object.scripts) == 1
-            script = first_object.scripts[0]
-            expected_script = scratch.Script(expected_first_object_first_script_data)
-            assert script == expected_script
-
-            # sprite variables
-            assert len(background_object._dict_object["variables"]) == 1
-            assert len(first_object._dict_object["variables"]) == 0
-
     def test_convert_global_variable_attribute_block(self):
         cls = self.__class__
         variable_name = "result"
@@ -1371,6 +1343,61 @@ class TestGetAttributeBlockWorkarounds(unittest.TestCase):
             # sprite variables
             assert len(background_object._dict_object["variables"]) == 1
             assert len(first_object._dict_object["variables"]) == 0
+
+    def test_convert_attribute_of_same_object_block(self):
+        cls = self.__class__
+        sprite_name = "Sprite1"
+        for attribute_name, sensor_name in cls.ATTRIBUTE_NAME_TO_SENSOR_NAME_MAP.iteritems():
+            first_script_data = [0, 0, [["whenGreenFlag"],
+                ["wait:elapsed:from:", 2],
+                ["setVar:to:", "result", ["getAttribute:of:", attribute_name, sprite_name]]
+            ]]
+            self.root_info["children"][0]["scripts"] = [first_script_data]
+            raw_project = scratch.RawProject(self.root_info)
+            first_script_data[2][2][2] = [sensor_name]
+            expected_first_object_first_script_data = first_script_data
+
+            # validate
+            assert len(raw_project.objects) == 2
+            [background_object, first_object] = raw_project.objects
+
+            # scripts of sprite objects
+            assert len(background_object.scripts) == 0
+            assert len(first_object.scripts) == 1
+            script = first_object.scripts[0]
+            expected_script = scratch.Script(expected_first_object_first_script_data)
+            assert script == expected_script
+
+            # sprite variables
+            assert len(background_object._dict_object["variables"]) == 1
+            assert len(first_object._dict_object["variables"]) == 0
+
+    def test_should_convert_attribute_with_formula_block_to_zero_placeholder(self):
+        cls = self.__class__
+        sprite_name = "Sprite1"
+        first_script_data = [0, 0, [["whenGreenFlag"],
+            ["wait:elapsed:from:", 2],
+            ["setVar:to:", "result", ["getAttribute:of:", ["+", 1, 2], sprite_name]]
+        ]]
+        self.root_info["children"][0]["scripts"] = [first_script_data]
+        raw_project = scratch.RawProject(self.root_info)
+        first_script_data[2][2][2] = 0
+        expected_first_object_first_script_data = first_script_data
+
+        # validate
+        assert len(raw_project.objects) == 2
+        [background_object, first_object] = raw_project.objects
+
+        # scripts of sprite objects
+        assert len(background_object.scripts) == 0
+        assert len(first_object.scripts) == 1
+        script = first_object.scripts[0]
+        expected_script = scratch.Script(expected_first_object_first_script_data)
+        assert script == expected_script
+
+        # sprite variables
+        assert len(background_object._dict_object["variables"]) == 1
+        assert len(first_object._dict_object["variables"]) == 0
 
     def test_convert_attribute_of_other_object_block(self):
         cls = self.__class__

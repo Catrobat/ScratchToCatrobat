@@ -218,6 +218,10 @@ class Object(common.DictAccessWrapper):
 
                 if block[0] == 'getAttribute:of:':
                     attribute_name, sprite_name = block[1:3]
+                    if not isinstance(attribute_name, basestring):
+                        new_block_list += [0]
+                        continue
+
                     sprite_name = sprite_name.replace("_stage_", "Stage")
                     sensor_name = attribute_name_to_sensor_name_map.get(attribute_name)
 

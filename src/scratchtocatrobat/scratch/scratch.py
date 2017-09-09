@@ -203,11 +203,11 @@ class Object(common.DictAccessWrapper):
                 "y position": "ypos",
                 "direction": "heading",
                 "costume #": "costumeIndex",
-                "costume name": "sceneName",
                 "backdrop #": "backgroundIndex",
                 "backdrop name": "sceneName",
                 "size": "scale",
                 # not supported at the moment -> automatically replaced with NoteBrick by converter
+                "costume name": "costumeName",
                 "volume": "volume"
             }
             new_block_list = []
@@ -228,7 +228,7 @@ class Object(common.DictAccessWrapper):
                         if sprite_name in {"Stage", self.name}:
                             new_block_list += [["readVariable", variable_name]]
                             continue
-                        # local variable of current or other sprite
+                        # local variable of other sprite
                         else:
                             sensor_name = "readVariable:{}".format(variable_name)
 

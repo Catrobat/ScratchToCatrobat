@@ -328,6 +328,7 @@ class _ScratchToCatrobat(object):
 
         #name and number
         "sceneName": catformula.Sensors.OBJECT_BACKGROUND_NAME,
+        "costumeName": catformula.Sensors.OBJECT_LOOK_NAME,
         "backgroundIndex": catformula.Sensors.OBJECT_BACKGROUND_NUMBER,
         "costumeIndex": catformula.Sensors.OBJECT_LOOK_NUMBER,
 

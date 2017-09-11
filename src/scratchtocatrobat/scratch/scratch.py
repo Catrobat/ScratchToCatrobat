@@ -206,8 +206,8 @@ class Object(common.DictAccessWrapper):
                 "backdrop #": "backgroundIndex",
                 "backdrop name": "sceneName",
                 "size": "scale",
-                # not supported at the moment -> automatically replaced with NoteBrick by converter
                 "costume name": "costumeName",
+                # not supported at the moment -> automatically replaced with NoteBrick by converter
                 "volume": "volume"
             }
             new_block_list = []

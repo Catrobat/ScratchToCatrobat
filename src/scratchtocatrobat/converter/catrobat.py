@@ -101,14 +101,10 @@ def _sprite_of(scene, sprite_name):
     return sprite
 
 def find_global_or_sprite_user_list_by_name(scene, sprite, list_name):
-    return scene.getDataContainer().getUserList(list_name, sprite)
+    return scene.getDataContainer().getUserList(sprite, list_name)
 
-def find_global_user_list_by_name(project, sprite, list_name):
-    user_lists = project.getDefaultScene().getDataContainer().getProjectLists()
-    for user_list in user_lists:
-        if user_list.getName() == list_name:
-            return user_list
-    return None
+def find_global_user_list_by_name(project, list_name):
+    return project.getDefaultScene().getDataContainer().findProjectList(list_name)
 
 def find_sprite_user_list_by_name(project, sprite, list_name):
     user_lists = project.getDefaultScene().getDataContainer().getSpriteListOfLists(sprite)
@@ -126,7 +122,7 @@ def user_variable_of(project, variable_name, sprite_name=None):
         return data_container.findUserVariable(variable_name, data_container.projectVariables)
     else:
         sprite = _sprite_of(project.getDefaultScene(), sprite_name)
-        return data_container.getUserVariable(variable_name, sprite)
+        return data_container.getUserVariable(sprite, variable_name)
 
 def create_formula_with_value(variable_value):
     assert variable_value != None

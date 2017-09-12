@@ -1460,20 +1460,47 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
     @_register_handler(_block_name_to_handler_map, "startScene")
     def _convert_scene_block(self):
-        [look_name] = self.arguments
-
-        #TODO: If SetBackgroundBrick gets Formula as accepted argument for Constructor,
-        #      then extend this register_handler accordingly.
-
-        if look_name == "next backdrop":
-            return catbricks.NextLookBrick()
-        if look_name == "previous backdrop":
-            return catbricks.PreviousLookBrick()
+        [argument] = self.arguments
 
         background_sprite = catrobat.background_sprite_of(self.scene)
         if not background_sprite:
             assert catrobat.is_background_sprite(self.sprite)
             background_sprite = self.sprite
+
+        if isinstance(argument, (catformula.FormulaElement, int, float)):
+            value = argument if not isinstance(argument, float) else int(argument)
+            #=========================================================================
+            # wrap around overflow correction term:
+            #=========================================================================
+            # 1st step: compute (value - 1) -> result may be out of bounds!
+            index_formula_elem = self._converted_helper_brick_or_formula_element([value, 1], "-")
+            # 2nd step: consider overflow, i.e. ((value - 1) % number_of_looks)
+            #           -> now, the result cannot be out of bounds any more!
+            number_of_looks = len(background_sprite.getLookDataList())
+            assert number_of_looks > 0
+            index_formula_elem = self._converted_helper_brick_or_formula_element([index_formula_elem, number_of_looks], "%")
+            # 3rd step: determine look number, i.e. (((value - 1) % number_of_looks) + 1)
+            index_formula_elem = self._converted_helper_brick_or_formula_element([index_formula_elem, 1], "+")
+            index_formula_elem = index_formula_elem if number_of_looks != 1 else 1
+            set_background_by_index_brick = catbricks.SetBackgroundByIndexBrick()
+            set_background_by_index_brick.initializeBrickFields(catrobat.create_formula_with_value(index_formula_elem))
+            return set_background_by_index_brick
+
+        look_name = argument
+        if look_name in {"next backdrop", "previous backdrop"}:
+            index_formula_elem = self._converted_helper_brick_or_formula_element(None, "backgroundIndex")
+            if look_name == "next backdrop":
+                if catrobat.is_background_sprite(self.sprite):
+                    return catbricks.NextLookBrick()
+                index_formula_elem = self._converted_helper_brick_or_formula_element([index_formula_elem, 1], "+")
+            else:
+                if catrobat.is_background_sprite(self.sprite):
+                    return catbricks.PreviousLookBrick()
+                index_formula_elem = self._converted_helper_brick_or_formula_element([index_formula_elem, 1], "-")
+            set_background_by_index_brick = catbricks.SetBackgroundByIndexBrick()
+            set_background_by_index_brick.initializeBrickFields(catrobat.create_formula_with_value(index_formula_elem))
+            return set_background_by_index_brick
+
         matching_looks = [_ for _ in background_sprite.getLookDataList() if _.getLookName() == look_name]
         if not matching_looks:
             raise ConversionError("Background does not contain look with name: {}".format(look_name))
@@ -1481,33 +1508,46 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
         switch_background_brick = self.CatrobatClass()
         switch_background_brick.setLook(matching_looks[0])
-
         return switch_background_brick
 
     @_register_handler(_block_name_to_handler_map, "startSceneAndWait")
     def _convert_scene_and_wait_block(self):
-        [look_name] = self.arguments
+        [argument] = self.arguments
+        assert catrobat.is_background_sprite(self.sprite), 'The ["startSceneAndWait"] block can only be used ' \
+                                                           'within the stage/background object!'
 
-        #TODO: If SetBackgroundBrick gets Formula as accepted argument for Constructor,
-        #      then extend this register_handler accordingly.
+        if isinstance(argument, (catformula.FormulaElement, int, float)):
+            value = argument if not isinstance(argument, float) else int(argument)
+            #=========================================================================
+            # wrap around overflow correction term:
+            #=========================================================================
+            # 1st step: compute (value - 1) -> result may be out of bounds!
+            index_formula_elem = self._converted_helper_brick_or_formula_element([value, 1], "-")
+            # 2nd step: consider overflow, i.e. ((value - 1) % number_of_looks)
+            #           -> now, the result cannot be out of bounds any more!
+            number_of_looks = len(self.sprite.getLookDataList())
+            assert number_of_looks > 0
+            index_formula_elem = self._converted_helper_brick_or_formula_element([value, number_of_looks], "%")
+            # 3rd step: determine look number, i.e. (((value - 1) % number_of_looks) + 1)
+            index_formula_elem = self._converted_helper_brick_or_formula_element([index_formula_elem, 1], "+")
+            index_formula_elem = index_formula_elem if number_of_looks != 1 else 1
+            set_background_by_index_and_wait_brick = catbricks.SetBackgroundByIndexAndWaitBrick()
+            set_background_by_index_and_wait_brick.initializeBrickFields(catrobat.create_formula_with_value(index_formula_elem))
+            return set_background_by_index_and_wait_brick
 
+        look_name = argument
         if look_name == "next backdrop":
             return catbricks.NextLookBrick()
         if look_name == "previous backdrop":
             return catbricks.PreviousLookBrick()
 
-        background_sprite = catrobat.background_sprite_of(self.scene)
-        if not background_sprite:
-            assert catrobat.is_background_sprite(self.sprite)
-            background_sprite = self.sprite
-        matching_looks = [_ for _ in background_sprite.getLookDataList() if _.getLookName() == look_name]
+        matching_looks = [_ for _ in self.sprite.getLookDataList() if _.getLookName() == look_name]
         if not matching_looks:
             raise ConversionError("Background does not contain look with name: {}".format(look_name))
         assert len(matching_looks) == 1
 
         switch_background_brick = self.CatrobatClass()
         switch_background_brick.setLook(matching_looks[0])
-
         return switch_background_brick
 
     @_register_handler(_block_name_to_handler_map, "doIf")
@@ -1533,15 +1573,34 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "lookLike:")
     def _convert_look_block(self):
         set_look_brick = self.CatrobatClass()
-        [look_name] = self.arguments
+        [argument] = self.arguments
+
+        if isinstance(argument, (catformula.FormulaElement, int, float)):
+            value = argument if not isinstance(argument, float) else int(argument)
+            #=========================================================================
+            # wrap around overflow correction term:
+            #=========================================================================
+            # 1st step: compute (value - 1) -> result may be out of bounds!
+            index_formula_elem = self._converted_helper_brick_or_formula_element([value, 1], "-")
+            # 2nd step: consider overflow, i.e. ((value - 1) % number_of_looks)
+            #           -> now, the result cannot be out of bounds any more!
+            number_of_looks = len(self.sprite.getLookDataList())
+            assert number_of_looks > 0
+            index_formula_elem = self._converted_helper_brick_or_formula_element([index_formula_elem, number_of_looks], "%")
+            # 3rd step: determine look number, i.e. (((value - 1) % number_of_looks) + 1)
+            index_formula_elem = self._converted_helper_brick_or_formula_element([index_formula_elem, 1], "+")
+            index_formula_elem = index_formula_elem if number_of_looks != 1 else 1
+            return catbricks.SetLookByIndexBrick(catrobat.create_formula_with_value(index_formula_elem))
+
+        look_name = argument
         assert isinstance(look_name, (str, unicode)), type(look_name)
         look = next((look for look in self.sprite.getLookDataList() if look.getLookName() == look_name), None)
         if look is None:
             log.error("Look name: '%s' not found in sprite '%s'. Available looks: %s", look_name, self.sprite.getName(), ", ".join([look.getLookName() for look in self.sprite.getLookDataList()]))
             return []
-        else:
-            set_look_brick.setLook(look)
-            return [set_look_brick]
+
+        set_look_brick.setLook(look)
+        return set_look_brick
 
     @_register_handler(_block_name_to_handler_map, "showVariable:")
     def _convert_show_variable_block(self):

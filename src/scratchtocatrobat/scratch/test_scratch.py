@@ -474,8 +474,8 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
         raw_project = scratch.RawProject(cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE)
         expected_background_object_script_data = [0, 0, [['whenGreenFlag'],
             ['doForever', [
-                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.03],
-                ['wait:elapsed:from:', 0.03]
+                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, scratch.UPDATE_HELPER_VARIABLE_TIMEOUT],
+                ['wait:elapsed:from:', scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
             ]]
         ]]
         expected_first_object_script_data = [0, 0, [["whenGreenFlag"],
@@ -509,8 +509,8 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
         cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
         expected_background_object_script_data = [0, 0, [['whenGreenFlag'],
             ['doForever', [
-                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.03],
-                ['wait:elapsed:from:', 0.03]
+                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, scratch.UPDATE_HELPER_VARIABLE_TIMEOUT],
+                ['wait:elapsed:from:', scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
             ]]
         ]]
         expected_first_object_script_data = [0, 0, [["whenGreenFlag"],
@@ -546,8 +546,8 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
         cls = self.__class__
         expected_background_object_scripts_data = [[0, 0, [['whenGreenFlag'],
             ['doForever', [
-                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.03],
-                ['wait:elapsed:from:', 0.03]
+                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, scratch.UPDATE_HELPER_VARIABLE_TIMEOUT],
+                ['wait:elapsed:from:', scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
             ]]]
         ], [0, 0, [['whenIReceive', scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE],
             ['setVar:to:', scratch.S2CC_TIMER_VARIABLE_NAME, 0]
@@ -589,8 +589,8 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
         cls = self.__class__
         expected_background_object_scripts_data = [[0, 0, [['whenGreenFlag'],
             ['doForever', [
-                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.03],
-                ['wait:elapsed:from:', 0.03]
+                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, scratch.UPDATE_HELPER_VARIABLE_TIMEOUT],
+                ['wait:elapsed:from:', scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
             ]]]
         ], [0, 0, [['whenIReceive', scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE],
             ['setVar:to:', scratch.S2CC_TIMER_VARIABLE_NAME, 0]
@@ -633,8 +633,8 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
         cls = self.__class__
         expected_background_object_scripts_data = [[0, 0, [['whenGreenFlag'],
             ['doForever', [
-                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.03],
-                ['wait:elapsed:from:', 0.03]
+                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, scratch.UPDATE_HELPER_VARIABLE_TIMEOUT],
+                ['wait:elapsed:from:', scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
             ]]]
         ], [0, 0, [['whenIReceive', scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE],
             ['setVar:to:', scratch.S2CC_TIMER_VARIABLE_NAME, 0]
@@ -684,8 +684,8 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
             ["doBroadcastAndWait", scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE]
         ]], [0, 0, [['whenGreenFlag'],
             ['doForever', [
-                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.03],
-                ['wait:elapsed:from:', 0.03]
+                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, scratch.UPDATE_HELPER_VARIABLE_TIMEOUT],
+                ['wait:elapsed:from:', scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
             ]]]
         ], [0, 0, [['whenIReceive', scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE],
             ['setVar:to:', scratch.S2CC_TIMER_VARIABLE_NAME, 0]
@@ -772,7 +772,7 @@ class TestDistanceBlockWorkaround(unittest.TestCase):
             ["doForever", [
               ["setVar:to:", position_x_var_name, ["xpos"]],
               ["setVar:to:", position_y_var_name, ["ypos"]],
-              ["wait:elapsed:from:", 0.03]
+              ["wait:elapsed:from:", scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
             ]]
         ]]
 
@@ -835,7 +835,7 @@ class TestDistanceBlockWorkaround(unittest.TestCase):
             ["doForever", [
               ["setVar:to:", position_x_var_name, ["xpos"]],
               ["setVar:to:", position_y_var_name, ["ypos"]],
-              ["wait:elapsed:from:", 0.03]
+              ["wait:elapsed:from:", scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
             ]]
         ]]
 
@@ -888,7 +888,7 @@ class TestDistanceBlockWorkaround(unittest.TestCase):
             ["doForever", [
               ["setVar:to:", position_x_var_name, ["xpos"]],
               ["setVar:to:", position_y_var_name, ["ypos"]],
-              ["wait:elapsed:from:", 0.03]
+              ["wait:elapsed:from:", scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
             ]]
         ]]
 
@@ -947,7 +947,7 @@ class TestDistanceBlockWorkaround(unittest.TestCase):
             ["doForever", [
               ["setVar:to:", position_x_var_name1, ["xpos"]],
               ["setVar:to:", position_y_var_name1, ["ypos"]],
-              ["wait:elapsed:from:", 0.03]
+              ["wait:elapsed:from:", scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
             ]]
         ]]
         expected_second_object_scripts_data = [[0, 0, [["whenGreenFlag"], ['forward:',
@@ -964,7 +964,7 @@ class TestDistanceBlockWorkaround(unittest.TestCase):
             ["doForever", [
               ["setVar:to:", position_x_var_name2, ["xpos"]],
               ["setVar:to:", position_y_var_name2, ["ypos"]],
-              ["wait:elapsed:from:", 0.03]
+              ["wait:elapsed:from:", scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
             ]]
         ]]]
 
@@ -1045,7 +1045,7 @@ class TestShowSensorBlockWorkarounds(unittest.TestCase):
             expected_first_object_script_data = [0, 0, [['whenGreenFlag'],
                 ['doForever', [
                     ["setVar:to:", variable_name, [command_name]],
-                    ["wait:elapsed:from:", 0.25]
+                    ["wait:elapsed:from:", scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
                 ]]
             ]]
 
@@ -1084,7 +1084,7 @@ class TestShowSensorBlockWorkarounds(unittest.TestCase):
             expected_first_object_script_data = [0, 0, [['whenGreenFlag'],
                 ['doForever', [
                     ["setVar:to:", variable_name, [command_name, param]],
-                    ["wait:elapsed:from:", 0.25]
+                    ["wait:elapsed:from:", scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
                 ]]
             ]]
 
@@ -1123,7 +1123,7 @@ class TestShowSensorBlockWorkarounds(unittest.TestCase):
             expected_stage_object_script_data = [0, 0, [['whenGreenFlag'],
                 ['doForever', [
                     ["setVar:to:", variable_name, [command_name]],
-                    ["wait:elapsed:from:", 0.25]
+                    ["wait:elapsed:from:", scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
                 ]]
             ]]
 
@@ -1162,7 +1162,7 @@ class TestShowSensorBlockWorkarounds(unittest.TestCase):
             expected_stage_object_script_data = [0, 0, [['whenGreenFlag'],
                 ['doForever', [
                     ["setVar:to:", variable_name, [command_name, param]],
-                    ["wait:elapsed:from:", 0.25]
+                    ["wait:elapsed:from:", scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
                 ]]
             ]]
 
@@ -1294,6 +1294,10 @@ class TestGetAttributeBlockWorkarounds(unittest.TestCase):
         helper_variable_name = scratch.S2CC_GETATTRIBUTE_PREFIX + "{}_readVariable:{}".format(sprite_name_of_other_object, variable_name)
         first_script_data[2][2][2] = ["readVariable", helper_variable_name]
         expected_first_object_first_script_data = first_script_data
+        expected_second_object_first_script_data = [0, 0, [["whenGreenFlag"], ["doForever", [
+            ["setVar:to:", helper_variable_name, ["readVariable", variable_name]],
+            ["wait:elapsed:from:", scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
+        ]]]]
 
         # validate
         assert len(raw_project.objects) == 3
@@ -1302,8 +1306,12 @@ class TestGetAttributeBlockWorkarounds(unittest.TestCase):
         # scripts of sprite objects
         assert len(background_object.scripts) == 0
         assert len(first_object.scripts) == 1
+        assert len(second_object.scripts) == 1
         script = first_object.scripts[0]
         expected_script = scratch.Script(expected_first_object_first_script_data)
+        assert script == expected_script
+        script = second_object.scripts[0]
+        expected_script = scratch.Script(expected_second_object_first_script_data)
         assert script == expected_script
 
         # sprite variables
@@ -1374,10 +1382,9 @@ class TestGetAttributeBlockWorkarounds(unittest.TestCase):
 
     def test_should_convert_attribute_with_formula_block_to_zero_placeholder(self):
         cls = self.__class__
-        sprite_name = "Sprite1"
         first_script_data = [0, 0, [["whenGreenFlag"],
             ["wait:elapsed:from:", 2],
-            ["setVar:to:", "result", ["getAttribute:of:", ["+", 1, 2], sprite_name]]
+            ["setVar:to:", "result", ["getAttribute:of:", "x position", ["+", 1, 2]]]
         ]]
         self.root_info["children"][0]["scripts"] = [first_script_data]
         raw_project = scratch.RawProject(self.root_info)
@@ -1413,7 +1420,7 @@ class TestGetAttributeBlockWorkarounds(unittest.TestCase):
             expected_background_object_first_script_data = [0, 0, [['whenGreenFlag'],
                 ['doForever', [
                     ["setVar:to:", variable_name, [sensor_name]],
-                    ["wait:elapsed:from:", 0.03]
+                    ["wait:elapsed:from:", scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
                 ]]
             ]]
             first_script_data[2][2][2] = ["readVariable", variable_name]
@@ -1459,7 +1466,7 @@ class TestGetAttributeBlockWorkarounds(unittest.TestCase):
             expected_background_object_first_script_data = [0, 0, [['whenGreenFlag'],
                 ['doForever', [
                     ["setVar:to:", variable_name, [sensor_name]],
-                    ["wait:elapsed:from:", 0.03]
+                    ["wait:elapsed:from:", scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
                 ]]
             ]]
             first_script_data[2][2][2][0][2][0][2][0][1][0][2] = ["readVariable", variable_name]

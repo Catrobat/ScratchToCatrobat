@@ -300,16 +300,17 @@ class TestConvertBlocks(common_testing.BaseTestCase):
                     "scripts": [[72, 132, [["whenSensorGreaterThan", "timer", ["+", 2, 1]], ["say:", "Hello!"]]]],
                     "currentCostumeIndex": 0,
                     "indexInLibrary": 1,
-                    "spriteInfo": {}}],
-                "info": {}
+                    "spriteInfo": {}
+            }],
+            "info": {}
         }
 
         raw_project = scratch.RawProject(raw_json)
         workaround_info = raw_project.objects[1].preprocess_object([raw_project.objects[0].name, raw_project.objects[1].name])
         assert workaround_info['add_timer_script_key'] == True
         timer_background_workaround = [['whenGreenFlag'], ['doForever', \
-                                                           [['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.03],
-                                                           ['wait:elapsed:from:', 0.03]]]]
+                                           [['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, scratch.UPDATE_HELPER_VARIABLE_TIMEOUT],
+                                           ['wait:elapsed:from:', scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]]]]
         assert raw_project.objects[0].scripts[0].raw_script == timer_background_workaround
 
         catr_script = self.block_converter._catrobat_script_from(raw_project.objects[1].scripts[0], DUMMY_CATR_SPRITE, self.test_project)

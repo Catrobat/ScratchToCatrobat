@@ -76,6 +76,7 @@ ADD_TIMER_SCRIPT_KEY = "add_timer_script_key"
 ADD_TIMER_RESET_SCRIPT_KEY = "add_timer_reset_script_key"
 ADD_POSITION_SCRIPT_TO_OBJECTS_KEY = "add_position_script_to_objects_key"
 ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY = "add_update_attribute_script_to_objects_key"
+UPDATE_HELPER_VARIABLE_TIMEOUT = 0.04
 
 
 def verify_resources_of_scratch_object(scratch_object, md5_to_resource_path_map, project_base_path):
@@ -218,7 +219,7 @@ class Object(common.DictAccessWrapper):
 
                 if block[0] == 'getAttribute:of:':
                     attribute_name, sprite_name = block[1:3]
-                    if not isinstance(attribute_name, basestring):
+                    if not isinstance(sprite_name, basestring):
                         new_block_list += [0]
                         continue
 
@@ -360,7 +361,7 @@ class RawProject(Object):
             ["doForever", [
               ["setVar:to:", position_x_var_name, ["xpos"]],
               ["setVar:to:", position_y_var_name, ["ypos"]],
-              ["wait:elapsed:from:", 0.03]
+              ["wait:elapsed:from:", UPDATE_HELPER_VARIABLE_TIMEOUT]
             ]]
         ]
         sprite_object.scripts += [Script([0, 0, [[SCRIPT_GREEN_FLAG]] + script_blocks])]
@@ -377,10 +378,10 @@ class RawProject(Object):
                 "isPersistent": False
             })
             # update variable
-            value = sensor_name if not sensor_name.startswith("readVariable:") else sensor_name.split("readVariable:")[1]
-            forever_loop_body_blocks += [["setVar:to:", variable_name, [value]]]
+            value = [sensor_name] if not sensor_name.startswith("readVariable:") else ["readVariable", sensor_name.split("readVariable:")[1]]
+            forever_loop_body_blocks += [["setVar:to:", variable_name, value]]
 
-        forever_loop_body_blocks += [["wait:elapsed:from:", 0.03]]
+        forever_loop_body_blocks += [["wait:elapsed:from:", UPDATE_HELPER_VARIABLE_TIMEOUT]]
         sprite_object.scripts += [Script([0, 0, [[SCRIPT_GREEN_FLAG], ["doForever", forever_loop_body_blocks]]])]
 
     def _add_timer_script_to_stage_object(self):
@@ -394,8 +395,8 @@ class RawProject(Object):
         # timer counter script
         script_blocks = [
             ["doForever", [
-              ["changeVar:by:", S2CC_TIMER_VARIABLE_NAME, 0.03],
-              ["wait:elapsed:from:", 0.03]
+              ["changeVar:by:", S2CC_TIMER_VARIABLE_NAME, UPDATE_HELPER_VARIABLE_TIMEOUT],
+              ["wait:elapsed:from:", UPDATE_HELPER_VARIABLE_TIMEOUT]
             ]]
         ]
         self.objects[0].scripts += [Script([0, 0, [[SCRIPT_GREEN_FLAG]] + script_blocks])]
@@ -437,7 +438,7 @@ class RawProject(Object):
             forever_loop_body_blocks += [["setVar:to:", variable_name, reporter_block]]
 
         if len(forever_loop_body_blocks) == 0: return
-        forever_loop_body_blocks += [["wait:elapsed:from:", 0.25]]
+        forever_loop_body_blocks += [["wait:elapsed:from:", UPDATE_HELPER_VARIABLE_TIMEOUT]]
         script_blocks = [["doForever", forever_loop_body_blocks]]
         sprite_object.scripts += [Script([0, 0, [[SCRIPT_GREEN_FLAG]] + script_blocks])]
 

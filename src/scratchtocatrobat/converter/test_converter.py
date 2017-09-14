@@ -1287,7 +1287,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         variable_name = "test_var"
         project = self.block_converter._catrobat_project
         catrobat.add_user_variable(project, variable_name, DUMMY_CATR_SPRITE, DUMMY_CATR_SPRITE.getName())
-        user_variable = project.getDefaultScene().getDataContainer().getUserVariable(variable_name, DUMMY_CATR_SPRITE)
+        user_variable = project.getDefaultScene().getDataContainer().getUserVariable(DUMMY_CATR_SPRITE, variable_name)
         assert user_variable is not None
         assert user_variable.getName() == variable_name
 
@@ -1305,7 +1305,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         variable_name = "test_var"
         project = self.block_converter._catrobat_project
         catrobat.add_user_variable(project, variable_name, DUMMY_CATR_SPRITE, DUMMY_CATR_SPRITE.getName())
-        user_variable = project.getDefaultScene().getDataContainer().getUserVariable(variable_name, DUMMY_CATR_SPRITE)
+        user_variable = project.getDefaultScene().getDataContainer().getUserVariable(DUMMY_CATR_SPRITE, variable_name)
         assert user_variable is not None
         assert user_variable.getName() == variable_name
 
@@ -1813,8 +1813,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
         project = self.block_converter._catrobat_project
         data_container = project.getDefaultScene().getDataContainer()
-        assert user_variable == data_container.getUserVariable(converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME,
-                                                               DUMMY_CATR_SPRITE)
+        assert user_variable == data_container.findProjectVariable(converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME)
 
     # doAsk (with question as formula)
     def test_can_convert_do_ask_with_question_as_formula_block(self):
@@ -1852,8 +1851,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
         project = self.block_converter._catrobat_project
         data_container = project.getDefaultScene().getDataContainer()
-        assert user_variable == data_container.getUserVariable(converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME,
-                                                               DUMMY_CATR_SPRITE)
+        assert user_variable == data_container.findProjectVariable(converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME)
 
     # answer
     def test_can_convert_answer_block(self):
@@ -1869,7 +1867,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
         project = self.block_converter._catrobat_project
         data_container = project.getDefaultScene().getDataContainer()
-        user_variable = data_container.getUserVariable(converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME, DUMMY_CATR_SPRITE)
+        user_variable = data_container.findProjectVariable(converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME)
         assert user_variable is not None
         assert converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME == user_variable.getName()
 

@@ -1,6 +1,6 @@
 Licenses of the Catrobat system
 
-The following licenses, terms, and conditions apply to your use of the Catrobat system:
+The following licenses, terms, and conditions apply to your use of the Catrobat system: 
 Version 3.5, 28 January 2015
 All source code of software constituting the Catrobat system, e.g., the integrated development environments (with all associated parts such as tutorial programs) and the interpreters and compilers for the Catrobat programming language, the image editing programs, the source code of software we wrote to run the Catrobat websites and other Internet resources, and all our own source code related to the Catrobat system, are free software: you can redistribute them and/or modify them under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version when it becomes available.
 
@@ -18,12 +18,12 @@ Catrobat additionally contains third party code and resources as follows:
 
 libGDX: <http://libgdx.badlogicgames.com>
 License information: Apache 2 License <https://raw.github.com/libgdx/libgdx/master/gdx/LICENSE>
-Copyright Â© 2011-2012 See <https://github.com/libgdx/libgdx/tree/master/gdx>
+Copyright © 2011-2012 See <https://github.com/libgdx/libgdx/tree/master/gdx>
 
 XStream: <http://xstream.codehaus.org>
 License information: <http://xstream.codehaus.org/license.html>
-Copyright Â© 2003-2006, Joe Walnes
-Copyright Â© 2006-2009, 2011 XStream Committers
+Copyright © 2003-2006, Joe Walnes
+Copyright © 2006-2009, 2011 XStream Committers
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -36,11 +36,11 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 Toolbar custom icons 1.0 facilities from Gentleface custom icon design: <http://gentleface.com/free_icon_set.html>
 License information: Creative Commons Attribution-NonCommercial 3.0: <https://creativecommons.org/licenses/by-nc-nd/3.0/>
-Copyright Â© 2006-2011 Gentleface.
+Copyright © 2006-2011 Gentleface.
 
 MINDdroid: <https://github.com/NXT/LEGO-MINDSTORMS-MINDdroid>
-Copyright Â© 2010/11 Guenther Hoelzl, Shawn Brown
-Copyright Â© 2010/11 LEGO System A/S, Aastvej 1, DK-7190 Billund, Denmark
+Copyright © 2010/11 Guenther Hoelzl, Shawn Brown
+Copyright © 2010/11 LEGO System A/S, Aastvej 1, DK-7190 Billund, Denmark
 MINDdroid is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 MINDdroid is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 See the GNU General Public License for more details <http://www.gnu.org/licenses/>
@@ -104,21 +104,21 @@ Check back here from time-to-time, because we are always trying to improve our l
 Please mail any suggestions regarding these licenses to webmaster@catrobat.org.
 
 
-Licenses of all used 3rd party libraries in ScratchToCatrobat
+Licenses of all used 3rd party libraries
 
 Libraries of our converter tool:
 Batik 1.7   Apache License Version 2.0
-jsoup       under MIT license, Copyright Â© 2009 - 2016 Jonathan Hedley (jonathan@hedley.net)
+jsoup       under MIT license, Copyright © 2009 - 2013 Jonathan Hedle(jonathan@hedley.net)
 xmlpull     Initial authors: Stefan Haustein and Aleksander Slominski
 xpp3_min    Copyright 2002 Extreme! Lab, Indiana University. All rights reserved.
 xstream     Copyright by the BSD license
 
-Web libraries:
-bootstrap   released under the MIT license and copyright 2017 Twitter
-jquery      released under the MIT license
-qrcode      released under the MIT license
+Web libraries:	
+bootstrap   Copyright by the MIT license
+jquery      Copyright by the MIT license
+qrcode      Copyright by the MIT license
 
-Libraries used in Sourcecode filter:
+Libraries used in Sourcecode filter:	
 Guava       Apache License Version 2.0
 SnakeYAML   Licensed by APL 2.0.
 Commons-io  Apache License Version 2.0

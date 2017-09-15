@@ -1645,20 +1645,24 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def test_can_convert_startscene_next_backdrop_block(self):
         scratch_block = ["startScene", "next backdrop"]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        assert isinstance(catr_brick, catbricks.NextLookBrick)
+        print(type(catr_brick))
+        print(catr_brick)
+        assert isinstance(catr_brick, catbricks.SetBackgroundByIndexBrick)
+        # TODO: extend
 
     # startScene
     def test_can_convert_startscene_previous_backdrop_block(self):
         scratch_block = ["startScene", "previous backdrop"]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        assert isinstance(catr_brick, catbricks.PreviousLookBrick)
+        assert isinstance(catr_brick, catbricks.SetBackgroundByIndexBrick)
+        # TODO: extend
 
     # startSceneAndWait
     def test_can_convert_startscene_wait_block(self):
         scratch_script= scratch.Script([321, 89, [["whenSceneStarts", "look1"], ["startSceneAndWait", "look2"]]])
         self.test_project.getDefaultScene().spriteList.add(self.sprite_stub)
         catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
-        assert isinstance(catr_script.getBrickList()[0], catbricks.SetBackgroundBrick)
+        assert isinstance(catr_script.getBrickList()[0], catbricks.SetBackgroundAndWaitBrick)
         assert catr_script.getBrickList()[0].getLook().getLookName() == "look2"
         assert catr_script.getBrickList()[0].getLook() == self.sprite_stub.getLookDataList()[1]
         assert len(catr_script.getBrickList()) == 1

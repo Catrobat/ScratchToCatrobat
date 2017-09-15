@@ -1,5 +1,5 @@
 #  ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
-#  Copyright (C) 2013-2015 The Catrobat Team
+#  Copyright (C) 2013-2017 The Catrobat Team
 #  (http://developer.catrobat.org/credits)
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -219,7 +219,11 @@ def request_project_page_as_Jsoup_document_for(project_id, retry_after_http_stat
             _cached_jsoup_documents[project_id] = document
         return document
     except HttpStatusException as e:
-        raise e
+        if e.getStatusCode() == 404:
+            _log.error("HTTP 404 - Not found! Project not available.")
+            return None
+        else:
+            raise e
     except:
         _log.error("Retry limit exceeded or an unexpected error occurred: {}".format(sys.exc_info()[0]))
         return None
@@ -228,8 +232,7 @@ def request_project_page_as_Jsoup_document_for(project_id, retry_after_http_stat
 def request_is_project_available(project_id):
     from org.jsoup import HttpStatusException
     try:
-        request_project_page_as_Jsoup_document_for(project_id, False)
-        return True
+        return request_project_page_as_Jsoup_document_for(project_id, False) is not None
     except HttpStatusException as e:
         if e.getStatusCode() == 404:
             _log.error("HTTP 404 - Not found! Project not available.")
@@ -289,8 +292,8 @@ def request_project_remixes_for(project_id):
 def request_project_details_for(project_id):
     return extract_project_details_from_document(request_project_page_as_Jsoup_document_for(project_id), project_id)
 
-def request_project_visibility_state_for(project_id):
-    return extract_project_visibilty_state_from_document(request_project_page_as_Jsoup_document_for(project_id))
+def request_project_visibility_state_for(project_id, retry_after_http_status_exception=True):
+    return extract_project_visibilty_state_from_document(request_project_page_as_Jsoup_document_for(project_id, retry_after_http_status_exception))
 
 
 def extract_project_title_from_document(document):
@@ -349,6 +352,7 @@ def extract_project_remixes_from_data(tree_data, project_id):
     return remixed_program_info
 
 def extract_project_visibilty_state_from_document(document):
+    if document is None: return ScratchProjectVisibiltyState.PRIVATE
     extracted_text = document.select_first_as_text("div#share-bar > span")
     if extracted_text == "Sorry this project is not shared":
         return ScratchProjectVisibiltyState.PRIVATE

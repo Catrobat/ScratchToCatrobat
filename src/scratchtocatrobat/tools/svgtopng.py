@@ -1,5 +1,5 @@
 #  ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
-#  Copyright (C) 2013-2017 The Catrobat Team
+#  Copyright (C) 2013-2015 The Catrobat Team
 #  (http://developer.catrobat.org/credits)
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -36,8 +36,6 @@ from java.io import PrintWriter
 from java.util import StringTokenizer
 from javax.swing import ImageIcon
 import java.awt.Color
-import xml.etree.cElementTree as ET
-
 
 _BATIK_CLI_JAR = "batik-rasterizer.jar"
 _log = logging.getLogger(__name__)
@@ -321,46 +319,46 @@ def _create_buffered_image(image):
 
 
 def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
-    tree = ET.parse(svg_input_path)
-    root = tree.getroot()
+    write_str = ""
+    file_reader = FileReader(svg_input_path)
+    buffered_reader = BufferedReader(file_reader)
+    read_line = ""
 
-    #exception is thrown if height or width is less or equal zero
-    if 'height' in root.attrib and int((root.attrib['height']).replace('px', '')) <= 0:
-        root.attrib['height'] = '1'
-    if 'width' in root.attrib and int((root.attrib['width']).replace('px', '')) <= 0:
-        root.attrib['width'] = '1'
+    check = False
+    while True:
+        read_line = buffered_reader.readLine()
 
-    if 'viewBox' not in root.attrib:
-        for child in root:
-            if re.search('.*}g', child.tag) != None:
-                if 'transform' in child.attrib:
-                    matrix_transform_attrib = child.attrib['transform']
-                    matrix_transform_attrib = re.sub(r"matrix\((\s?-?[0-9]+(\.[0-9]*)?,){4}", "matrix(1, 0, 0, 1,", matrix_transform_attrib)
-                    child.attrib['transform'] = matrix_transform_attrib
-                break
-    if 'viewBox' in root.attrib:
-        del root.attrib['viewBox']
+        if read_line is None:
+            break
+        if "viewBox" in read_line:
+            view_box_content = _get_viewbox_content(read_line)
+            view_box_values = _get_viewbox_values(view_box_content)
+            if view_box_values[0] != 0:
+                view_box_values[2] = abs(view_box_values[2]) + abs(view_box_values[0])
+                view_box_values[0] = 0
+            if view_box_values[1] != 0:
+                view_box_values[3] = abs(view_box_values[3]) + abs(view_box_values[1])
+                view_box_values[1] = 0
 
-    for child in root:
-        if re.search('.*}text', child.tag) != None:
-            child.attrib['x'] = '3'
-            child.attrib['y'] = '22'
+            read_line = re.sub(r"viewBox=\"[\-|0-9| ]+\"", "", read_line, 1)
+            read_line = re.sub(r"width=\"[0-9]+\"", "width=\""+ str(view_box_values[2]) + "\"",
+                               read_line, 1)
+            read_line = re.sub(r"height=\"[0-9]+\"", "height=\""+ str(view_box_values[3]) + "\"",
+                               read_line, 1)
+            check = True
 
-            list_of_text_parts = (child.text).split('\n')
-            child.text = (child.text).replace(child.text, '')
-            namespace_tag = (child.tag).replace('text', '')
-            dy_value = 0
-            if 'font-size' in child.attrib:
-                dy_font_size = int(child.attrib['font-size'])
-            else:
-                dy_font_size = 12 # default value
-            for text_part in list_of_text_parts:
-                ET.SubElement(child, namespace_tag + 'tspan', x = '0', dy = str(dy_value))
-                dy_value = dy_value + dy_font_size
-            tspan_list = child.findall(namespace_tag + 'tspan')
-            for index, tspan_element in enumerate(tspan_list):
-                tspan_element.text = list_of_text_parts[index]
-    tree.write(svg_output_path)
+        if "g id=\"ID" in read_line and not check:
+            if "transform=" in read_line:
+                _log.info(read_line)
+                read_line = read_line[0:read_line.find("transform")] + ">"
+                check = True
+        write_str += read_line + "\n"
+
+    buffered_reader.close()
+    file_reader.close()
+    file_writer = PrintWriter(svg_output_path)
+    file_writer.print(write_str)
+    file_writer.close()
 
 
 def _get_viewbox_values(view_box_str):

@@ -1,12 +1,12 @@
 #==================================================================================================
 # Define and update parameters here
 #==================================================================================================
-catroid_version: v0.9.29
-xstream_class_name: BackwardCompatibleCatrobatLanguageXStream
+catroid_version: v0.9.27
+xstream_class_name: XStreamToSupportCatrobatLanguageVersion0992AndBefore
 archive_extension: "zip"
 #URL: "https://github.com/Catrobat/Catroid/archive/master.%{archive_extension}"
 #URL: "https://github.com/Catrobat/Catroid/archive/%{catroid_version}.%{archive_extension}"
-URL: "https://github.com/Catrobat/Catroid/archive/release-0.9.29.%{archive_extension}"
+URL: "https://github.com/Catrobat/Catroid/archive/release-0.9.27.%{archive_extension}"
 xstream_version: "1.4.7"
 xstream_lib_extension: "jar"
 xstream_download_URL: "http://repo.maven.apache.org/maven2/com/thoughtworks/xstream/xstream/%{xstream_version}/xstream-%{xstream_version}.%{xstream_lib_extension}"
@@ -23,8 +23,7 @@ relative_code_source_path: "catroid/src/main/java"
 remove_classes: [
     # legoNXT bricks
     LegoNXTSetting, LegoNxtMotorMoveBrick, LegoNxtMotorStopBrick,
-    LegoNxtMotorTurnAngleBrick, LegoNxtPlayToneBrick, LegoEv3MotorMoveBrick, 
-    LegoEv3MotorStopBrick, LegoEv3PlayToneBrick, LegoEv3SetLedBrick,
+    LegoNxtMotorTurnAngleBrick, LegoNxtPlayToneBrick,
 
     # Phiro bricks
     PhiroMotorMoveBackwardBrick,
@@ -42,7 +41,7 @@ remove_classes: [
     DroneTakeOffLandBrick, DroneTurnLeftBrick, DroneTurnRightBrick,
 
     # NFC bricks
-    WhenNfcBrick, WhenNfcScript, SetNfcTagBrick,
+    WhenNfcBrick, WhenNfcScript,
 
     # Raspi bricks
     RaspiPwmBrick, RaspiSendDigitalValueBrick, RaspiInterruptScript,
@@ -50,14 +49,11 @@ remove_classes: [
     # physics bricks
     CollisionScript, CollisionReceiverBrick, SetBounceBrick, SetFrictionBrick,
     SetGravityBrick, SetMassBrick, SetPhysicsObjectTypeBrick, SetVelocityBrick,
-    TurnLeftSpeedBrick, TurnRightSpeedBrick,
-
-    # Miscellaneous
-    WhenGamepadButtonBrick, WhenGamepadButtonScript
+    TurnLeftSpeedBrick, TurnRightSpeedBrick
 ]
 
 remove_method_invocations:
-    ["Log.*", "CrashReporter.*", "MessageContainer.*", "setBounds", "setOrigin", "setScale",
+    ["Log.*", "MessageContainer.*", "setBounds", "setOrigin", "setScale",
      "setRotation", "setTouchable", "addListeners", "createCatroidRoot",
      "Utils.updateScreenWidthAndHeight", "setDeviceData", "prepareBackpackGson",
      "context.getString"]
@@ -68,8 +64,6 @@ remove_method_invocations_with_parameter_mapping:
     org.catrobat.catroid.content.Scene:
         - background.look.setZIndex(0)
         - addSprite(background)
-    org.catrobat.catroid.content.Look:
-        - flipLookDataIfNeeded(mode)
     org.catrobat.catroid.io.StorageHandler:
         - xstream.alias("nfcTag",NfcTagData.class)
         - xstream.alias("script",WhenNfcScript.class)
@@ -116,14 +110,7 @@ remove_method_invocations_with_parameter_mapping:
         - xstream.alias("setting",LegoNXTSetting.class)
         - xstream.alias("nxtPort",LegoNXTSetting.NXTPort.class)
         - xstream.aliasAttribute(LegoNXTSetting.NXTPort.class,"number","number")
-        - xstream.alias("brick",SetNfcTagBrick.class)
-        - xstream.alias("brick",LegoEv3PlayToneBrick.class)
-        - xstream.alias("brick",LegoEv3MotorMoveBrick.class)
-        - xstream.alias("brick",LegoEv3MotorStopBrick.class)
-        - xstream.alias("brick",LegoEv3SetLedBrick.class)
-        - xstream.alias("script",WhenGamepadButtonScript.class)
-        - xstream.alias("brick",WhenGamepadButtonBrick.class)
-    org.catrobat.catroid.io.BackwardCompatibleCatrobatLanguageXStream:
+    org.catrobat.catroid.io.XStreamToSupportCatrobatLanguageVersion0991AndBefore:
         - brickInfo.addBrickFieldToMap("speed",BrickField.LEGO_NXT_SPEED)
         - brickInfoMap.put("legoNxtMotorMoveBrick",brickInfo)
         - brickInfoMap.put("legoNxtMotorStopBrick",brickInfo)
@@ -199,16 +186,13 @@ remove_method_invocations_with_parameter_mapping:
         - scriptInfoMap.put("raspiInterruptScript",RaspiInterruptScript.class.getSimpleName())
         - scriptInfoMap.put("whenNfcScript",WhenNfcScript.class.getSimpleName())
         - scriptInfoMap.put("collisionScript",CollisionScript.class.getSimpleName())
-        - brickInfoMap.put("setNfcTagBrick",brickInfo)
-        - brickInfoMap.put("whenGamepadButtonBrick",brickInfo)
-        - scriptInfoMap.put("whenGamepadButtonScript",WhenGamepadButtonScript.class.getSimpleName())
 
 remove_assignments_mapping:
     org.catrobat.catroid.formulaeditor.Formula:
         - internFormula=new InternFormula(formulaTree.getInternTokenList())
     org.catrobat.catroid.content.Project:
         - Sprite background=new Sprite(context.getString(R.string.background))
-    org.catrobat.catroid.io.BackwardCompatibleCatrobatLanguageXStream:
+    org.catrobat.catroid.io.XStreamToSupportCatrobatLanguageVersion0991AndBefore:
         - brickInfo=new BrickInfo(LegoNxtMotorMoveBrick.class.getSimpleName())
         - brickInfo=new BrickInfo(LegoNxtMotorStopBrick.class.getSimpleName())
         - brickInfo=new BrickInfo(LegoNxtMotorTurnAngleBrick.class.getSimpleName())
@@ -247,8 +231,6 @@ remove_assignments_mapping:
         - brickInfo=new BrickInfo(SetVelocityBrick.class.getSimpleName())
         - brickInfo=new BrickInfo(TurnLeftSpeedBrick.class.getSimpleName())
         - brickInfo=new BrickInfo(TurnRightSpeedBrick.class.getSimpleName())
-        - brickInfo=new BrickInfo(SetNfcTagBrick.class.getSimpleName())
-        - brickInfo=new BrickInfo(WhenGamepadButtonBrick.class.getSimpleName())
 
 remove_if_else_blocks_mapping:
     org.catrobat.catroid.io.StorageHandler:
@@ -269,7 +251,7 @@ remove_if_else_blocks_mapping:
 
 remove_variable_declarations_mapping:
     org.catrobat.catroid.content.Look:
-        - boolean isBackgroundLook = getZIndex() == Constants.Z_INDEX_BACKGROUND
+        - "boolean isBackgroundLook = getZIndex() == 0"
 
 remove_try_catch_blocks_mapping:
     org.catrobat.catroid.content.Project:
@@ -279,12 +261,11 @@ remove_try_catch_blocks_mapping:
 
 
 inject_inline_classes_to_existing_class:
-    org.catrobat.catroid.content.Scene:
+    org.catrobat.catroid.content.Project:
         - "public static class Context {}"
 
 additional_serialization_classes:
     - AllowedAfterDeadEndBrick
-    - BaseDataContainer
     - Brick
     - Constants
     - DeadEndBrick
@@ -307,7 +288,6 @@ additional_serialization_classes:
     - UserVariableBrick
     - IfThenLogicEndBrick
     - WhenTouchDownBrick
-    - AskSpeechBrick
 
 
 preserved_interfaces:
@@ -338,22 +318,10 @@ additional_helper_classes:
     - FileChecksumContainer
     - InterpretationException
     - XStreamMissingSerializableFieldException
-    - ProjectDataBehaviour
-    - SpriteDataBehaviour
-    - SpriteVariableBehaviour
-    - SpriteListBehaviour
-    - UserBrickVariableBehaviour
-    - ProjectVariableBehaviour
-    - ProjectListBehaviour
 
 class_to_preserved_fields_mapping:
     DataContainer:
         - project
-        - spriteVariableBehaviour
-        - spriteListBehaviour
-        - userBrickVariableBehaviour
-        - projectVariableBehaviour
-        - projectListBehaviour
     GoToBrick:
         - oldSelectedObject
     Scene:
@@ -372,8 +340,6 @@ class_to_preserved_fields_mapping:
         [look, isPaused, newUserBrickNext, isBackpackObject]
     SetLookBrick:
         - oldSelectedLook
-        - wait
-    SetLookByIndexBrick:
         - wait
     UserVariable:
         - value
@@ -512,25 +478,23 @@ class_to_preserved_methods_mapping:
         - setFormulaWithBrickField
         - getFormulas
     DataContainer:
-        - addUserBrickVariableToUserBrick
-        - addUserBrickVariableToUserBrickIfNotExists
+        - addUserBrickVariable
+        - addUserBrickUserVariableToUserBrick
         - addSpriteUserVariable
         - addSpriteUserVariableToSprite
-        - addSpriteVariableIfDoesNotExist
         - addProjectUserVariable
         - getOrCreateVariableListForUserBrick
         - getOrCreateVariableListForSprite
         - cleanVariableListForSprite
         - getUserVariable
         - getUserVariableContext
+        - findUserVariable
+        - getUserList
         - addSpriteUserList
         - addSpriteUserListToSprite
         - addProjectUserList
         - getOrCreateUserListListForSprite
-        - findProjectVariable
-        - findProjectList
-        - findSpriteUserVariable
-        - findSpriteUserList
+        - findUserList
         - getUserList
         - existSpriteList
         - getCurrentUserBrick
@@ -538,11 +502,6 @@ class_to_preserved_methods_mapping:
         - getProjectVariables
         - getProjectLists
         - removeSpriteVariableWithSameSpriteName
-        - setUserBrickVariables
-        - getSpriteListMap
-        - getSpriteVariableMap
-        - getCurrentSprite
-        - getUserBrickVariableMap
     AddItemToUserListBrick:
         - initializeBrickFields
     ChangeTransparencyByNBrick:
@@ -594,8 +553,6 @@ class_to_preserved_methods_mapping:
         - initializeBrickFields
     RepeatBrick:
         - initializeBrickFields
-    SetLookByIndexBrick:
-        - initializeBrickFields
     SetBrightnessBrick:
         - initializeBrickFields
     SetGhostEffectBrick:
@@ -628,8 +585,6 @@ class_to_preserved_methods_mapping:
         - initializeBrickField
     ChangeColorByNBrick:
         - initializeBrickFields
-    AskSpeechBrick:
-        - initializeBrickFields
     UserBrick:
         - getUserScriptDefinitionBrickElements
         - getUserBrickParameterByUserBrickElement
@@ -643,11 +598,9 @@ class_to_preserved_methods_mapping:
         - appendBrickToScript
         - getScriptSafe
         - getUserScript
-        - getName
     UserScriptDefinitionBrickElement:
         - getUserScriptDefinitionBrickElementList
         - isVariable
-        - setIsVariable
     ProjectManager:
         - getInstance
         - addSprite
@@ -680,20 +633,16 @@ remove_fields_mapping:
         - backPackedData
     Project:
         - UtilUi
-    FormulaBrick:
-        - backPackedListData
-        - backPackedVariableData
 
 remove_methods_mapping:
     GoToBrick:
         - setSpinnerSelection
     BrickBaseType:
         - setCommentedOut
-    BackwardCompatibleCatrobatLanguageXStream:
+    XStreamToSupportCatrobatLanguageVersion0991AndBefore:
         - updateCollisionReceiverBrickMessage
     Sprite:
         - cloneUserBricks
-        - cloneLook
     Script:
         - setIfBrickReferences
         - setIfThenBrickReferences
@@ -707,23 +656,12 @@ remove_methods_mapping:
     XmlHeader:
         - setTags
     Look:
-        [copyLookForSprite, createBrightnessContrastShader, checkImageChanged, setWhenParallelAction]
+        [cloneLook, copyLookForSprite, createBrightnessContrastShader, checkImageChanged, setWhenParallelAction]
     NXTSensor:
         [resetScaledValue, getSensorReadings, getUpdateInterval,
         updateLastSensorValue, getLastSensorValue]
     StorageHandler:
         - prepareBackpackGson
-    SpriteDataBehaviour:
-        - cloneForScene
-        - isClone
-        - removeCloneData
-    SpriteVariableBehaviour:
-        - cloneForScene
-        - isClone
-    SpriteListBehaviour:
-        - isClone
-    UserBrickVariableBehaviour:
-        - isClone
 
 remove_packages_mapping:
     - android

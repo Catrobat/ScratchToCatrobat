@@ -1,5 +1,5 @@
 #  ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
-#  Copyright (C) 2013-2017 The Catrobat Team
+#  Copyright (C) 2013-2016 The Catrobat Team
 #  (http://developer.catrobat.org/credits)
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -474,8 +474,8 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
         raw_project = scratch.RawProject(cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE)
         expected_background_object_script_data = [0, 0, [['whenGreenFlag'],
             ['doForever', [
-                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, scratch.UPDATE_HELPER_VARIABLE_TIMEOUT],
-                ['wait:elapsed:from:', scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
+                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.03],
+                ['wait:elapsed:from:', 0.03]
             ]]
         ]]
         expected_first_object_script_data = [0, 0, [["whenGreenFlag"],
@@ -509,8 +509,8 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
         cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
         expected_background_object_script_data = [0, 0, [['whenGreenFlag'],
             ['doForever', [
-                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, scratch.UPDATE_HELPER_VARIABLE_TIMEOUT],
-                ['wait:elapsed:from:', scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
+                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.03],
+                ['wait:elapsed:from:', 0.03]
             ]]
         ]]
         expected_first_object_script_data = [0, 0, [["whenGreenFlag"],
@@ -542,16 +542,8 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
         assert len(global_variables) == 1
         assert global_variables[0] == { "name": scratch.S2CC_TIMER_VARIABLE_NAME, "value": 0, "isPersistent": False }
 
-    def test_reset_timer_block_with_non_existant_timer_block_should_automatically_add_timer_script(self):
+    def test_reset_timer_block_with_non_existant_timer_block_should_be_ignored(self):
         cls = self.__class__
-        expected_background_object_scripts_data = [[0, 0, [['whenGreenFlag'],
-            ['doForever', [
-                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, scratch.UPDATE_HELPER_VARIABLE_TIMEOUT],
-                ['wait:elapsed:from:', scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
-            ]]]
-        ], [0, 0, [['whenIReceive', scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE],
-            ['setVar:to:', scratch.S2CC_TIMER_VARIABLE_NAME, 0]
-        ]]]
         script_data = [0, 0, [["whenGreenFlag"], ["timerReset"]]]
         cls.TIMER_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
         expected_first_object_script_data = [0, 0, [["whenGreenFlag"],
@@ -566,13 +558,7 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
         [background_object, first_object] = raw_project.objects
 
         # background object
-        assert len(background_object.scripts) == 2
-        script = background_object.scripts[0]
-        expected_script = scratch.Script(expected_background_object_scripts_data[0])
-        assert script == expected_script
-        script = background_object.scripts[1]
-        expected_script = scratch.Script(expected_background_object_scripts_data[1])
-        assert script == expected_script
+        assert len(background_object.scripts) == 0
 
         # first object
         assert len(first_object.scripts) == 1
@@ -582,15 +568,14 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
 
         # global variables
         global_variables = background_object._dict_object["variables"]
-        assert len(global_variables) == 1
-        assert global_variables[0] == { "name": scratch.S2CC_TIMER_VARIABLE_NAME, "value": 0, "isPersistent": False }
+        assert len(global_variables) == 0
 
     def test_reset_timer_block_with_existant_timer_block_in_same_object_must_NOT_be_ignored(self):
         cls = self.__class__
         expected_background_object_scripts_data = [[0, 0, [['whenGreenFlag'],
             ['doForever', [
-                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, scratch.UPDATE_HELPER_VARIABLE_TIMEOUT],
-                ['wait:elapsed:from:', scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
+                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.03],
+                ['wait:elapsed:from:', 0.03]
             ]]]
         ], [0, 0, [['whenIReceive', scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE],
             ['setVar:to:', scratch.S2CC_TIMER_VARIABLE_NAME, 0]
@@ -633,8 +618,8 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
         cls = self.__class__
         expected_background_object_scripts_data = [[0, 0, [['whenGreenFlag'],
             ['doForever', [
-                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, scratch.UPDATE_HELPER_VARIABLE_TIMEOUT],
-                ['wait:elapsed:from:', scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
+                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.03],
+                ['wait:elapsed:from:', 0.03]
             ]]]
         ], [0, 0, [['whenIReceive', scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE],
             ['setVar:to:', scratch.S2CC_TIMER_VARIABLE_NAME, 0]
@@ -684,8 +669,8 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
             ["doBroadcastAndWait", scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE]
         ]], [0, 0, [['whenGreenFlag'],
             ['doForever', [
-                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, scratch.UPDATE_HELPER_VARIABLE_TIMEOUT],
-                ['wait:elapsed:from:', scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
+                ['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, 0.03],
+                ['wait:elapsed:from:', 0.03]
             ]]]
         ], [0, 0, [['whenIReceive', scratch.S2CC_TIMER_RESET_BROADCAST_MESSAGE],
             ['setVar:to:', scratch.S2CC_TIMER_VARIABLE_NAME, 0]
@@ -772,7 +757,7 @@ class TestDistanceBlockWorkaround(unittest.TestCase):
             ["doForever", [
               ["setVar:to:", position_x_var_name, ["xpos"]],
               ["setVar:to:", position_y_var_name, ["ypos"]],
-              ["wait:elapsed:from:", scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
+              ["wait:elapsed:from:", 0.03]
             ]]
         ]]
 
@@ -835,7 +820,7 @@ class TestDistanceBlockWorkaround(unittest.TestCase):
             ["doForever", [
               ["setVar:to:", position_x_var_name, ["xpos"]],
               ["setVar:to:", position_y_var_name, ["ypos"]],
-              ["wait:elapsed:from:", scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
+              ["wait:elapsed:from:", 0.03]
             ]]
         ]]
 
@@ -888,7 +873,7 @@ class TestDistanceBlockWorkaround(unittest.TestCase):
             ["doForever", [
               ["setVar:to:", position_x_var_name, ["xpos"]],
               ["setVar:to:", position_y_var_name, ["ypos"]],
-              ["wait:elapsed:from:", scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
+              ["wait:elapsed:from:", 0.03]
             ]]
         ]]
 
@@ -947,7 +932,7 @@ class TestDistanceBlockWorkaround(unittest.TestCase):
             ["doForever", [
               ["setVar:to:", position_x_var_name1, ["xpos"]],
               ["setVar:to:", position_y_var_name1, ["ypos"]],
-              ["wait:elapsed:from:", scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
+              ["wait:elapsed:from:", 0.03]
             ]]
         ]]
         expected_second_object_scripts_data = [[0, 0, [["whenGreenFlag"], ['forward:',
@@ -964,7 +949,7 @@ class TestDistanceBlockWorkaround(unittest.TestCase):
             ["doForever", [
               ["setVar:to:", position_x_var_name2, ["xpos"]],
               ["setVar:to:", position_y_var_name2, ["ypos"]],
-              ["wait:elapsed:from:", scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
+              ["wait:elapsed:from:", 0.03]
             ]]
         ]]]
 
@@ -1000,498 +985,6 @@ class TestDistanceBlockWorkaround(unittest.TestCase):
         assert global_variables[1] == { "name": position_y_var_name2, "value": 0, "isPersistent": False }
         assert global_variables[2] == { "name": position_x_var_name1, "value": 0, "isPersistent": False }
         assert global_variables[3] == { "name": position_y_var_name1, "value": 0, "isPersistent": False }
-
-
-class TestShowSensorBlockWorkarounds(unittest.TestCase):
-    SENSOR_HELPER_OBJECTS_DATA_TEMPLATE = {
-        "objName": "Stage",
-        "sounds": [],
-        "costumes": [],
-        "currentCostumeIndex": 0,
-        "penLayerMD5": "5c81a336fab8be57adc039a8a2b33ca9.png",
-        "penLayerID": 0,
-        "tempoBPM": 60,
-        "videoAlpha": 0.5,
-        "children": [{ "objName": "Sprite1", "scripts": [] }],
-        "info": {}
-    }
-
-    def setUp(self):
-        unittest.TestCase.setUp(self)
-        cls = self.__class__
-        cls.SENSOR_HELPER_OBJECTS_DATA_TEMPLATE["scripts"] = []
-        self.original_child_objects = cls.SENSOR_HELPER_OBJECTS_DATA_TEMPLATE["children"][:]
-
-    def tearDown(self):
-        unittest.TestCase.tearDown(self)
-        cls = self.__class__
-        cls.SENSOR_HELPER_OBJECTS_DATA_TEMPLATE["children"] = self.original_child_objects[:]
-
-    def test_convert_show_sensor_without_parameter_block(self):
-        cls = self.__class__
-        sprite_name = "Sprite1"
-        original_child_objects = cls.SENSOR_HELPER_OBJECTS_DATA_TEMPLATE["children"]
-        for command_name in ["xpos", "ypos", "heading", "costumeIndex", "scale"]:
-            cls.SENSOR_HELPER_OBJECTS_DATA_TEMPLATE["children"] = original_child_objects[:]
-            cls.SENSOR_HELPER_OBJECTS_DATA_TEMPLATE["children"] += [{
-                "target": sprite_name,
-                "cmd": command_name,
-                "param": None,
-                "visible": True
-            }]
-
-            raw_project = scratch.RawProject(cls.SENSOR_HELPER_OBJECTS_DATA_TEMPLATE)
-            variable_name = scratch.S2CC_SENSOR_PREFIX + "{}_{}".format(sprite_name, command_name)
-            expected_first_object_script_data = [0, 0, [['whenGreenFlag'],
-                ['doForever', [
-                    ["setVar:to:", variable_name, [command_name]],
-                    ["wait:elapsed:from:", scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
-                ]]
-            ]]
-
-            # validate
-            assert len(raw_project.objects) == 2
-            [background_object, first_object] = raw_project.objects
-
-            # scripts of sprite objects
-            assert len(background_object.scripts) == 0
-            assert len(first_object.scripts) == 1
-            script = first_object.scripts[0]
-            expected_script = scratch.Script(expected_first_object_script_data)
-            assert script == expected_script
-
-            # sprite variables
-            assert len(background_object._dict_object["variables"]) == 0
-            first_object_variables = first_object._dict_object["variables"]
-            assert len(first_object_variables) == 1
-            assert first_object_variables[0] == { "name": variable_name, "value": 0, "isPersistent": False }
-
-    def test_convert_show_sensor_with_parameter_block(self):
-        cls = self.__class__
-        sprite_name = "Sprite1"
-        original_child_objects = cls.SENSOR_HELPER_OBJECTS_DATA_TEMPLATE["children"]
-        for command_name, param in [("timeAndDate", "minute"), ("timeAndDate", "second")]:
-            cls.SENSOR_HELPER_OBJECTS_DATA_TEMPLATE["children"] = original_child_objects[:]
-            cls.SENSOR_HELPER_OBJECTS_DATA_TEMPLATE["children"] += [{
-                "target": sprite_name,
-                "cmd": command_name,
-                "param": param,
-                "visible": True
-            }]
-
-            raw_project = scratch.RawProject(cls.SENSOR_HELPER_OBJECTS_DATA_TEMPLATE)
-            variable_name = scratch.S2CC_SENSOR_PREFIX + "{}_{}{}".format(sprite_name, command_name, "_" + param if param else "")
-            expected_first_object_script_data = [0, 0, [['whenGreenFlag'],
-                ['doForever', [
-                    ["setVar:to:", variable_name, [command_name, param]],
-                    ["wait:elapsed:from:", scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
-                ]]
-            ]]
-
-            # validate
-            assert len(raw_project.objects) == 2
-            [background_object, first_object] = raw_project.objects
-
-            # scripts of sprite objects
-            assert len(background_object.scripts) == 0
-            assert len(first_object.scripts) == 1
-            script = first_object.scripts[0]
-            expected_script = scratch.Script(expected_first_object_script_data)
-            assert script == expected_script
-
-            # sprite variables
-            assert len(background_object._dict_object["variables"]) == 0
-            first_object_variables = first_object._dict_object["variables"]
-            assert len(first_object_variables) == 1
-            assert first_object_variables[0] == { "name": variable_name, "value": 0, "isPersistent": False }
-
-    def test_convert_stage_specific_show_sensor_without_parameter_block(self):
-        cls = self.__class__
-        sprite_name = "Stage"
-        original_child_objects = cls.SENSOR_HELPER_OBJECTS_DATA_TEMPLATE["children"]
-        for command_name in ["xpos", "ypos", "heading", "costumeIndex", "scale"]:
-            cls.SENSOR_HELPER_OBJECTS_DATA_TEMPLATE["children"] = original_child_objects[:]
-            cls.SENSOR_HELPER_OBJECTS_DATA_TEMPLATE["children"] += [{
-                "target": sprite_name,
-                "cmd": command_name,
-                "param": None,
-                "visible": True
-            }]
-
-            raw_project = scratch.RawProject(cls.SENSOR_HELPER_OBJECTS_DATA_TEMPLATE)
-            variable_name = scratch.S2CC_SENSOR_PREFIX + "{}_{}".format(sprite_name, command_name)
-            expected_stage_object_script_data = [0, 0, [['whenGreenFlag'],
-                ['doForever', [
-                    ["setVar:to:", variable_name, [command_name]],
-                    ["wait:elapsed:from:", scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
-                ]]
-            ]]
-
-            # validate
-            assert len(raw_project.objects) == 2
-            [background_object, first_object] = raw_project.objects
-
-            # scripts of sprite objects
-            assert len(first_object.scripts) == 0
-            assert len(background_object.scripts) == 1
-            script = background_object.scripts[0]
-            expected_script = scratch.Script(expected_stage_object_script_data)
-            assert script == expected_script
-
-            # sprite variables
-            assert len(first_object._dict_object["variables"]) == 0
-            stage_object_variables = background_object._dict_object["variables"]
-            assert len(stage_object_variables) == 1
-            assert stage_object_variables[0] == { "name": variable_name, "value": 0, "isPersistent": False }
-
-    def test_convert_stage_specific_show_sensor_with_parameter_block(self):
-        cls = self.__class__
-        sprite_name = "Stage"
-        original_child_objects = cls.SENSOR_HELPER_OBJECTS_DATA_TEMPLATE["children"]
-        for command_name, param in [("timeAndDate", "minute"), ("timeAndDate", "second")]:
-            cls.SENSOR_HELPER_OBJECTS_DATA_TEMPLATE["children"] = original_child_objects[:]
-            cls.SENSOR_HELPER_OBJECTS_DATA_TEMPLATE["children"] += [{
-                "target": sprite_name,
-                "cmd": command_name,
-                "param": param,
-                "visible": True
-            }]
-
-            raw_project = scratch.RawProject(cls.SENSOR_HELPER_OBJECTS_DATA_TEMPLATE)
-            variable_name = scratch.S2CC_SENSOR_PREFIX + "{}_{}{}".format(sprite_name, command_name, "_" + param if param else "")
-            expected_stage_object_script_data = [0, 0, [['whenGreenFlag'],
-                ['doForever', [
-                    ["setVar:to:", variable_name, [command_name, param]],
-                    ["wait:elapsed:from:", scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
-                ]]
-            ]]
-
-            # validate
-            assert len(raw_project.objects) == 2
-            [background_object, first_object] = raw_project.objects
-
-            # scripts of sprite objects
-            assert len(first_object.scripts) == 0
-            assert len(background_object.scripts) == 1
-            script = background_object.scripts[0]
-            expected_script = scratch.Script(expected_stage_object_script_data)
-            assert script == expected_script
-
-            # sprite variables
-            assert len(first_object._dict_object["variables"]) == 0
-            stage_object_variables = background_object._dict_object["variables"]
-            assert len(stage_object_variables) == 1
-            assert stage_object_variables[0] == { "name": variable_name, "value": 0, "isPersistent": False }
-
-
-class TestGetAttributeBlockWorkarounds(unittest.TestCase):
-
-    ATTRIBUTE_NAME_TO_SENSOR_NAME_MAP = {
-        "x position": "xpos",
-        "y position": "ypos",
-        "direction": "heading",
-        "costume #": "costumeIndex",
-        "costume name": "costumeName",
-        "size": "scale",
-        "volume": "volume"
-    }
-
-    def setUp(self):
-        unittest.TestCase.setUp(self)
-        cls = self.__class__
-        self.root_info = {
-            "objName": "Stage",
-            "sounds": [],
-            "costumes": [],
-            "currentCostumeIndex": 0,
-            "penLayerMD5": "5c81a336fab8be57adc039a8a2b33ca9.png",
-            "penLayerID": 0,
-            "tempoBPM": 60,
-            "videoAlpha": 0.5,
-            "children": [{ "objName": "Sprite1", "scripts": [] }],
-            "scripts": [],
-            "variables": [{ "name": "result", "value": 1, "isPersistent": False }],
-            "info": {}
-        }
-
-    def test_convert_global_variable_attribute_block(self):
-        cls = self.__class__
-        variable_name = "result"
-        first_script_data = [0, 0, [["whenGreenFlag"],
-            ["wait:elapsed:from:", 2],
-            ["setVar:to:", "result", ["getAttribute:of:", variable_name, "_stage_"]]
-        ]]
-        self.root_info["children"][0]["scripts"] = [first_script_data]
-        raw_project = scratch.RawProject(self.root_info)
-        first_script_data[2][2][2] = ["readVariable", variable_name]
-        expected_first_object_first_script_data = first_script_data
-
-        # validate
-        assert len(raw_project.objects) == 2
-        [background_object, first_object] = raw_project.objects
-
-        # scripts of sprite objects
-        assert len(background_object.scripts) == 0
-        assert len(first_object.scripts) == 1
-        script = first_object.scripts[0]
-        expected_script = scratch.Script(expected_first_object_first_script_data)
-        assert script == expected_script
-
-        # sprite variables
-        global_variables = background_object._dict_object["variables"]
-        assert len(global_variables) == 1
-        assert len(first_object._dict_object["variables"]) == 0
-        assert global_variables[0] == { "name": variable_name, "value": 1, "isPersistent": False }
-
-    def test_convert_local_variable_of_same_object_attribute_block(self):
-        cls = self.__class__
-        sprite_name = "Sprite1"
-        variable_name = "localVariable"
-        first_script_data = [0, 0, [["whenGreenFlag"],
-            ["wait:elapsed:from:", 2],
-            ["setVar:to:", "result", ["getAttribute:of:", variable_name, sprite_name]]
-        ]]
-        self.root_info["children"][0]["scripts"] = [first_script_data]
-        self.root_info["children"][0]["variables"] = [{ "name": variable_name, "value": 0, "isPersistent": False }]
-        raw_project = scratch.RawProject(self.root_info)
-        first_script_data[2][2][2] = ["readVariable", variable_name]
-        expected_first_object_first_script_data = first_script_data
-
-        # validate
-        assert len(raw_project.objects) == 2
-        [background_object, first_object] = raw_project.objects
-
-        # scripts of sprite objects
-        assert len(background_object.scripts) == 0
-        assert len(first_object.scripts) == 1
-        script = first_object.scripts[0]
-        expected_script = scratch.Script(expected_first_object_first_script_data)
-        assert script == expected_script
-
-        # sprite variables
-        global_variables = background_object._dict_object["variables"]
-        first_object_variables = first_object._dict_object["variables"]
-        assert len(global_variables) == 1
-        assert len(first_object_variables) == 1
-        assert global_variables[0] == { "name": "result", "value": 1, "isPersistent": False }
-        assert first_object_variables[0] == { "name": variable_name, "value": 0, "isPersistent": False }
-
-    def test_convert_local_variable_of_other_object_attribute_block(self):
-        cls = self.__class__
-        sprite_name_of_other_object = "Sprite2"
-        variable_name = "localVariableOfSprite2"
-        self.root_info["children"] += [{
-            "objName": sprite_name_of_other_object,
-            "scripts": [],
-            "variables": [{ "name": variable_name, "value": 0, "isPersistent": False }]
-        }]
-        first_script_data = [0, 0, [["whenGreenFlag"],
-            ["wait:elapsed:from:", 2],
-            ["setVar:to:", "result", ["getAttribute:of:", variable_name, sprite_name_of_other_object]]
-        ]]
-        self.root_info["children"][0]["scripts"] = [first_script_data]
-        raw_project = scratch.RawProject(self.root_info)
-        helper_variable_name = scratch.S2CC_GETATTRIBUTE_PREFIX + "{}_readVariable:{}".format(sprite_name_of_other_object, variable_name)
-        first_script_data[2][2][2] = ["readVariable", helper_variable_name]
-        expected_first_object_first_script_data = first_script_data
-        expected_second_object_first_script_data = [0, 0, [["whenGreenFlag"], ["doForever", [
-            ["setVar:to:", helper_variable_name, ["readVariable", variable_name]],
-            ["wait:elapsed:from:", scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
-        ]]]]
-
-        # validate
-        assert len(raw_project.objects) == 3
-        [background_object, first_object, second_object] = raw_project.objects
-
-        # scripts of sprite objects
-        assert len(background_object.scripts) == 0
-        assert len(first_object.scripts) == 1
-        assert len(second_object.scripts) == 1
-        script = first_object.scripts[0]
-        expected_script = scratch.Script(expected_first_object_first_script_data)
-        assert script == expected_script
-        script = second_object.scripts[0]
-        expected_script = scratch.Script(expected_second_object_first_script_data)
-        assert script == expected_script
-
-        # sprite variables
-        global_variables = background_object._dict_object["variables"]
-        second_object_variables = second_object._dict_object["variables"]
-        assert len(global_variables) == 2
-        assert len(first_object._dict_object["variables"]) == 0
-        assert len(second_object_variables) == 1
-        assert global_variables[0] == { "name": "result", "value": 1, "isPersistent": False }
-        assert global_variables[1] == { "name": helper_variable_name, "value": 0, "isPersistent": False }
-        assert second_object_variables[0] == { "name": variable_name, "value": 0, "isPersistent": False }
-
-    def test_convert_background_specific_attributes_of_same_object_block(self):
-        cls = self.__class__
-        stage_name = "Stage"
-        for attribute_name, sensor_name in [("backdrop #", "backgroundIndex"), ("backdrop name", "sceneName")]:
-            first_script_data = [0, 0, [["whenGreenFlag"],
-                ["wait:elapsed:from:", 2],
-                ["setVar:to:", "result", ["getAttribute:of:", attribute_name, stage_name]]
-            ]]
-            self.root_info["scripts"] = [first_script_data]
-            raw_project = scratch.RawProject(self.root_info)
-            first_script_data[2][2][2] = [sensor_name]
-            expected_stage_object_first_script_data = first_script_data
-
-            # validate
-            assert len(raw_project.objects) == 2
-            [background_object, first_object] = raw_project.objects
-
-            # scripts of sprite objects
-            assert len(background_object.scripts) == 1
-            assert len(first_object.scripts) == 0
-            script = background_object.scripts[0]
-            expected_script = scratch.Script(expected_stage_object_first_script_data)
-            assert script == expected_script
-
-            # sprite variables
-            assert len(background_object._dict_object["variables"]) == 1
-            assert len(first_object._dict_object["variables"]) == 0
-
-    def test_convert_attribute_of_same_object_block(self):
-        cls = self.__class__
-        sprite_name = "Sprite1"
-        for attribute_name, sensor_name in cls.ATTRIBUTE_NAME_TO_SENSOR_NAME_MAP.iteritems():
-            first_script_data = [0, 0, [["whenGreenFlag"],
-                ["wait:elapsed:from:", 2],
-                ["setVar:to:", "result", ["getAttribute:of:", attribute_name, sprite_name]]
-            ]]
-            self.root_info["children"][0]["scripts"] = [first_script_data]
-            raw_project = scratch.RawProject(self.root_info)
-            first_script_data[2][2][2] = [sensor_name]
-            expected_first_object_first_script_data = first_script_data
-
-            # validate
-            assert len(raw_project.objects) == 2
-            [background_object, first_object] = raw_project.objects
-
-            # scripts of sprite objects
-            assert len(background_object.scripts) == 0
-            assert len(first_object.scripts) == 1
-            script = first_object.scripts[0]
-            expected_script = scratch.Script(expected_first_object_first_script_data)
-            assert script == expected_script
-
-            # sprite variables
-            assert len(background_object._dict_object["variables"]) == 1
-            assert len(first_object._dict_object["variables"]) == 0
-
-    def test_should_convert_attribute_with_formula_block_to_zero_placeholder(self):
-        cls = self.__class__
-        first_script_data = [0, 0, [["whenGreenFlag"],
-            ["wait:elapsed:from:", 2],
-            ["setVar:to:", "result", ["getAttribute:of:", "x position", ["+", 1, 2]]]
-        ]]
-        self.root_info["children"][0]["scripts"] = [first_script_data]
-        raw_project = scratch.RawProject(self.root_info)
-        first_script_data[2][2][2] = 0
-        expected_first_object_first_script_data = first_script_data
-
-        # validate
-        assert len(raw_project.objects) == 2
-        [background_object, first_object] = raw_project.objects
-
-        # scripts of sprite objects
-        assert len(background_object.scripts) == 0
-        assert len(first_object.scripts) == 1
-        script = first_object.scripts[0]
-        expected_script = scratch.Script(expected_first_object_first_script_data)
-        assert script == expected_script
-
-        # sprite variables
-        assert len(background_object._dict_object["variables"]) == 1
-        assert len(first_object._dict_object["variables"]) == 0
-
-    def test_convert_attribute_of_other_object_block(self):
-        cls = self.__class__
-        other_object_name = "Stage"
-        for attribute_name, sensor_name in cls.ATTRIBUTE_NAME_TO_SENSOR_NAME_MAP.iteritems():
-            first_script_data = [0, 0, [["whenGreenFlag"],
-                ["wait:elapsed:from:", 2],
-                ["setVar:to:", "result", ["getAttribute:of:", attribute_name, "_stage_"]]
-            ]]
-            self.root_info["children"][0]["scripts"] = [first_script_data]
-            raw_project = scratch.RawProject(self.root_info)
-            variable_name = scratch.S2CC_GETATTRIBUTE_PREFIX + "{}_{}".format(other_object_name, sensor_name)
-            expected_background_object_first_script_data = [0, 0, [['whenGreenFlag'],
-                ['doForever', [
-                    ["setVar:to:", variable_name, [sensor_name]],
-                    ["wait:elapsed:from:", scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
-                ]]
-            ]]
-            first_script_data[2][2][2] = ["readVariable", variable_name]
-            expected_first_object_first_script_data = first_script_data
-
-            # validate
-            assert len(raw_project.objects) == 2
-            [background_object, first_object] = raw_project.objects
-
-            # scripts of sprite objects
-            assert len(background_object.scripts) == 1
-            assert len(first_object.scripts) == 1
-            script = background_object.scripts[0]
-            expected_script = scratch.Script(expected_background_object_first_script_data)
-            assert script == expected_script
-            script = first_object.scripts[0]
-            expected_script = scratch.Script(expected_first_object_first_script_data)
-            assert script == expected_script
-
-            # sprite variables
-            stage_object_variables = background_object._dict_object["variables"]
-            assert len(stage_object_variables) == 2
-            assert len(first_object._dict_object["variables"]) == 0
-            assert stage_object_variables[0] == { "name": "result", "value": 1, "isPersistent": False }
-            assert stage_object_variables[1] == { "name": variable_name, "value": 0, "isPersistent": False }
-
-    def test_convert_attribute_of_other_object_block_encapsulated(self):
-        cls = self.__class__
-        other_object_name = "Stage"
-        for attribute_name, sensor_name in cls.ATTRIBUTE_NAME_TO_SENSOR_NAME_MAP.iteritems():
-            first_script_data = [0, 0, [["whenGreenFlag"],
-                ["wait:elapsed:from:", 2],
-                ["doRepeat", 10,
-                    [["doIf", False, [["doIfElse", False,
-                        [["doForever",
-                            [["setVar:to:", "result", ["getAttribute:of:", attribute_name, "_stage_"]]]
-                        ]], 0]]]
-                ]]
-            ]]
-            self.root_info["children"][0]["scripts"] = [first_script_data]
-            raw_project = scratch.RawProject(self.root_info)
-            variable_name = scratch.S2CC_GETATTRIBUTE_PREFIX + "{}_{}".format(other_object_name, sensor_name)
-            expected_background_object_first_script_data = [0, 0, [['whenGreenFlag'],
-                ['doForever', [
-                    ["setVar:to:", variable_name, [sensor_name]],
-                    ["wait:elapsed:from:", scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
-                ]]
-            ]]
-            first_script_data[2][2][2][0][2][0][2][0][1][0][2] = ["readVariable", variable_name]
-            expected_first_object_first_script_data = first_script_data
-
-            # validate
-            assert len(raw_project.objects) == 2
-            [background_object, first_object] = raw_project.objects
-
-            # scripts of sprite objects
-            assert len(background_object.scripts) == 1
-            assert len(first_object.scripts) == 1
-            script = background_object.scripts[0]
-            expected_script = scratch.Script(expected_background_object_first_script_data)
-            assert script == expected_script
-            script = first_object.scripts[0]
-            expected_script = scratch.Script(expected_first_object_first_script_data)
-            assert script == expected_script
-
-            # sprite variables
-            stage_object_variables = background_object._dict_object["variables"]
-            assert len(stage_object_variables) == 2
-            assert len(first_object._dict_object["variables"]) == 0
-            assert stage_object_variables[0] == { "name": "result", "value": 1, "isPersistent": False }
-            assert stage_object_variables[1] == { "name": variable_name, "value": 0, "isPersistent": False }
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 #  ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
-#  Copyright (C) 2013-2017 The Catrobat Team
+#  Copyright (C) 2013-2015 The Catrobat Team
 #  (http://developer.catrobat.org/credits)
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -101,10 +101,14 @@ def _sprite_of(scene, sprite_name):
     return sprite
 
 def find_global_or_sprite_user_list_by_name(scene, sprite, list_name):
-    return scene.getDataContainer().getUserList(sprite, list_name)
+    return scene.getDataContainer().getUserList(list_name, sprite)
 
-def find_global_user_list_by_name(project, list_name):
-    return project.getDefaultScene().getDataContainer().findProjectList(list_name)
+def find_global_user_list_by_name(project, sprite, list_name):
+    user_lists = project.getDefaultScene().getDataContainer().getProjectLists()
+    for user_list in user_lists:
+        if user_list.getName() == list_name:
+            return user_list
+    return None
 
 def find_sprite_user_list_by_name(project, sprite, list_name):
     user_lists = project.getDefaultScene().getDataContainer().getSpriteListOfLists(sprite)
@@ -122,7 +126,7 @@ def user_variable_of(project, variable_name, sprite_name=None):
         return data_container.findUserVariable(variable_name, data_container.projectVariables)
     else:
         sprite = _sprite_of(project.getDefaultScene(), sprite_name)
-        return data_container.getUserVariable(sprite, variable_name)
+        return data_container.getUserVariable(variable_name, sprite)
 
 def create_formula_with_value(variable_value):
     assert variable_value != None
@@ -233,12 +237,8 @@ def formula_element_for(catrobat_enum, arguments=[]):
             assert len(arguments) == 2 and arguments[0] != None and arguments[1] == None
             arguments[0], arguments[1] = arguments[1], arguments[0] # swap leftChild and rightChild
 
-        arguments = [catformula.FormulaElement(catformula.FormulaElement.ElementType.STRING, str(arg), None)
-                      if isinstance(arg, unicode) else arg for arg in arguments]
-
         formula_element = catformula.FormulaElement(element_type, enum_name, formula_parent, *arguments)  # @UndefinedVariable (valueOf)
         for formula_child in arguments:
             if formula_child is not None:
                 formula_child.parent = formula_element
-
     return formula_element

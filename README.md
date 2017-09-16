@@ -1,6 +1,6 @@
 <img title="Scratch2Catrobat" src="https://cloud.githubusercontent.com/assets/3843968/9567706/5a084d76-4f35-11e5-9e3b-5a49256fde86.png" width=595 />
 
-[![Version](https://img.shields.io/badge/version-0.8.1b-blue.svg)](https://img.shields.io/badge/version-0.8.1b-blue.svg)
+[![Version](https://img.shields.io/badge/version-0.9.0b-blue.svg)](https://img.shields.io/badge/version-0.9.0b-blue.svg)
 
 A tool for converting Scratch projects into Catrobat programs.
 

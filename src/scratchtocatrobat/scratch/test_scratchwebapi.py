@@ -265,7 +265,7 @@ TEST_PROJECT_ID_TO_INSTRUCTIONS_MAP = {
 TEST_PROJECT_ID_TO_NOTES_AND_CREDITS_MAP = {
     "10205819": "First project on Scratch! This was great.",
     "10132588": "",
-    "2365565" : "None",
+    "2365565" : "",
     "117300839": "◆NHK「わいわい プログラミング」 メインコーナー「why!?大喜利」では、月がわりでお題を出す" \
                  "よ！毎月末が応募締め切り。優秀者にはインタビューも。さぁ、キミも投稿してみよう！ " \
                  "http://www.nhk.or.jp/school/programming/oogiri/index.html ◆「キミのびっくりハウ" \
@@ -374,21 +374,24 @@ class WebApiTest(common_testing.BaseTestCase):
     def test_can_detect_correct_availability_state_of_project(self):
         project_availability_map = {
             "108628771": False,
-            "107178598": True,
+            "107178598": False,
             "95106124": True
         }
         for (project_id, expected_availability_state) in project_availability_map.iteritems():
             detected_availability_state = scratchwebapi.request_is_project_available(project_id)
-            assert expected_availability_state == detected_availability_state
+            assert expected_availability_state == detected_availability_state, \
+                   "State of project #{} is {} but should be {}".format( \
+                   project_id, detected_availability_state, expected_availability_state)
 
     def test_can_detect_correct_visibility_state_of_project(self):
         project_visibility_map = {
             "107178598": scratchwebapi.ScratchProjectVisibiltyState.PRIVATE,
+            "123242912": scratchwebapi.ScratchProjectVisibiltyState.PRIVATE,
             "95106124": scratchwebapi.ScratchProjectVisibiltyState.PUBLIC,
             "85594786": scratchwebapi.ScratchProjectVisibiltyState.PUBLIC
         }
         for (project_id, expected_visibility_state) in project_visibility_map.iteritems():
-            detected_visibility_state = scratchwebapi.request_project_visibility_state_for(project_id)
+            detected_visibility_state = scratchwebapi.request_project_visibility_state_for(project_id, False)
             assert expected_visibility_state == detected_visibility_state
 
 if __name__ == "__main__":

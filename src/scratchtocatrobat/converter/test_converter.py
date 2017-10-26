@@ -307,7 +307,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
         raw_project = scratch.RawProject(raw_json)
         workaround_info = raw_project.objects[1].preprocess_object([raw_project.objects[0].name, raw_project.objects[1].name])
-        assert workaround_info['add_timer_script_key'] == True
+        assert workaround_info[scratch.ADD_TIMER_SCRIPT_KEY] == True
         timer_background_workaround = [['whenGreenFlag'], ['doForever', \
                                            [['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, scratch.UPDATE_HELPER_VARIABLE_TIMEOUT],
                                            ['wait:elapsed:from:', scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]]]]
@@ -2358,32 +2358,47 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert catr_brick.spinnerSelection == 1
 
     #sceneName
-    def test_can_convert_backdrop_name_brick(self):
+    def test_can_convert_backdrop_name_block(self):
         scratch_block = ["sceneName"]
         [formula] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(formula, catformula.FormulaElement)
         assert formula.value == "OBJECT_BACKGROUND_NAME"
 
     #backgroundIndex
-    def test_can_convert_background_index_brick(self):
+    def test_can_convert_background_index_block(self):
         scratch_block = ["backgroundIndex"]
         [formula] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(formula, catformula.FormulaElement)
         assert formula.value == "OBJECT_BACKGROUND_NUMBER"
 
     #costumeIndex
-    def test_can_convert_costume_index_brick(self):
+    def test_can_convert_costume_index_block(self):
         scratch_block = ["costumeIndex"]
         [formula] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(formula, catformula.FormulaElement)
         assert formula.value == "OBJECT_LOOK_NUMBER"
 
     #scale
-    def test_can_convert_size_brick(self):
+    def test_can_convert_size_block(self):
         scratch_block = ["scale"]
         [formula] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(formula, catformula.FormulaElement)
         assert formula.value == "OBJECT_SIZE"
+
+    def test_can_convert_key_pressed_block(self):
+        objectJson = {
+                    "objName": "Sprite1",
+                    "scripts": [[107,108,[["whenGreenFlag"],
+                                            ["doForever", 
+                                                [["doIf", ["keyPressed:", "w"], 
+                                                  [["changeYposBy:", 1]]]]]]]],
+                    "currentCostumeIndex": 0,
+                    "indexInLibrary": 1,
+                    "spriteInfo": {}
+        }
+        obj = scratch.Object(objectJson)
+        workaround_info = obj.preprocess_object([obj.name])
+        assert len(workaround_info[scratch.ADD_KEY_PRESSED_SCRIPT_KEY]) == 1
 
 class TestConvertProjects(common_testing.ProjectTestCase):
     def _load_test_scratch_project(self, project_name):
@@ -2437,11 +2452,6 @@ class TestConvertProjects(common_testing.ProjectTestCase):
     # full_test_no_var
     def test_can_convert_project_without_variables(self):
         self._test_project("full_test_no_var")
-
-#     # FIXME: fails
-#     # TODO: fails because of wrong test file? string values "0" instead of numeric 0
-#     def test_can_convert_project_with_variables(self):
-#         self._test_project("full_test")
 
     # keys_pressed
     def test_can_convert_project_with_keys(self):

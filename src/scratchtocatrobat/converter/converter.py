@@ -713,7 +713,6 @@ class Converter(object):
         key_sprite.addScript(when_tapped_script)
         catrobat_scene.addSprite(key_sprite)
 
-    # TODO: make it more explicit that this depends on the conversion code for "whenKeyPressed" Scratch block
     @staticmethod
     def _add_key_sprites_to(catrobat_scene, listened_keys):
         y_offset = -20

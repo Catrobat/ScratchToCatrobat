@@ -293,6 +293,7 @@ class Object(common.DictAccessWrapper):
             # parse again ScriptElement tree
             script.script_element = ScriptElement.from_raw_block(script.blocks)
         workaround_info[ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY] = sensor_data_needed_for_sprite_names
+        #print (workaround_info)
         return workaround_info
 
     @classmethod
@@ -624,8 +625,8 @@ class Project(RawProject):
             for script in scratch_obj.scripts:
                 if script.type == SCRIPT_KEY_PRESSED:
                     assert len(script.arguments) == 1
-                    listened_keys += (script.arguments, "listenedKeys")
-        self.listened_keys.union(set(listened_keys))
+                    listened_keys = [(argument, "listenedKeys") for argument in script.arguments]
+        self.listened_keys = set(listened_keys)
 
         # TODO: rename
         self.background_md5_names = set([costume[JsonKeys.COSTUME_MD5] for costume in self.get_costumes()])

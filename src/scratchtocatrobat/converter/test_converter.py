@@ -2400,6 +2400,110 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         workaround_info = obj.preprocess_object([obj.name])
         assert len(workaround_info[scratch.ADD_KEY_PRESSED_SCRIPT_KEY]) == 1
 
+        raw_json = {
+            "objName": "Stage",
+            "currentCostumeIndex": 0,
+            "penLayerMD5": "5c81a336fab8be57adc039a8a2b33ca9.png",
+            "penLayerID": 0,
+            "tempoBPM": 60,
+            "children": [{
+                    "objName": "Sprite1",
+                    "scripts": [[107,108,[["whenGreenFlag"],
+                                            ["doForever", 
+                                                [["doIf", ["keyPressed:", "w"], 
+                                                  [["changeYposBy:", 1]]]]]]]],
+                    "currentCostumeIndex": 0,
+                    "indexInLibrary": 1,
+                    "spriteInfo": {}
+            }],
+            "info": {}
+        }
+
+        raw_project = scratch.RawProject(raw_json)
+        catr_script = self.block_converter._catrobat_script_from(raw_project.objects[1].scripts[0], DUMMY_CATR_SPRITE, self.test_project)
+        assert isinstance(catr_script, catbase.StartScript)
+        brick_list = catr_script.getBrickList()
+        if_brick = brick_list[1]
+        assert isinstance(if_brick, catbricks.IfThenLogicBeginBrick)
+        assert len(if_brick.formulaMap) == 1
+        assert if_brick.formulaMap[catbricks.Brick.BrickField.IF_CONDITION] != None
+        key_pressed_condition = if_brick.formulaMap[catbricks.Brick.BrickField.IF_CONDITION]
+        assert isinstance(key_pressed_condition, catformula.Formula)
+        key_pressed_condition_formula_tree = key_pressed_condition.formulaTree
+        assert key_pressed_condition_formula_tree.value == "S2CC:key_w"
+        assert key_pressed_condition_formula_tree.type == catElementType.USER_VARIABLE
+        #If the addition of keys works, the addition of keys also works for this workaround. (Is tested separately.
+
+class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCase):
+    def _load_test_scratch_project(self, project_name):
+        if os.path.splitext(project_name)[1]:
+            tempdir = common.TemporaryDirectory()
+            scratch_project_dir = tempdir.name
+            self.addCleanup(tempdir.cleanup)
+            common.extract(common_testing.get_test_project_packed_file(project_name),
+                           scratch_project_dir)
+        else:
+            scratch_project_dir = common_testing.get_test_project_path(project_name)
+
+        scratch_project = scratch.Project(scratch_project_dir, name=project_name,
+                                          project_id=common_testing.PROJECT_DUMMY_ID)
+        return scratch_project
+
+    def test_key_pressed_block(self):
+        project_name = 'key_pressed_block'
+        scratch_project = self._load_test_scratch_project(project_name)
+        context = converter.Context()
+        converted_project = converter.converted(scratch_project, None, context)
+
+        default_scene = converted_project.catrobat_program.getDefaultScene()
+        assert len(default_scene.spriteList) == 3
+
+        key_w = default_scene.spriteList[2]
+        assert key_w != None
+        assert key_w.name == 'key w pressed'
+
+        scripts = key_w.getScriptList()
+        assert len(scripts) == 2
+        assert isinstance(scripts[1], catbase.WhenScript)
+
+        brick_list = scripts[1].getBrickList()
+        assert len(brick_list) == 3
+
+        set_variable_initial = brick_list[0]
+        assert isinstance(set_variable_initial, catbricks.SetVariableBrick)
+        assert set_variable_initial.getUserVariable().name == 'S2CC:key_w'
+        assert set_variable_initial.formulaMap[catbricks.Brick.BrickField.VARIABLE] != None
+
+        set_variable_initial_formula = set_variable_initial.formulaMap[catbricks.Brick.BrickField.VARIABLE]
+        set_variable_initial_formula_tree = set_variable_initial_formula.formulaTree
+        assert set_variable_initial_formula_tree.value == str(1.0)
+        assert set_variable_initial_formula_tree.type == catElementType.NUMBER
+
+        wait_until_brick = brick_list[1]
+        assert isinstance(wait_until_brick, catbricks.WaitUntilBrick)
+        assert wait_until_brick.formulaMap[catbricks.Brick.BrickField.IF_CONDITION] != None
+
+        wait_until_brick_formula = wait_until_brick.formulaMap[catbricks.Brick.BrickField.IF_CONDITION]
+        wait_until_brick_formula_tree = wait_until_brick_formula.formulaTree
+        assert wait_until_brick_formula_tree.value == 'LOGICAL_NOT'
+        assert wait_until_brick_formula_tree.type == catElementType.OPERATOR
+        assert wait_until_brick_formula_tree.rightChild.value == 'COLLIDES_WITH_FINGER'
+        assert wait_until_brick_formula_tree.rightChild.type == catElementType.SENSOR
+
+        set_variable_notpressed = brick_list[2]
+        assert isinstance(set_variable_notpressed, catbricks.SetVariableBrick)
+        assert set_variable_notpressed.getUserVariable().name == 'S2CC:key_w'
+        assert set_variable_notpressed.formulaMap[catbricks.Brick.BrickField.VARIABLE] != None
+
+        set_variable_notpressed_formula = set_variable_notpressed.formulaMap[catbricks.Brick.BrickField.VARIABLE]
+        set_variable_notpressed_formula_tree = set_variable_notpressed_formula.formulaTree
+        assert set_variable_notpressed_formula_tree.value == str(0.0)
+        assert set_variable_notpressed_formula_tree.type == catElementType.NUMBER
+        
+        catrobat_zip_file_name = converted_project.save_as_catrobat_package_to(self._testresult_folder_path)
+        self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, project_name,
+                                                          unused_scratch_resources=scratch_project.unused_resource_names)
+
 class TestConvertProjects(common_testing.ProjectTestCase):
     def _load_test_scratch_project(self, project_name):
         if os.path.splitext(project_name)[1]:

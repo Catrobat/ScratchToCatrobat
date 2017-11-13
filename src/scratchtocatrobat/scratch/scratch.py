@@ -626,8 +626,11 @@ class Project(RawProject):
                 if script.type == SCRIPT_KEY_PRESSED:
                     assert len(script.arguments) == 1
                     listened_keys = [(argument, "listenedKeys") for argument in script.arguments]
-        self.listened_keys = set(listened_keys)
-
+        if(len(self.listened_keys) > 0):
+            self.listened_keys.union(listened_keys)
+        else:
+            self.listened_keys = set(listened_keys)
+        print(self.listened_keys)
         # TODO: rename
         self.background_md5_names = set([costume[JsonKeys.COSTUME_MD5] for costume in self.get_costumes()])
 

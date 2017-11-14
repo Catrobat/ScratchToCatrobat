@@ -149,7 +149,7 @@ class TestProjectFunc(unittest.TestCase):
 
     def test_can_access_listened_pressed_keys(self):
         project = scratch.Project(common_testing.get_test_project_path("keys_pressed"))
-        assert project.listened_keys == set(["d", "c", "a", "4", "8"])
+        assert project.listened_keys == set([(u'a', 'listenedKeys'), (u'8', 'listenedKeys'), (u'd', 'listenedKeys'), (u'c', 'listenedKeys'), (u'4', 'listenedKeys')])
 
     def test_can_access_unused_resources_of_project(self):
         project = scratch.Project(common_testing.get_test_project_path("simple"), name="simple", project_id=common_testing.PROJECT_DUMMY_ID)
@@ -756,7 +756,7 @@ class TestKeyPressedWorkaround(unittest.TestCase):
         expected_first_object_script_data = [0,0,[["whenGreenFlag"],["doForever", [["doIf", ["readVariable", key_pressed_var_name],[["changeYposBy:", 1]]]]]]]
 
         # validate
-        assert len(raw_project.objects) == 3
+        assert len(raw_project.objects) == 2
         [background_object, sprite_object] = raw_project.objects
 
         # background object

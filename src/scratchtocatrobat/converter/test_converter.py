@@ -1644,39 +1644,36 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     # startScene
     def test_can_convert_startscene_next_backdrop_block(self):
         scratch_block = ["startScene", "next backdrop"]
-        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        print(type(catr_brick))
-        print(catr_brick)
-        assert isinstance(catr_brick, catbricks.SetBackgroundByIndexBrick)
-        # TODO: extend
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, create_catrobat_background_sprite_stub())
+        assert isinstance(catr_brick, catbricks.NextLookBrick)
 
     # startScene
     def test_can_convert_startscene_previous_backdrop_block(self):
         scratch_block = ["startScene", "previous backdrop"]
-        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        assert isinstance(catr_brick, catbricks.SetBackgroundByIndexBrick)
-        # TODO: extend
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, create_catrobat_background_sprite_stub())
+        assert isinstance(catr_brick, catbricks.PreviousLookBrick)
 
     # startSceneAndWait
     def test_can_convert_startscene_wait_block(self):
         scratch_script= scratch.Script([321, 89, [["whenSceneStarts", "look1"], ["startSceneAndWait", "look2"]]])
         self.test_project.getDefaultScene().spriteList.add(self.sprite_stub)
-        catr_script = self.block_converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
+        background_stub = create_catrobat_background_sprite_stub()
+        catr_script = self.block_converter._catrobat_script_from(scratch_script, background_stub, self.test_project)
         assert isinstance(catr_script.getBrickList()[0], catbricks.SetBackgroundAndWaitBrick)
         assert catr_script.getBrickList()[0].getLook().getLookName() == "look2"
-        assert catr_script.getBrickList()[0].getLook() == self.sprite_stub.getLookDataList()[1]
+        assert catr_script.getBrickList()[0].getLook() == background_stub.getLookDataList()[1]
         assert len(catr_script.getBrickList()) == 1
 
     # startSceneAndWait
     def test_can_convert_startscene_wait_next_backdrop_block(self):
         scratch_block = ["startSceneAndWait", "next backdrop"]
-        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, create_catrobat_background_sprite_stub())
         assert isinstance(catr_brick, catbricks.NextLookBrick)
 
     # startSceneAndWait
     def test_can_convert_startscene_wait_previous_backdrop_block(self):
         scratch_block = ["startSceneAndWait", "previous backdrop"]
-        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, create_catrobat_background_sprite_stub())
         assert isinstance(catr_brick, catbricks.PreviousLookBrick)
 
     # sayBubbleBrick
@@ -2503,6 +2500,49 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
         catrobat_zip_file_name = converted_project.save_as_catrobat_package_to(self._testresult_folder_path)
         self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, project_name,
                                                           unused_scratch_resources=scratch_project.unused_resource_names)
+
+    def test_key_pressed_script(self):
+        project_name = 'key_pressed_script'
+        scratch_project = self._load_test_scratch_project(project_name)
+        context = converter.Context()
+        converted_project = converter.converted(scratch_project, None, context)
+
+        default_scene = converted_project.catrobat_program.getDefaultScene()
+        assert len(default_scene.spriteList) == 3
+
+        sprite = default_scene.spriteList[1]
+        assert sprite != None
+        assert sprite.name == 'Sprite1'
+
+        spritescripts = sprite.getScriptList()
+        assert len(spritescripts) == 2
+
+        broadcast_script = spritescripts[1]
+        assert isinstance(broadcast_script, catbase.BroadcastScript)
+        assert broadcast_script.getBroadcastMessage() == 'key space pressed'
+
+        sprite_brick_list = spritescripts[1].getBrickList()
+        assert len(sprite_brick_list) == 1
+
+        move_brick = sprite_brick_list[0]
+        assert isinstance(move_brick, catbricks.MoveNStepsBrick)
+
+        key_space = default_scene.spriteList[2]
+        assert key_space != None
+        assert key_space.name == 'key space pressed'
+
+        keyscripts = key_space.getScriptList()
+        assert len(keyscripts) == 2
+        assert isinstance(keyscripts[1], catbase.WhenScript)
+
+        key_brick_list = keyscripts[1].getBrickList()
+        assert len(key_brick_list) == 1
+
+        broadcast_brick = key_brick_list[0]
+        assert isinstance(broadcast_brick, catbricks.BroadcastBrick)
+        assert broadcast_brick.getBroadcastMessage() == 'key space pressed'
+
+
 
 class TestConvertProjects(common_testing.ProjectTestCase):
     def _load_test_scratch_project(self, project_name):

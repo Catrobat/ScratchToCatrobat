@@ -1,12 +1,12 @@
 #==================================================================================================
 # Define and update parameters here
 #==================================================================================================
-catroid_version: v0.9.29
+catroid_version: v0.9.31
 xstream_class_name: BackwardCompatibleCatrobatLanguageXStream
 archive_extension: "zip"
 #URL: "https://github.com/Catrobat/Catroid/archive/master.%{archive_extension}"
 #URL: "https://github.com/Catrobat/Catroid/archive/%{catroid_version}.%{archive_extension}"
-URL: "https://github.com/Catrobat/Catroid/archive/release-0.9.29.%{archive_extension}"
+URL: "https://github.com/Catrobat/Catroid/archive/release-0.9.31.%{archive_extension}"
 xstream_version: "1.4.7"
 xstream_lib_extension: "jar"
 xstream_download_URL: "http://repo.maven.apache.org/maven2/com/thoughtworks/xstream/xstream/%{xstream_version}/xstream-%{xstream_version}.%{xstream_lib_extension}"
@@ -703,7 +703,7 @@ remove_methods_mapping:
         [uploadProject, loadProject, cancelLoadProject, canLoadProject, saveProject,
         initializeDefaultProject, initializeDroneProject, initializeNewProject,
         deleteCurrentProject, checkCurrentSprite, checkCurrentScript, deleteProject, renameProject,
-        addScript]
+        addScript, createAndShowUploadDialog]
     XmlHeader:
         - setTags
     Look:

@@ -641,8 +641,10 @@ class Converter(object):
             catr_sprite = self._scratch_object_converter(scratch_object)
             catrobat_scene.addSprite(catr_sprite)
 
+    #_place_key_brick
     @staticmethod
-    def _place_key_brick(key, x_pos, y_pos, catrobat_scene):
+    def _key_pressed_script_workaround_script(key, x_pos, y_pos, catrobat_scene):
+        #load key file and create sprite with looks
         key_filename = _key_filename_for(key)
         key_message = _key_to_broadcast_message(key)
         key_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, key_message)
@@ -650,6 +652,8 @@ class Converter(object):
         key_look.setLookName(key_message)
         key_look.setLookFilename(key_filename)
         key_sprite.getLookDataList().add(key_look)
+
+        #set looks and position via started script
         when_started_script = catbase.StartScript()
         set_look_brick = catbricks.SetLookBrick()
         set_look_brick.setLook(key_look)
@@ -657,12 +661,58 @@ class Converter(object):
         bricks = [place_at_brick, set_look_brick, catbricks.SetSizeToBrick(33)]
         when_started_script.getBrickList().addAll(bricks)
         key_sprite.addScript(when_started_script)
+
+        #when tapped script
         when_tapped_script = catbase.WhenScript()
         when_tapped_script.addBrick(catbricks.BroadcastBrick(key_message))
         key_sprite.addScript(when_tapped_script)
         catrobat_scene.addSprite(key_sprite)
 
-    # TODO: make it more explicit that this depends on the conversion code for "whenKeyPressed" Scratch block
+    @staticmethod
+    def _key_pressed_block_workaround_script(key, x_pos, y_pos, catrobat_scene):
+        #load key file and create sprite with looks
+        key_filename = _key_filename_for(key)
+        #TODO: different names for key pressed block case, key pressed script case
+        key_message = _key_to_broadcast_message(key)
+        #TODO: Check if sprite already exists
+        key_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, key_message)
+        key_look = catcommon.LookData()
+        key_look.setLookName(key_message)
+        key_look.setLookFilename(key_filename)
+        key_sprite.getLookDataList().add(key_look)
+
+        #set looks and position via started script
+        when_started_script = catbase.StartScript()
+        set_look_brick = catbricks.SetLookBrick()
+        set_look_brick.setLook(key_look)
+        place_at_brick = catbricks.PlaceAtBrick(x_pos, y_pos)
+        bricks = [place_at_brick, set_look_brick, catbricks.SetSizeToBrick(33)]
+        when_started_script.getBrickList().addAll(bricks)
+        key_sprite.addScript(when_started_script)
+
+        #while tapped set global key var to 1
+        when_tapped_script = catbase.WhenScript()
+        #creating uservariable, add to script, set to 1
+        bricks =[]
+        global_key_var_name = scratch.S2CC_KEY_VARIABLE_NAME + key;
+        key_user_variable = catformula.UserVariable(global_key_var_name)
+        key_user_variable.value = catformula.Formula(0)
+        #catrobat.add_user_variable(catrobat_scene.getProject(), global_key_var_name)
+        catrobat_scene.getProject().projectVariables.add(key_user_variable)
+        bricks.append(catbricks.SetVariableBrick(catformula.Formula(1), key_user_variable))
+        #build WaittUntilCondition
+        not_touching_fe = catformula.FormulaElement(catElementType.OPERATOR, str(catformula.Operators.LOGICAL_NOT), None)
+        touching_fe = catformula.FormulaElement(catElementType.SENSOR, str(catformula.Sensors.COLLIDES_WITH_FINGER), None)
+        not_touching_fe.setRightChild(touching_fe)
+        #WaitUntilBrick
+        bricks.append(catbricks.WaitUntilBrick(catformula.Formula(not_touching_fe)))
+        #set uservariable to 0
+        bricks.append(catbricks.SetVariableBrick(catformula.Formula(0), key_user_variable))
+
+        when_tapped_script.getBrickList().addAll(bricks)
+        key_sprite.addScript(when_tapped_script)
+        catrobat_scene.addSprite(key_sprite)
+
     @staticmethod
     def _add_key_sprites_to(catrobat_scene, listened_keys):
         y_offset = -20
@@ -670,22 +720,29 @@ class Converter(object):
         space_letters_width_offset = 4
         letters_per_row = 12
         space_exists = False
-        if "space" in listened_keys:
+        listened_keys_names = [key_tuple[0] for key_tuple in listened_keys]
+        if "space" in listened_keys_names:
             space_exists = True
-            listened_keys.remove("space")
-        for idx, key in enumerate(listened_keys):
+            listened_keys = set(key_tuple for key_tuple in listened_keys if key_tuple == "space")
+        for idx, key_tuple in enumerate(listened_keys):
             if space_exists and idx > 3:
                 idx = idx + space_letters_width_offset
             width_pos = idx % letters_per_row
             height_pos = int(idx / letters_per_row) + 1
             y_pos = -(scratch.STAGE_HEIGHT_IN_PIXELS / 2) + y_offset + 40 * height_pos
             x_pos = -(scratch.STAGE_WIDTH_IN_PIXELS / 2) + x_offset + 40 * (width_pos + 1)
-            Converter._place_key_brick(key, x_pos, y_pos,catrobat_scene)
+            if(key_tuple[1] == "listenedKeys"):
+                Converter._key_pressed_script_workaround_script(key_tuple[0], x_pos, y_pos,catrobat_scene)
+            elif(key_tuple[1] == "keyPressedBrick"):
+                Converter._key_pressed_block_workaround_script(key_tuple[0], x_pos, y_pos,catrobat_scene)
         if space_exists:
-            listened_keys.add("space")
+            listened_keys.add(("space","listenedKeys"))
             y_pos = -(scratch.STAGE_HEIGHT_IN_PIXELS / 2) + y_offset + 40
             x_pos = 0
-            Converter._place_key_brick("space", x_pos, y_pos, catrobat_scene)
+            if(key_tuple[1] == "listenedKeys"):
+                Converter._key_pressed_script_workaround_script(key_tuple[0], x_pos, y_pos,catrobat_scene)
+            elif(key_tuple[1] == "keyPressedBrick"):
+                Converter._key_pressed_block_workaround_script(key_tuple[0], x_pos, y_pos,catrobat_scene)
 
     @staticmethod
     def _update_xml_header(xml_header, scratch_project_id, program_name, scratch_project_instructions,
@@ -982,6 +1039,7 @@ class _ScratchObjectConverter(object):
         #       (also for "answer", i.e. _SHARED_GLOBAL_ANSWER_VARIABLE_NAME!!)
         sprite_name = sprite.getName()
         sprite_name = sprite_name.replace(BACKGROUND_LOCALIZED_GERMAN_NAME, BACKGROUND_ORIGINAL_NAME)
+        if not(sprite_name in scratch_project.sprite_variables_map): return
         local_sprite_variables = scratch_project.sprite_variables_map[sprite_name]
         context = sprite_context.context
         if context is None: return
@@ -1122,9 +1180,9 @@ class ConvertedProject(object):
                 fp.write(program_source.encode("utf8"))
 
             # copying key images needed for keyPressed substitution
-            for listened_key in self.scratch_project.listened_keys:
-                key_image_path = _key_image_path_for(listened_key)
-                shutil.copyfile(key_image_path, os.path.join(images_path, _key_filename_for(listened_key)))
+            for listened_key_tuple in self.scratch_project.listened_keys:
+                key_image_path = _key_image_path_for(listened_key_tuple[0])
+                shutil.copyfile(key_image_path, os.path.join(images_path, _key_filename_for(listened_key_tuple[0])))
 
         def download_automatic_screenshot_if_available(output_dir, scratch_project):
             if scratch_project.automatic_screenshot_image_url is None:
@@ -1463,6 +1521,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         [argument] = self.arguments
 
         background_sprite = catrobat.background_sprite_of(self.scene)
+
         if not background_sprite:
             assert catrobat.is_background_sprite(self.sprite)
             background_sprite = self.sprite
@@ -1488,7 +1547,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
         look_name = argument
         if look_name in {"next backdrop", "previous backdrop"}:
-            index_formula_elem = self._converted_helper_brick_or_formula_element(None, "backgroundIndex")
+            index_formula_elem = self._converted_helper_brick_or_formula_element([], "backgroundIndex")
             if look_name == "next backdrop":
                 if catrobat.is_background_sprite(self.sprite):
                     return catbricks.NextLookBrick()

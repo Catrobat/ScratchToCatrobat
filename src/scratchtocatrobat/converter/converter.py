@@ -1039,6 +1039,7 @@ class _ScratchObjectConverter(object):
         #       (also for "answer", i.e. _SHARED_GLOBAL_ANSWER_VARIABLE_NAME!!)
         sprite_name = sprite.getName()
         sprite_name = sprite_name.replace(BACKGROUND_LOCALIZED_GERMAN_NAME, BACKGROUND_ORIGINAL_NAME)
+        if not(sprite_name in scratch_project.sprite_variables_map): return
         local_sprite_variables = scratch_project.sprite_variables_map[sprite_name]
         context = sprite_context.context
         if context is None: return
@@ -1520,6 +1521,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         [argument] = self.arguments
 
         background_sprite = catrobat.background_sprite_of(self.scene)
+
         if not background_sprite:
             assert catrobat.is_background_sprite(self.sprite)
             background_sprite = self.sprite
@@ -1545,7 +1547,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
         look_name = argument
         if look_name in {"next backdrop", "previous backdrop"}:
-            index_formula_elem = self._converted_helper_brick_or_formula_element(None, "backgroundIndex")
+            index_formula_elem = self._converted_helper_brick_or_formula_element([], "backgroundIndex")
             if look_name == "next backdrop":
                 if catrobat.is_background_sprite(self.sprite):
                     return catbricks.NextLookBrick()

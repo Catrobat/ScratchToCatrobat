@@ -149,7 +149,7 @@ class TestProjectFunc(unittest.TestCase):
 
     def test_can_access_listened_pressed_keys(self):
         project = scratch.Project(common_testing.get_test_project_path("keys_pressed"))
-        assert project.listened_keys == set(["d", "c", "a", "4", "8"])
+        assert project.listened_keys == set([(u'a', 'listenedKeys'), (u'8', 'listenedKeys'), (u'd', 'listenedKeys'), (u'c', 'listenedKeys'), (u'4', 'listenedKeys')])
 
     def test_can_access_unused_resources_of_project(self):
         project = scratch.Project(common_testing.get_test_project_path("simple"), name="simple", project_id=common_testing.PROJECT_DUMMY_ID)
@@ -728,6 +728,43 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
         assert len(global_variables) == 1
         assert global_variables[0] == { "name": scratch.S2CC_TIMER_VARIABLE_NAME, "value": 0, "isPersistent": False }
 
+class TestKeyPressedWorkaround(unittest.TestCase):
+    KEYPRESSED_HELPER_OBJECTS_DATA_TEMPLATE = {
+        "objName": "Stage",
+        "sounds": [],
+        "costumes": [],
+        "currentCostumeIndex": 0,
+        "penLayerMD5": "5c81a336fab8be57adc039a8a2b33ca9.png",
+        "penLayerID": 0,
+        "tempoBPM": 60,
+        "videoAlpha": 0.5,
+        "children": [{ "objName": "Sprite1", "scripts": None }],
+        "info": {}
+    }
+
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        cls = self.__class__
+        cls.KEYPRESSED_HELPER_OBJECTS_DATA_TEMPLATE["scripts"] = []
+
+    def test_key_pressed(self):
+        cls = self.__class__
+        script_data = [0,0,[["whenGreenFlag"],["doForever", [["doIf", ["keyPressed:", "w"],[["changeYposBy:", 1]]]]]]]
+        cls.KEYPRESSED_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        raw_project = scratch.RawProject(cls.KEYPRESSED_HELPER_OBJECTS_DATA_TEMPLATE)
+        key_pressed_var_name = scratch.S2CC_KEY_VARIABLE_NAME + "w"
+        expected_first_object_script_data = [0,0,[["whenGreenFlag"],["doForever", [["doIf", ["readVariable", key_pressed_var_name],[["changeYposBy:", 1]]]]]]]
+
+        # validate
+        assert len(raw_project.objects) == 2
+        [background_object, sprite_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 0
+
+        script = sprite_object.scripts[0]
+        expected_script = scratch.Script(expected_first_object_script_data)
+        assert script == expected_script
 
 class TestDistanceBlockWorkaround(unittest.TestCase):
     DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE = {

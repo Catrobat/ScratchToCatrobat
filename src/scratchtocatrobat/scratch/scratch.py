@@ -66,6 +66,7 @@ SCRIPT_GREEN_FLAG, SCRIPT_RECEIVE, SCRIPT_KEY_PRESSED, SCRIPT_SENSOR_GREATER_THA
 STAGE_OBJECT_NAME = "Stage"
 STAGE_WIDTH_IN_PIXELS = 480
 STAGE_HEIGHT_IN_PIXELS = 360
+S2CC_KEY_VARIABLE_NAME = "S2CC:key_"
 S2CC_TIMER_VARIABLE_NAME = "S2CC:timer"
 S2CC_TIMER_RESET_BROADCAST_MESSAGE = "S2CC:timer:reset"
 S2CC_POSITION_X_VARIABLE_NAME_PREFIX = "S2CC:pos_x_"
@@ -76,6 +77,7 @@ ADD_TIMER_SCRIPT_KEY = "add_timer_script_key"
 ADD_TIMER_RESET_SCRIPT_KEY = "add_timer_reset_script_key"
 ADD_POSITION_SCRIPT_TO_OBJECTS_KEY = "add_position_script_to_objects_key"
 ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY = "add_update_attribute_script_to_objects_key"
+ADD_KEY_PRESSED_SCRIPT_KEY = "add_key_pressed_script_key"
 UPDATE_HELPER_VARIABLE_TIMEOUT = 0.04
 
 
@@ -109,6 +111,7 @@ class Object(common.DictAccessWrapper):
         workaround_info = {
             ADD_TIMER_SCRIPT_KEY: False,
             ADD_TIMER_RESET_SCRIPT_KEY: False,
+            ADD_KEY_PRESSED_SCRIPT_KEY: set(),
             ADD_POSITION_SCRIPT_TO_OBJECTS_KEY: set(),
             ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY: {},
         }
@@ -150,6 +153,38 @@ class Object(common.DictAccessWrapper):
 
             # rebuild ScriptElement tree
             script.script_element = ScriptElement.from_raw_block(script.blocks)
+
+        ############################################################################################
+        # key pressed workaround
+        ############################################################################################
+
+        key_pressed_keys = set()
+
+        def has_key_pressed_block(block_list):
+            for block in block_list:
+                if isinstance(block, list) and (block[0] == 'keyPressed:' or has_key_pressed_block(block)):
+                    return True
+            return False
+
+        def replace_key_pressed_blocks(block_list):
+            new_block_list = []
+            for block in block_list:
+                if isinstance(block, list):
+                    if block[0] == 'keyPressed:':
+                        new_block_list += [["readVariable", S2CC_KEY_VARIABLE_NAME+block[1]]]
+                        key_pressed_keys.add((block[1],"keyPressedBrick"))
+                    else:
+                        new_block_list += [replace_key_pressed_blocks(block)]
+                else:
+                    new_block_list += [block]
+            return new_block_list
+
+        for script in self.scripts:
+            if has_key_pressed_block(script.blocks): 
+                script.blocks = replace_key_pressed_blocks(script.blocks)
+                workaround_info[ADD_KEY_PRESSED_SCRIPT_KEY] = key_pressed_keys
+                # rebuild ScriptElement tree
+                script.script_element = ScriptElement.from_raw_block(script.blocks)
 
         ############################################################################################
         # distance to object workaround
@@ -258,6 +293,7 @@ class Object(common.DictAccessWrapper):
             # parse again ScriptElement tree
             script.script_element = ScriptElement.from_raw_block(script.blocks)
         workaround_info[ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY] = sensor_data_needed_for_sprite_names
+        #print (workaround_info)
         return workaround_info
 
     @classmethod
@@ -317,6 +353,8 @@ class RawProject(Object):
             workaround_info = scratch_object.preprocess_object(all_sprite_names)
             if workaround_info[ADD_TIMER_SCRIPT_KEY]: is_add_timer_script = True
             if workaround_info[ADD_TIMER_RESET_SCRIPT_KEY]: is_add_timer_reset_script = True
+            if len(workaround_info[ADD_KEY_PRESSED_SCRIPT_KEY]) > 0: 
+                self.listened_keys = workaround_info[ADD_KEY_PRESSED_SCRIPT_KEY]
             position_script_to_be_added |= workaround_info[ADD_POSITION_SCRIPT_TO_OBJECTS_KEY]
 
             for sprite_name, sensor_names_set in workaround_info[ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY].iteritems():
@@ -587,9 +625,12 @@ class Project(RawProject):
             for script in scratch_obj.scripts:
                 if script.type == SCRIPT_KEY_PRESSED:
                     assert len(script.arguments) == 1
-                    listened_keys += script.arguments
-        self.listened_keys = set(listened_keys)
+                    listened_keys += [(argument, "listenedKeys") for argument in script.arguments]
 
+        try:
+            self.listened_keys.union(listened_keys)
+        except AttributeError:
+            self.listened_keys = set(listened_keys)
         # TODO: rename
         self.background_md5_names = set([costume[JsonKeys.COSTUME_MD5] for costume in self.get_costumes()])
 

@@ -41,7 +41,7 @@ def _log_level_for_string(log_level_string):
 def setup_logging():
     import os
     from datetime import datetime
-    from tools import helpers
+    from scratchtocatrobat.tools import helpers
     log.setLevel(logging.DEBUG)
 
     log_dir = helpers.config.get("PATHS", "logging")

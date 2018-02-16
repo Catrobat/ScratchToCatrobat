@@ -628,7 +628,7 @@ class Project(RawProject):
                     listened_keys += [(argument, "listenedKeys") for argument in script.arguments]
 
         try:
-            self.listened_keys.union(listened_keys)
+            self.listened_keys.update(listened_keys)
         except AttributeError:
             self.listened_keys = set(listened_keys)
         # TODO: rename

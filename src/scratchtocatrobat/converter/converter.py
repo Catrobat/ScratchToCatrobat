@@ -109,6 +109,12 @@ def _placeholder_for_unmapped_blocks_to(*args):
 def _key_to_broadcast_message(key_name):
     return "key " + key_name + " pressed"
 
+def _get_existing_sprite_with_name(sprite_list, name):
+    for sprite in sprite_list:
+        if sprite.getName() == name:
+            return sprite
+    return None
+
 def _background_look_to_broadcast_message(look_name):
     return "start background scene: " + look_name
 
@@ -647,26 +653,33 @@ class Converter(object):
         #load key file and create sprite with looks
         key_filename = _key_filename_for(key)
         key_message = _key_to_broadcast_message(key)
-        key_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, key_message)
-        key_look = catcommon.LookData()
-        key_look.setLookName(key_message)
-        key_look.setLookFilename(key_filename)
-        key_sprite.getLookDataList().add(key_look)
+        add_sprite_to_scene = False
+        key_sprite = _get_existing_sprite_with_name(catrobat_scene.getSpriteList(), key_message)
+        if key_sprite == None:
+            add_sprite_to_scene = True
+            key_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, key_message)
+            key_look = catcommon.LookData()
+            key_look.setLookName(key_message)
+            key_look.setLookFilename(key_filename)
+            key_sprite.getLookDataList().add(key_look)
 
-        #set looks and position via started script
-        when_started_script = catbase.StartScript()
-        set_look_brick = catbricks.SetLookBrick()
-        set_look_brick.setLook(key_look)
-        place_at_brick = catbricks.PlaceAtBrick(x_pos, y_pos)
-        bricks = [place_at_brick, set_look_brick, catbricks.SetSizeToBrick(33)]
-        when_started_script.getBrickList().addAll(bricks)
-        key_sprite.addScript(when_started_script)
+            #set looks and position via started script
+            when_started_script = catbase.StartScript()
+            set_look_brick = catbricks.SetLookBrick()
+            set_look_brick.setLook(key_look)
+            place_at_brick = catbricks.PlaceAtBrick(x_pos, y_pos)
+            bricks = [place_at_brick, set_look_brick, catbricks.SetSizeToBrick(33)]
+            when_started_script.getBrickList().addAll(bricks)
+            key_sprite.addScript(when_started_script)
 
         #when tapped script
         when_tapped_script = catbase.WhenScript()
         when_tapped_script.addBrick(catbricks.BroadcastBrick(key_message))
         key_sprite.addScript(when_tapped_script)
-        catrobat_scene.addSprite(key_sprite)
+
+        if add_sprite_to_scene:
+            catrobat_scene.addSprite(key_sprite)
+        return add_sprite_to_scene
 
     @staticmethod
     def _key_pressed_block_workaround_script(key, x_pos, y_pos, catrobat_scene):
@@ -675,20 +688,24 @@ class Converter(object):
         #TODO: different names for key pressed block case, key pressed script case
         key_message = _key_to_broadcast_message(key)
         #TODO: Check if sprite already exists
-        key_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, key_message)
-        key_look = catcommon.LookData()
-        key_look.setLookName(key_message)
-        key_look.setLookFilename(key_filename)
-        key_sprite.getLookDataList().add(key_look)
+        add_sprite_to_scene = False
+        key_sprite = _get_existing_sprite_with_name(catrobat_scene.getSpriteList(), key_message)
+        if key_sprite == None:
+            add_sprite_to_scene = True
+            key_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, key_message)
+            key_look = catcommon.LookData()
+            key_look.setLookName(key_message)
+            key_look.setLookFilename(key_filename)
+            key_sprite.getLookDataList().add(key_look)
 
-        #set looks and position via started script
-        when_started_script = catbase.StartScript()
-        set_look_brick = catbricks.SetLookBrick()
-        set_look_brick.setLook(key_look)
-        place_at_brick = catbricks.PlaceAtBrick(x_pos, y_pos)
-        bricks = [place_at_brick, set_look_brick, catbricks.SetSizeToBrick(33)]
-        when_started_script.getBrickList().addAll(bricks)
-        key_sprite.addScript(when_started_script)
+            #set looks and position via started script
+            when_started_script = catbase.StartScript()
+            set_look_brick = catbricks.SetLookBrick()
+            set_look_brick.setLook(key_look)
+            place_at_brick = catbricks.PlaceAtBrick(x_pos, y_pos)
+            bricks = [place_at_brick, set_look_brick, catbricks.SetSizeToBrick(33)]
+            when_started_script.getBrickList().addAll(bricks)
+            key_sprite.addScript(when_started_script)
 
         #while tapped set global key var to 1
         when_tapped_script = catbase.WhenScript()
@@ -708,10 +725,12 @@ class Converter(object):
         bricks.append(catbricks.WaitUntilBrick(catformula.Formula(not_touching_fe)))
         #set uservariable to 0
         bricks.append(catbricks.SetVariableBrick(catformula.Formula(0), key_user_variable))
-
         when_tapped_script.getBrickList().addAll(bricks)
         key_sprite.addScript(when_tapped_script)
-        catrobat_scene.addSprite(key_sprite)
+
+        if add_sprite_to_scene:
+            catrobat_scene.addSprite(key_sprite)
+        return add_sprite_to_scene
 
     @staticmethod
     def _add_key_sprites_to(catrobat_scene, listened_keys):
@@ -720,29 +739,39 @@ class Converter(object):
         space_letters_width_offset = 4
         letters_per_row = 12
         space_exists = False
+
         listened_keys_names = [key_tuple[0] for key_tuple in listened_keys]
         if "space" in listened_keys_names:
             space_exists = True
-            listened_keys = set(key_tuple for key_tuple in listened_keys if key_tuple == "space")
-        for idx, key_tuple in enumerate(listened_keys):
-            if space_exists and idx > 3:
-                idx = idx + space_letters_width_offset
-            width_pos = idx % letters_per_row
-            height_pos = int(idx / letters_per_row) + 1
+        space_variants = []
+        key_pos = 0
+        for key_tuple in listened_keys:
+            if key_tuple[0] == "space":
+                space_variants.append(key_tuple[1])
+                continue
+            if space_exists and key_pos == 4 :
+                key_pos = key_pos + space_letters_width_offset
+
+            width_pos = key_pos % letters_per_row
+            height_pos = int(key_pos / letters_per_row) + 1
             y_pos = -(scratch.STAGE_HEIGHT_IN_PIXELS / 2) + y_offset + 40 * height_pos
             x_pos = -(scratch.STAGE_WIDTH_IN_PIXELS / 2) + x_offset + 40 * (width_pos + 1)
+
+            key_sprite_added = False
             if(key_tuple[1] == "listenedKeys"):
-                Converter._key_pressed_script_workaround_script(key_tuple[0], x_pos, y_pos,catrobat_scene)
+                key_sprite_added = Converter._key_pressed_script_workaround_script(key_tuple[0], x_pos, y_pos,catrobat_scene)
             elif(key_tuple[1] == "keyPressedBrick"):
-                Converter._key_pressed_block_workaround_script(key_tuple[0], x_pos, y_pos,catrobat_scene)
+                key_sprite_added = Converter._key_pressed_block_workaround_script(key_tuple[0], x_pos, y_pos,catrobat_scene)
+            if key_sprite_added:
+                key_pos += 1
+
         if space_exists:
-            listened_keys.add(("space","listenedKeys"))
             y_pos = -(scratch.STAGE_HEIGHT_IN_PIXELS / 2) + y_offset + 40
             x_pos = 0
-            if(key_tuple[1] == "listenedKeys"):
-                Converter._key_pressed_script_workaround_script(key_tuple[0], x_pos, y_pos,catrobat_scene)
-            elif(key_tuple[1] == "keyPressedBrick"):
-                Converter._key_pressed_block_workaround_script(key_tuple[0], x_pos, y_pos,catrobat_scene)
+            if "listenedKeys" in space_variants:
+                Converter._key_pressed_script_workaround_script("space", x_pos, y_pos,catrobat_scene)
+            if "keyPressedBrick" in space_variants:
+                Converter._key_pressed_block_workaround_script("space", x_pos, y_pos,catrobat_scene)
 
     @staticmethod
     def _update_xml_header(xml_header, scratch_project_id, program_name, scratch_project_instructions,

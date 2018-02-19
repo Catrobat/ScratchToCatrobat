@@ -325,9 +325,9 @@ def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
     root = tree.getroot()
 
     #exception is thrown if height or width is less or equal zero
-    if 'height' in root.attrib and int((root.attrib['height']).replace('px', '')) <= 0:
+    if 'height' in root.attrib and float((root.attrib['height']).replace('px', '')) <= 0:
         root.attrib['height'] = '1'
-    if 'width' in root.attrib and int((root.attrib['width']).replace('px', '')) <= 0:
+    if 'width' in root.attrib and float((root.attrib['width']).replace('px', '')) <= 0:
         root.attrib['width'] = '1'
 
     if 'viewBox' not in root.attrib:

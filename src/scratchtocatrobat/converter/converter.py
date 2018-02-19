@@ -1858,7 +1858,8 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         if user_variable is None:
             # WORKAROUND: for generated variables added in preprocessing step
             # must be generated user variable, otherwise the variable must have already been added at this stage!
-            assert(_is_generated(variable_name))
+            if not _is_generated(variable_name):
+                log.warning("UserVariable with name :'" + variable_name + "' does not exist. Creating it now.")
             catrobat.add_user_variable(self.project, variable_name, self.sprite, self.sprite.getName())
             user_variable = self.scene.getDataContainer().getUserVariable(self.sprite, variable_name)
 

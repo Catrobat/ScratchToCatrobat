@@ -106,7 +106,7 @@ def convert(input_svg_path, rotation_x, rotation_y):
         _log.error(err)
         _log.error(traceback.format_exc())
         _log.error(exc_info)
-        error = common.ScratchtobatError("PNG to SVG conversion call failed for: %s" % input_svg_path)
+        error = common.ScratchtobatError("SVG to PNG conversion call failed for: %s" % input_svg_path)
     finally:
         # free resources
         if png_ostream != None:
@@ -325,9 +325,9 @@ def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
     root = tree.getroot()
 
     #exception is thrown if height or width is less or equal zero
-    if 'height' in root.attrib and int((root.attrib['height']).replace('px', '')) <= 0:
+    if 'height' in root.attrib and float((root.attrib['height']).replace('px', '')) <= 0:
         root.attrib['height'] = '1'
-    if 'width' in root.attrib and int((root.attrib['width']).replace('px', '')) <= 0:
+    if 'width' in root.attrib and float((root.attrib['width']).replace('px', '')) <= 0:
         root.attrib['width'] = '1'
 
     if 'viewBox' not in root.attrib:

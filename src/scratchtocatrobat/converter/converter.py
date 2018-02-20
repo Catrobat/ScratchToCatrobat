@@ -1591,7 +1591,10 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
         matching_looks = [_ for _ in background_sprite.getLookDataList() if _.getLookName() == look_name]
         if not matching_looks:
-            raise ConversionError("Background does not contain look with name: {}".format(look_name))
+            errormessage = "Background does not contain look with name: {}".format(look_name)
+            log.warning(errormessage)
+            return catbricks.NoteBrick(errormessage)
+
         assert len(matching_looks) == 1
 
         switch_background_brick = self.CatrobatClass()
@@ -1631,7 +1634,10 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
         matching_looks = [_ for _ in self.sprite.getLookDataList() if _.getLookName() == look_name]
         if not matching_looks:
-            raise ConversionError("Background does not contain look with name: {}".format(look_name))
+            errormessage = "Background does not contain look with name: {}".format(look_name)
+            log.warning(errormessage)
+            return catbricks.NoteBrick(errormessage)
+
         assert len(matching_looks) == 1
 
         switch_background_brick = self.CatrobatClass()
@@ -1684,8 +1690,10 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         assert isinstance(look_name, (str, unicode)), type(look_name)
         look = next((look for look in self.sprite.getLookDataList() if look.getLookName() == look_name), None)
         if look is None:
-            log.error("Look name: '%s' not found in sprite '%s'. Available looks: %s", look_name, self.sprite.getName(), ", ".join([look.getLookName() for look in self.sprite.getLookDataList()]))
-            return []
+            errormessage = "Look name: '%s' not found in sprite '%s'. Available looks: %s replacing Brick with NoteBrick" % (look_name, self.sprite.getName(), ", ".join([look.getLookName() for look in self.sprite.getLookDataList()]))
+            log.warning(errormessage)
+            set_look_brick = catbricks.NoteBrick(errormessage)
+            return set_look_brick
 
         set_look_brick.setLook(look)
         return set_look_brick

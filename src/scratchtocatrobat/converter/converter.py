@@ -66,6 +66,9 @@ UNSUPPORTED_SCRATCH_FORMULA_BLOCK_NOTE_MESSAGE_PREFIX = "Missing formula element
 BACKGROUND_LOCALIZED_GERMAN_NAME = "Hintergrund"
 BACKGROUND_ORIGINAL_NAME = "Stage"
 
+MOUSE_SPRITE_NAME = "_mouse_"
+MOUSE_SPRITE_FILENAME = "mouse_cursor_dummy.png"
+
 log = logger.log
 
 # global position variables for visible variable positioning
@@ -551,6 +554,8 @@ def _key_image_path_for(key):
             return os.path.join(key_images_path, key_filename)
     assert False, "Key '%s' not found in %s" % (key, os.listdir(key_images_path))
 
+def _mouse_image_path():
+    return os.path.join(common.get_project_base_path(), 'resources', 'images', 'keys', MOUSE_SPRITE_FILENAME)
 
 # TODO:  refactor _key_* functions to be used just once
 def _key_filename_for(key):
@@ -559,6 +564,9 @@ def _key_filename_for(key):
     # TODO: extract method, already used once
     return common.md5_hash(key_path) + "_" + _key_to_broadcast_message(key) + os.path.splitext(key_path)[1]
 
+def _generate_mouse_filename():
+    mouse_path = _mouse_image_path()
+    return common.md5_hash(mouse_path) + "_" + MOUSE_SPRITE_FILENAME
 
 def generated_variable_name(variable_name):
     return _GENERATED_VARIABLE_PREFIX + variable_name
@@ -627,6 +635,7 @@ class Converter(object):
         self._add_global_user_lists_to(_catr_scene)
         self._add_converted_sprites_to(_catr_scene)
         self._add_key_sprites_to(_catr_scene, self.scratch_project.listened_keys)
+        self.add_cursor_sprite_to(_catr_scene, context.upcoming_sprites)
         self._update_xml_header(_catr_project.getXmlHeader(), scratch_project.project_id,
                                 scratch_project.name, scratch_project.instructions,
                                 scratch_project.notes_and_credits)
@@ -646,6 +655,43 @@ class Converter(object):
         for scratch_object in self.scratch_project.objects:
             catr_sprite = self._scratch_object_converter(scratch_object)
             catrobat_scene.addSprite(catr_sprite)
+
+    def add_cursor_sprite_to(self, _catr_scene, upcoming_sprites):
+        if not MOUSE_SPRITE_NAME in upcoming_sprites:
+            return
+
+        sprite = upcoming_sprites[MOUSE_SPRITE_NAME]
+        look = catcommon.LookData()
+        look.setLookName(MOUSE_SPRITE_NAME)
+        mouse_filename = _generate_mouse_filename()
+        look.setLookFilename(mouse_filename)
+        sprite.getLookDataList().add(look)
+
+        start_script = catbase.StartScript()
+
+        place_at_brick = catbricks.PlaceAtBrick(0, 0)
+        set_look_brick = catbricks.SetLookBrick()
+        set_look_brick.setLook(look)
+        set_size_brick = catbricks.SetSizeToBrick(100)
+
+        loop_brick = catbricks.ForeverBrick()
+        touch_element = catformula.FormulaElement(catElementType.SENSOR, str(catformula.Sensors.FINGER_TOUCHED), None)
+        touch_formula = catformula.Formula(touch_element)
+        if_brick = catbricks.IfThenLogicBeginBrick(touch_formula)
+
+        set_pos_brick = catbricks.GoToBrick()
+        set_pos_brick.spinnerSelection = 80 #TODO: set to BrickValues.GO_TO_TOUCH_POSITION
+        if_end_brick = catbricks.IfThenLogicEndBrick(if_brick)
+        if_brick.setIfThenEndBrick(if_end_brick)
+        loop_end_brick = catbricks.LoopEndBrick(loop_brick)
+        loop_brick.setLoopEndBrick(loop_end_brick)
+
+        bricks = [place_at_brick, set_look_brick, set_size_brick, loop_brick, if_brick, set_pos_brick, if_end_brick, loop_end_brick]
+
+        start_script.brickList.addAll(bricks)
+        sprite.addScript(start_script)
+        _catr_scene.addSprite(sprite)
+
 
     #_place_key_brick
     @staticmethod
@@ -1212,6 +1258,11 @@ class ConvertedProject(object):
             for listened_key_tuple in self.scratch_project.listened_keys:
                 key_image_path = _key_image_path_for(listened_key_tuple[0])
                 shutil.copyfile(key_image_path, os.path.join(images_path, _key_filename_for(listened_key_tuple[0])))
+            for sprite in catrobat_program.getDefaultScene().spriteList:
+                if sprite.name == MOUSE_SPRITE_NAME:
+                    mouse_img_path = _mouse_image_path()
+                    shutil.copyfile(mouse_img_path, os.path.join(images_path, _generate_mouse_filename()))
+                    break
 
         def download_automatic_screenshot_if_available(output_dir, scratch_project):
             if scratch_project.automatic_screenshot_image_url is None:
@@ -2094,19 +2145,38 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         sprite_context = self.script_context.sprite_context
         return _create_user_brick(sprite_context, scratch_function_header, param_values, declare=False)
 
+    @_register_handler(_block_name_to_handler_map, "pointTowards:")
+    def _convert_point_towards_block(self):
+        [sprite_name] = self.arguments
+
+        if not isinstance(sprite_name, basestring):
+            return catbricks.NoteBrick("Error: Not a valid parameter for PointToBrick")
+
+        for sprite in self.scene.spriteList:
+            if sprite.getName() == sprite_name:
+                return self.CatrobatClass(sprite)
+        if sprite_name in self.script_context.sprite_context.context.upcoming_sprites:
+            sprite = self.script_context.sprite_context.context.upcoming_sprites[sprite_name]
+        else:
+            sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, sprite_name)
+            self.script_context.sprite_context.context.upcoming_sprites[sprite_name] = sprite
+        return self.CatrobatClass(sprite)
+
     @_register_handler(_block_name_to_handler_map, "gotoSpriteOrMouse:")
     def _convert_go_to_sprite_or_mouse_block(self):
         [base_sprite], go_to_brick = self.arguments, None
         if base_sprite == "_mouse_":
             go_to_brick = self.CatrobatClass()
-            go_to_brick.spinnerSelection = 0 # TODO: these value will change after updating Catroid class hierarchy (see: BrickValues class)
+            go_to_brick.spinnerSelection = 80 # TODO: these value will change after updating Catroid class hierarchy (see: BrickValues class)
         elif base_sprite == "_random_":
             go_to_brick = self.CatrobatClass()
-            go_to_brick.spinnerSelection = 1 # TODO: these value will change after updating Catroid class hierarchy (see: BrickValues class)
+            go_to_brick.spinnerSelection = 81 # TODO: these value will change after updating Catroid class hierarchy (see: BrickValues class)
         elif isinstance(base_sprite, basestring):
             for sprite in self.scene.spriteList:
                 if sprite.getName() == base_sprite:
-                    return self.CatrobatClass(sprite)
+                    go_to_brick = self.CatrobatClass(sprite)
+                    go_to_brick.spinnerSelection = 82
+                    return go_to_brick
             if base_sprite in self.script_context.sprite_context.context.upcoming_sprites:
                 new_sprite = self.script_context.sprite_context.context.upcoming_sprites[base_sprite]
             else:
@@ -2114,8 +2184,9 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
                 self.script_context.sprite_context.context.upcoming_sprites[new_sprite.getName()] = new_sprite
 
             go_to_brick = self.CatrobatClass(new_sprite)
+            go_to_brick.spinnerSelection = 82
         else:
-            return catbricks.NoteBrick("Error: Not a valid parameter")
+            return catbricks.NoteBrick("Error: Not a valid parameter for Goto Brick")
         return go_to_brick
 
     @_register_handler(_block_name_to_handler_map, "touching:")

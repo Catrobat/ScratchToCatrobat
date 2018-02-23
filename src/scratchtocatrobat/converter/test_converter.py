@@ -2354,6 +2354,47 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert isinstance(catr_brick, catbricks.GoToBrick)
         assert catr_brick.spinnerSelection == 1
 
+    #pointTowards:
+    def test_can_convert_point_towards_block_basic(self):
+        test_sprite_name = "spr"
+        scratch_block = ["pointTowards:", test_sprite_name]
+        context = converter.Context()
+        sprite_context = converter.SpriteContext(DUMMY_CATR_SPRITE.getName())
+        sprite_context.context = context
+        script_context = converter.ScriptContext(sprite_context)
+
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE, script_context)
+        assert isinstance(catr_brick, catbricks.PointToBrick)
+        assert catr_brick.pointedObject.name == "spr"
+
+        #pointTowards:
+    def test_can_convert_point_towards_block_mouse(self):
+        test_sprite_name = "_mouse_"
+        scratch_block = ["pointTowards:", test_sprite_name]
+        context = converter.Context()
+        sprite_context = converter.SpriteContext(DUMMY_CATR_SPRITE.getName())
+        sprite_context.context = context
+        script_context = converter.ScriptContext(sprite_context)
+
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE, script_context)
+
+        assert isinstance(catr_brick, catbricks.PointToBrick)
+        assert catr_brick.pointedObject.name == "_mouse_"
+        assert "_mouse_" in context.upcoming_sprites
+        assert catr_brick.pointedObject is context.upcoming_sprites["_mouse_"]
+
+        #pointTowards:
+    def test_can_convert_point_towards_block_existing_sprite(self):
+        test_sprite_name = "test_sprite"
+        scratch_block = ["pointTowards:", test_sprite_name]
+        sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, test_sprite_name)
+        self.test_scene.addSprite(sprite)
+
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+
+        assert isinstance(catr_brick, catbricks.PointToBrick)
+        assert catr_brick.pointedObject.name == test_sprite_name
+
     #sceneName
     def test_can_convert_backdrop_name_block(self):
         scratch_block = ["sceneName"]

@@ -2344,7 +2344,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         scratch_block = ["gotoSpriteOrMouse:", test_sprite_name]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.GoToBrick)
-        assert catr_brick.spinnerSelection == 0
+        assert catr_brick.spinnerSelection == 80
 
     #gotoSpriteOrMouse:
     def test_can_convert_go_to_sprite_block_with_random_position(self):
@@ -2352,7 +2352,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         scratch_block = ["gotoSpriteOrMouse:", test_sprite_name]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.GoToBrick)
-        assert catr_brick.spinnerSelection == 1
+        assert catr_brick.spinnerSelection == 81
 
     #pointTowards:
     def test_can_convert_point_towards_block_basic(self):

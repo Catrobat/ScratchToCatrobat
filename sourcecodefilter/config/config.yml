@@ -1,12 +1,12 @@
 #==================================================================================================
 # Define and update parameters here
 #==================================================================================================
-catroid_version: v0.9.31
+catroid_version: v0.9.32
 xstream_class_name: BackwardCompatibleCatrobatLanguageXStream
 archive_extension: "zip"
 #URL: "https://github.com/Catrobat/Catroid/archive/master.%{archive_extension}"
 #URL: "https://github.com/Catrobat/Catroid/archive/%{catroid_version}.%{archive_extension}"
-URL: "https://github.com/Catrobat/Catroid/archive/release-0.9.31.%{archive_extension}"
+URL: "https://github.com/Catrobat/Catroid/archive/release-0.9.32.%{archive_extension}"
 xstream_version: "1.4.7"
 xstream_lib_extension: "jar"
 xstream_download_URL: "http://repo.maven.apache.org/maven2/com/thoughtworks/xstream/xstream/%{xstream_version}/xstream-%{xstream_version}.%{xstream_lib_extension}"
@@ -316,6 +316,7 @@ preserved_interfaces:
 
 additional_helper_classes:
     - BroadcastMessage
+    - BrickValues
     - Constants
     - CatroidFieldKeySorter
     - UserVariablesContainer
@@ -666,6 +667,8 @@ class_to_preserved_methods_mapping:
         - getScriptBrick
 
 remove_fields_mapping:
+    BrickValues:
+        [PHYSIC_TYPE, PHYSIC_MASS, PHYSIC_BOUNCE_FACTOR, PHYSIC_FRICTION, PHYSIC_GRAVITY, PHYSIC_VELOCITY, PHYSIC_TURN_DEGREES]
     Constants:
         [DEFAULT_ROOT, TMP_PATH, TMP_IMAGE_PATH, TMP_LOOKS_PATH, TMP_SOUNDS_PATH, TEXT_TO_SPEECH_TMP_PATH]
     Look:

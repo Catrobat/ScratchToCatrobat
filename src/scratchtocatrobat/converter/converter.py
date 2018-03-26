@@ -1245,7 +1245,7 @@ class _ScratchObjectConverter(object):
         if context is None: return
 
         # Display visible variables at start
-        for variable_name in local_sprite_variables:
+        for variable_name in sorted(local_sprite_variables):
             user_variable = catrobat_project.getUserVariable(variable_name) if sprite_name == "Stage" else sprite.getUserVariable(variable_name)
             show_variable_brick = catbricks.ShowTextBrick(context.visible_var_X, context.visible_var_Y)
             show_variable_brick.setUserVariable(user_variable)

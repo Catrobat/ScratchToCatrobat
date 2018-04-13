@@ -203,7 +203,7 @@ class _ScratchToCatrobat(object):
         # Scripts
         #
         scratch.SCRIPT_GREEN_FLAG: catbase.StartScript,
-        scratch.SCRIPT_RECEIVE: lambda message: catbase.BroadcastScript(message.lower()), # lower case to prevent case-sensitivity issues in Catrobat...
+        scratch.SCRIPT_RECEIVE: lambda message: catbase.BroadcastScript(str(message).lower()), # lower case to prevent case-sensitivity issues in Catrobat...
         scratch.SCRIPT_KEY_PRESSED: lambda key: catbase.BroadcastScript(_key_to_broadcast_message(key)),
         scratch.SCRIPT_SCENE_STARTS: lambda look_name: catbase.BroadcastScript(_background_look_to_broadcast_message(look_name)),
         scratch.SCRIPT_CLICKED: catbase.WhenScript,
@@ -217,8 +217,8 @@ class _ScratchToCatrobat(object):
         #
         # Bricks
         #
-        "broadcast:": lambda message: catbricks.BroadcastBrick(message.lower()), # lower case to prevent case-sensitivity issues in Catrobat...
-        "doBroadcastAndWait": lambda message: catbricks.BroadcastWaitBrick(message.lower()), # lower case to prevent case-sensitivity issues in Catrobat...
+        "broadcast:": lambda message: catbricks.BroadcastBrick(str(message).lower()), # lower case to prevent case-sensitivity issues in Catrobat...
+        "doBroadcastAndWait": lambda message: catbricks.BroadcastWaitBrick(str(message).lower()), # lower case to prevent case-sensitivity issues in Catrobat...
         "wait:elapsed:from:": lambda duration: catbricks.WaitBrick(catrobat.create_formula_with_value(duration)),
 
         # control

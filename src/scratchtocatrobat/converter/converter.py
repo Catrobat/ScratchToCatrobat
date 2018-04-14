@@ -217,8 +217,8 @@ class _ScratchToCatrobat(object):
         #
         # Bricks
         #
-        "broadcast:": lambda message: catbricks.BroadcastBrick(message.lower()), # lower case to prevent case-sensitivity issues in Catrobat...
-        "doBroadcastAndWait": lambda message: catbricks.BroadcastWaitBrick(message.lower()), # lower case to prevent case-sensitivity issues in Catrobat...
+        "broadcast:": None,
+        "doBroadcastAndWait": None,
         "wait:elapsed:from:": lambda duration: catbricks.WaitBrick(catrobat.create_formula_with_value(duration)),
 
         # control
@@ -2202,4 +2202,24 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             formula_element = catformula.FormulaElement(catElementType.COLLISION_FORMULA, None, None)
             formula_element.value = arguments[0]
         return formula_element
+
+    @_register_handler(_block_name_to_handler_map, "broadcast:")
+    def _convert_broadcast(self):
+        message = self.arguments[0]
+        if isinstance(message, catformula.FormulaElement):
+            log.error("Replacing {0} with NoteBrick".format(self.block_name))
+            return catbricks.NoteBrick("Catroid doesn't support formula elements for broadcasting")
+        elif isinstance(message ,int):
+            message = str(message)
+        return catbricks.BroadcastBrick(message.lower())
+
+    @_register_handler(_block_name_to_handler_map, "doBroadcastAndWait")
+    def _convert_doBroadcastAndWait(self):
+        message = self.arguments[0]
+        if isinstance(message, catformula.FormulaElement):
+            log.error("Replacing {0} with NoteBrick".format(self.block_name))
+            return catbricks.NoteBrick("Catroid doesn't support formula elements for broadcasting")
+        elif isinstance(message ,int):
+            message = str(message)
+        return catbricks.BroadcastWaitBrick(message.lower())
 

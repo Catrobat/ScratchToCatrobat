@@ -349,12 +349,13 @@ class RawProject(Object):
         all_sprite_names = sprite_name_sprite_mapping.keys()
         position_script_to_be_added = set()
         update_attribute_script_to_be_added = {}
+        self.listened_keys = set()
         for scratch_object in self.objects:
             workaround_info = scratch_object.preprocess_object(all_sprite_names)
             if workaround_info[ADD_TIMER_SCRIPT_KEY]: is_add_timer_script = True
             if workaround_info[ADD_TIMER_RESET_SCRIPT_KEY]: is_add_timer_reset_script = True
-            if len(workaround_info[ADD_KEY_PRESSED_SCRIPT_KEY]) > 0: 
-                self.listened_keys = workaround_info[ADD_KEY_PRESSED_SCRIPT_KEY]
+            if len(workaround_info[ADD_KEY_PRESSED_SCRIPT_KEY]) > 0:
+                self.listened_keys.update(workaround_info[ADD_KEY_PRESSED_SCRIPT_KEY])
             position_script_to_be_added |= workaround_info[ADD_POSITION_SCRIPT_TO_OBJECTS_KEY]
 
             for sprite_name, sensor_names_set in workaround_info[ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY].iteritems():

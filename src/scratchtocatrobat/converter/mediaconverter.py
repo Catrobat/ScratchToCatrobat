@@ -33,6 +33,7 @@ from scratchtocatrobat.tools import wavconverter
 from scratchtocatrobat.tools import helpers
 from scratchtocatrobat.tools.helpers import ProgressType
 from scratchtocatrobat.tools import image_processing
+from javax.imageio import ImageIO
 
 MAX_CONCURRENT_THREADS = int(helpers.config.get("MEDIA_CONVERTER", "max_concurrent_threads"))
 log = logger.log
@@ -126,7 +127,7 @@ class MediaConverter(object):
                 assert os.path.exists(costume_src_path), "Not existing: {}".format(costume_src_path)
                 assert file_ext in {".png", ".svg", ".jpg", ".gif"}, \
                        "Unsupported image file extension: %s" % costume_src_path
-
+                ispng = file_ext == ".png"
                 is_unconverted = file_ext == ".svg"
                 resource_info = {
                     "scratch_md5_name": costume_file_name,
@@ -140,10 +141,18 @@ class MediaConverter(object):
 
                 if is_unconverted:
                     unconverted_media_resources.append(resource_info)
-                elif progress_bar != None and costume_src_path not in converted_media_resources_paths:
+                elif progress_bar != None and costume_src_path not in converted_media_resources_paths and ispng:
                     # update progress bar for all those media files that don't have to be converted
                     progress_bar.update(ProgressType.CONVERT_MEDIA_FILE)
+                    #TODO: background gets scaled too, shouldn't be the case
+                    isStageCostume = scratch_object.name == "Stage"
+                    if not isStageCostume and JsonKeys.COSTUME_RESOLUTION in costume_info:
+                        self.resize_png(costume_src_path, costume_src_path, costume_info[JsonKeys.COSTUME_RESOLUTION])
                     converted_media_resources_paths.add(costume_src_path)
+                elif progress_bar != None and costume_src_path not in converted_media_resources_paths:
+                    progress_bar.update(ProgressType.CONVERT_MEDIA_FILE)
+                    converted_media_resources_paths.add(costume_src_path)
+
 
             for sound_info in scratch_object.get_sounds():
                 sound_file_name = sound_info[JsonKeys.SOUND_MD5]
@@ -270,3 +279,25 @@ class MediaConverter(object):
 
             shutil.copyfile(src_path, os.path.join(dest_path, new_file_name))
 
+    def resize_png(self, path_in, path_out, bitmapResolution):
+        import java.awt.image.BufferedImage
+        import java.io.File
+        import java.io.IOException
+        input = java.io.File(path_in)
+        image = ImageIO.read(input)
+        from math import ceil
+        new_height = int(ceil(image.getHeight() / float(bitmapResolution)))
+        new_height = new_height if new_height != 0 else 1
+        new_width = int(ceil(image.getWidth() / float(bitmapResolution)))
+        new_width = new_width if new_width != 0 else 1
+        def resize(img, height, width):
+            tmp = img.getScaledInstance(width, height, java.awt.Image.SCALE_SMOOTH)
+            resized = java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+            g2d = resized.createGraphics()
+            g2d.drawImage(tmp, 0, 0, None)
+            g2d.dispose()
+            return resized
+        resized = resize(image, new_height, new_width)
+        output = java.io.File(path_out)
+        ImageIO.write(resized, "png", output)
+        return path_out

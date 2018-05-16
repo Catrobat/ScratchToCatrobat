@@ -78,6 +78,7 @@ ADD_TIMER_RESET_SCRIPT_KEY = "add_timer_reset_script_key"
 ADD_POSITION_SCRIPT_TO_OBJECTS_KEY = "add_position_script_to_objects_key"
 ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY = "add_update_attribute_script_to_objects_key"
 ADD_KEY_PRESSED_SCRIPT_KEY = "add_key_pressed_script_key"
+ADD_MOUSE_SPRITE = "add_mouse_sprite"
 UPDATE_HELPER_VARIABLE_TIMEOUT = 0.04
 
 
@@ -114,6 +115,7 @@ class Object(common.DictAccessWrapper):
             ADD_KEY_PRESSED_SCRIPT_KEY: set(),
             ADD_POSITION_SCRIPT_TO_OBJECTS_KEY: set(),
             ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY: {},
+            ADD_MOUSE_SPRITE: False,
         }
 
         ############################################################################################
@@ -192,7 +194,7 @@ class Object(common.DictAccessWrapper):
         def has_distance_to_object_block(block_list, all_sprite_names):
             for block in block_list:
                 if isinstance(block, list) \
-                and ((block[0] == 'distanceTo:' and block[1] in all_sprite_names) \
+                and ((block[0] == 'distanceTo:' and block[1] in (all_sprite_names) + ['_mouse_']) \
                      or has_distance_to_object_block(block, all_sprite_names)):
                     return True
             return False
@@ -216,6 +218,9 @@ class Object(common.DictAccessWrapper):
                             ]]
                         ]
                         positions_needed_for_sprite_names.add(block[1])
+                        if block[1] == "_mouse_":
+                            workaround_info[ADD_MOUSE_SPRITE] = True
+
                     else:
                         new_block_list += [replace_distance_to_object_blocks(block, positions_needed_for_sprite_names)]
                 else:
@@ -293,7 +298,6 @@ class Object(common.DictAccessWrapper):
             # parse again ScriptElement tree
             script.script_element = ScriptElement.from_raw_block(script.blocks)
         workaround_info[ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY] = sensor_data_needed_for_sprite_names
-        #print (workaround_info)
         return workaround_info
 
     @classmethod
@@ -350,6 +354,7 @@ class RawProject(Object):
         position_script_to_be_added = set()
         update_attribute_script_to_be_added = {}
         self.listened_keys = set()
+        self._has_mouse_position_script = False
         for scratch_object in self.objects:
             workaround_info = scratch_object.preprocess_object(all_sprite_names)
             if workaround_info[ADD_TIMER_SCRIPT_KEY]: is_add_timer_script = True
@@ -357,6 +362,7 @@ class RawProject(Object):
             if len(workaround_info[ADD_KEY_PRESSED_SCRIPT_KEY]) > 0:
                 self.listened_keys.update(workaround_info[ADD_KEY_PRESSED_SCRIPT_KEY])
             position_script_to_be_added |= workaround_info[ADD_POSITION_SCRIPT_TO_OBJECTS_KEY]
+            self._has_mouse_position_script |= workaround_info[ADD_MOUSE_SPRITE]
 
             for sprite_name, sensor_names_set in workaround_info[ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY].iteritems():
                 if sprite_name not in update_attribute_script_to_be_added: update_attribute_script_to_be_added[sprite_name] = set()
@@ -365,6 +371,8 @@ class RawProject(Object):
         if is_add_timer_reset_script: self._add_timer_reset_script_to_stage_object()
 
         for destination_sprite_name in position_script_to_be_added:
+            if destination_sprite_name == "_mouse_": continue
+
             sprite_object = sprite_name_sprite_mapping[destination_sprite_name]
             assert sprite_object is not None
             self._add_update_position_script_to_object(sprite_object)
@@ -378,7 +386,6 @@ class RawProject(Object):
             sprite_object = sprite_name_sprite_mapping[sprite_name]
             assert sprite_object is not None
             self._add_update_attribute_script_to_object(sprite_object, sensor_names)
-
 
     def _add_update_position_script_to_object(self, sprite_object):
         # add global variables for positions!

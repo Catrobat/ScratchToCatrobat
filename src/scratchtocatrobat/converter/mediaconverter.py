@@ -141,17 +141,15 @@ class MediaConverter(object):
 
                 if is_unconverted:
                     unconverted_media_resources.append(resource_info)
-                elif progress_bar != None and costume_src_path not in converted_media_resources_paths and ispng:
-                    # update progress bar for all those media files that don't have to be converted
-                    progress_bar.update(ProgressType.CONVERT_MEDIA_FILE)
-                    #TODO: background gets scaled too, shouldn't be the case
-                    isStageCostume = scratch_object.name == "Stage"
-                    if not isStageCostume and JsonKeys.COSTUME_RESOLUTION in costume_info:
-                        self.resize_png(costume_src_path, costume_src_path, costume_info[JsonKeys.COSTUME_RESOLUTION])
-                    converted_media_resources_paths.add(costume_src_path)
                 elif progress_bar != None and costume_src_path not in converted_media_resources_paths:
-                    progress_bar.update(ProgressType.CONVERT_MEDIA_FILE)
+                    # update progress bar for all those media files that don't have to be converted
+                    #TODO: background gets scaled too, shouldn't be the case
+                    if ispng:
+                        isStageCostume = scratch_object.name == "Stage"
+                        if not isStageCostume and JsonKeys.COSTUME_RESOLUTION in costume_info:
+                            self.resize_png(costume_src_path, costume_src_path, costume_info[JsonKeys.COSTUME_RESOLUTION])
                     converted_media_resources_paths.add(costume_src_path)
+                    progress_bar.update(ProgressType.CONVERT_MEDIA_FILE)
 
 
             for sound_info in scratch_object.get_sounds():
@@ -230,15 +228,28 @@ class MediaConverter(object):
                     x, y, width, height = costume_info[JsonKeys.COSTUME_TEXT_RECT]
                     # TODO: extract RGBA
                     # text_color = costume_info[JsonKeys.COSTUME_TEXT_COLOR]
-                    [font_name, font_style] = costume_info[JsonKeys.COSTUME_FONT_NAME].split()
+                    font_name = "NO FONT"
+                    font_style = "regular"
+                    font_scaling_factor = costume_info[JsonKeys.COSTUME_RESOLUTION] if JsonKeys.COSTUME_RESOLUTION in costume_info else 1
+                    if len(costume_info[JsonKeys.COSTUME_FONT_NAME].split()) == 2 :
+                        [font_name, font_style] = costume_info[JsonKeys.COSTUME_FONT_NAME].split()
+                    else:
+                        log.warning("font JSON parameters wrong '{0}', replacing with known font '{1}'".format(costume_info[JsonKeys.COSTUME_FONT_NAME], image_processing._supported_fonts_path_mapping.keys()[0]))
+                        font_scaling_factor = font_scaling_factor * 1.1 # the original font might be smaller, better scale it down than cut it off
+                    if(font_name not in image_processing._supported_fonts_path_mapping):
+                        log.warning("font name '{0}' unknown, replacing with known font '{1}'".format(font_name, image_processing._supported_fonts_path_mapping.keys()[0]))
+                        font_name = image_processing._supported_fonts_path_mapping.keys()[0]
+                        font_scaling_factor = font_scaling_factor * 1.1 # the original font might be smaller, better scale it down than cut it off
                     is_bold = font_style == "Bold"
                     is_italic = font_style == "Italic"
-                    font_size = float(costume_info[JsonKeys.COSTUME_FONT_SIZE])
+                    font_size = float(costume_info[JsonKeys.COSTUME_FONT_SIZE]) / float(font_scaling_factor)
                     image_file_path = src_path
                     font = image_processing.create_font(font_name, font_size, is_bold, is_italic)
                     assert font is not None
                     editable_image = image_processing.read_editable_image_from_disk(image_file_path)
-                    editable_image = image_processing.add_text_to_image(editable_image, text, font, Color.BLACK, float(x), float(y), float(width), float(height))
+                    fonty = float(y) + (height * float(font_scaling_factor) / 2.0) # I think this might not work if we rotate something outside of the picture
+                    editable_image = image_processing.add_text_to_image(editable_image, text, font, Color.BLACK, float(x), float(fonty), float(width), float(height))
+
                     # TODO: create duplicate...
                     # TODO: move test_converter.py to converter-python-package...
                     image_processing.save_editable_image_as_png_to_disk(editable_image, image_file_path, overwrite=True)
@@ -287,9 +298,9 @@ class MediaConverter(object):
         image = ImageIO.read(input)
         from math import ceil
         new_height = int(ceil(image.getHeight() / float(bitmapResolution)))
-        new_height = new_height if new_height != 0 else 1
+        new_height = new_height if new_height > 1 else 1
         new_width = int(ceil(image.getWidth() / float(bitmapResolution)))
-        new_width = new_width if new_width != 0 else 1
+        new_width = new_width if new_width > 1 else 1
         def resize(img, height, width):
             tmp = img.getScaledInstance(width, height, java.awt.Image.SCALE_SMOOTH)
             resized = java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_ARGB)
@@ -301,3 +312,4 @@ class MediaConverter(object):
         output = java.io.File(path_out)
         ImageIO.write(resized, "png", output)
         return path_out
+

@@ -2491,7 +2491,7 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
         assert key_w.name == 'key w pressed'
 
         scripts = key_w.getScriptList()
-        assert len(scripts) == 2
+        assert len(scripts) == 3
         assert isinstance(scripts[1], catbase.WhenScript)
 
         brick_list = scripts[1].getBrickList()
@@ -2504,7 +2504,7 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
 
         set_variable_initial_formula = set_variable_initial.formulaMap[catbricks.Brick.BrickField.VARIABLE]
         set_variable_initial_formula_tree = set_variable_initial_formula.formulaTree
-        assert set_variable_initial_formula_tree.value == str(1.0)
+        assert set_variable_initial_formula_tree.value == str(1)
         assert set_variable_initial_formula_tree.type == catElementType.NUMBER
 
         wait_until_brick = brick_list[1]

@@ -656,16 +656,48 @@ class Converter(object):
             catr_sprite = self._scratch_object_converter(scratch_object)
             catrobat_scene.addSprite(catr_sprite)
 
-    def add_cursor_sprite_to(self, _catr_scene, upcoming_sprites):
-        if not MOUSE_SPRITE_NAME in upcoming_sprites:
+    def add_cursor_sprite_to(self, catrobat_scene, upcoming_sprites):
+        if not MOUSE_SPRITE_NAME in upcoming_sprites and not self.scratch_project._has_mouse_position_script:
             return
 
-        sprite = upcoming_sprites[MOUSE_SPRITE_NAME]
+        sprite = None
+        if MOUSE_SPRITE_NAME in upcoming_sprites:
+            sprite = upcoming_sprites[MOUSE_SPRITE_NAME]
+        else:
+            sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, MOUSE_SPRITE_NAME)
+
         look = catcommon.LookData()
         look.setLookName(MOUSE_SPRITE_NAME)
         mouse_filename = _generate_mouse_filename()
         look.setLookFilename(mouse_filename)
         sprite.getLookDataList().add(look)
+
+        if self.scratch_project._has_mouse_position_script:
+            position_script = catbase.StartScript()
+
+            forever_brick = catbricks.ForeverBrick()
+            forever_end = catbricks.LoopEndBrick(forever_brick)
+            forever_brick.setLoopEndBrick(forever_end)
+
+            var_x_name = scratch.S2CC_POSITION_X_VARIABLE_NAME_PREFIX + MOUSE_SPRITE_NAME
+            pos_x_uservariable = catformula.UserVariable(var_x_name)
+            pos_x_uservariable.value = catformula.Formula(0)
+            set_x_formula = catformula.Formula(catformula.FormulaElement(catElementType.SENSOR, "OBJECT_X", None))
+            set_x_brick = catbricks.SetVariableBrick(set_x_formula, pos_x_uservariable)
+
+            var_y_name = scratch.S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + MOUSE_SPRITE_NAME
+            pos_y_uservariable = catformula.UserVariable(var_y_name)
+            pos_y_uservariable.value = catformula.Formula(0)
+            set_y_formula = catformula.Formula(catformula.FormulaElement(catElementType.SENSOR, "OBJECT_Y", None))
+            set_y_brick = catbricks.SetVariableBrick(set_y_formula, pos_y_uservariable)
+
+            catrobat_scene.getProject().projectVariables.add(pos_x_uservariable)
+            catrobat_scene.getProject().projectVariables.add(pos_y_uservariable)
+
+            wait_brick = catbricks.WaitBrick(int(scratch.UPDATE_HELPER_VARIABLE_TIMEOUT * 1000))
+
+            position_script.brickList.addAll([forever_brick, set_x_brick, set_y_brick, wait_brick, forever_end])
+            sprite.addScript(position_script)
 
         start_script = catbase.StartScript()
 
@@ -690,7 +722,7 @@ class Converter(object):
 
         start_script.brickList.addAll(bricks)
         sprite.addScript(start_script)
-        _catr_scene.addSprite(sprite)
+        catrobat_scene.addSprite(sprite)
 
 
     #_place_key_brick

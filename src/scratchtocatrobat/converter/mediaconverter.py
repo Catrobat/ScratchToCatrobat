@@ -298,9 +298,9 @@ class MediaConverter(object):
         image = ImageIO.read(input)
         from math import ceil
         new_height = int(ceil(image.getHeight() / float(bitmapResolution)))
-        new_height = new_height if new_height > 1 else 1
+        new_height = new_height if new_height > 2 else 2
         new_width = int(ceil(image.getWidth() / float(bitmapResolution)))
-        new_width = new_width if new_width > 1 else 1
+        new_width = new_width if new_width > 2 else 2
         def resize(img, height, width):
             tmp = img.getScaledInstance(width, height, java.awt.Image.SCALE_SMOOTH)
             resized = java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_ARGB)

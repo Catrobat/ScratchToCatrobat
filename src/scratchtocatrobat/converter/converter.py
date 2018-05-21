@@ -710,29 +710,55 @@ class Converter(object):
             position_script.brickList.addAll([forever_brick, set_x_brick, set_y_brick, wait_brick, forever_end])
             sprite.addScript(position_script)
 
+        move_script = catbase.BroadcastScript("_mouse_move_")
+        move_goto = catbricks.GoToBrick()
+        move_goto.spinnerSelection = catcommon.BrickValues.GO_TO_TOUCH_POSITION
+        move_script.addBrick(move_goto)
+        sprite.addScript(move_script)
+
         start_script = catbase.StartScript()
-
-        place_at_brick = catbricks.PlaceAtBrick(0, 0)
-        set_look_brick = catbricks.SetLookBrick()
-        set_look_brick.setLook(look)
-        set_size_brick = catbricks.SetSizeToBrick(100)
-
+        transperancy_brick = catbricks.SetTransparencyBrick(99.99)
         loop_brick = catbricks.ForeverBrick()
         touch_element = catformula.FormulaElement(catElementType.SENSOR, str(catformula.Sensors.FINGER_TOUCHED), None)
         touch_formula = catformula.Formula(touch_element)
-        if_brick = catbricks.IfThenLogicBeginBrick(touch_formula)
 
-        set_pos_brick = catbricks.GoToBrick()
-        set_pos_brick.spinnerSelection = 80 #TODO: set to BrickValues.GO_TO_TOUCH_POSITION
-        if_end_brick = catbricks.IfThenLogicEndBrick(if_brick)
-        if_brick.setIfThenEndBrick(if_end_brick)
+        wait_until_brick = catbricks.WaitUntilBrick(touch_formula)
+        clone_self_brick = catbricks.CloneBrick()
         loop_end_brick = catbricks.LoopEndBrick(loop_brick)
         loop_brick.setLoopEndBrick(loop_end_brick)
-
-        bricks = [place_at_brick, set_look_brick, set_size_brick, loop_brick, if_brick, set_pos_brick, if_end_brick, loop_end_brick]
-
-        start_script.brickList.addAll(bricks)
+        start_bricks = [transperancy_brick, loop_brick, wait_until_brick, clone_self_brick, loop_end_brick]
+        start_script.brickList.addAll(start_bricks)
         sprite.addScript(start_script)
+
+        clone_script = catbase.WhenClonedScript()
+        clone_goto = catbricks.GoToBrick()
+        clone_goto.spinnerSelection = catcommon.BrickValues.GO_TO_TOUCH_POSITION
+
+        listened_keys_names = [key_tuple[0] for key_tuple in self.scratch_project.listened_keys]
+        or_formula_element = catformula.FormulaElement(catElementType.OPERATOR, str(catformula.Operators.LOGICAL_OR), None)
+        colide_with_all_keys = or_formula_element.clone()
+        root =  catformula.FormulaElement(catElementType.OPERATOR, str(catformula.Operators.LOGICAL_NOT), None)
+        root.setRightChild(colide_with_all_keys)
+        for key in listened_keys_names:
+            left = catformula.FormulaElement(catElementType.COLLISION_FORMULA, _key_to_broadcast_message(key), None)
+            colide_with_all_keys.setLeftChild(left)
+            colide_with_all_keys.setRightChild(or_formula_element.clone())
+            colide_with_all_keys.rightChild.parent = colide_with_all_keys
+            colide_with_all_keys.leftChild.parent = colide_with_all_keys
+            colide_with_all_keys = colide_with_all_keys.rightChild
+        #the lowest layer is an or now where the left child is set but no right child. therefore we move that left child up by 1 layer
+        colide_with_all_keys.parent.leftChild.parent = colide_with_all_keys.parent
+        colide_with_all_keys.parent.parent.setRightChild(colide_with_all_keys.parent.leftChild)
+
+        clone_if = catbricks.IfThenLogicBeginBrick(catformula.Formula(root))
+        clone_broadcast = catbricks.BroadcastBrick("_mouse_move_")
+        clone_if_end = catbricks.IfThenLogicEndBrick(clone_if)
+        clone_if.setIfThenEndBrick(clone_if_end)
+        clone_kill = catbricks.DeleteThisCloneBrick()
+
+        clone_bricks = [clone_goto, clone_if, clone_broadcast,clone_if_end ,clone_kill]#[clone_goto, clone_if, clone_broadcast, clone_if_end, clone_kill]
+        clone_script.brickList.addAll(clone_bricks)
+        sprite.addScript(clone_script)
         catrobat_scene.addSprite(sprite)
 
 
@@ -2228,17 +2254,14 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "gotoSpriteOrMouse:")
     def _convert_go_to_sprite_or_mouse_block(self):
         [base_sprite], go_to_brick = self.arguments, None
-        if base_sprite == "_mouse_":
+        if base_sprite == "_random_":
             go_to_brick = self.CatrobatClass()
-            go_to_brick.spinnerSelection = 80 # TODO: these value will change after updating Catroid class hierarchy (see: BrickValues class)
-        elif base_sprite == "_random_":
-            go_to_brick = self.CatrobatClass()
-            go_to_brick.spinnerSelection = 81 # TODO: these value will change after updating Catroid class hierarchy (see: BrickValues class)
+            go_to_brick.spinnerSelection = catcommon.BrickValues.GO_TO_RANDOM_POSITION
         elif isinstance(base_sprite, basestring):
             for sprite in self.scene.spriteList:
                 if sprite.getName() == base_sprite:
                     go_to_brick = self.CatrobatClass(sprite)
-                    go_to_brick.spinnerSelection = 82
+                    go_to_brick.spinnerSelection = catcommon.BrickValues.GO_TO_OTHER_SPRITE_POSITION
                     return go_to_brick
             if base_sprite in self.script_context.sprite_context.context.upcoming_sprites:
                 new_sprite = self.script_context.sprite_context.context.upcoming_sprites[base_sprite]
@@ -2247,7 +2270,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
                 self.script_context.sprite_context.context.upcoming_sprites[new_sprite.getName()] = new_sprite
 
             go_to_brick = self.CatrobatClass(new_sprite)
-            go_to_brick.spinnerSelection = 82
+            go_to_brick.spinnerSelection = catcommon.BrickValues.GO_TO_OTHER_SPRITE_POSITION
         else:
             return catbricks.NoteBrick("Error: Not a valid parameter for Goto Brick")
         return go_to_brick

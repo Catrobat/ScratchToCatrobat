@@ -127,11 +127,22 @@ def run_converter(scratch_project_file_or_url, output_dir,
                                                    scratch_project_file_or_url)
                 log.info("Loading project from path: '{}' ...".format(scratch_project_file_or_url))
                 scratch_project_dir = scratch_project_file_or_url
-
+            isScratch3Project = False # TODO: change, currently we can't have Scratch3FromDownload
             if is_local_project:
-                project = scratch.RawProject.from_project_folder_path(scratch_project_dir)
-                progress_bar.expected_progress = project.expected_progress_of_local_project(progress_bar)
+                isScratch3Project = scratch_project_file_or_url.endswith(".sb3")
+                if not isScratch3Project:
+                    project = scratch.RawProject.from_project_folder_path(scratch_project_dir)
+                    progress_bar.expected_progress = project.expected_progress_of_local_project(progress_bar)
 
+            if isScratch3Project :
+                from scratch.scratch3 import Scratch3Parser
+                parser = Scratch3Parser(os.path.join(scratch_project_dir, helpers.config.get("SCRATCH","code_file_name")), scratch_project_dir)
+                scratch2Data = parser.parse_sprites()
+                with open(os.path.join(scratch_project_dir, helpers.config.get("SCRATCH","code_file_name")),'w') as file:
+                    file.flush()
+                    import json
+                    #json.dump(json.JSONEncoder.encode(scratch3data),file)
+                    json.dump(scratch2Data, file, sort_keys=True, indent=4, separators=(',', ': '))
             project = scratch.Project(scratch_project_dir, progress_bar=progress_bar)
             log.info("Converting scratch project '%s' into output folder: %s", project.name, output_dir)
             context = converter.Context()

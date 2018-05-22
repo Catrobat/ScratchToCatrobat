@@ -96,7 +96,6 @@ def add_text_to_image(editable_image, text, font, color, x, y, width=None, heigh
     assert height is None or isinstance(height, float)
 
     text = text.replace("\r", "\n")
-    print text
     g = editable_image.getGraphics()
     g.setFont(font)
     g.setColor(color)
@@ -107,6 +106,4 @@ def add_text_to_image(editable_image, text, font, color, x, y, width=None, heigh
 def save_editable_image_as_png_to_disk(editable_image, path, overwrite=False):
     assert isinstance(editable_image, BufferedImage), "No *editable* image (instance of ImageIO) given!"
     assert overwrite == True or os.path.isfile(path) == False, "File already exists"
-    print editable_image
-    print path
     ImageIO.write(editable_image, "png", File(path))

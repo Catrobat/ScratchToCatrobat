@@ -57,7 +57,7 @@ def catrobat_resource_file_name_for(scratch_md5_name, scratch_resource_name):
 #         if (scratch_resource_name == None) or (len(scratch_resource_name) == 0):
 #             scratch_resource_name = "unicode_replaced"
     resource_ext = os.path.splitext(scratch_md5_name)[1]
-    return scratch_md5_name.replace(resource_ext, "_" + scratch_resource_name + resource_ext)
+    return scratch_md5_name.replace(resource_ext, "_" + scratch_resource_name.replace("/",'') + resource_ext)
 
 
 def _resource_name_for(file_path):
@@ -287,10 +287,7 @@ class MediaConverter(object):
                 converted_scratch_md5_name = _resource_name_for(src_path)
                 new_file_name = catrobat_resource_file_name_for(converted_scratch_md5_name,
                                                                 scratch_resource_name)
-
-                assert new_file_name != old_file_name # check if renamed!
                 self.renamed_files_map[old_file_name] = new_file_name
-
             shutil.copyfile(src_path, os.path.join(dest_path, new_file_name))
 
     def resize_png(self, path_in, path_out, bitmapResolution):

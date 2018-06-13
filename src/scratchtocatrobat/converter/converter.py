@@ -1089,7 +1089,7 @@ class _ScratchObjectConverter(object):
 
         object_relative_scale = scratch_object.get_scale() or 1
         if costume_resolution is not None:
-            object_scale = object_relative_scale * 100.0 / costume_resolution
+            object_scale = object_relative_scale * 100.0
             if object_scale != 100.0:
                 implicit_bricks_to_add += [catbricks.SetSizeToBrick(object_scale)]
 

@@ -129,6 +129,7 @@ class MediaConverter(object):
                        "Unsupported image file extension: %s" % costume_src_path
                 ispng = file_ext == ".png"
                 is_unconverted = file_ext == ".svg"
+
                 resource_info = {
                     "scratch_md5_name": costume_file_name,
                     "src_path": costume_src_path,
@@ -146,8 +147,7 @@ class MediaConverter(object):
                     #TODO: background gets scaled too, shouldn't be the case
                     if ispng:
                         isStageCostume = scratch_object.name == "Stage"
-                        if not isStageCostume and JsonKeys.COSTUME_RESOLUTION in costume_info:
-                            self.resize_png(costume_src_path, costume_src_path, costume_info[JsonKeys.COSTUME_RESOLUTION])
+                        self.convertPNG(isStageCostume, costume_info,costume_src_path, costume_src_path)
                     converted_media_resources_paths.add(costume_src_path)
                     progress_bar.update(ProgressType.CONVERT_MEDIA_FILE)
 
@@ -313,3 +313,9 @@ class MediaConverter(object):
         ImageIO.write(resized, "png", output)
         return path_out
 
+    def convertPNG(self, isStageCostume, costume_info, costume_src_path , costume_dest_path):
+        import java.io.File
+        new_image = svgtopng._translation(costume_src_path, costume_info["rotationCenterX"], costume_info["rotationCenterY"])
+        ImageIO.write(new_image, "png", java.io.File(costume_dest_path))
+        if JsonKeys.COSTUME_RESOLUTION in costume_info:
+            self.resize_png(costume_dest_path, costume_dest_path, costume_info[JsonKeys.COSTUME_RESOLUTION])

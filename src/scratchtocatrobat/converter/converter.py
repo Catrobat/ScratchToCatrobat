@@ -28,7 +28,6 @@ import types
 import zipfile
 import re
 from codecs import open
-
 from org.catrobat.catroid import ProjectManager
 import org.catrobat.catroid.common as catcommon
 import org.catrobat.catroid.content as catbase
@@ -382,8 +381,8 @@ class _ScratchToCatrobat(object):
             background = catrobat.background_sprite_of(catrobat_project.getDefaultScene())
             background = sprite if background is None else background
             assert catrobat.is_background_sprite(background)
-            for look in background.getLookDataList():
-                if arguments[0] == look.getLookName():
+            for look in background.getLookList():
+                if arguments[0] == look.getName():
                     background_changes_script = catbase.WhenBackgroundChangesScript()
                     background_changes_script.setLook(look)
                     return background_changes_script
@@ -405,7 +404,7 @@ def _create_modified_formula_brick(sensor_type, unconverted_formula, catrobat_pr
 
     def _create_catrobat_sprite_stub(name=None):
         sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, "WCTDummy" if name is None else name)
-        looks = sprite.getLookDataList()
+        looks = sprite.getLookList()
         for lookname in ["look1", "look2", "look3"]:
             looks.add(catrobat.create_lookdata(lookname, None))
         return sprite
@@ -431,7 +430,7 @@ def _create_modified_formula_brick(sensor_type, unconverted_formula, catrobat_pr
 
     else:
         test_project = catbase.Project(None, "__wct_test_project__")
-        test_scene = catbase.Scene(None, "Scene 1", test_project)
+        test_scene = catbase.Scene("Scene 1", test_project)
         test_project.sceneList.add(test_scene)
         tmp_block_conv = _ScratchObjectConverter(test_project, None)
         dummy = _create_catrobat_sprite_stub()
@@ -626,8 +625,9 @@ class Converter(object):
     def _converted_catrobat_program(self, progress_bar=None, context=None):
         scratch_project = self.scratch_project
         _catr_project = catbase.Project(None, scratch_project.name)
-        _catr_scene = catbase.Scene(None, CATROBAT_DEFAULT_SCENE_NAME, _catr_project)
+        _catr_scene = catbase.Scene( CATROBAT_DEFAULT_SCENE_NAME, _catr_project)
         _catr_project.sceneList.add(_catr_scene)
+        _catr_scene = _catr_project.getDefaultScene()
         ProjectManager.getInstance().setProject(_catr_project)
 
         self._scratch_object_converter = _ScratchObjectConverter(_catr_project, scratch_project,
@@ -667,10 +667,10 @@ class Converter(object):
             sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, MOUSE_SPRITE_NAME)
 
         look = catcommon.LookData()
-        look.setLookName(MOUSE_SPRITE_NAME)
+        look.setName(MOUSE_SPRITE_NAME)
         mouse_filename = _generate_mouse_filename()
-        look.setLookFilename(mouse_filename)
-        sprite.getLookDataList().add(look)
+        look.fileName = mouse_filename
+        sprite.getLookList().add(look)
 
         if self.scratch_project._has_mouse_position_script:
             position_script = catbase.StartScript()
@@ -737,9 +737,9 @@ class Converter(object):
             add_sprite_to_scene = True
             key_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, key_message)
             key_look = catcommon.LookData()
-            key_look.setLookName(key_message)
-            key_look.setLookFilename(key_filename)
-            key_sprite.getLookDataList().add(key_look)
+            key_look.setName(key_message)
+            key_look.fileName = key_filename
+            key_sprite.getLookList().add(key_look)
 
             #set looks and position via started script
             when_started_script = catbase.StartScript()
@@ -772,9 +772,9 @@ class Converter(object):
             add_sprite_to_scene = True
             key_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, key_message)
             key_look = catcommon.LookData()
-            key_look.setLookName(key_message)
-            key_look.setLookFilename(key_filename)
-            key_sprite.getLookDataList().add(key_look)
+            key_look.setName(key_message)
+            key_look.fileName = key_filename
+            key_sprite.getLookList().add(key_look)
 
             #set looks and position via started script
             when_started_script = catbase.StartScript()
@@ -789,7 +789,7 @@ class Converter(object):
         when_tapped_script = catbase.WhenScript()
         #creating uservariable, add to script, set to 1
         bricks =[]
-        global_key_var_name = scratch.S2CC_KEY_VARIABLE_NAME + key;
+        global_key_var_name = scratch.S2CC_KEY_VARIABLE_NAME + key
         key_user_variable = catformula.UserVariable(global_key_var_name)
         key_user_variable.value = catformula.Formula(0)
         #catrobat.add_user_variable(catrobat_scene.getProject(), global_key_var_name)
@@ -950,7 +950,7 @@ class _ScratchObjectConverter(object):
             sprite_context.name = sprite.getName()
 
         # looks and sounds has to added first because of cross-validations
-        sprite_looks = sprite.getLookDataList()
+        sprite_looks = sprite.getLookList()
         costume_resolution = None
         for scratch_costume in scratch_object.get_costumes():
             current_costume_resolution = scratch_costume.get(scratchkeys.COSTUME_RESOLUTION)
@@ -959,7 +959,6 @@ class _ScratchObjectConverter(object):
             elif current_costume_resolution != costume_resolution:
                 log.warning("Costume resolution not same for all costumes")
             sprite_looks.add(self._catrobat_look_from(scratch_costume))
-
         sprite_sounds = sprite.getSoundList()
         for scratch_sound in scratch_object.get_sounds():
             sprite_sounds.add(self._catrobat_sound_from(scratch_sound))
@@ -1017,12 +1016,12 @@ class _ScratchObjectConverter(object):
 
         assert scratchkeys.COSTUME_NAME in scratch_costume
         costume_name = scratch_costume[scratchkeys.COSTUME_NAME]
-        look.setLookName(costume_name)
+        look.setName(costume_name)
 
         assert scratchkeys.COSTUME_MD5 in scratch_costume
         costume_md5_filename = scratch_costume[scratchkeys.COSTUME_MD5]
         costume_resource_name = scratch_costume[scratchkeys.COSTUME_NAME]
-        look.setLookFilename(mediaconverter.catrobat_resource_file_name_for(costume_md5_filename, costume_resource_name))
+        look.fileName = (mediaconverter.catrobat_resource_file_name_for(costume_md5_filename, costume_resource_name))
         return look
 
     @staticmethod
@@ -1031,12 +1030,12 @@ class _ScratchObjectConverter(object):
 
         assert scratchkeys.SOUND_NAME in scratch_sound
         sound_name = scratch_sound[scratchkeys.SOUND_NAME]
-        soundinfo.setTitle(sound_name)
+        soundinfo.setName(sound_name)
 
         assert scratchkeys.SOUND_MD5 in scratch_sound
         sound_md5_filename = scratch_sound[scratchkeys.SOUND_MD5]
         sound_resource_name = scratch_sound[scratchkeys.SOUND_NAME]
-        soundinfo.setSoundFileName(mediaconverter.catrobat_resource_file_name_for(sound_md5_filename, sound_resource_name))
+        soundinfo.fileName = (mediaconverter.catrobat_resource_file_name_for(sound_md5_filename, sound_resource_name))
         return soundinfo
 
     @staticmethod
@@ -1076,7 +1075,7 @@ class _ScratchObjectConverter(object):
             if isinstance(sprite_startup_look_idx, float):
                 sprite_startup_look_idx = int(round(sprite_startup_look_idx))
             if sprite_startup_look_idx != 0:
-                spriteStartupLook = sprite.getLookDataList()[sprite_startup_look_idx]
+                spriteStartupLook = sprite.getLookList()[sprite_startup_look_idx]
                 set_look_brick = catbricks.SetLookBrick()
                 set_look_brick.setLook(spriteStartupLook)
                 implicit_bricks_to_add += [set_look_brick]
@@ -1155,7 +1154,6 @@ class _ScratchObjectConverter(object):
         for variable_name in local_sprite_variables:
             user_variable = catrobat_scene.getDataContainer().getUserVariable(sprite, variable_name)
             show_variable_brick = catbricks.ShowTextBrick(context.visible_var_X, context.visible_var_Y)
-            show_variable_brick.setUserVariableName(variable_name)
             show_variable_brick.setUserVariable(user_variable)
             context.visible_var_Y -= VISIBLE_VAR_POSITION_STEP_Y
             if context.visible_var_Y <= VISIBLE_VAR_POSITION_THRESHOLD_Y:
@@ -1200,11 +1198,11 @@ class _ScratchObjectConverter(object):
                     cat_instance.addBrick(brick)
                 else:
                     cat_instance.appendBrickToScript(brick)
-            except TypeError:
+            except TypeError as ex:
                 if isinstance(brick, (str, unicode)):
                     log.error("string brick: %s", brick)
                 else:
-                    log.error("type: %s, value: %s", brick.type, brick.value)
+                    log.error("type: %s, exception: %s", brick.__class__.__name__, ex.message)
                 assert False
         if ignored_blocks > 0:
             log.info("number of ignored Scratch blocks: %d", ignored_blocks)
@@ -1276,9 +1274,9 @@ class ConvertedProject(object):
             return sounds_path, images_path
 
         def program_source_for(catrobat_program):
-            storage_handler = catio.StorageHandler()
+            storage_handler = catio.XstreamSerializer.getInstance()
             code_xml_content = storage_handler.XML_HEADER
-            code_xml_content += storage_handler.getXMLStringOfAProject(catrobat_program)
+            code_xml_content += storage_handler.xstream.toXML(catrobat_program)
             return code_xml_content
 
         def write_program_source(catrobat_program, context):
@@ -1454,9 +1452,15 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
                 try:
                     # TODO: simplify
                     if try_number == 0:
-                        converted_args = [common.int_or_float(arg) or arg if isinstance(arg, (str, unicode)) else arg for arg in self.arguments]
+                        converted_args = [(common.int_or_float(arg) or arg if isinstance(arg, (str, unicode)) else arg) for arg in self.arguments]
                     elif try_number == 1:
-                        converted_args = [catformula.FormulaElement(catElementType.NUMBER, str(arg), None) if isinstance(arg, numbers.Number) else arg for arg in converted_args]  # @UndefinedVariable
+                        def handleBoolean(arg):
+                            if isinstance(arg, bool):
+                                return int(arg)
+                            else:
+                                return arg
+
+                        converted_args = [catformula.FormulaElement(catElementType.NUMBER, str(handleBoolean(arg)), None) if isinstance(arg, numbers.Number) else arg for arg in converted_args]  # @UndefinedVariable
                     elif try_number == 4:
                         converted_args = self.arguments
                     elif try_number == 2:
@@ -1647,7 +1651,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             index_formula_elem = self._converted_helper_brick_or_formula_element([value, 1], "-")
             # 2nd step: consider overflow, i.e. ((value - 1) % number_of_looks)
             #           -> now, the result cannot be out of bounds any more!
-            number_of_looks = len(background_sprite.getLookDataList())
+            number_of_looks = len(background_sprite.getLookList())
             assert number_of_looks > 0
             index_formula_elem = self._converted_helper_brick_or_formula_element([index_formula_elem, number_of_looks], "%")
             # 3rd step: determine look number, i.e. (((value - 1) % number_of_looks) + 1)
@@ -1672,7 +1676,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             set_background_by_index_brick.initializeBrickFields(catrobat.create_formula_with_value(index_formula_elem))
             return set_background_by_index_brick
 
-        matching_looks = [_ for _ in background_sprite.getLookDataList() if _.getLookName() == look_name]
+        matching_looks = [_ for _ in background_sprite.getLookList() if _.getName() == look_name]
         if not matching_looks:
             errormessage = "Background does not contain look with name: {}".format(look_name)
             log.warning(errormessage)
@@ -1699,7 +1703,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             index_formula_elem = self._converted_helper_brick_or_formula_element([value, 1], "-")
             # 2nd step: consider overflow, i.e. ((value - 1) % number_of_looks)
             #           -> now, the result cannot be out of bounds any more!
-            number_of_looks = len(self.sprite.getLookDataList())
+            number_of_looks = len(self.sprite.getLookList())
             assert number_of_looks > 0
             index_formula_elem = self._converted_helper_brick_or_formula_element([value, number_of_looks], "%")
             # 3rd step: determine look number, i.e. (((value - 1) % number_of_looks) + 1)
@@ -1715,7 +1719,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         if look_name == "previous backdrop":
             return catbricks.PreviousLookBrick()
 
-        matching_looks = [_ for _ in self.sprite.getLookDataList() if _.getLookName() == look_name]
+        matching_looks = [_ for _ in self.sprite.getLookList() if _.getName() == look_name]
         if not matching_looks:
             errormessage = "Background does not contain look with name: {}".format(look_name)
             log.warning(errormessage)
@@ -1732,6 +1736,8 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         assert len(self.arguments) == 2
         if_begin_brick = catbricks.IfThenLogicBeginBrick(catrobat.create_formula_with_value(self.arguments[0]))
         if_end_brick = catbricks.IfThenLogicEndBrick(if_begin_brick)
+        if_begin_brick.setIfThenEndBrick(if_end_brick)
+        if_end_brick.setIfThenBeginBrick(if_begin_brick)
         if_bricks = self.arguments[1] or []
         assert isinstance(if_bricks, list)
         return [if_begin_brick] + if_bricks + [if_end_brick]
@@ -1745,6 +1751,11 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         if_bricks, [else_bricks] = self.arguments[1], self.arguments[2:] or [[]]
         if_bricks = if_bricks if if_bricks != None else []
         else_bricks = else_bricks if else_bricks != None else []
+        if_end_brick.setIfBeginBrick(if_begin_brick)
+        if_else_brick.setIfBeginBrick(if_begin_brick)
+        if_begin_brick.setIfElseBrick(if_else_brick)
+        if_else_brick.setIfEndBrick(if_end_brick)
+        if_begin_brick.setIfEndBrick(if_end_brick)
         return [if_begin_brick] + if_bricks + [if_else_brick] + else_bricks + [if_end_brick]
 
     @_register_handler(_block_name_to_handler_map, "lookLike:")
@@ -1761,7 +1772,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             index_formula_elem = self._converted_helper_brick_or_formula_element([value, 1], "-")
             # 2nd step: consider overflow, i.e. ((value - 1) % number_of_looks)
             #           -> now, the result cannot be out of bounds any more!
-            number_of_looks = len(self.sprite.getLookDataList())
+            number_of_looks = len(self.sprite.getLookList())
             assert number_of_looks > 0
             index_formula_elem = self._converted_helper_brick_or_formula_element([index_formula_elem, number_of_looks], "%")
             # 3rd step: determine look number, i.e. (((value - 1) % number_of_looks) + 1)
@@ -1771,9 +1782,9 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
         look_name = argument
         assert isinstance(look_name, (str, unicode)), type(look_name)
-        look = next((look for look in self.sprite.getLookDataList() if look.getLookName() == look_name), None)
+        look = next((look for look in self.sprite.getLookList() if look.getName() == look_name), None)
         if look is None:
-            errormessage = "Look name: '%s' not found in sprite '%s'. Available looks: %s replacing Brick with NoteBrick" % (look_name, self.sprite.getName(), ", ".join([look.getLookName() for look in self.sprite.getLookDataList()]))
+            errormessage = "Look name: '%s' not found in sprite '%s'. Available looks: %s replacing Brick with NoteBrick" % (look_name, self.sprite.getName(), ", ".join([look.getName() for look in self.sprite.getLookList()]))
             log.warning(errormessage)
             set_look_brick = catbricks.NoteBrick(errormessage)
             return set_look_brick
@@ -1788,7 +1799,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         assert user_variable is not None # the variable must exist at this stage!
         assert user_variable.getName() == variable_name
         show_variable_brick = self.CatrobatClass(0, 0)
-        show_variable_brick.setUserVariableName(variable_name)
+        #show_variable_brick.setUserVariableName(variable_name)
         show_variable_brick.setUserVariable(user_variable)
         return show_variable_brick
 
@@ -1799,7 +1810,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         assert user_variable is not None # the variable must exist at this stage!
         assert user_variable.getName() == variable_name
         hide_variable_brick = self.CatrobatClass()
-        hide_variable_brick.setUserVariableName(variable_name)
+        #hide_variable_brick.setUserVariable(variable_name)
         hide_variable_brick.setUserVariable(user_variable)
         return hide_variable_brick
 
@@ -1887,21 +1898,21 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "playSound:")
     def _convert_sound_block(self):
         [sound_name], sound_list = self.arguments, self.sprite.getSoundList()
-        sound_data = {sound_info.getTitle(): sound_info for sound_info in sound_list}.get(sound_name)
+        sound_data = {sound_info.getName(): sound_info for sound_info in sound_list}.get(sound_name)
         if not sound_data:
             raise ConversionError("Sprite does not contain sound with name={}".format(sound_name))
         play_sound_brick = self.CatrobatClass()
-        play_sound_brick.setSoundInfo(sound_data)
+        play_sound_brick.setSound(sound_data)
         return play_sound_brick
 
     @_register_handler(_block_name_to_handler_map, "doPlaySoundAndWait")
     def _convert_sound_and_wait_block(self):
         [sound_name], sound_list = self.arguments, self.sprite.getSoundList()
-        sound_data = {sound_info.getTitle(): sound_info for sound_info in sound_list}.get(sound_name)
+        sound_data = {sound_info.getName(): sound_info for sound_info in sound_list}.get(sound_name)
         if not sound_data:
             raise ConversionError("Sprite does not contain sound with name={}".format(sound_name))
         play_sound_and_wait_brick = self.CatrobatClass()
-        play_sound_and_wait_brick.setSoundInfo(sound_data)
+        play_sound_and_wait_brick.setSound(sound_data)
         return play_sound_and_wait_brick
 
     @_register_handler(_block_name_to_handler_map, "setGraphicEffect:to:")

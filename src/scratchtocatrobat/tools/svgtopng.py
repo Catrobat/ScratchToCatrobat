@@ -205,7 +205,6 @@ def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
     if 'width' in root.attrib and float((root.attrib['width']).replace('px', '')) <= 0:
         root.attrib['width'] = '1'
 
-
     for child in tree.iter():
         if re.search('.*}g', child.tag) != None:
             if 'transform' in child.attrib:

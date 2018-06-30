@@ -66,7 +66,8 @@ def convert(input_svg_path, rotation_x, rotation_y):
     output_svg_URI = Paths.get(output_svg_path).toUri().toURL().toString()
 
     if os.path.exists(output_png_path):
-        _log.info("      nothing to do: '%s' already exists", output_png_path)
+        _log.error("      '%s' already exists", output_png_path)
+        #assert False # "Still a Duplicate?"
         # remove temporary files
         if os.path.exists(output_svg_path):
             os.remove(output_svg_path)

@@ -188,7 +188,7 @@ class MediaConverter(object):
         resource_index = 0
         num_total_resources = len(unconverted_media_resources)
         reference_index = 0
-        all_unconverted_src_media_paths = set()
+        media_srces = []
         while resource_index < num_total_resources:
             num_next_resources = min(MAX_CONCURRENT_THREADS, (num_total_resources - resource_index))
             next_resources_end_index = resource_index + num_next_resources
@@ -197,12 +197,14 @@ class MediaConverter(object):
                 assert index == reference_index
                 reference_index += 1
                 data = unconverted_media_resources[index]
-                should_update_progress_bar = not data["src_path"] in all_unconverted_src_media_paths
-                all_unconverted_src_media_paths.add(data["src_path"])
+                if data["src_path"] in media_srces:
+                    continue
+                else:
+                    media_srces.append(data["src_path"])
                 kwargs = {
                     "data": data,
                     "new_src_paths": new_src_paths,
-                    "progress_bar": progress_bar if should_update_progress_bar else None
+                    "progress_bar": progress_bar
                 }
                 threads.append(_MediaResourceConverterThread(kwargs=kwargs))
             for thread in threads: thread.start()
@@ -285,6 +287,7 @@ class MediaConverter(object):
                 converted_scratch_md5_name = _resource_name_for(src_path)
                 new_file_name = catrobat_resource_file_name_for(converted_scratch_md5_name,
                                                                 scratch_resource_name)
+
                 assert new_file_name != old_file_name # check if renamed!
                 self.renamed_files_map[old_file_name] = new_file_name
 
@@ -307,6 +310,21 @@ class MediaConverter(object):
             g2d = resized.createGraphics()
             g2d.drawImage(tmp, 0, 0, None)
             g2d.dispose()
+            empty = True
+            for x in range(new_width):
+                for y in range(new_height):
+                    alpha = (resized.getRGB(x,y) >> 24) & 0xff
+                    if alpha > 0:
+                        empty = False
+                        break
+                    if not empty:
+                        break
+            if empty:
+                argb = (80 << 24) | (0x00FF00)
+                resized.setRGB(0,0,argb)
+                resized.setRGB(0,1,argb)
+                resized.setRGB(1,1,argb)
+                resized.setRGB(1,0,argb)
             return resized
         resized = resize(image, new_height, new_width)
         output = java.io.File(path_out)

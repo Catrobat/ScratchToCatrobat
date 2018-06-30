@@ -1,12 +1,12 @@
 #==================================================================================================
 # Define and update parameters here
 #==================================================================================================
-catroid_version: v0.9.32
+catroid_version: v0.9.34
 xstream_class_name: BackwardCompatibleCatrobatLanguageXStream
 archive_extension: "zip"
 #URL: "https://github.com/Catrobat/Catroid/archive/master.%{archive_extension}"
 #URL: "https://github.com/Catrobat/Catroid/archive/%{catroid_version}.%{archive_extension}"
-URL: "https://github.com/Catrobat/Catroid/archive/release-0.9.32.%{archive_extension}"
+URL: "https://github.com/Catrobat/Catroid/archive/release-0.9.34.%{archive_extension}"
 xstream_version: "1.4.7"
 xstream_lib_extension: "jar"
 xstream_download_URL: "http://repo.maven.apache.org/maven2/com/thoughtworks/xstream/xstream/%{xstream_version}/xstream-%{xstream_version}.%{xstream_lib_extension}"
@@ -308,6 +308,13 @@ additional_serialization_classes:
     - IfThenLogicEndBrick
     - WhenTouchDownBrick
     - AskSpeechBrick
+    - Project
+    - ThreadScheduler
+    - DataContainer
+    - SupportProject
+    - SupportDataContainer
+    - BroadcastMessageBrick
+    - XstreamSerializer
 
 
 preserved_interfaces:

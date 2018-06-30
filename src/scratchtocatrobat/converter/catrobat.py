@@ -35,7 +35,7 @@ _BACKGROUND_SPRITE_NAME = "Hintergrund"
 ANDROID_IGNORE_MEDIA_MARKER_FILE_NAME = ".nomedia"
 CATROBAT_LANGUAGE_VERSION = float("{0:.3f}".format(catcommon.Constants.CURRENT_CATROBAT_LANGUAGE_VERSION))
 PACKAGED_PROGRAM_FILE_EXTENSION = catcommon.Constants.CATROBAT_EXTENSION
-PROGRAM_SOURCE_FILE_NAME = catcommon.Constants.PROJECTCODE_NAME
+PROGRAM_SOURCE_FILE_NAME = catcommon.Constants.CODE_XML_FILE_NAME
 
 _log = common.log
 
@@ -67,8 +67,8 @@ def simple_name_for(brick):
 
 def create_lookdata(name, file_name):
     look_data = catcommon.LookData()
-    look_data.setLookName(name)
-    look_data.setLookFilename(file_name)
+    look_data.setName(name)
+    look_data.fileName = file_name
     return look_data
 
 
@@ -107,7 +107,7 @@ def find_global_user_list_by_name(project, list_name):
     return project.getDefaultScene().getDataContainer().findProjectList(list_name)
 
 def find_sprite_user_list_by_name(project, sprite, list_name):
-    user_lists = project.getDefaultScene().getDataContainer().getSpriteListOfLists(sprite)
+    user_lists = project.getDefaultScene().getDataContainer().getSpriteListMap()[sprite]
     for user_list in user_lists:
         if user_list.getName() == list_name:
             return user_list
@@ -172,7 +172,7 @@ def defined_variable_names_in(project, sprite_name=None, sprite=None):
 def media_objects_in(project):
     scene = project.getDefaultScene()
     for sprite in scene.getSpriteList():
-        for media_object in itertools.chain(sprite.getLookDataList(), sprite.getSoundList()):
+        for media_object in itertools.chain(sprite.getLookList(), sprite.getSoundList()):
             yield media_object
 
 def add_to_start_script(bricks, sprite, position=0):

@@ -116,7 +116,7 @@ class ProjectTestCase(BaseTestCase):
     @classmethod
     def setUpClass(cls):
         super(ProjectTestCase, cls).setUpClass()
-        cls._storagehandler = catio.StorageHandler()
+        cls._storagehandler = catio.XstreamSerializer.getInstance()
 
     def assertScriptClasses(self, expected_script_class, expected_brick_classes, script):
         assert [script.__class__] == expected_script_class

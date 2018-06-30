@@ -158,7 +158,7 @@ public class SourceCodeFilter {
     }
 
     static Set<String> parseSerializationRelevantClassNames(File baseDir) {
-        File xstreamConfigurationSourceFile = new File(baseDir, "org/catrobat/catroid/io/StorageHandler.java");
+        File xstreamConfigurationSourceFile = new File(baseDir, "org/catrobat/catroid/io/XstreamSerializer.java");
         if (!(xstreamConfigurationSourceFile.exists())) {
             throw new RuntimeException("Serialization configuration source must exist: " + xstreamConfigurationSourceFile.toString());
         }

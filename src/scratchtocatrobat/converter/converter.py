@@ -783,6 +783,28 @@ class Converter(object):
 
         return key_sprite
 
+
+    @staticmethod
+    def _create_when_key_tapped_script(key_message):
+        when_tapped_script = catbase.WhenScript()
+        broadcast_brick = catbricks.BroadcastBrick(key_message)
+        wait_brick = catbricks.WaitBrick(250)
+
+        not_touching_fe = catformula.FormulaElement(catElementType.OPERATOR, str(catformula.Operators.LOGICAL_NOT), None)
+        touching_fe = catformula.FormulaElement(catElementType.SENSOR, str(catformula.Sensors.COLLIDES_WITH_FINGER), None)
+        not_touching_fe.setRightChild(touching_fe)
+        not_touching_formula = catformula.Formula(not_touching_fe)
+        repeat_until_brick = catbricks.RepeatUntilBrick(not_touching_formula)
+
+        broadcast_brick2 = catbricks.BroadcastBrick(key_message)
+        wait_brick2 = catbricks.WaitBrick(50)
+        loop_end_brick = catbricks.LoopEndBrick(repeat_until_brick)
+        repeat_until_brick.loopEndBrick = loop_end_brick
+
+        bricklist = [broadcast_brick, wait_brick, repeat_until_brick, broadcast_brick2, wait_brick2, loop_end_brick]
+        when_tapped_script.brickList.addAll(bricklist)
+        return when_tapped_script
+
     #_place_key_brick
     @staticmethod
     def _key_pressed_script_workaround_script(key, x_pos, y_pos, catrobat_scene, add_key_script_workaround, add_any_key_workaround):
@@ -796,10 +818,12 @@ class Converter(object):
         #when tapped script
         when_tapped_script = catbase.WhenScript()
         if add_key_script_workaround:
-            when_tapped_script.addBrick(catbricks.BroadcastBrick(key_message))
+            when_tapped_script = Converter._create_when_key_tapped_script(key_message)
+            key_sprite.addScript(when_tapped_script)
+
         if add_any_key_workaround:
-            when_tapped_script.addBrick(catbricks.BroadcastBrick(_key_to_broadcast_message("any")))
-        key_sprite.addScript(when_tapped_script)
+            when_tapped_script = Converter._create_when_key_tapped_script(_key_to_broadcast_message("any"))
+            key_sprite.addScript(when_tapped_script)
 
         if add_sprite_to_scene:
             catrobat_scene.addSprite(key_sprite)

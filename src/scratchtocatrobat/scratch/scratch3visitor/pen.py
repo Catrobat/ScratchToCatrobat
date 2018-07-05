@@ -1,5 +1,7 @@
 from visitorUtil import visitGeneric
+from scratchtocatrobat.tools import logger
 
+log = logger.log
 
 def visitClear(blockcontext):
     return ["clearPenTrails"]
@@ -20,6 +22,7 @@ def visitSetPenColorToColor(blockcontext):
 def visitChangePenColorParamBy(blockcontext):
     colorparam = visitGeneric(blockcontext, "COLOR_PARAM")
     value = visitGeneric(blockcontext, "VALUE")
+    log.warn("[Scratch3] block {} ({}) possibly not available in Scratch2".format(blockcontext.block.opcode, blockcontext.block.name))
     return ["changePenHueBy:", colorparam, value] #TODO: not in scratch2? can choose parameter
 
 def visitPen_menu_colorParam(blockcontext):
@@ -28,6 +31,7 @@ def visitPen_menu_colorParam(blockcontext):
 def visitSetPenColorParamTo(blockcontext):
     colorparam = visitGeneric(blockcontext, "COLOR_PARAM")
     value = visitGeneric(blockcontext, "VALUE")
+    log.warn("[Scratch3] block {} ({}) possibly not available in Scratch2".format(blockcontext.block.opcode, blockcontext.block.name))
     return ["setPenHueTo:", colorparam, value] #TODO: not in scratch2? can choose parameter
 
 def visitChangePenSizeBy(blockcontext):
@@ -48,5 +52,6 @@ def visitChangePenShadeByNumber(blockcontext):
 
 def visitSetPenHueToNumber(blockcontext):
     size = visitGeneric(blockcontext, "HUE")
+    log.warn("[Scratch3] SetPenHue block possibly not available in Scratch2")
     return ["penHue:", size]
 

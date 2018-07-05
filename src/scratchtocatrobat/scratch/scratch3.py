@@ -1,3 +1,6 @@
+from scratchtocatrobat.tools import logger
+
+log = logger.log
 
 def get_block_attribute(block, key):
     if key in block.keys():
@@ -75,6 +78,8 @@ class Scratch3Parser(object):
 
     def parse_sprite(self, sprite):
         from scratch3visitor.visitorUtil import BlockContext, visitScriptBlock
+        log.info("-" * 80)
+        log.info("[Scratch3]  Converting Sprite: {}".format(sprite["name"]))
 
         script_blocks = []
         temp_block_dict = {}

@@ -1,4 +1,7 @@
 from visitorUtil import visitGeneric
+from scratchtocatrobat.tools import logger
+
+log = logger.log
 
 def visitTouchingObject(blockcontext):
     touch = visitGeneric(blockcontext, "TOUCHINGOBJECTMENU")
@@ -20,6 +23,7 @@ def visitAskandwait(blockcontext):
 def visitSetdragmode(blockcontext):
     block = blockcontext.block
     dragmode = block.fields["DRAG_MODE"][0]
+    log.warn("[Scratch3] block {} ({}) possibly not available in Scratch2".format(blockcontext.block.opcode, blockcontext.block.name))
     return ["dragMode", dragmode] #TODO: not implemented in old converter?
 
 

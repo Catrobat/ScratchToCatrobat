@@ -1,4 +1,7 @@
 from visitorUtil import visitGeneric
+from scratchtocatrobat.tools import logger
+
+log = logger.log
 
 def visitMovesteps(blockcontext):
     steps = visitGeneric(blockcontext, "STEPS")
@@ -24,6 +27,7 @@ def visitGotoxy(blockcontext):
 def visitGlideto(blockcontext):
     secs = visitGeneric(blockcontext, "SECS")
     to = visitGeneric(blockcontext, "TO")
+    log.warn("[Scratch3] block {} ({}) possibly not available in Scratch2".format(blockcontext.block.opcode, blockcontext.block.name))
     return ["glideTo:", secs, to] #TODO: not in scratch2?
 
 def visitGlidesecstoxy(blockcontext):

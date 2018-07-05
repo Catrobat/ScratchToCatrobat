@@ -24,6 +24,7 @@ def visitScriptBlock(blockcontext):
     if not isinstance(blockcontext, BlockContext):
         return blockcontext
 
+    log.info("[Scratch3]  Converting Script: {}".format(blockcontext.block.opcode))
     scriptblock_handler = blockcontext.getBlockHandler()
     scriptblock = scriptblock_handler(blockcontext)
     blockcontext.nextBlock()
@@ -67,6 +68,7 @@ def isShadowBlock(block, attributename):
 def visitGeneric(blockcontext, attributename):
     block = blockcontext.block
     if not attributename in block.inputs:
+        log.warn("[Scratch3] Failed to convert attribute: {} of block {} (type {}). Input is: {}".format(attributename, block.name, block.opcode, block.inputs.get(attributename)))
         return [False]
 
     block_id = blockcontext.getInput(attributename)[1]
@@ -88,10 +90,13 @@ def visitDefault(blockcontext):
 def visitCondition(blockcontext):
     block = blockcontext.block
     if not "CONDITION" in block.inputs:
+        log.warn("[Scratch3] Possibly empty condition in block {} ({})".format(blockcontext.block.name, blockcontext.block.opcode))
         return False
+
     block_id = blockcontext.getInput("CONDITION")[1]
     conditionblock = blockcontext.get_block(block_id)
     if not isinstance(conditionblock, Scratch3Block):
+        log.warn("[Scratch3] Possibly empty condition in block {} ({})".format(blockcontext.block.name, blockcontext.block.opcode))
         return False
     condition = visitGeneric(blockcontext, "CONDITION")
     return condition
@@ -111,6 +116,7 @@ def visitBlockList(blockcontext):
 
 def visitSubstack(blockcontext, substackkey):
     if not substackkey in blockcontext.block.inputs:
+        log.warn("[Scratch3] Possibly empty if or else clause in block {} ({})".format(blockcontext.block.name, blockcontext.block.opcode))
         return None
     block_id = blockcontext.getInput(substackkey)[1]
     substackstartblock = blockcontext.get_block(block_id)
@@ -119,6 +125,7 @@ def visitSubstack(blockcontext, substackkey):
     substack_context = BlockContext(substackstartblock, blockcontext.spriteblocks)
     substack = visitBlockList(substack_context)
     return substack
+
 
 def visitMutation(blockcontext):
     return blockcontext.block.mutation["proccode"]

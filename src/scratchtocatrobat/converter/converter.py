@@ -494,7 +494,6 @@ def _create_user_brick(context, scratch_function_header, param_values, declare=F
             user_script_definition_brick_elements_list.add(user_script_definition_brick_element)
             continue
 
-        assert len(function_header_part) == 2
         assert function_header_part in {'%n', '%s', '%b'}
         assert not expected_param_types[param_index] or expected_param_types[param_index] == function_header_part
 

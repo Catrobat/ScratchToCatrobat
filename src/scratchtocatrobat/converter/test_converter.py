@@ -2567,7 +2567,7 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
         assert isinstance(keyscripts[1], catbase.WhenScript)
 
         key_brick_list = keyscripts[1].getBrickList()
-        assert len(key_brick_list) == 1
+        assert len(key_brick_list) == 6
 
         broadcast_brick = key_brick_list[0]
         assert isinstance(broadcast_brick, catbricks.BroadcastBrick)

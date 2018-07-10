@@ -1,55 +1,40 @@
 from scratchtocatrobat.scratch.scratch3 import Scratch3Block
 from scratchtocatrobat.tools import logger
-
 log = logger.log
 
 
-def get_block(blockid, spriteblocks):
-    if blockid in spriteblocks.keys():
-        return spriteblocks[blockid]
-    return blockid
-
-def visitBlock(block):
-    from blockmapping import visitormap
-
-    if not isinstance(block, BlockContext):
-        return block
-    blocklist = []
-    while block.block != None:
-        subblock = visitormap.get(block.block.opcode, visitDefault)(block)
-        blocklist.append(subblock)
-        block = BlockContext(block.block.nextBlock, block.spriteblocks)
+def unpack_block_list(blocklist):
     if isinstance(blocklist[0], list) and len(blocklist) == 1:
         blocklist = blocklist[0]
     return blocklist
 
-def visitScriptBlock(block):
-    from blockmapping import visitormap
-
-    if not isinstance(block, BlockContext):
-        return block
-
-    scriptblock = visitormap.get(block.block.opcode, visitDefault)(block)
-    block = BlockContext(block.block.nextBlock, block.spriteblocks)
-    blocklist = []
-    blocklist.append(scriptblock)
-    while block.block != None:
-        subblock = visitormap.get(block.block.opcode, visitDefault)(block)
-        blocklist.append(subblock)
-        block = BlockContext(block.block.nextBlock, block.spriteblocks)
-    return blocklist
-
-def visitBlockList(blockcontext):
-    from blockmapping import visitormap
-
+def visitBlock(blockcontext):
     if not isinstance(blockcontext, BlockContext):
         return blockcontext
     blocklist = []
-
     while blockcontext.block != None:
-        subblock = visitormap.get(blockcontext.block.opcode, visitDefault)(blockcontext)
-        blocklist.append(subblock)
-        blockcontext = BlockContext(blockcontext.block.nextBlock, blockcontext.spriteblocks)
+        blockhandler = blockcontext.getBlockHandler()
+        converted_block = blockhandler(blockcontext)
+        blocklist.append(converted_block)
+        blockcontext.nextBlock()
+    blocklist = unpack_block_list(blocklist)
+    return blocklist
+
+def visitScriptBlock(blockcontext):
+    if not isinstance(blockcontext, BlockContext):
+        return blockcontext
+
+    scriptblock_handler = blockcontext.getBlockHandler()
+    scriptblock = scriptblock_handler(blockcontext)
+    blockcontext.nextBlock()
+
+    blocklist = []
+    blocklist.append(scriptblock)
+    while blockcontext.block != None:
+        block_handler = blockcontext.getBlockHandler()
+        converted_block = block_handler(blockcontext)
+        blocklist.append(converted_block)
+        blockcontext.nextBlock()
     return blocklist
 
 def visitLiteral(literal):
@@ -76,17 +61,25 @@ def visitLiteral(literal):
         return literal[1]
 
 
+def isShadowBlock(block, attributename):
+    return block.inputs[attributename][0] == 1
+
 def visitGeneric(blockcontext, attributename):
     block = blockcontext.block
-    if attributename in block.inputs:
-        substackstartblock = get_block(block.inputs[attributename][1], blockcontext.spriteblocks)
-        if isinstance(substackstartblock, Scratch3Block):
-            blocklist = visitBlock(BlockContext(substackstartblock, blockcontext.spriteblocks))
-            if block.inputs[attributename][0] == 1:
-                return blocklist[0]
-            return blocklist
-        return visitLiteral(block.inputs[attributename][1])
-    return [False]
+    if not attributename in block.inputs:
+        return [False]
+
+    block_id = blockcontext.getInput(attributename)[1]
+    subblock = blockcontext.get_block(block_id)
+    if not isinstance(subblock, Scratch3Block):
+        return visitLiteral(block_id)
+
+    subblockcontext = BlockContext(subblock, blockcontext.spriteblocks)
+    blocklist = visitBlock(subblockcontext)
+    if isShadowBlock(block, attributename):
+        return blocklist[0]
+    return blocklist
+
 
 def visitDefault(blockcontext):
     log.warn("block not yet implemented: " + blockcontext.block.opcode)
@@ -94,20 +87,38 @@ def visitDefault(blockcontext):
 
 def visitCondition(blockcontext):
     block = blockcontext.block
-    if "CONDITION" in block.inputs:
-        conditionblock = get_block(block.inputs["CONDITION"][1], blockcontext.spriteblocks)
-        if isinstance(conditionblock, Scratch3Block):
-            condition = visitGeneric(blockcontext, "CONDITION")
-            return condition
-    return False
+    if not "CONDITION" in block.inputs:
+        return False
+    block_id = blockcontext.getInput("CONDITION")[1]
+    conditionblock = blockcontext.get_block(block_id)
+    if not isinstance(conditionblock, Scratch3Block):
+        return False
+    condition = visitGeneric(blockcontext, "CONDITION")
+    return condition
+
+
+def visitBlockList(blockcontext):
+    if not isinstance(blockcontext, BlockContext):
+        return blockcontext
+    blocklist = []
+
+    while blockcontext.block != None:
+        block_handler = blockcontext.getBlockHandler()
+        converted_block = block_handler(blockcontext)
+        blocklist.append(converted_block)
+        blockcontext.nextBlock()
+    return blocklist
 
 def visitSubstack(blockcontext, substackkey):
-    if substackkey in blockcontext.block.inputs:
-        substackstartblock = get_block(blockcontext.block.inputs[substackkey][1], blockcontext.spriteblocks)
-        if isinstance(substackstartblock, Scratch3Block):
-            substack = visitBlockList(BlockContext(substackstartblock, blockcontext.spriteblocks))
-            return substack
-    return None
+    if not substackkey in blockcontext.block.inputs:
+        return None
+    block_id = blockcontext.getInput(substackkey)[1]
+    substackstartblock = blockcontext.get_block(block_id)
+    if not isinstance(substackstartblock, Scratch3Block):
+        return None
+    substack_context = BlockContext(substackstartblock, blockcontext.spriteblocks)
+    substack = visitBlockList(substack_context)
+    return substack
 
 def visitMutation(blockcontext):
     return blockcontext.block.mutation["proccode"]
@@ -154,3 +165,31 @@ class BlockContext(object):
     def __init__(self, block, spriteblocks):
         self.block = block
         self.spriteblocks = spriteblocks
+
+    def nextBlock(self):
+        self.block = self.block.nextBlock
+
+    def getOpcode(self):
+        if isinstance(self.block, Scratch3Block):
+            return self.block.opcode
+        return None
+
+    def getBlockHandler(self):
+        from blockmapping import visitormap
+        return visitormap.get(self.getOpcode(), visitDefault)
+
+    def getInput(self, input_key):
+        if not isinstance(self.block, Scratch3Block):
+            return None
+        value = self.block.inputs.get(input_key)
+        return value
+
+    def get_block(self, block_id):
+        if not isinstance(block_id, basestring):
+            return block_id
+
+        block = self.spriteblocks.get(block_id)
+        if block is None:
+            return block_id
+        return block
+

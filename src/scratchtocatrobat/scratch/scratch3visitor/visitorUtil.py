@@ -143,6 +143,7 @@ def sanitizeListDefault(listString):
         paramid = paramid.strip("\"")
         if paramid == 'true': paramid = True
         if paramid == 'false': paramid = False
+        if paramid == 'todo': paramid = None #TODO: this is most likely only a temporary placeholder
         sanitized.append(paramid)
     return sanitized
 

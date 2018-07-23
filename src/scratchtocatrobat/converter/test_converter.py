@@ -2669,7 +2669,7 @@ class TestConvertProjects(common_testing.ProjectTestCase):
         for child in root:
             if re.search('.*}text', child.tag) != None:
                 assert(child.attrib['x'] == '3')
-                assert(child.attrib['y'] == '23')
+                assert(child.attrib['y'] == '24')
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']

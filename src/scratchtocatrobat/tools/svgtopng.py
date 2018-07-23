@@ -192,7 +192,8 @@ def _transpose_matrix(matrix):
 def _create_buffered_image(image):
     result = BufferedImage(image.getWidth(None),image.getHeight(None),BufferedImage.TYPE_INT_ARGB)
     result.getGraphics().drawImage(image,0,0,None)
-    return result 
+    return result
+
 
 
 def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
@@ -205,17 +206,35 @@ def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
     if 'width' in root.attrib and float((root.attrib['width']).replace('px', '')) <= 0:
         root.attrib['width'] = '1'
 
-    for child in tree.iter():
-        if re.search('.*}g', child.tag) != None:
+
+    # uncrop image if and only if everything is in a g tag
+    for child in root:
+        if len(root) == 1 and re.search('.*}g', child.tag) != None:
             if 'transform' in child.attrib:
                 matrix_transform_attrib = child.attrib['transform']
                 matrix_transform_attrib = re.sub(r"matrix\((\s?-?[0-9]+(\.[0-9]*)?,){4}", "matrix(1, 0, 0, 1,", matrix_transform_attrib)
                 child.attrib['transform'] = matrix_transform_attrib
 
+
     for child in tree.iter():
         if re.search('.*}text', child.tag) != None:
             child.attrib['x'] = '3'
-            child.attrib['y'] = '23'
+            child.attrib['y'] = '24'
+            # the current child element might not be the one with the text directly in it, if not we need to find the one containing the text
+            if child.text is None :
+                def findTextInChildren(parent):
+                    text = ""
+                    for child in parent:
+                        if child.text is not None:
+                            if text == "":
+                                text += child.text
+                            else:
+                                text += " " + child.text
+                            parent.remove(child)
+                        else:
+                            text += findTextInChildren(child)
+                    return text
+                child.text = findTextInChildren(child)
 
             list_of_text_parts = (child.text).split('\n')
             child.text = (child.text).replace(child.text, '')
@@ -226,11 +245,9 @@ def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
             else:
                 dy_font_size = 12 # default value
             for text_part in list_of_text_parts:
-                ET.SubElement(child, namespace_tag + 'tspan', x = '3', dy = str(dy_value))
+                tspan = ET.SubElement(child, namespace_tag + 'tspan', x = '0', dy = str(dy_value))
+                tspan.text = text_part
                 dy_value = dy_value + dy_font_size
-            tspan_list = child.findall(namespace_tag + 'tspan')
-            for index, tspan_element in enumerate(tspan_list):
-                tspan_element.text = list_of_text_parts[index]
 
     tree.write(svg_output_path)
 

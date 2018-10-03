@@ -1,4 +1,8 @@
 from visitorUtil import visitGeneric
+from scratchtocatrobat.tools import logger
+
+log = logger.log
+
 
 def visitSubtract(blockcontext):
     operand1 = visitGeneric(blockcontext, "NUM1")
@@ -83,6 +87,8 @@ def visitDivide(blockcontext):
 def visitContains(blockcontext):
     operand1 = visitGeneric(blockcontext, "STRING1")
     operand2 = visitGeneric(blockcontext, "STRING2")
+
+    log.warn("[Scratch3] block {} ({}) possibly not available in Scratch2".format(blockcontext.block.opcode, blockcontext.block.name))
     return ["contains:", operand1, operand2]
     #TODO: not in scratch2?
 

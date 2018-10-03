@@ -1,4 +1,7 @@
 from visitorUtil import visitGeneric
+from scratchtocatrobat.tools import logger
+
+log = logger.log
 
 def visitSayforsecs(blockcontext):
     message = visitGeneric(blockcontext, "MESSAGE")
@@ -30,6 +33,7 @@ def visitSwitchbackdropto(blockcontext):
     return ["startScene", backdrop]
 
 def visitNextbackdrop(blockcontext):
+    log.warn("[Scratch3] block {} ({}) possibly not available in Scratch2".format(blockcontext.block.opcode, blockcontext.block.name))
     return ["nextBackdropPlaceholder"] #TODO: not in scratch2
 
 def visitChangesizeby(blockcontext):
@@ -84,6 +88,7 @@ def visitCostumenumbername(blockcontext):
 def visitBackdropnumbername(blockcontext):
     block = blockcontext.block
     name_number = block.fields["NUMBER_NAME"][0]
+    log.warn("[Scratch3] block {} ({}) possibly not available in Scratch2".format(blockcontext.block.opcode, blockcontext.block.name))
     return ["sceneNamePlaceholder"] #TODO: implement properly
 
 def visitSize(blockcontext):

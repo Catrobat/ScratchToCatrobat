@@ -1,4 +1,7 @@
 from visitorUtil import visitGeneric
+from scratchtocatrobat.tools import logger
+
+log = logger.log
 
 def visitSetvariableto(blockcontext):
     block = blockcontext.block
@@ -58,6 +61,7 @@ def visitItemnumoflist(blockcontext):
     block = blockcontext.block
     list = block.fields["LIST"][0]
     item = visitGeneric(blockcontext, "ITEM")
+    log.warn("[Scratch3] block {} ({}) possibly not available in Scratch2".format(block.opcode, block.name))
     return ["placeholder_itemnumoflist", list, item] #TODO: not in scratch2
 
 def visitLengthoflist(blockcontext):

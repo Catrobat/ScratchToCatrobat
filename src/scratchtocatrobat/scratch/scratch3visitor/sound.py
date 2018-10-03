@@ -1,4 +1,7 @@
 from visitorUtil import visitGeneric
+from scratchtocatrobat.tools import logger
+
+log = logger.log
 
 def visitPlay(blockcontext):
     sound = visitGeneric(blockcontext, 'SOUND_MENU')
@@ -13,13 +16,16 @@ def visitStopallsounds(blockcontext):
 
 def visitChangeeffectby(blockcontext):
     block = blockcontext.block
+    log.warn("[Scratch3] block {} ({}) possibly not available in Scratch2".format(blockcontext.block.opcode, blockcontext.block.name))
     pass #TODO: doesnt exist in scratch2/catroid
 
 def visitSeteffectto(blockcontext):
     block = blockcontext.block
+    log.warn("[Scratch3] block {} ({}) possibly not available in Scratch2".format(blockcontext.block.opcode, blockcontext.block.name))
     pass #TODO: doesnt exist in scratch2/catroid
 
 def visitCleareffects(blockcontext):
+    log.warn("[Scratch3] block {} ({}) possibly not available in Scratch2".format(blockcontext.block.opcode, blockcontext.block.name))
     return ["clearSoundEffects"] #TODO: not in scratch2
 
 def visitChangevolumeby(blockcontext):

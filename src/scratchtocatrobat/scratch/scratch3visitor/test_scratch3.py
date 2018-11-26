@@ -52,6 +52,7 @@ def createScratch3Block(context, opcode):
     block["parent"] = None
     block["next"] = None
     block = Scratch3Block(block, name)
+    context.spriteblocks[name] = block
 
     return block
 
@@ -69,7 +70,6 @@ def create_dummy_formula_block(context):
 
 
 def createDummyProject():
-
     pass
 
 def createDummySprite():
@@ -317,6 +317,204 @@ class TestScratch3Blocks(unittest.TestCase):
         converted_block = visitBlock(context)
         assert converted_block[0] == "volume"
 
+    def test_visitTouchingObject(self):
+        context = create_block_context("sensing_touchingobject")
+        testblock = context.block
+        menublock = createScratch3Block(context, "sensing_touchingobjectmenu")
+        menublock.fields["TOUCHINGOBJECTMENU"] = ['_mouse_']
+        testblock.inputs["TOUCHINGOBJECTMENU"] = [1, menublock.name]
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "touching:"
+        assert converted_block[1] == "_mouse_"
+
+
+    # def test_visitTouchingObjectMenu(self):
+    #     context = create_block_context("sensing_touchingobjectmenu")
+    #     testblock = context.block
+    #     assert False
+
+    def test_visitAskandwait(self):
+        context = create_block_context("sensing_askandwait")
+        testblock = context.block
+        addInputOfType(testblock, "QUESTION", TYPE_STRING)
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "doAsk"
+        assert converted_block[1] == "teststring"
+
+    def test_visitSetdragmode(self):
+        context = create_block_context("sensing_setdragmode")
+        testblock = context.block
+        testblock.fields["DRAG_MODE"] = ["mode"]
+
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "dragMode"
+        assert converted_block[1] == "mode"
+
+    def test_visitResettimer(self):
+        context = create_block_context("sensing_resettimer")
+        testblock = context.block
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "timerReset"
+
+    def test_visitLoudness(self):
+        context = create_block_context("sensing_loudness")
+        testblock = context.block
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "soundLevel"
+
+    def test_visitDistanceto(self):
+        context = create_block_context("sensing_distanceto")
+        testblock = context.block
+
+        menublock = createScratch3Block(context, "sensing_distancetomenu")
+        menublock.fields["DISTANCETOMENU"] = ['testsprite']
+        testblock.inputs["DISTANCETOMENU"] = [1, menublock.name]
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "distanceTo:"
+        assert converted_block[1] == "testsprite"
+
+    # def test_visitDistancetomenu(self):
+    #     context = create_block_context("sensing_distancetomenu")
+    #     testblock = context.block
+    #     assert False
+
+    def test_visitColoristouchingcolor(self):
+        context = create_block_context("sensing_coloristouchingcolor")
+        testblock = context.block
+
+        addInputOfType(testblock, "COLOR", TYPE_STRING)
+        addInputOfType(testblock, "COLOR2", TYPE_STRING)
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "touchingColor:"
+        assert converted_block[1] == "teststring"
+        assert converted_block[2] == "teststring"
+
+    def test_visitOf(self):
+        context = create_block_context("sensing_of")
+        testblock = context.block
+        addInputOfType(testblock, "OBJECT", TYPE_STRING)
+        testblock.fields["PROPERTY"] = ['direction']
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "getAttribute:of:"
+        assert converted_block[1] == "direction"
+        assert converted_block[2] == "teststring"
+
+    def test_visitCurrent(self):
+        context = create_block_context("sensing_current")
+        testblock = context.block
+
+        menublock = createScratch3Block(context, "sensing_currentmenu")
+        menublock.fields["CURRENTMENU"] = ['year']
+        testblock.inputs["CURRENTMENU"] = [1, menublock.name]
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "timeAndDate"
+        assert converted_block[1] == "year"
+
+    # def test_visitCurrent_menu(self):
+    #     context = create_block_context("sensing_currentmenu")
+    #     testblock = context.block
+    #     assert False
+
+    def test_visitAnswer(self):
+        context = create_block_context("sensing_answer")
+        testblock = context.block
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "answer"
+
+    def test_visitDayssince2000(self):
+        context = create_block_context("sensing_dayssince2000")
+        testblock = context.block
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "timestamp"
+
+    def test_visitKeypressed(self):
+        context = create_block_context("sensing_keypressed")
+        testblock = context.block
+        menublock = createScratch3Block(context, "sensing_keyoptions")
+        menublock.fields["KEY_OPTION"] = ['a']
+        testblock.inputs["KEY_OPTION"] = [1, menublock.name]
+
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "keyPressed:"
+        assert converted_block[1] == "a"
+
+    # def test_visitKey_options(self):
+    #     context = create_block_context("sensing_key_options")
+    #     testblock = context.block
+    #     assert False
+
+    def test_visitMousex(self):
+        context = create_block_context("sensing_mousex")
+        testblock = context.block
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "mouseX"
+
+    def test_visitMousedown(self):
+        context = create_block_context("sensing_mousedown")
+        testblock = context.block
+
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "mousePressed"
+
+    def test_visitMousey(self):
+        context = create_block_context("sensing_mousey")
+        testblock = context.block
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "mouseY"
+
+    def test_visitTimer(self):
+        context = create_block_context("sensing_timer")
+        testblock = context.block
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "timer"
+
+    def test_visitTouchingcolor(self):
+        context = create_block_context("sensing_touchingcolor")
+        testblock = context.block
+        addInputOfType(testblock, "COLOR", TYPE_STRING)
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "touchingColor:"
+        assert converted_block[1] == "teststring"
+
+    def test_visitUsername(self):
+        context = create_block_context("sensing_username")
+        testblock = context.block
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "getUserName"
+
+    # def test_visitOf_object_menu(self):
+    #     context = create_block_context("sensing_of_object_menu")
+    #     testblock = context.block
+    #     assert False
 
 if __name__ == "__main__":
     unittest.main()

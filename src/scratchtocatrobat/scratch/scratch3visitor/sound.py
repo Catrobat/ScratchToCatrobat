@@ -9,7 +9,7 @@ def visitPlay(blockcontext):
 
 def visitPlayuntildone(blockcontext):
     sound = visitGeneric(blockcontext, 'SOUND_MENU')
-    return ['playSoundAndWait', sound]
+    return ['doPlaySoundAndWait', sound]
 
 def visitStopallsounds(blockcontext):
     return ["stopAllSounds"]

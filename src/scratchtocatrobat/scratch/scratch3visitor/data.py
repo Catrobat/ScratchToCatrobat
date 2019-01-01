@@ -62,7 +62,7 @@ def visitItemnumoflist(blockcontext):
     list = block.fields["LIST"][0]
     item = visitGeneric(blockcontext, "ITEM")
     log.warn("[Scratch3] block {} ({}) possibly not available in Scratch2".format(block.opcode, block.name))
-    return ["placeholder_itemnumoflist", list, item] #TODO: not in scratch2
+    return ["itemNum:ofList:", list, item] #TODO: not in scratch2
 
 def visitLengthoflist(blockcontext):
     block = blockcontext.block
@@ -87,6 +87,7 @@ def visitHidelist(blockcontext):
 
 def visitContentsoflist(blockcontext):
     block = blockcontext.block
-    pass
+    list = block.fields["LIST"][0]
+    return ["contentsOfList:", list]
     #TODO: same as with variable value, we only get the id of list
     

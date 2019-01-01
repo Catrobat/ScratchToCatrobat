@@ -516,5 +516,141 @@ class TestScratch3Blocks(unittest.TestCase):
     #     testblock = context.block
     #     assert False
 
+
+    #### Data blocks ###################
+    def test_visitSetvarableto(self):
+        context = create_block_context("data_setvariableto")
+        testblock = context.block
+        addInputOfType(testblock, "VALUE", TYPE_INT)
+        testblock.fields["VARIABLE"] = ["testvar"]
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "setVar:to:"
+        assert converted_block[1] == "testvar"
+        assert converted_block[2] == 1234.0
+
+    def test_visitChangevarableby(self):
+        context = create_block_context("data_changevariableby")
+        testblock = context.block
+        addInputOfType(testblock, "VALUE", TYPE_INT)
+        testblock.fields["VARIABLE"] = ["testvar"]
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "changeVar:by:"
+        assert converted_block[1] == "testvar"
+        assert converted_block[2] == 1234.0
+
+    def test_visitHidevariable(self):
+        context = create_block_context("data_hidevariable")
+        testblock = context.block
+        testblock.fields["VARIABLE"] = ["testvar"]
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "hideVariable:"
+        assert converted_block[1] == "testvar"
+
+    def test_visitAddtolist(self):
+        context = create_block_context("data_addtolist")
+        testblock = context.block
+        addInputOfType(testblock, "ITEM", TYPE_INT)
+        testblock.fields["LIST"] = ["testlist"]
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "append:toList:"
+        assert converted_block[1] == 1234.0
+        assert converted_block[2] == "testlist"
+
+    def test_visitDeleteoflist(self):
+        context = create_block_context("data_deleteoflist")
+        testblock = context.block
+        addInputOfType(testblock, "INDEX", TYPE_INT)
+        testblock.fields["LIST"] = ["testlist"]
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "deleteLine:ofList:"
+        assert converted_block[1] == 1234.0
+        assert converted_block[2] == "testlist"
+
+    def test_visitInsertatlist(self):
+        context = create_block_context("data_insertatlist")
+        testblock = context.block
+        addInputOfType(testblock, "ITEM", TYPE_INT)
+        addInputOfType(testblock, "INDEX", TYPE_INT)
+        testblock.fields["LIST"] = ["testlist"]
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "insert:at:ofList:"
+        assert converted_block[1] == 1234.0
+        assert converted_block[2] == 1234.0
+        assert converted_block[3] == "testlist"
+
+    def test_visitReplaceitemoflist(self):
+        context = create_block_context("data_replaceitemoflist")
+        testblock = context.block
+        addInputOfType(testblock, "INDEX", TYPE_INT)
+        addInputOfType(testblock, "ITEM", TYPE_INT)
+        testblock.fields["LIST"] = ["testlist"]
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "setLine:ofList:to:"
+        assert converted_block[1] == 1234.0
+        assert converted_block[2] == "testlist"
+        assert converted_block[3] == 1234.0
+
+    def test_visitItemoflist(self):
+        context = create_block_context("data_itemoflist")
+        testblock = context.block
+        addInputOfType(testblock, "INDEX", TYPE_INT)
+        testblock.fields["LIST"] = ["testlist"]
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "getLine:ofList:"
+        assert converted_block[1] == 1234.0
+        assert converted_block[2] == "testlist"
+
+    def test_visitItemnumoflist(self):
+        context = create_block_context("data_itemnumoflist")
+        testblock = context.block
+        addInputOfType(testblock, "ITEM", TYPE_INT)
+        testblock.fields["LIST"] = ["testlist"]
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "itemNum:ofList:"
+        assert converted_block[1] == "testlist"
+        assert converted_block[2] == 1234.0
+
+    def test_visitLengthoflist(self):
+        context = create_block_context("data_lengthoflist")
+        testblock = context.block
+        testblock.fields["LIST"] = ["testlist"]
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "lineCountOfList:"
+        assert converted_block[1] == "testlist"
+
+    def test_visitListcontainsitem(self):
+        context = create_block_context("data_listcontainsitem")
+        testblock = context.block
+        addInputOfType(testblock, "ITEM", TYPE_INT)
+        testblock.fields["LIST"] = ["testlist"]
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "list:contains:"
+        assert converted_block[1] == "testlist"
+        assert converted_block[2] == 1234.0
+
+    def test_visitShowlist(self):
+        context = create_block_context("data_showlist")
+        testblock = context.block
+        testblock.fields["LIST"] = ["testlist"]
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "showList:"
+        assert converted_block[1] == "testlist"
+
+    def test_visitHidelist(self):
+        context = create_block_context("data_hidelist")
+        testblock = context.block
+        testblock.fields["LIST"] = ["testlist"]
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "hideList:"
+        assert converted_block[1] == "testlist"
+
+    def test_visitContentsoflist(self):
+        context = create_block_context("data_contentsoflist")
+        testblock = context.block
+        testblock.fields["LIST"] = ["testlist"]
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "contentsOfList:"
+        assert converted_block[1] == "testlist"
+
 if __name__ == "__main__":
     unittest.main()

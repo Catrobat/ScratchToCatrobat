@@ -798,6 +798,171 @@ class TestScratch3Blocks(unittest.TestCase):
         assert converted_block[0] == "doForever"
         assert converted_block[1][0][0] == "say:"
 
+### Motion block testcases ###################
+    def test_visitMovesteps(self):
+        context = create_block_context("motion_movesteps")
+        testblock = context.block
+        addInputOfType(testblock, "STEPS", TYPE_INT)
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "forward:"
+        assert converted_block[1] == 1234
+
+    def test_visitTurnright(self):
+        context = create_block_context("motion_turnright")
+        testblock = context.block
+        addInputOfType(testblock, "DEGREES", TYPE_INT)
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "turnRight:"
+        assert converted_block[1] == 1234
+
+    def test_visitTurnleft(self):
+        context = create_block_context("motion_turnleft")
+        testblock = context.block
+        addInputOfType(testblock, "DEGREES", TYPE_INT)
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "turnLeft:"
+        assert converted_block[1] == 1234
+
+    def test_visitGotoxy(self):
+        context = create_block_context("motion_gotoxy")
+        testblock = context.block
+        addInputOfType(testblock, "X", TYPE_INT)
+        addInputOfType(testblock, "Y", TYPE_INT)
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "gotoX:y:"
+        assert converted_block[1] == 1234
+        assert converted_block[2] == 1234
+
+    def test_visitGoto(self):
+        context = create_block_context("motion_goto")
+        testblock = context.block
+        addInputOfType(testblock, "TO", TYPE_STRING)
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "gotoSpriteOrMouse:"
+        assert converted_block[1] == "teststring"
+
+    def test_visitGlideto(self):
+        context = create_block_context("motion_glideto")
+        testblock = context.block
+        addInputOfType(testblock, "SECS", TYPE_INT)
+        addInputOfType(testblock, "TO", TYPE_INT)
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "glideTo:"
+        assert converted_block[1] == 1234
+
+    def test_visitGlidesecstoxy(self):
+        context = create_block_context("motion_glidesecstoxy")
+        testblock = context.block
+        addInputOfType(testblock, "SECS", TYPE_INT)
+        addInputOfType(testblock, "X", TYPE_INT)
+        addInputOfType(testblock, "Y", TYPE_INT)
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "glideSecs:toX:y:elapsed:from:"
+        assert converted_block[1] == 1234
+        assert converted_block[2] == 1234
+        assert converted_block[3] == 1234
+
+    def test_visitPointindirection(self):
+        context = create_block_context("motion_pointindirection")
+        testblock = context.block
+        addInputOfType(testblock, "DIRECTION", TYPE_INT)
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "heading:"
+        assert converted_block[1] == 1234
+
+    def test_visitPointtowards(self):
+        context = create_block_context("motion_pointtowards")
+        testblock = context.block
+        addInputOfType(testblock, "TOWARDS", TYPE_INT)
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "pointTowards:"
+        assert converted_block[1] == 1234
+
+    def test_visitChangexby(self):
+        context = create_block_context("motion_changexby")
+        testblock = context.block
+        addInputOfType(testblock, "DX", TYPE_INT)
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "changeXposBy:"
+        assert converted_block[1] == 1234
+
+    def test_visitChangeyby(self):
+        context = create_block_context("motion_changeyby")
+        testblock = context.block
+        addInputOfType(testblock, "DY", TYPE_INT)
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "changeYposBy:"
+        assert converted_block[1] == 1234
+
+    def test_visitSetx(self):
+        context = create_block_context("motion_setx")
+        testblock = context.block
+        addInputOfType(testblock, "X", TYPE_INT)
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "xpos:"
+        assert converted_block[1] == 1234
+
+    def test_visitSety(self):
+        context = create_block_context("motion_sety")
+        testblock = context.block
+        addInputOfType(testblock, "Y", TYPE_INT)
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "ypos:"
+        assert converted_block[1] == 1234
+
+    def test_visitIfonedgebounce(self):
+        context = create_block_context("motion_ifonedgebounce")
+        testblock = context.block
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "bounceOffEdge"
+
+    def test_visitSetrotationstyle(self):
+        context = create_block_context("motion_setrotationstyle")
+        testblock = context.block
+        testblock.fields["STYLE"] = ["teststyle"]
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "setRotationStyle"
+        assert converted_block[1] == "teststyle"
+
+    def test_visitDirection(self):
+        context = create_block_context("motion_direction")
+        testblock = context.block
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "heading"
+
+    def test_visitXposition(self):
+        context = create_block_context("motion_xposition")
+        testblock = context.block
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "xpos"
+
+    def test_visitYposition(self):
+        context = create_block_context("motion_yposition")
+        testblock = context.block
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "ypos"
 
 if __name__ == "__main__":
     unittest.main()

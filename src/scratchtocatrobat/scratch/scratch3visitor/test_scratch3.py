@@ -964,5 +964,206 @@ class TestScratch3Blocks(unittest.TestCase):
 
         assert converted_block[0] == "ypos"
 
+    ### Operator block testcases ###################
+    def test_visitSubtract(self):
+        context = create_block_context("operator_subtract")
+        testblock = context.block
+        addInputOfType(testblock, "NUM1", TYPE_INT)
+        addInputOfType(testblock, "NUM2", TYPE_INT)
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "-"
+        assert converted_block[1] == 1234
+        assert converted_block[2] == 1234
+
+    def test_visitGt(self):
+        context = create_block_context("operator_gt")
+        testblock = context.block
+        addInputOfType(testblock, "OPERAND1", TYPE_INT)
+        addInputOfType(testblock, "OPERAND2", TYPE_INT)
+        converted_block = visitBlock(context)
+        assert converted_block[0] == ">"
+        assert converted_block[1] == 1234
+        assert converted_block[2] == 1234
+
+    def test_visitJoin(self):
+        context = create_block_context("operator_join")
+        testblock = context.block
+        addInputOfType(testblock, "STRING1", TYPE_STRING)
+        addInputOfType(testblock, "STRING2", TYPE_STRING)
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "concatenate:with:"
+        assert converted_block[1] == "teststring"
+        assert converted_block[2] == "teststring"
+
+    def test_visitLetterOf(self):
+        context = create_block_context("operator_letter_of")
+        testblock = context.block
+        addInputOfType(testblock, "LETTER", TYPE_STRING)
+        addInputOfType(testblock, "STRING", TYPE_STRING)
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "letter:of:"
+        assert converted_block[1] == "teststring"
+        assert converted_block[2] == "teststring"
+
+    def test_visitLt(self):
+        context = create_block_context("operator_lt")
+        testblock = context.block
+        addInputOfType(testblock, "OPERAND1", TYPE_INT)
+        addInputOfType(testblock, "OPERAND2", TYPE_INT)
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "<"
+        assert converted_block[1] == 1234
+        assert converted_block[2] == 1234
+
+    def test_visitNot(self):
+        context = create_block_context("operator_not")
+        testblock = context.block
+        addInputOfType(testblock, "OPERAND", TYPE_INT)
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "not"
+        assert converted_block[1] == 1234
+
+    def test_visitMod(self):
+        context = create_block_context("operator_mod")
+        testblock = context.block
+        addInputOfType(testblock, "NUM1", TYPE_INT)
+        addInputOfType(testblock, "NUM2", TYPE_INT)
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "%"
+        assert converted_block[1] == 1234
+        assert converted_block[2] == 1234
+
+    def test_visitAdd(self):
+        context = create_block_context("operator_add")
+        testblock = context.block
+        addInputOfType(testblock, "NUM1", TYPE_INT)
+        addInputOfType(testblock, "NUM2", TYPE_INT)
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "+"
+        assert converted_block[1] == 1234
+        assert converted_block[2] == 1234
+
+    def test_visitEquals(self):
+        context = create_block_context("operator_equals")
+        testblock = context.block
+        addInputOfType(testblock, "OPERAND1", TYPE_INT)
+        addInputOfType(testblock, "OPERAND2", TYPE_INT)
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "="
+        assert converted_block[1] == 1234
+        assert converted_block[2] == 1234
+
+    def test_visitMathop(self):
+        context = create_block_context("operator_mathop")
+        testblock = context.block
+        addInputOfType(testblock, "NUM", TYPE_INT)
+        testblock.fields["OPERATOR"] = ["testoperator"]
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "computeFunction:of:"
+        assert converted_block[1] == "testoperator"
+        assert converted_block[2] == 1234
+
+    def test_visitAnd(self):
+        context = create_block_context("operator_and")
+        testblock = context.block
+        addInputOfType(testblock, "OPERAND1", TYPE_INT)
+        addInputOfType(testblock, "OPERAND2", TYPE_INT)
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "&"
+        assert converted_block[1] == 1234
+        assert converted_block[2] == 1234
+
+    def test_visitRound(self):
+        context = create_block_context("operator_round")
+        testblock = context.block
+        addInputOfType(testblock, "NUM", TYPE_INT)
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "rounded"
+        assert converted_block[1] == 1234
+
+    def test_visitMultiply(self):
+        context = create_block_context("operator_multiply")
+        testblock = context.block
+        addInputOfType(testblock, "NUM1", TYPE_INT)
+        addInputOfType(testblock, "NUM2", TYPE_INT)
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "*"
+        assert converted_block[1] == 1234
+        assert converted_block[2] == 1234
+
+    def test_visitRandom(self):
+        context = create_block_context("operator_random")
+        testblock = context.block
+        addInputOfType(testblock, "FROM", TYPE_INT)
+        addInputOfType(testblock, "TO", TYPE_INT)
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "randomFrom:to:"
+        assert converted_block[1] == 1234
+        assert converted_block[2] == 1234
+
+    def test_visitDivide(self):
+        context = create_block_context("operator_divide")
+        testblock = context.block
+        addInputOfType(testblock, "NUM1", TYPE_INT)
+        addInputOfType(testblock, "NUM2", TYPE_INT)
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "/"
+        assert converted_block[1] == 1234
+        assert converted_block[2] == 1234
+
+    def test_visitContains(self):
+        context = create_block_context("operator_contains")
+        testblock = context.block
+        addInputOfType(testblock, "STRING1", TYPE_STRING)
+        addInputOfType(testblock, "STRING2", TYPE_STRING)
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "contains:"
+        assert converted_block[1] == "teststring"
+        assert converted_block[2] == "teststring"
+
+    def test_visitOr(self):
+        context = create_block_context("operator_or")
+        testblock = context.block
+        addInputOfType(testblock, "OPERAND1", TYPE_INT)
+        addInputOfType(testblock, "OPERAND2", TYPE_INT)
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "|"
+        assert converted_block[1] == 1234
+        assert converted_block[2] == 1234
+
+    def test_visitLength(self):
+        context = create_block_context("operator_length")
+        testblock = context.block
+        addInputOfType(testblock, "STRING", TYPE_STRING)
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "stringLength:"
+        assert converted_block[1] == "teststring"
+
+
 if __name__ == "__main__":
     unittest.main()

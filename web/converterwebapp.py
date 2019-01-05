@@ -68,6 +68,7 @@ HTTP_DELAY = int(helpers.config.get("SCRATCH_API", "http_delay"))
 HTTP_TIMEOUT = int(helpers.config.get("SCRATCH_API", "http_timeout"))
 HTTP_USER_AGENT = helpers.config.get("SCRATCH_API", "user_agent")
 SCRATCH_PROJECT_BASE_URL = helpers.config.get("SCRATCH_API", "project_base_url")
+SCRATCH_PROJECT_META_DATA_BASE_URL = helpers.config.get("SCRATCH_API", "project_meta_data_base_url")
 SCRATCH_PROJECT_REMIX_TREE_URL_TEMPLATE = helpers.config.get("SCRATCH_API", "project_remix_tree_url_template")
 SCRATCH_PROJECT_MAX_NUM_REMIXES_TO_INCLUDE = int(helpers.config.get("CONVERTER_API", "max_num_remixes_to_include"))
 
@@ -186,6 +187,7 @@ class _ProjectHandler(tornado.web.RequestHandler):
         cls = self.__class__
 
         scratch_project_url = SCRATCH_PROJECT_BASE_URL + str(project_id)
+        scratch_project_meta_data_url = SCRATCH_PROJECT_META_DATA_BASE_URL + str(project_id)
         scratch_project_remix_tree_url = SCRATCH_PROJECT_REMIX_TREE_URL_TEMPLATE.format(project_id)
 
         if project_id in cls.RESPONSE_CACHE:
@@ -203,7 +205,7 @@ class _ProjectHandler(tornado.web.RequestHandler):
                 async_http_client = self.application.async_http_client
                 _logger.info("Fetching project and remix info from: {} and {} simultaneously"
                              .format(scratch_project_url, scratch_project_remix_tree_url))
-                futures = [tornado.gen.Task(async_http_client.fetch, scratch_project_url),
+                futures = [tornado.gen.Task(async_http_client.fetch, scratch_project_meta_data_url),
                            tornado.gen.Task(async_http_client.fetch, scratch_project_remix_tree_url)]
                 cls.IN_PROGRESS_FUTURE_MAP[project_id] = futures
 
@@ -233,8 +235,10 @@ class _ProjectHandler(tornado.web.RequestHandler):
             self.send_response_data(ProjectDataResponse().as_dict())
             return
 
+
         document = webhelpers.ResponseBeautifulSoupDocumentWrapper(BeautifulSoup(project_html_content.body.decode('utf-8', 'ignore'), b'html5lib'))
-        visibility_state = scratchwebapi.extract_project_visibilty_state_from_document(document)
+        document = json.loads(document.wrapped_document.text())
+        visibility_state = document["visibility"]
         response = ProjectDataResponse()
         response.accessible = True
         response.visibility_state = visibility_state

@@ -230,7 +230,7 @@ class TestObjectInit(unittest.TestCase):
         self.raw_object = json.loads(_default_object_json_str())
 
     def test_can_construct_on_correct_input(self):
-        assert scratch.Object.is_valid_class_input(self.raw_object)
+        assert scratch.Object.is_scratch2_project(self.raw_object)
         scratch_object = scratch.Object(self.raw_object)
         assert scratch_object is not None
 
@@ -242,7 +242,7 @@ class TestObjectInit(unittest.TestCase):
             wrong_raw_object
         ]
         for faulty_input in faulty_object_structures:
-            assert not scratch.Object.is_valid_class_input(faulty_input)
+            assert not scratch.Object.is_scratch2_project(faulty_input)
             with self.assertRaises(scratch.ObjectError):
                 scratch.Object(faulty_input)
 

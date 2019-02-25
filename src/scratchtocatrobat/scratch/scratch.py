@@ -613,7 +613,6 @@ class Project(RawProject):
         if not is_local_project:
             self.downloadScratch2ProjectResources(project_base_path, progress_bar)
 
-
         if not self.project_id:
             self.project_id = "0"
             self.name = name if name is not None else "Untitled"

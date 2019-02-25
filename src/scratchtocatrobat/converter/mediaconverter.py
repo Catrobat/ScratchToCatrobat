@@ -33,6 +33,7 @@ from scratchtocatrobat.tools import wavconverter
 from scratchtocatrobat.tools import helpers
 from scratchtocatrobat.tools.helpers import ProgressType
 from scratchtocatrobat.tools import image_processing
+from javax.imageio import ImageIO
 
 MAX_CONCURRENT_THREADS = int(helpers.config.get("MEDIA_CONVERTER", "max_concurrent_threads"))
 log = logger.log
@@ -56,7 +57,7 @@ def catrobat_resource_file_name_for(scratch_md5_name, scratch_resource_name):
 #         if (scratch_resource_name == None) or (len(scratch_resource_name) == 0):
 #             scratch_resource_name = "unicode_replaced"
     resource_ext = os.path.splitext(scratch_md5_name)[1]
-    return scratch_md5_name.replace(resource_ext, "_" + scratch_resource_name + resource_ext)
+    return scratch_md5_name.replace(resource_ext, "_" + scratch_resource_name.replace("/",'') + resource_ext)
 
 
 def _resource_name_for(file_path):
@@ -126,8 +127,9 @@ class MediaConverter(object):
                 assert os.path.exists(costume_src_path), "Not existing: {}".format(costume_src_path)
                 assert file_ext in {".png", ".svg", ".jpg", ".gif"}, \
                        "Unsupported image file extension: %s" % costume_src_path
-
+                ispng = file_ext == ".png"
                 is_unconverted = file_ext == ".svg"
+
                 resource_info = {
                     "scratch_md5_name": costume_file_name,
                     "src_path": costume_src_path,
@@ -142,8 +144,13 @@ class MediaConverter(object):
                     unconverted_media_resources.append(resource_info)
                 elif progress_bar != None and costume_src_path not in converted_media_resources_paths:
                     # update progress bar for all those media files that don't have to be converted
-                    progress_bar.update(ProgressType.CONVERT_MEDIA_FILE)
+                    #TODO: background gets scaled too, shouldn't be the case
+                    if ispng:
+                        isStageCostume = scratch_object.name == "Stage"
+                        self.convertPNG(isStageCostume, costume_info,costume_src_path, costume_src_path)
                     converted_media_resources_paths.add(costume_src_path)
+                    progress_bar.update(ProgressType.CONVERT_MEDIA_FILE)
+
 
             for sound_info in scratch_object.get_sounds():
                 sound_file_name = sound_info[JsonKeys.SOUND_MD5]
@@ -181,7 +188,7 @@ class MediaConverter(object):
         resource_index = 0
         num_total_resources = len(unconverted_media_resources)
         reference_index = 0
-        all_unconverted_src_media_paths = set()
+        media_srces = []
         while resource_index < num_total_resources:
             num_next_resources = min(MAX_CONCURRENT_THREADS, (num_total_resources - resource_index))
             next_resources_end_index = resource_index + num_next_resources
@@ -190,12 +197,14 @@ class MediaConverter(object):
                 assert index == reference_index
                 reference_index += 1
                 data = unconverted_media_resources[index]
-                should_update_progress_bar = not data["src_path"] in all_unconverted_src_media_paths
-                all_unconverted_src_media_paths.add(data["src_path"])
+                if data["src_path"] in media_srces:
+                    continue
+                else:
+                    media_srces.append(data["src_path"])
                 kwargs = {
                     "data": data,
                     "new_src_paths": new_src_paths,
-                    "progress_bar": progress_bar if should_update_progress_bar else None
+                    "progress_bar": progress_bar
                 }
                 threads.append(_MediaResourceConverterThread(kwargs=kwargs))
             for thread in threads: thread.start()
@@ -221,15 +230,28 @@ class MediaConverter(object):
                     x, y, width, height = costume_info[JsonKeys.COSTUME_TEXT_RECT]
                     # TODO: extract RGBA
                     # text_color = costume_info[JsonKeys.COSTUME_TEXT_COLOR]
-                    [font_name, font_style] = costume_info[JsonKeys.COSTUME_FONT_NAME].split()
+                    font_name = "NO FONT"
+                    font_style = "regular"
+                    font_scaling_factor = costume_info[JsonKeys.COSTUME_RESOLUTION] if JsonKeys.COSTUME_RESOLUTION in costume_info else 1
+                    if len(costume_info[JsonKeys.COSTUME_FONT_NAME].split()) == 2 :
+                        [font_name, font_style] = costume_info[JsonKeys.COSTUME_FONT_NAME].split()
+                    else:
+                        log.warning("font JSON parameters wrong '{0}', replacing with known font '{1}'".format(costume_info[JsonKeys.COSTUME_FONT_NAME], image_processing._supported_fonts_path_mapping.keys()[0]))
+                        font_scaling_factor = font_scaling_factor * 1.1 # the original font might be smaller, better scale it down than cut it off
+                    if(font_name not in image_processing._supported_fonts_path_mapping):
+                        log.warning("font name '{0}' unknown, replacing with known font '{1}'".format(font_name, image_processing._supported_fonts_path_mapping.keys()[0]))
+                        font_name = image_processing._supported_fonts_path_mapping.keys()[0]
+                        font_scaling_factor = font_scaling_factor * 1.1 # the original font might be smaller, better scale it down than cut it off
                     is_bold = font_style == "Bold"
                     is_italic = font_style == "Italic"
-                    font_size = float(costume_info[JsonKeys.COSTUME_FONT_SIZE])
+                    font_size = float(costume_info[JsonKeys.COSTUME_FONT_SIZE]) / float(font_scaling_factor)
                     image_file_path = src_path
                     font = image_processing.create_font(font_name, font_size, is_bold, is_italic)
                     assert font is not None
                     editable_image = image_processing.read_editable_image_from_disk(image_file_path)
-                    editable_image = image_processing.add_text_to_image(editable_image, text, font, Color.BLACK, float(x), float(y), float(width), float(height))
+                    fonty = float(y) + (height * float(font_scaling_factor) / 2.0) # I think this might not work if we rotate something outside of the picture
+                    editable_image = image_processing.add_text_to_image(editable_image, text, font, Color.BLACK, float(x), float(fonty), float(width), float(height))
+
                     # TODO: create duplicate...
                     # TODO: move test_converter.py to converter-python-package...
                     image_processing.save_editable_image_as_png_to_disk(editable_image, image_file_path, overwrite=True)
@@ -265,8 +287,50 @@ class MediaConverter(object):
                 converted_scratch_md5_name = _resource_name_for(src_path)
                 new_file_name = catrobat_resource_file_name_for(converted_scratch_md5_name,
                                                                 scratch_resource_name)
-                assert new_file_name != old_file_name # check if renamed!
                 self.renamed_files_map[old_file_name] = new_file_name
-
             shutil.copyfile(src_path, os.path.join(dest_path, new_file_name))
 
+    def resize_png(self, path_in, path_out, bitmapResolution):
+        import java.awt.image.BufferedImage
+        import java.io.File
+        import java.io.IOException
+        input = java.io.File(path_in)
+        image = ImageIO.read(input)
+        from math import ceil
+        new_height = int(ceil(image.getHeight() / float(bitmapResolution)))
+        new_height = new_height if new_height > 2 else 2
+        new_width = int(ceil(image.getWidth() / float(bitmapResolution)))
+        new_width = new_width if new_width > 2 else 2
+        def resize(img, height, width):
+            tmp = img.getScaledInstance(width, height, java.awt.Image.SCALE_SMOOTH)
+            resized = java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+            g2d = resized.createGraphics()
+            g2d.drawImage(tmp, 0, 0, None)
+            g2d.dispose()
+            empty = True
+            for x in range(new_width):
+                for y in range(new_height):
+                    alpha = (resized.getRGB(x,y) >> 24) & 0xff
+                    if alpha > 0:
+                        empty = False
+                        break
+                    if not empty:
+                        break
+            if empty:
+                argb = (80 << 24) | (0x00FF00)
+                resized.setRGB(0,0,argb)
+                resized.setRGB(0,1,argb)
+                resized.setRGB(1,1,argb)
+                resized.setRGB(1,0,argb)
+            return resized
+        resized = resize(image, new_height, new_width)
+        output = java.io.File(path_out)
+        ImageIO.write(resized, "png", output)
+        return path_out
+
+    def convertPNG(self, isStageCostume, costume_info, costume_src_path , costume_dest_path):
+        import java.io.File
+        new_image = svgtopng._translation(costume_src_path, costume_info["rotationCenterX"], costume_info["rotationCenterY"])
+        ImageIO.write(new_image, "png", java.io.File(costume_dest_path))
+        if JsonKeys.COSTUME_RESOLUTION in costume_info:
+            self.resize_png(costume_dest_path, costume_dest_path, costume_info[JsonKeys.COSTUME_RESOLUTION])

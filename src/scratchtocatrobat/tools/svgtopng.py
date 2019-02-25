@@ -46,8 +46,6 @@ _batik_jar_path = None
 
 # TODO: refactor to single mediaconverter class together with wavconverter
 def _checked_batik_jar_path():
-#     if _BATIK_ENVIRONMENT_HOME not in os.environ:
-#         raise EnvironmentError("Environment variable '{}' must be set to batik library location.".format(_BATIK_ENVIRONMENT_HOME))
     batik_home_dir = helpers.config.get("PATHS", "batik_home")
     batik_jar_path = os.path.join(batik_home_dir, _BATIK_CLI_JAR)
     if not os.path.exists(batik_jar_path):
@@ -68,7 +66,8 @@ def convert(input_svg_path, rotation_x, rotation_y):
     output_svg_URI = Paths.get(output_svg_path).toUri().toURL().toString()
 
     if os.path.exists(output_png_path):
-        _log.info("      nothing to do: '%s' already exists", output_png_path)
+        _log.error("      '%s' already exists", output_png_path)
+        #assert False # "Still a Duplicate?"
         # remove temporary files
         if os.path.exists(output_svg_path):
             os.remove(output_svg_path)
@@ -89,7 +88,6 @@ def convert(input_svg_path, rotation_x, rotation_y):
         png_converter.transcode(input_svg_image, output_png_image)
         assert os.path.exists(output_png_path)
 
-# TODO: uncomment this once all remaining bugs have been fixed!
         final_image = _translation(output_png_path, rotation_x, rotation_y)
 
         if final_image is None:
@@ -126,22 +124,7 @@ def _translation(output_png_path, rotation_x, rotation_y):
     buffered_image_matrix = [[buffered_image.getRGB(i, j) for j in xrange(height)] for i in xrange(width)]
     buffered_image_matrix = _transpose_matrix(buffered_image_matrix)
     m, n = len(buffered_image_matrix), len(buffered_image_matrix[0])
-    '''
-    x_coords_list, y_coords_list = [], []
-    
-    for y in xrange(m):
-        for x in xrange(n):
-            pixel = buffered_image_matrix[y][x]
-            if (pixel >> 24) != 0x00:
-                x_coords_list.append(x)
-                y_coords_list.append(y)
-    '''
     _log.info("Output path: {}".format(output_png_path))
-    #_log.info("height, width: ({}, {})".format(m, n))
-#    start_x = min(x_coords_list) if len(x_coords_list) > 0 else 0
-#    end_x = max(x_coords_list) if len(x_coords_list) > 0 else 0
-#    start_y = min(y_coords_list) if len(y_coords_list) > 0 else 0
-#    end_y = max(y_coords_list) if len(y_coords_list) > 0 else 0
 
     start_x, start_y = 0, 0
     end_x, end_y = n, m
@@ -150,27 +133,11 @@ def _translation(output_png_path, rotation_x, rotation_y):
         _log.info("ANTENNA-ERROR")
         return buffered_image
 
-    #_log.info("start y, start x: ({}, {})".format(start_y, start_x))
-    #_log.info("end y, end x: ({}, {})".format(end_y, end_x))
-
-#    if start_x > rotation_x:
-#        start_x = rotation_x
-#    if end_x < rotation_x:
-#        end_x = rotation_x
-#    if start_y > rotation_y:
-#        start_y = rotation_y
-#    if end_y < rotation_y:
-#        end_y = rotation_y
-
-    #org_st_x = start_x
-    #org_st_y = start_y
-    
     dst_new_width = end_x
     dst_new_height = end_y
 
     # overlapping x enhancement
     if (rotation_x < end_x) and (rotation_x > 0):
-        #_log.info("x overlap")
         if end_x - rotation_x > end_x/2:
             dst_new_width = (end_x - rotation_x) * 2
             start_x = dst_new_width/2 - rotation_x
@@ -181,18 +148,14 @@ def _translation(output_png_path, rotation_x, rotation_y):
 
     # non-overlapping x enhancement        
     elif rotation_x  < 0:
-        #_log.info("2nd quadrant x rotation")
         start_x = 2*abs(rotation_x) + end_x
         dst_new_width = 2*(abs(rotation_x) + end_x)
-        #_log.info("({})".format(dst_new_width))
         end_x = start_x + end_x
 
     elif rotation_x >= end_x:
-        #_log.info("huge x rotation")
-        dst_new_width = 2*rotation_x #+ 2*org_st_x
+        dst_new_width = 2*rotation_x
 
     if (rotation_y < end_y) and (rotation_y > 0):
-        #_log.info("y overlap")
         if end_y - rotation_y > end_y/2:
             dst_new_height = (end_y - rotation_y) * 2
             start_y = dst_new_height/2 - rotation_y
@@ -202,111 +165,23 @@ def _translation(output_png_path, rotation_x, rotation_y):
             dst_new_height = start_y + end_y        
 
     elif rotation_y  < 0:
-        #_log.info("4th quadrant y rotation")
         start_y = 2*abs(rotation_y) + end_y
         dst_new_height = 2*(abs(rotation_y) + end_y)
         end_y = start_y + end_y
 
     elif rotation_y >= end_y:
-        #_log.info("huge y rotation")
-        dst_new_height = 2*rotation_y #+ 2*org_st_y
+        dst_new_height = 2*rotation_y
 
-    #_log.info("start y, start x: ({}, {})".format(start_y, start_x))
-    #_log.info("end y, end x: ({}, {})".format(end_y, end_x))
-    #_log.info("dwidth, dheight: ({}, {})".format(dst_new_width, dst_new_height))
-    #_log.info("-" * 80)
-
-    #new_buffered_image = BufferedImage(dst_new_width + org_st_x + 1, dst_new_height + org_st_y + 1, BufferedImage.TYPE_INT_ARGB)    
-    new_buffered_image = BufferedImage(dst_new_width + 1, dst_new_height + 1, BufferedImage.TYPE_INT_ARGB)    
+    new_buffered_image = BufferedImage(dst_new_width + 1, dst_new_height + 1, BufferedImage.TYPE_INT_ARGB)
     g2d = new_buffered_image.createGraphics()
     g2d.setComposite(AlphaComposite.Clear)
     g2d.fillRect(0, 0, dst_new_width, dst_new_height)
 
-    #try to assemble image
     for row_y in xrange(start_y, end_y + 1):
         for column_x in xrange(start_x, end_x + 1):
             if row_y - start_y < buffered_image.getHeight() and column_x - start_x < buffered_image.getWidth():
                 new_buffered_image.setRGB(column_x,row_y, buffered_image_matrix[row_y-start_y][column_x-start_x])
-
-    #rgb = java.awt.Color(255,20,147)
-    #new_buffered_image.setRGB(dst_new_width/2, dst_new_height/2, rgb.getRGB())
     return new_buffered_image
-
-# def _translation_to_rotation_point(img, rotation_x, rotation_y):
-#    
-#     dst_new_width, dst_new_height = None, None
-#     half_old_width, half_old_height = None, None
-#     while True:
-#         dst_new_width, dst_new_height = rotation_x * 2, rotation_y * 2
-#         half_old_width, half_old_height = img.getWidth() / 2, img.getHeight() / 2
-#         start_x, start_y = rotation_x - half_old_height, rotation_y - half_old_width
-#         end_x, end_y = rotation_x + img.getHeight() - half_old_height, rotation_y + img.getWidth() - half_old_width
-#     
-#         if start_x >= 0 and start_y >= 0 and end_x >= 0 and end_y >= 0:
-#             break
-#         else:
-#             rotation_x *= 2
-#             rotation_y *= 2
-#             
-#             
-#     bufferedImage = BufferedImage(dst_new_height, dst_new_width, BufferedImage.TYPE_INT_ARGB)
-#     g2d = bufferedImage.createGraphics()
-#     g2d.setComposite(AlphaComposite.Clear)
-#     g2d.fillRect(0, 0, dst_new_width, dst_new_height)
-#     
-#     img_matrix = [[img.getRGB(row_index, column_index) for column_index in xrange(img.getHeight())] for row_index in xrange(img.getWidth())]
-#     
-#     transposed_img_matrix = _transpose_matrix(img_matrix)
-# 
-#     for row_index, old_row_index in zip(xrange(start_x, end_x + 1), xrange(len(transposed_img_matrix))):
-#         for column_index, old_column_index in zip(xrange(start_y, end_y + 1), xrange(len(transposed_img_matrix[0]))):
-#             bufferedImage.setRGB(column_index, row_index, transposed_img_matrix[old_row_index][old_column_index])
-# 
-#     return bufferedImage
-# 
-# def _scale_image(output_png_path):
-#     bufferd_image = _create_buffered_image(ImageIcon(output_png_path).getImage())
-# 
-#     width, height = bufferd_image.getWidth(), bufferd_image.getHeight()
-#     
-#     bufferd_image_matrix = [[bufferd_image.getRGB(i, j) for j in xrange(height)] for i in xrange(width)]
-#    
-#     bufferd_image_matrix = _transpose_matrix(bufferd_image_matrix)
-# 
-#     x_coords_list, y_coords_list = [], []
-#     
-#     m, n = len(bufferd_image_matrix), len(bufferd_image_matrix[0])
-#     for y in xrange(m):
-#         for x in xrange(n):
-#             pixel = bufferd_image_matrix[y][x]
-#             if (pixel >> 24) != 0x00:
-#                 x_coords_list.append(x)
-#                 y_coords_list.append(y)
-#     
-#     if len(x_coords_list) == 0 or len(y_coords_list) == 0:
-#         return
-# 
-#     start_x, start_y = min(x_coords_list), min(y_coords_list)
-#     max_x, max_y = max(x_coords_list), max(y_coords_list)  
-# 
-#     m, n = (max_y - start_y + 1), (max_x + 1)
-#     
-#     old_y_limit = len(bufferd_image_matrix)
-#     old_x_limit = len(bufferd_image_matrix[0])
-#     
-#     new_image_matrix = [[bufferd_image_matrix[old_y][old_x]for _, old_x in zip(xrange(n), xrange(start_x, old_x_limit))] for _, old_y in zip(xrange(m),xrange(start_y,old_y_limit))]
-#     
-#     new_image_matrix = _transpose_matrix(new_image_matrix)        
-#     
-#     m, n = len(new_image_matrix), len(new_image_matrix[0])
-# 
-#     final_image = BufferedImage(m, n, bufferd_image.getType())
-#     
-#     for x in xrange(m):
-#         for y in xrange(n):
-#             final_image.setRGB(x, y, new_image_matrix[x][y])
-#     
-#     return final_image
 
 def _transpose_matrix(matrix):
     m, n = len(matrix), len(matrix[0])
@@ -317,7 +192,8 @@ def _transpose_matrix(matrix):
 def _create_buffered_image(image):
     result = BufferedImage(image.getWidth(None),image.getHeight(None),BufferedImage.TYPE_INT_ARGB)
     result.getGraphics().drawImage(image,0,0,None)
-    return result 
+    return result
+
 
 
 def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
@@ -330,21 +206,35 @@ def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
     if 'width' in root.attrib and float((root.attrib['width']).replace('px', '')) <= 0:
         root.attrib['width'] = '1'
 
-    if 'viewBox' not in root.attrib:
-        for child in root:
-            if re.search('.*}g', child.tag) != None:
-                if 'transform' in child.attrib:
-                    matrix_transform_attrib = child.attrib['transform']
-                    matrix_transform_attrib = re.sub(r"matrix\((\s?-?[0-9]+(\.[0-9]*)?,){4}", "matrix(1, 0, 0, 1,", matrix_transform_attrib)
-                    child.attrib['transform'] = matrix_transform_attrib
-                break
-    if 'viewBox' in root.attrib:
-        del root.attrib['viewBox']
 
+    # uncrop image if and only if everything is in a g tag
     for child in root:
+        if len(root) == 1 and re.search('.*}g', child.tag) != None:
+            if 'transform' in child.attrib:
+                matrix_transform_attrib = child.attrib['transform']
+                matrix_transform_attrib = re.sub(r"matrix\((\s?-?[0-9]+(\.[0-9]*)?,){4}", "matrix(1, 0, 0, 1,", matrix_transform_attrib)
+                child.attrib['transform'] = matrix_transform_attrib
+
+
+    for child in tree.iter():
         if re.search('.*}text', child.tag) != None:
             child.attrib['x'] = '3'
-            child.attrib['y'] = '22'
+            child.attrib['y'] = '24'
+            # the current child element might not be the one with the text directly in it, if not we need to find the one containing the text
+            if child.text is None :
+                def findTextInChildren(parent):
+                    text = ""
+                    for child in parent:
+                        if child.text is not None:
+                            if text == "":
+                                text += child.text
+                            else:
+                                text += " " + child.text
+                            parent.remove(child)
+                        else:
+                            text += findTextInChildren(child)
+                    return text
+                child.text = findTextInChildren(child)
 
             list_of_text_parts = (child.text).split('\n')
             child.text = (child.text).replace(child.text, '')
@@ -355,11 +245,10 @@ def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
             else:
                 dy_font_size = 12 # default value
             for text_part in list_of_text_parts:
-                ET.SubElement(child, namespace_tag + 'tspan', x = '0', dy = str(dy_value))
+                tspan = ET.SubElement(child, namespace_tag + 'tspan', x = '0', dy = str(dy_value))
+                tspan.text = text_part
                 dy_value = dy_value + dy_font_size
-            tspan_list = child.findall(namespace_tag + 'tspan')
-            for index, tspan_element in enumerate(tspan_list):
-                tspan_element.text = list_of_text_parts[index]
+
     tree.write(svg_output_path)
 
 

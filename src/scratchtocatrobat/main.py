@@ -107,7 +107,7 @@ def run_converter(scratch_project_file_or_url, output_dir,
                 project_ID = scratchwebapi.extract_project_id_from_url(scratch_project_file_or_url)
                 if not scratchwebapi.request_is_project_available(project_ID):
                     raise common.ScratchtobatError("Project with ID %s not available" % project_ID)
-                if scratchwebapi.request_project_visibility_state_for(project_ID) != scratchwebapi.ScratchProjectVisibiltyState.PUBLIC:
+                if scratchwebapi.getMetaDataEntry(project_ID, "visibility") != scratchwebapi.ScratchProjectVisibiltyState.PUBLIC:
                     log.warn('-'*80)
                     log.warn("CAVE: Project with ID %s is NOT a public project!! Trying to " \
                              "continue the conversion-process anyway, but expecting the " \
@@ -128,11 +128,34 @@ def run_converter(scratch_project_file_or_url, output_dir,
                 log.info("Loading project from path: '{}' ...".format(scratch_project_file_or_url))
                 scratch_project_dir = scratch_project_file_or_url
 
-            if is_local_project:
-                project = scratch.RawProject.from_project_folder_path(scratch_project_dir)
-                progress_bar.expected_progress = project.expected_progress_of_local_project(progress_bar)
 
-            project = scratch.Project(scratch_project_dir, progress_bar=progress_bar)
+            isScratch3Project = False # TODO: change, currently we can't have Scratch3FromDownload
+            if os.path.isfile(scratch_project_dir + '/' +helpers.config.get("SCRATCH","code_file_name")):
+                with open(os.path.join(scratch_project_dir, helpers.config.get("SCRATCH","code_file_name")),'r') as file:
+                    import json
+                    project_dict = json.load(file)
+                    if "targets" in project_dict.keys():
+                        isScratch3Project = True
+
+
+
+
+                    # isScratch3Project = scratch_project_file_or_url.endswith(".sb3")
+                # if not isScratch3Project:
+                #     project = scratch.RawProject.from_project_folder_path(scratch_project_dir)
+                #     progress_bar.expected_progress = project.expected_progress_of_local_project(progress_bar)
+
+            if isScratch3Project:
+                from scratch.scratch3 import Scratch3Parser
+                parser = Scratch3Parser(os.path.join(scratch_project_dir, helpers.config.get("SCRATCH","code_file_name")), scratch_project_dir)
+                scratch2Data = parser.parse_sprites()
+                with open(os.path.join(scratch_project_dir, helpers.config.get("SCRATCH","code_file_name")),'w') as file:
+                    file.flush()
+                    import json
+                    #json.dump(json.JSONEncoder.encode(scratch3data),file)
+                    json.dump(scratch2Data, file, sort_keys=True, indent=4, separators=(',', ': '))
+
+            project = scratch.Project(scratch_project_dir, progress_bar=progress_bar, is_local_project = is_local_project)
             log.info("Converting scratch project '%s' into output folder: %s", project.name, output_dir)
             context = converter.Context()
             converted_project = converter.converted(project, progress_bar, context)
@@ -153,6 +176,9 @@ def run_converter(scratch_project_file_or_url, output_dir,
         log.exception(e)
         return helpers.ExitCode.FAILURE
     return helpers.ExitCode.SUCCESS
+
+
+
 
 def main():
     log = logging.getLogger("scratchtocatrobat.main")
@@ -192,7 +218,8 @@ def main():
             if project_url_or_package_path.startswith("https://") and not project_url_or_package_path.startswith(scratch_base_url):
                 log.error("No valid scratch URL given {0}[ID]".format(scratch_base_url))
                 sys.exit(helpers.ExitCode.FAILURE)
-        sys.exit(run_converter(project_url_or_package_path, output_dir, **kwargs))
+        exit_code = run_converter(project_url_or_package_path, output_dir, **kwargs)
+        sys.exit(exit_code)
     except Exception as e:
         log.exception(e)
         sys.exit(helpers.ExitCode.FAILURE)

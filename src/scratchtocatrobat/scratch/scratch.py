@@ -58,6 +58,7 @@ class JsonKeys(object):
     SOUNDS = "sounds"
     LISTS = "lists"
     VARIABLES = 'variables'
+    TARGETS = 'targets'
 
 #PROJECT_SPECIFIC_KEYS = ["info", "currentCostumeIndex", "penLayerMD5", "tempoBPM", "videoAlpha", "children"]
 PROJECT_SPECIFIC_KEYS = ["info", "currentCostumeIndex", "penLayerMD5", "tempoBPM", "children"]
@@ -78,6 +79,7 @@ ADD_TIMER_RESET_SCRIPT_KEY = "add_timer_reset_script_key"
 ADD_POSITION_SCRIPT_TO_OBJECTS_KEY = "add_position_script_to_objects_key"
 ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY = "add_update_attribute_script_to_objects_key"
 ADD_KEY_PRESSED_SCRIPT_KEY = "add_key_pressed_script_key"
+ADD_MOUSE_SPRITE = "add_mouse_sprite"
 UPDATE_HELPER_VARIABLE_TIMEOUT = 0.04
 
 
@@ -95,12 +97,17 @@ def verify_resources_of_scratch_object(scratch_object, md5_to_resource_path_map,
 class Object(common.DictAccessWrapper):
 
     def __init__(self, object_data):
-        if not self.is_valid_class_input(object_data):
-            raise ObjectError("Input is no valid Scratch object.")
+        super(Object, self).__init__(object_data)
+        if not self.is_scratch2_project(object_data):
+            if not self.is_scratch3_project(object_data):
+                raise ObjectError("Input is no valid Scratch object.")
+            else:
+                self.isScratch3 = True
+                return
         for key in (JsonKeys.SOUNDS, JsonKeys.COSTUMES, JsonKeys.SCRIPTS, JsonKeys.LISTS, JsonKeys.VARIABLES):
             if key not in object_data:
-                object_data[key] = []
-        super(Object, self).__init__(object_data)
+                pass
+                # object_data[key] = []
         self.name = self.get_objName()
         self.scripts = [Script(script) for script in self.get_scripts() if Script.is_valid_script_input(script)]
         number_of_ignored_scripts = len(self.get_scripts()) - len(self.scripts)
@@ -114,6 +121,7 @@ class Object(common.DictAccessWrapper):
             ADD_KEY_PRESSED_SCRIPT_KEY: set(),
             ADD_POSITION_SCRIPT_TO_OBJECTS_KEY: set(),
             ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY: {},
+            ADD_MOUSE_SPRITE: False,
         }
 
         ############################################################################################
@@ -192,7 +200,7 @@ class Object(common.DictAccessWrapper):
         def has_distance_to_object_block(block_list, all_sprite_names):
             for block in block_list:
                 if isinstance(block, list) \
-                and ((block[0] == 'distanceTo:' and block[1] in all_sprite_names) \
+                and ((block[0] == 'distanceTo:' and block[1] in (all_sprite_names) + ['_mouse_']) \
                      or has_distance_to_object_block(block, all_sprite_names)):
                     return True
             return False
@@ -216,6 +224,9 @@ class Object(common.DictAccessWrapper):
                             ]]
                         ]
                         positions_needed_for_sprite_names.add(block[1])
+                        if block[1] == "_mouse_":
+                            workaround_info[ADD_MOUSE_SPRITE] = True
+
                     else:
                         new_block_list += [replace_distance_to_object_blocks(block, positions_needed_for_sprite_names)]
                 else:
@@ -293,12 +304,14 @@ class Object(common.DictAccessWrapper):
             # parse again ScriptElement tree
             script.script_element = ScriptElement.from_raw_block(script.blocks)
         workaround_info[ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY] = sensor_data_needed_for_sprite_names
-        #print (workaround_info)
         return workaround_info
 
     @classmethod
-    def is_valid_class_input(cls, object_data):
+    def is_scratch2_project(cls, object_data):
         return JsonKeys.OBJECT_NAME in object_data
+    @classmethod
+    def is_scratch3_project(cls, object_data):
+        return JsonKeys.TARGETS in object_data
 
     def is_stage(self):
         # TODO: extend and consolidate with verify in RawProject
@@ -349,13 +362,16 @@ class RawProject(Object):
         all_sprite_names = sprite_name_sprite_mapping.keys()
         position_script_to_be_added = set()
         update_attribute_script_to_be_added = {}
+        self.listened_keys = set()
+        self._has_mouse_position_script = False
         for scratch_object in self.objects:
             workaround_info = scratch_object.preprocess_object(all_sprite_names)
             if workaround_info[ADD_TIMER_SCRIPT_KEY]: is_add_timer_script = True
             if workaround_info[ADD_TIMER_RESET_SCRIPT_KEY]: is_add_timer_reset_script = True
-            if len(workaround_info[ADD_KEY_PRESSED_SCRIPT_KEY]) > 0: 
-                self.listened_keys = workaround_info[ADD_KEY_PRESSED_SCRIPT_KEY]
+            if len(workaround_info[ADD_KEY_PRESSED_SCRIPT_KEY]) > 0:
+                self.listened_keys.update(workaround_info[ADD_KEY_PRESSED_SCRIPT_KEY])
             position_script_to_be_added |= workaround_info[ADD_POSITION_SCRIPT_TO_OBJECTS_KEY]
+            self._has_mouse_position_script |= workaround_info[ADD_MOUSE_SPRITE]
 
             for sprite_name, sensor_names_set in workaround_info[ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY].iteritems():
                 if sprite_name not in update_attribute_script_to_be_added: update_attribute_script_to_be_added[sprite_name] = set()
@@ -364,6 +380,8 @@ class RawProject(Object):
         if is_add_timer_reset_script: self._add_timer_reset_script_to_stage_object()
 
         for destination_sprite_name in position_script_to_be_added:
+            if destination_sprite_name == "_mouse_": continue
+
             sprite_object = sprite_name_sprite_mapping[destination_sprite_name]
             assert sprite_object is not None
             self._add_update_position_script_to_object(sprite_object)
@@ -377,7 +395,6 @@ class RawProject(Object):
             sprite_object = sprite_name_sprite_mapping[sprite_name]
             assert sprite_object is not None
             self._add_update_attribute_script_to_object(sprite_object, sensor_names)
-
 
     def _add_update_position_script_to_object(self, sprite_object):
         # add global variables for positions!
@@ -483,9 +500,6 @@ class RawProject(Object):
     def __iter__(self):
         return iter(self.objects)
 
-    def number_of_resources(self):
-        return len(self.resource_names)
-
     def _verify_scratch_dictionary(self, dict_, data_origin):
         if self.contains_info():
             data_origin = self.get_info().get("projectID")
@@ -576,7 +590,7 @@ class Project(RawProject):
     Represents a complete Scratch project including all resource files.
     """
 
-    def __init__(self, project_base_path, name=None, project_id=None, progress_bar=None):
+    def __init__(self, project_base_path, name=None, project_id=None, progress_bar=None, is_local_project=False):
         def read_md5_to_resource_path_mapping():
             md5_to_resource_path_map = {}
             # TODO: clarify that only files with extension are covered
@@ -596,16 +610,28 @@ class Project(RawProject):
         self.project_base_path = project_base_path
         self.project_id = self.get_info().get("projectID") if project_id is None else project_id
 
+        if not is_local_project:
+            self.downloadScratch2ProjectResources(project_base_path, progress_bar)
+
         if not self.project_id:
             self.project_id = "0"
             self.name = name if name is not None else "Untitled"
             self.instructions = self.notes_and_credits = None
             self.automatic_screenshot_image_url = None
         else:
-            self.name = name if name is not None else scratchwebapi.request_project_title_for(self.project_id)
-            self.instructions = scratchwebapi.request_project_instructions_for(self.project_id)
-            self.notes_and_credits = scratchwebapi.request_project_notes_and_credits_for(self.project_id)
-            self.automatic_screenshot_image_url = "{}{}.png".format(scratchwebapi.SCRATCH_PROJECT_IMAGE_BASE_URL, self.project_id)
+
+            if name is not None:
+                self.name = name
+            else:
+                [self.name] = scratchwebapi.getMetaDataEntry(self.project_id, "title")
+
+            # self.name = name if name is not None else scratchwebapi.getMetaDataEntry(self.project_id, "title")
+
+            self.instructions, self.notes_and_credits, self.automatic_screenshot_image_url =\
+                scratchwebapi.getMetaDataEntry(self.project_id, "instructions", "description", "image")
+            # self.instructions = scratchwebapi.getMetaDataEntry(self.project_id, "instructions")
+            # self.notes_and_credits = scratchwebapi.getMetaDataEntry(self.project_id, "description")
+            # self.automatic_screenshot_image_url = "{}{}.png".format(scratchwebapi.SCRATCH_PROJECT_IMAGE_BASE_URL, self.project_id)
 
         if progress_bar != None: progress_bar.update(ProgressType.DETAILS) # details step passed
 
@@ -644,11 +670,10 @@ class Project(RawProject):
                          os.path.basename(unused_path))
 
     def find_unused_resources_name_and_filepath(self):
-        # TODO: remove duplication with __init__
         result = []
         for file_path in glob.glob(os.path.join(self.project_base_path, "*.*")):
             md5_resource_filename = common.md5_hash(file_path) + os.path.splitext(file_path)[1]
-            if md5_resource_filename not in self.resource_names:
+            if md5_resource_filename not in self.unique_resource_names:
                 if os.path.basename(file_path) != _PROJECT_FILE_NAME:
                     result += [(md5_resource_filename, file_path)]
         return map(list, zip(*result))
@@ -659,6 +684,60 @@ class Project(RawProject):
             if resource_unique_id in set([raw_resource.get(JsonKeys.SOUND_MD5), raw_resource.get(JsonKeys.COSTUME_MD5)]):
                 resource_names.update([raw_resource[JsonKeys.COSTUME_NAME if JsonKeys.COSTUME_NAME in raw_resource else JsonKeys.SOUND_NAME]])
         return list(resource_names)
+
+    def downloadScratch2ProjectResources(self, target_dir, progress_bar):
+        from threading import Thread
+        from java.net import SocketTimeoutException, SocketException, UnknownHostException
+        from java.io import IOException
+        from scratchtocatrobat.tools import common
+        from scratchtocatrobat.scratch import scratch
+        from scratchtocatrobat.scratch.scratchwebapi import ScratchWebApiError
+        from scratchtocatrobat.tools.helpers import ProgressType
+
+
+        class ResourceDownloadThread(Thread):
+            def run(self):
+                resource_url = self._kwargs["resource_url"]
+                target_dir = self._kwargs["target_dir"]
+                md5_file_name = self._kwargs["md5_file_name"]
+                progress_bar = self._kwargs["progress_bar"]
+                resource_file_path = os.path.join(target_dir, md5_file_name)
+                try:
+                    common.download_file(resource_url, resource_file_path)
+                except (SocketTimeoutException, SocketException, UnknownHostException, IOException) as e:
+                    raise ScratchWebApiError("Error with {}: '{}'".format(resource_url, e))
+                verify_hash = helpers.md5_of_file(resource_file_path)
+                assert verify_hash == os.path.splitext(md5_file_name)[0], "MD5 hash of response data not matching"
+                if progress_bar != None:
+                    progress_bar.update(ProgressType.DOWNLOAD_MEDIA_FILE)
+
+        # schedule parallel downloads
+        unique_resource_names = self.unique_resource_names
+        resource_url_template = helpers.config.get("SCRATCH_API", "asset_url_template")
+        max_concurrent_downloads = int(helpers.config.get("SCRATCH_API", "http_max_concurrent_downloads"))
+        resource_index = 0
+        num_total_resources = len(unique_resource_names)
+        reference_index = 0
+        while resource_index < num_total_resources:
+            num_next_resources = min(max_concurrent_downloads, (num_total_resources - resource_index))
+            next_resources_end_index = resource_index + num_next_resources
+            threads = []
+            for index in range(resource_index, next_resources_end_index):
+                assert index == reference_index
+                reference_index += 1
+                md5_file_name = unique_resource_names[index]
+                kwargs = { "md5_file_name": md5_file_name,
+                           "resource_url": resource_url_template.format(md5_file_name),
+                           "target_dir": target_dir,
+                           "progress_bar": progress_bar }
+                threads.append(ResourceDownloadThread(kwargs=kwargs))
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join()
+            resource_index = next_resources_end_index
+        assert reference_index == resource_index and reference_index == num_total_resources
+
 
 
 class Script(object):

@@ -140,59 +140,30 @@ class _ResponseJsoupDocumentWrapper(ResponseDocumentWrapper):
         return [element.attr(attribute_name) for element in result if element is not None]
 
 def downloadProjectMetaData(project_id, retry_after_http_status_exception=False):
+    global _projectMetaData
+    import urllib2
+
+    scratch_project_url = SCRATCH_PROJECT_META_DATA_BASE_URL + str(project_id)
+
+
     try:
-        global _cached_jsoup_documents
-        global _projectMetaData
-
-        from java.net import SocketTimeoutException, UnknownHostException
-        from org.jsoup import Jsoup, HttpStatusException
-
-        if project_id in _cached_jsoup_documents:
-            _log.debug("Cache hit: Document!")
-            return _cached_jsoup_documents[project_id]
-
-        scratch_project_url = SCRATCH_PROJECT_META_DATA_BASE_URL + str(project_id)
-
-        def retry_hook(exc, tries, delay):
-            _log.warning("  Exception: {}\nRetrying after {}:'{}' in {} secs (remaining trys: {})".format(sys.exc_info()[0], type(exc).__name__, exc, delay, tries))
-
-        exceptions_retry = (SocketTimeoutException, UnknownHostException)
-        if retry_after_http_status_exception:
-            exceptions_retry += (HttpStatusException, )
-
-        @helpers.retry(exceptions_retry, delay=HTTP_DELAY, backoff=HTTP_BACKOFF, tries=HTTP_RETRIES, hook=retry_hook)
-        def fetch_document(scratch_project_url, timeout, user_agent):
-            connection = Jsoup.connect(scratch_project_url)
-            connection.userAgent(user_agent)
-            connection.timeout(timeout)
-            connection.ignoreContentType(True)
-            # connection.header("content-type", "	text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-            # return _ResponseJsoupDocumentWrapper(connection.get().text())
-            return json.loads(connection.get().text())
-
-        try:
-            document = fetch_document(scratch_project_url, HTTP_TIMEOUT, HTTP_USER_AGENT)
-            if document != None:
-                document["meta_data_timestamp"] = datetime.now()
-                _cached_jsoup_documents[project_id] = document
-                _projectMetaData[project_id] = document
-            return document
-        except HttpStatusException as e:
-            if e.getStatusCode() == 404:
-                _log.error("HTTP 404 - Not found! Project not available.")
-                return None
-            else:
-                raise e
-        except:
-            _log.error("Retry limit exceeded or an unexpected error occurred: {}".format(sys.exc_info()[0]))
+        response = urllib2.urlopen(scratch_project_url,timeout=HTTP_TIMEOUT)
+        html = response.read()
+        document = json.loads(html)
+        if document != None:
+            document["meta_data_timestamp"] = datetime.now()
+            _cached_jsoup_documents[project_id] = document
+            _projectMetaData[project_id] = document
+        return document
+    except urllib2.HTTPError as e:
+        if e.code == 404:
+            _log.error("HTTP 404 - Not found! Project not available.")
             return None
+        else:
+            raise e
     except:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        # log error and continue without updating title and/or image URL!
-        import logging
-
-        logging.getLogger(__name__).error("Unexpected error at: {}, {}, {}, {}".format(sys.exc_info()[0], exc_type, fname, str(exc_tb.tb_lineno)))
+        _log.error("Retry limit exceeded or an unexpected error occurred: {}".format(sys.exc_info()[0]))
+        return None
 
 # TODO: class instead of request functions
 def request_is_project_available(project_id):

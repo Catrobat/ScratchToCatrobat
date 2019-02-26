@@ -189,7 +189,7 @@ class _ResponseJsoupDocumentWrapper(ResponseDocumentWrapper):
             return None
         return [element.attr(attribute_name) for element in result if element is not None]
 
-def downloadProjectMetaData(project_id, retry_after_http_status_exception=True):
+def downloadProjectMetaData(project_id, retry_after_http_status_exception=False):
     global _cached_jsoup_documents
     global _projectMetaData
 
@@ -359,13 +359,27 @@ def extract_project_details_from_document(document, project_id, escape_quotes=Tr
 
 
 def getMetaDataEntry(projectID, *entryKey):
+    global _projectMetaData
     if not projectID in _projectMetaData.keys() or (_projectMetaData[projectID]["meta_data_timestamp"] + timedelta(hours=1)) < datetime.now() :
         downloadProjectMetaData(projectID)
 
     metadata = []
 
+
     for i in range(len(entryKey)):
         key = entryKey[i]
-        metadata.append(_projectMetaData[projectID][key])
+        try:
+            import scratchwebapi
+            if key == "visibility" and projectID not in _projectMetaData.keys():
+                metadata.append(scratchwebapi.ScratchProjectVisibiltyState.PRIVATE)
+            elif key == "visibility":
+                metadata.append(scratchwebapi.ScratchProjectVisibiltyState.PUBLIC)
+            elif key == "username":
+                metadata.append(_projectMetaData[projectID]["author"]["username"])
+            else:
+                metadata.append(_projectMetaData[projectID][key])
+        except:
+            print(key)
+            return [None]
 
     return metadata

@@ -309,26 +309,34 @@ def extract_project_details(project_id, escape_quotes=True):
 
 
 def getMetaDataEntry(projectID, *entryKey):
-    global _projectMetaData
-    if not projectID in _projectMetaData.keys() or (_projectMetaData[projectID]["meta_data_timestamp"] + timedelta(hours=1)) < datetime.now() :
-        downloadProjectMetaData(projectID)
+    try:
+        global _projectMetaData
+        if not projectID in _projectMetaData.keys() or (_projectMetaData[projectID]["meta_data_timestamp"] + timedelta(hours=1)) < datetime.now():
+            downloadProjectMetaData(projectID)
 
-    metadata = []
+        metadata = []
 
 
-    for i in range(len(entryKey)):
-        key = entryKey[i]
-        try:
-            if key == "visibility" and projectID not in _projectMetaData.keys():
-                metadata.append(ScratchProjectVisibiltyState.PRIVATE)
-            elif key == "visibility":
-                metadata.append(ScratchProjectVisibiltyState.PUBLIC)
-            elif key == "username":
-                metadata.append(_projectMetaData[projectID]["author"]["username"])
-            else:
-                metadata.append(_projectMetaData[projectID][key])
-        except:
-            print(key)
-            return [None]
+        for i in range(len(entryKey)):
+            key = entryKey[i]
+            try:
+                if key == "visibility" and projectID not in _projectMetaData.keys():
+                    metadata.append(ScratchProjectVisibiltyState.PRIVATE)
+                elif key == "visibility":
+                    metadata.append(ScratchProjectVisibiltyState.PUBLIC)
+                elif key == "username":
+                    metadata.append(_projectMetaData[projectID]["author"]["username"])
+                else:
+                    metadata.append(_projectMetaData[projectID][key])
+            except:
+                print(key)
+                return [None]
 
-    return metadata
+        return metadata
+    except:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        # log error and continue without updating title and/or image URL!
+        import logging
+
+        logging.getLogger(__name__).error("Unexpected error at: {}, {}, {}, {}".format(sys.exc_info()[0], exc_type, fname, str(exc_tb.tb_lineno)))

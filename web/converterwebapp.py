@@ -235,15 +235,12 @@ class _ProjectHandler(tornado.web.RequestHandler):
             self.send_response_data(ProjectDataResponse().as_dict())
             return
 
+        visibility_state = scratchwebapi.getMetaDataEntry(project_id , "visibility")
 
-        document = webhelpers.ResponseBeautifulSoupDocumentWrapper(BeautifulSoup(project_html_content.body.decode('utf-8', 'ignore'), b'html5lib'))
-        document = json.loads(document.wrapped_document.text())
-        visibility_state = document["visibility"]
         response = ProjectDataResponse()
         response.accessible = True
         response.visibility_state = visibility_state
         response.valid_until = dt.now() + timedelta(seconds=cls.CACHE_ENTRY_VALID_FOR)
-
         if visibility_state != ScratchProjectVisibiltyState.PUBLIC:
             _logger.warn("Not allowed to access non-public scratch-project!")
             cls.RESPONSE_CACHE[project_id] = (response.as_dict(), response.valid_until)
@@ -251,7 +248,7 @@ class _ProjectHandler(tornado.web.RequestHandler):
             self.send_response_data(response.as_dict())
             return
 
-        project_info = scratchwebapi.extract_project_details_from_document(document, project_id, escape_quotes=True)
+        project_info = scratchwebapi.extract_project_details(project_id, escape_quotes=True)
         if project_info is None:
             _logger.error("Unable to parse project-info from web page: Invalid or empty HTML-content!")
             if project_id in cls.IN_PROGRESS_FUTURE_MAP: del cls.IN_PROGRESS_FUTURE_MAP[project_id]

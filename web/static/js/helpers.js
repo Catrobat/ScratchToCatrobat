@@ -4,7 +4,7 @@ function createGetJSONCallback(callback, info) {
 }
 
 function fetchProjectDetails(projectID, info, successHandler, errorHandler) {
-  var projectMetadataURL = "https://scratch.mit.edu/api/v1/project/" + projectID + "/?format=json";
+  var projectMetadataURL = "https://api.scratch.mit.edu/projects/" + projectID + "/?format=json";
   $.getJSON(projectMetadataURL, createGetJSONCallback(successHandler, info)).error(errorHandler);
 }
 

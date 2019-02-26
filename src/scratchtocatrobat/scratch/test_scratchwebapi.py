@@ -303,6 +303,11 @@ class WebApiTest(common_testing.BaseTestCase):
             assert extracted_project_title == expected_project_title, \
                 "'{}' is not equal to '{}'".format(extracted_project_title, expected_project_title)
 
+    def test_can_request_project_title_and_image_for_id(self):
+            extracted_project_title, image = scratchwebapi.getMetaDataEntry(10205819, "title", "image")
+            assert extracted_project_title == "Dancin' in the Castle"
+            assert image == "https://cdn2.scratch.mit.edu/get_image/project/10205819_480x360.png"
+
     def test_can_request_project_owner_for_id(self):
         for (project_id, expected_project_owner) in TEST_PROJECT_ID_TO_OWNER_MAP.iteritems():
             [extracted_project_owner] = scratchwebapi.getMetaDataEntry(project_id, 'username')

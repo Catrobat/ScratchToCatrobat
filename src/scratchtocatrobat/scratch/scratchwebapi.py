@@ -120,55 +120,7 @@ def download_project(project_url, target_dir, progress_bar=None):
 
     project_id = extract_project_id_from_url(project_url)
     download_project_code(project_id, target_dir)
-
     return
-    project = scratch.RawProject.from_project_folder_path(target_dir)
-    if progress_bar != None:
-        progress_bar.expected_progress = project.expected_progress_of_downloaded_project(progress_bar)
-        progress_bar.update(ProgressType.DOWNLOAD_CODE) # update due to download of project.json file
-
-    class ResourceDownloadThread(Thread):
-        def run(self):
-            resource_url = self._kwargs["resource_url"]
-            target_dir = self._kwargs["target_dir"]
-            md5_file_name = self._kwargs["md5_file_name"]
-            progress_bar = self._kwargs["progress_bar"]
-            resource_file_path = os.path.join(target_dir, md5_file_name)
-            try:
-                common.download_file(resource_url, resource_file_path)
-            except (SocketTimeoutException, SocketException, UnknownHostException, IOException) as e:
-                raise ScratchWebApiError("Error with {}: '{}'".format(resource_url, e))
-            verify_hash = helpers.md5_of_file(resource_file_path)
-            assert verify_hash == os.path.splitext(md5_file_name)[0], "MD5 hash of response data not matching"
-            if progress_bar != None:
-                progress_bar.update(ProgressType.DOWNLOAD_MEDIA_FILE)
-
-    # schedule parallel downloads
-    unique_resource_names = project.unique_resource_names
-    resource_url_template = helpers.config.get("SCRATCH_API", "asset_url_template")
-    max_concurrent_downloads = int(helpers.config.get("SCRATCH_API", "http_max_concurrent_downloads"))
-    resource_index = 0
-    num_total_resources = len(unique_resource_names)
-    reference_index = 0
-    while resource_index < num_total_resources:
-        num_next_resources = min(max_concurrent_downloads, (num_total_resources - resource_index))
-        next_resources_end_index = resource_index + num_next_resources
-        threads = []
-        for index in range(resource_index, next_resources_end_index):
-            assert index == reference_index
-            reference_index += 1
-            md5_file_name = unique_resource_names[index]
-            kwargs = { "md5_file_name": md5_file_name,
-                       "resource_url": resource_url_template.format(md5_file_name),
-                       "target_dir": target_dir,
-                       "progress_bar": progress_bar }
-            threads.append(ResourceDownloadThread(kwargs=kwargs))
-        for thread in threads:
-            thread.start()
-        for thread in threads:
-            thread.join()
-        resource_index = next_resources_end_index
-    assert reference_index == resource_index and reference_index == num_total_resources
 
 class _ResponseJsoupDocumentWrapper(ResponseDocumentWrapper):
     def select_first_as_text(self, query):
@@ -304,37 +256,38 @@ def extract_project_remixes_from_data(tree_data, project_id):
     return remixed_program_info
 
 
-def extract_project_details_from_document(document, project_id, escape_quotes=True):
+def extract_project_details(project_id, escape_quotes=True):
     if document is None: return None
 
-    title = extract_project_title_from_document(document)
+    [title] = getMetaDataEntry(project_id , "title")
     if title is None: return None
     if escape_quotes: title = title.replace('"','\\"')
 
-    owner = extract_project_owner_from_document(document)
+    [owner] = getMetaDataEntry(project_id , "username")
     if owner is None: return None
     if escape_quotes: owner = owner.replace('"','\\"')
 
     image_url = "{}{}.png".format(SCRATCH_PROJECT_IMAGE_BASE_URL, project_id)
-    instructions = extract_project_instructions_from_document(document)
+    [instructions] = getMetaDataEntry(project_id , "instructions")
     if escape_quotes and instructions is not None: instructions = instructions.replace('"','\\"')
-    notes_and_credits = extract_project_notes_and_credits_from_document(document)
+    [notes_and_credits] = getMetaDataEntry(project_id , "description")
     if escape_quotes and notes_and_credits is not None: notes_and_credits = notes_and_credits.replace('"','\\"')
-    tags = document.select_all_as_text_list("div#project-tags div.tag-box span.tag") or []
-
-    extracted_text = document.select_first_as_text("div#total-views > span.views")
+    [stats] = getMetaDataEntry(project_id , "stats")
+    remixes = stats["remixes"]
+    extracted_text = stats["views"]
     if extracted_text is None: return None
     views = int(unicode(extracted_text).strip())
 
-    extracted_text = document.select_first_as_text("div#stats > div.action > span.favorite")
+    extracted_text = stats["favorites"]
     if extracted_text is None: return None
     favorites = int(unicode(extracted_text).strip())
 
-    extracted_text = document.select_first_as_text("div#love-this > span.love")
+    extracted_text = stats["loves"]
     if extracted_text is None: return None
     loves = int(unicode(extracted_text).strip())
 
-    extracted_text = document.select_first_as_text("div#fixed div.dates span.date-updated")
+    [extracted_text] = getMetaDataEntry(project_id , "history")
+    extracted_text = extracted_text["modified"]
     if extracted_text is None: return None
     modified_date_str = unicode(extracted_text).replace("Modified:", "").strip()
     try:
@@ -342,7 +295,8 @@ def extract_project_details_from_document(document, project_id, escape_quotes=Tr
     except:
         modified_date = None
 
-    extracted_text = document.select_first_as_text("div#fixed div.dates span.date-shared")
+    [extracted_text] = getMetaDataEntry(project_id , "history")
+    extracted_text = extracted_text["shared"]
     if extracted_text is None: return None
     shared_date_str = unicode(extracted_text).replace("Shared:", "").strip()
     try:
@@ -352,7 +306,7 @@ def extract_project_details_from_document(document, project_id, escape_quotes=Tr
 
     return ScratchProjectInfo(title = title, owner = owner, image_url = image_url,
                               instructions = instructions, notes_and_credits = notes_and_credits,
-                              tags = tags, views = views, favorites = favorites, loves = loves,
+                              tags = remixes, views = views, favorites = favorites, loves = loves,
                               modified_date = modified_date, shared_date = shared_date)
 
 
@@ -369,11 +323,10 @@ def getMetaDataEntry(projectID, *entryKey):
     for i in range(len(entryKey)):
         key = entryKey[i]
         try:
-            import scratchwebapi
             if key == "visibility" and projectID not in _projectMetaData.keys():
-                metadata.append(scratchwebapi.ScratchProjectVisibiltyState.PRIVATE)
+                metadata.append(ScratchProjectVisibiltyState.PRIVATE)
             elif key == "visibility":
-                metadata.append(scratchwebapi.ScratchProjectVisibiltyState.PUBLIC)
+                metadata.append(ScratchProjectVisibiltyState.PUBLIC)
             elif key == "username":
                 metadata.append(_projectMetaData[projectID]["author"]["username"])
             else:

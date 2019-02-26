@@ -25,10 +25,8 @@ import re
 import json
 from urlparse import urlparse
 from scratchtocatrobat.tools import logger, helpers
-from scratchtocatrobat.tools.helpers import ProgressType
 from collections import namedtuple
 from datetime import datetime, timedelta
-import time
 
 HTTP_RETRIES = int(helpers.config.get("SCRATCH_API", "http_retries"))
 HTTP_BACKOFF = int(helpers.config.get("SCRATCH_API", "http_backoff"))
@@ -257,8 +255,6 @@ def extract_project_remixes_from_data(tree_data, project_id):
 
 
 def extract_project_details(project_id, escape_quotes=True):
-    if document is None: return None
-
     [title] = getMetaDataEntry(project_id , "title")
     if title is None: return None
     if escape_quotes: title = title.replace('"','\\"')

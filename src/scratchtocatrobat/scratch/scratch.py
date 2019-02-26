@@ -106,8 +106,7 @@ class Object(common.DictAccessWrapper):
                 return
         for key in (JsonKeys.SOUNDS, JsonKeys.COSTUMES, JsonKeys.SCRIPTS, JsonKeys.LISTS, JsonKeys.VARIABLES):
             if key not in object_data:
-                pass
-                # object_data[key] = []
+                self._dict_object[key] = []
         self.name = self.get_objName()
         self.scripts = [Script(script) for script in self.get_scripts() if Script.is_valid_script_input(script)]
         number_of_ignored_scripts = len(self.get_scripts()) - len(self.scripts)

@@ -359,13 +359,18 @@ def extract_project_details_from_document(document, project_id, escape_quotes=Tr
 
 
 def getMetaDataEntry(projectID, *entryKey):
+    global _projectMetaData
     if not projectID in _projectMetaData.keys() or (_projectMetaData[projectID]["meta_data_timestamp"] + timedelta(hours=1)) < datetime.now() :
         downloadProjectMetaData(projectID)
 
     metadata = []
 
+
     for i in range(len(entryKey)):
         key = entryKey[i]
-        metadata.append(_projectMetaData[projectID][key])
+        try:
+            metadata.append(_projectMetaData[projectID][key])
+        except:
+            print(key)
 
     return metadata

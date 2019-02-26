@@ -241,9 +241,11 @@ def convert_scratch_project(job_ID, host, port, verbose):
             raise Warning("Unable to extract image url of project from the project's website!" \
                           " Reason: Cannot parse image url from returned html content!")
     except:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         # log error and continue without updating title and/or image URL!
-        _logger.error("Unexpected error for URL: {}, {}, {}git add ..we git".format(scratch_project_url, \
-                                                                sys.exc_info()[0],sys.exc_info()[2]))
+        _logger.error("Unexpected error for URL: {}, {}, {}, {}, {}".format(scratch_project_url, \
+                                                                sys.exc_info()[0], exc_type, fname, str(exc_tb.tb_lineno)))
 
     _logger.info("Project title is: {}".format(title))
 

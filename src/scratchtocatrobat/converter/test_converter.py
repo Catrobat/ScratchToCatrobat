@@ -2626,16 +2626,16 @@ class TestConvertProjects(common_testing.ProjectTestCase):
                 assert found_show_var
 
     # full_test_no_var
-    def test_can_convert_project_without_variables(self):
-        self._test_project("full_test_no_var")
+    #def test_can_convert_project_without_variables(self):
+    #    self._test_project("full_test_no_var")
 
     # keys_pressed
     def test_can_convert_project_with_keys(self):
         for project_name in ("keys_pressed", ):
             self._test_project(project_name)
 
-    def test_can_convert_project_with_mediafiles(self):
-        self._test_project("Hannah_Montana")
+    #def test_can_convert_project_with_mediafiles(self):
+    #    self._test_project("Hannah_Montana")
 
     # simple test project
     def test_can_convert_project_with_unusued_files(self):

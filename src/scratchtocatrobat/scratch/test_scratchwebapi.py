@@ -32,7 +32,7 @@ TEST_PROJECT_ID_TO_TITLE_MAP = {
     "10205819": "Dancin' in the Castle",
     "10132588": "Dance back",
     "2365565" : u"Fußball Kapfenstein",
-    "117300839": "やねうら部屋（びっくりハウス）"
+    "117300839": u"やねうら部屋（びっくりハウス）"
 }
 
 TEST_PROJECT_ID_TO_IMAGE_URL_MAP = {
@@ -254,23 +254,20 @@ TEST_PROJECT_ID_TO_TAGS_MAP = {
 
 TEST_PROJECT_ID_TO_INSTRUCTIONS_MAP = {
     "10205819": "Click the flag to run the stack. Click the space bar to change it up!",
-    "10132588": "D,4,8 for the animals to move.C,A for background.",
-    "2365565" : None,
-    "117300839": "◆「Why!?大喜利」8月のお題 ・キミのびっくりハウスをつくろう！～やねうら部屋 編～ " \
-                 "広い“屋根裏部屋”には、何もないみたいだね。好きなものを書いたり、おいたりして“びっく" \
-                 "り”を作ろう。スプライトには助っ人として、マックスとリンゴがあるぞ！ ◆自由にリミックス" \
-                 "（改造）して、遊んでください！ 面白い作品ができたら、こちらまで投稿を！ http://www.nhk." \
-                 "or.jp/xxx ※リミックス作品を投稿する時は”共有”を忘れないでね。"
+    "10132588": "D,4,8 for the animals to move.C,A for background. ",
+    "2365565" : "",
+    "117300839": u"◆「Why!?大喜利」8月のお題\n・キミのびっくりハウスをつくろう！～やねうら部屋 編～\n\n" \
+                 u"広い“屋根裏部屋”には、何もないみたいだね。好きなものを書いたり、おいたりして“びっく" \
+                 u"り”を作ろう。スプライトには助っ人として、マックスとリンゴがあるぞ！\n\n" \
+                 u"◆自由にリミックス（改造）して、遊んでください！\n面白い作品ができたら、こちらまで投稿を！\nhttp://www.nhk." \
+                 u"or.jp/xxx\n※リミックス作品を投稿する時は”共有”を忘れないでね。\n"
 }
 
 TEST_PROJECT_ID_TO_NOTES_AND_CREDITS_MAP = {
     "10205819": "First project on Scratch! This was great.",
     "10132588": "",
     "2365565" : "",
-    "117300839": "◆NHK「わいわい プログラミング」 メインコーナー「why!?大喜利」では、月がわりでお題を出す" \
-                 "よ！毎月末が応募締め切り。優秀者にはインタビューも。さぁ、キミも投稿してみよう！ " \
-                 "http://www.nhk.or.jp/school/programming/oogiri/index.html ◆「キミのびっくりハウ" \
-                 "スをつくろう！～やねうら部屋 編～」 キャラクター onnacodomo 制作 NHK"
+    "117300839": u"◆NHK「わいわい プログラミング」\nメインコーナー「why!?大喜利」では、月がわりでお題を出すよ！毎月末が応募締め切り。優秀者にはインタビューも。さぁ、キミも投稿してみよう！\nhttp://www.nhk.or.jp/school/programming/oogiri/index.html\n\n◆「キミのびっくりハウスをつくろう！～やねうら部屋 編～」\nキャラクター onnacodomo\n制作 NHK\n"
 }
 
 
@@ -317,7 +314,7 @@ class WebApiTest(common_testing.BaseTestCase):
     def test_can_request_project_instructions_for_id(self):
         for (project_id, expected_project_instructions) in TEST_PROJECT_ID_TO_INSTRUCTIONS_MAP.iteritems():
             [extracted_project_instructions] = scratchwebapi.getMetaDataEntry(project_id, 'instructions')
-            assert extracted_project_instructions == expected_project_instructions, \
+            assert extracted_project_instructions== expected_project_instructions, \
                 "'{}' is not equal to '{}'".format(extracted_project_instructions, expected_project_instructions)
 
     def test_can_request_project_notes_and_credits_for_id(self):

@@ -146,7 +146,7 @@ class Scratch3Parser(object):
             s2Sound = {}
             s2Sound["assetId"] =  s3Sound["assetId"]
             s2Sound["soundName"] =  s3Sound["name"]
-            s2Sound["format"] =  s3Sound["format"]
+            s2Sound["format"] =  s3Sound["dataFormat"]
             s2Sound["rate"] =  s3Sound["rate"]
             s2Sound["sampleCount"] =  s3Sound["sampleCount"]
             s2Sound["md5"] =  s3Sound["md5ext"]

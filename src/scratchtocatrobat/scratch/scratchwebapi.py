@@ -83,8 +83,20 @@ class ResponseDocumentWrapper(object):
 
 def is_valid_project_url(project_url):
     scratch_base_url = helpers.config.get("SCRATCH_API", "project_base_url")
-    _HTTP_PROJECT_URL_PATTERN = scratch_base_url + r'\d+/?'
-    return re.match(_HTTP_PROJECT_URL_PATTERN, project_url)
+    scratch_base_url_meta_data = helpers.config.get("SCRATCH_API", "project_meta_data_base_url")
+    scratch_base_url_projects = helpers.config.get("SCRATCH_API", "internal_project_base_url")
+
+    _HTTP_BASE_URL_PATTERN = scratch_base_url + r'\d+/?'
+    _HTTP_META_URL_PATTERN = scratch_base_url_meta_data + r'\d+/?'
+    _HTTP_PROJECT_URL_PATTERN = scratch_base_url_projects+"/" + r'\d+/?'
+    is_valid = project_url.startswith("https://") and \
+               (re.match(_HTTP_BASE_URL_PATTERN, project_url) or
+                re.match(_HTTP_META_URL_PATTERN, project_url) or
+                re.match(_HTTP_PROJECT_URL_PATTERN, project_url) )
+    if not is_valid:
+        raise ScratchWebApiError("Project URL must be matching '{}' or '{}' or '{}'. Given: {}".format(scratch_base_url + '<project id>', scratch_base_url_meta_data + '<project id>', scratch_base_url_projects + '<project id>', project_url))
+
+    return is_valid
 
 def extract_project_id_from_url(project_url):
     normalized_url = project_url.strip("/")
@@ -97,6 +109,7 @@ def download_project_code(project_id, target_dir):
     from scratchtocatrobat.tools import common
     from scratchtocatrobat.scratch import scratch
     project_code_url = helpers.config.get("SCRATCH_API", "project_url_template").format(project_id)
+    is_valid_project_url(project_code_url)
     project_file_path = os.path.join(target_dir, scratch._PROJECT_FILE_NAME)
     try:
         common.download_file(project_code_url, project_file_path)
@@ -111,9 +124,7 @@ def download_project(project_url, target_dir, progress_bar=None):
     from scratchtocatrobat.tools import common
     from scratchtocatrobat.scratch import scratch
 
-    if not is_valid_project_url(project_url):
-        scratch_base_url = helpers.config.get("SCRATCH_API", "project_base_url")
-        raise ScratchWebApiError("Project URL must be matching '{}'. Given: {}".format(scratch_base_url + '<project id>', project_url))
+    is_valid_project_url(project_url)
     assert len(os.listdir(target_dir)) == 0
 
     project_id = extract_project_id_from_url(project_url)
@@ -140,44 +151,23 @@ class _ResponseJsoupDocumentWrapper(ResponseDocumentWrapper):
         return [element.attr(attribute_name) for element in result if element is not None]
 
 def downloadProjectMetaData(project_id, retry_after_http_status_exception=False):
-    global _cached_jsoup_documents
     global _projectMetaData
-
-    from java.net import SocketTimeoutException, UnknownHostException
-    from org.jsoup import Jsoup, HttpStatusException
-
-    if project_id in _cached_jsoup_documents:
-        _log.debug("Cache hit: Document!")
-        return _cached_jsoup_documents[project_id]
+    import urllib2
 
     scratch_project_url = SCRATCH_PROJECT_META_DATA_BASE_URL + str(project_id)
 
-    def retry_hook(exc, tries, delay):
-        _log.warning("  Exception: {}\nRetrying after {}:'{}' in {} secs (remaining trys: {})".format(sys.exc_info()[0], type(exc).__name__, exc, delay, tries))
-
-    exceptions_retry = (SocketTimeoutException, UnknownHostException)
-    if retry_after_http_status_exception:
-        exceptions_retry += (HttpStatusException, )
-
-    @helpers.retry(exceptions_retry, delay=HTTP_DELAY, backoff=HTTP_BACKOFF, tries=HTTP_RETRIES, hook=retry_hook)
-    def fetch_document(scratch_project_url, timeout, user_agent):
-        connection = Jsoup.connect(scratch_project_url)
-        connection.userAgent(user_agent)
-        connection.timeout(timeout)
-        connection.ignoreContentType(True)
-        # connection.header("content-type", "	text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-        # return _ResponseJsoupDocumentWrapper(connection.get().text())
-        return json.loads(connection.get().text())
 
     try:
-        document = fetch_document(scratch_project_url, HTTP_TIMEOUT, HTTP_USER_AGENT)
+        response = urllib2.urlopen(scratch_project_url,timeout=HTTP_TIMEOUT)
+        html = response.read()
+        document = json.loads(html)
         if document != None:
             document["meta_data_timestamp"] = datetime.now()
             _cached_jsoup_documents[project_id] = document
             _projectMetaData[project_id] = document
         return document
-    except HttpStatusException as e:
-        if e.getStatusCode() == 404:
+    except urllib2.HTTPError as e:
+        if e.code == 404:
             _log.error("HTTP 404 - Not found! Project not available.")
             return None
         else:
@@ -309,26 +299,36 @@ def extract_project_details(project_id, escape_quotes=True):
 
 
 def getMetaDataEntry(projectID, *entryKey):
-    global _projectMetaData
-    if not projectID in _projectMetaData.keys() or (_projectMetaData[projectID]["meta_data_timestamp"] + timedelta(hours=1)) < datetime.now() :
-        downloadProjectMetaData(projectID)
+    try:
+        global _projectMetaData
+        if not projectID in _projectMetaData.keys() or (_projectMetaData[projectID]["meta_data_timestamp"] + timedelta(hours=1)) < datetime.now():
+            downloadProjectMetaData(projectID)
 
-    metadata = []
+        metadata = []
 
 
-    for i in range(len(entryKey)):
-        key = entryKey[i]
-        try:
-            if key == "visibility" and projectID not in _projectMetaData.keys():
-                metadata.append(ScratchProjectVisibiltyState.PRIVATE)
-            elif key == "visibility":
-                metadata.append(ScratchProjectVisibiltyState.PUBLIC)
-            elif key == "username":
-                metadata.append(_projectMetaData[projectID]["author"]["username"])
-            else:
-                metadata.append(_projectMetaData[projectID][key])
-        except:
-            print(key)
-            return [None]
+        for i in range(len(entryKey)):
+            key = entryKey[i]
+            try:
+                if key == "visibility" and projectID not in _projectMetaData.keys():
+                    metadata.append(ScratchProjectVisibiltyState.PRIVATE)
+                if key == "title" and projectID not in _projectMetaData.keys():
+                    metadata.append("Untitled")
+                elif key == "visibility":
+                    metadata.append(ScratchProjectVisibiltyState.PUBLIC)
+                elif key == "username":
+                    metadata.append(_projectMetaData[projectID]["author"]["username"])
+                else:
+                    metadata.append(_projectMetaData[projectID][key])
+            except:
+                print(key)
+                return [None]
 
-    return metadata
+        return metadata
+    except:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        # log error and continue without updating title and/or image URL!
+        import logging
+
+        logging.getLogger(__name__).error("Unexpected error at: {}, {}, {}, {}".format(sys.exc_info()[0], exc_type, fname, str(exc_tb.tb_lineno))

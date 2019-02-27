@@ -95,19 +95,19 @@ def run_converter(scratch_project_file_or_url, output_dir,
         log.info("calling converter")
         if not os.path.isdir(output_dir):
             raise EnvironmentError("Output folder must be a directory, but is %s" % output_dir)
-
+        scratch3ProjectName = "Untitled"
         progress_bar = helpers.ProgressBar(None, web_mode, sys.stdout)
         with common.TemporaryDirectory(remove_on_exit=temp_rm) as scratch_project_dir:
             is_local_project = True
             if scratch_project_file_or_url.startswith("https://"):
                 is_local_project = False
-                if not scratchwebapi.is_valid_project_url(scratch_project_file_or_url):
-                    raise common.ScratchtobatError("Invalid URL for Scratch-project given: %s" %
-                                                   scratch_project_file_or_url)
+                validate_scratch_url(scratch_project_file_or_url)
+
                 project_ID = scratchwebapi.extract_project_id_from_url(scratch_project_file_or_url)
                 if not scratchwebapi.request_is_project_available(project_ID):
                     raise common.ScratchtobatError("Project with ID %s not available" % project_ID)
-                if scratchwebapi.getMetaDataEntry(project_ID, "visibility") != scratchwebapi.ScratchProjectVisibiltyState.PUBLIC:
+                [visibility] = scratchwebapi.getMetaDataEntry(project_ID, "visibility")
+                if visibility != scratchwebapi.ScratchProjectVisibiltyState.PUBLIC:
                     log.warn('-'*80)
                     log.warn("CAVE: Project with ID %s is NOT a public project!! Trying to " \
                              "continue the conversion-process anyway, but expecting the " \
@@ -116,6 +116,7 @@ def run_converter(scratch_project_file_or_url, output_dir,
                 log.info("Downloading project from URL: '{}' to temp dir {} ...".format(
                                                 scratch_project_file_or_url, scratch_project_dir))
                 scratchwebapi.download_project(scratch_project_file_or_url, scratch_project_dir, progress_bar)
+                [scratch3ProjectName] = scratchwebapi.getMetaDataEntry(project_ID, "title")
 
             elif os.path.isfile(scratch_project_file_or_url):
                 log.info("Extracting project from path: '{}' ...".format(scratch_project_file_or_url))
@@ -156,6 +157,8 @@ def run_converter(scratch_project_file_or_url, output_dir,
                     json.dump(scratch2Data, file, sort_keys=True, indent=4, separators=(',', ': '))
 
             project = scratch.Project(scratch_project_dir, progress_bar=progress_bar, is_local_project = is_local_project)
+            if isScratch3Project:
+                project.name = scratch3ProjectName
             log.info("Converting scratch project '%s' into output folder: %s", project.name, output_dir)
             context = converter.Context()
             converted_project = converter.converted(project, progress_bar, context)
@@ -214,15 +217,18 @@ def main():
         project_url_or_package_path = ""
         if arguments["<project-url-or-package-path>"]:
             project_url_or_package_path = arguments["<project-url-or-package-path>"].replace("http://", "https://")
-            scratch_base_url = helpers.config.get("SCRATCH_API", "project_base_url")
-            if project_url_or_package_path.startswith("https://") and not project_url_or_package_path.startswith(scratch_base_url):
-                log.error("No valid scratch URL given {0}[ID]".format(scratch_base_url))
-                sys.exit(helpers.ExitCode.FAILURE)
+            validate_scratch_url(project_url_or_package_path)
         exit_code = run_converter(project_url_or_package_path, output_dir, **kwargs)
         sys.exit(exit_code)
     except Exception as e:
         log.exception(e)
         sys.exit(helpers.ExitCode.FAILURE)
 
+def validate_scratch_url(url):
+    from scratchtocatrobat.scratch import scratchwebapi
+    import os
+    if os.path.isfile(url) :
+        return
+    scratchwebapi.is_valid_project_url(url)
 if __name__ == '__main__':
     main()

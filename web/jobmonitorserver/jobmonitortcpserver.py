@@ -104,7 +104,7 @@ class TCPConnectionHandler(object):
         allowed_auth_keys_for_host = [auth_key["key"] for auth_key in allowed_auth_keys if auth_key["host"] == host]
         if len(allowed_auth_keys_for_host) == 0:
 
-            _logger.warn("An intruder '%s' might have tried to connect to our server!, host %s has no allowed key in  %s" %(str(address), str(host), str(allowed_auth_keys)))
+            _logger.warn("An intruder '%s' might have tried to connect to our server!" %(str(address)))
             # TODO: block him...
             # Don't tell the client that this hostname is forbidden
             raise TCPConnectionException("Invalid AUTH_KEY given.")

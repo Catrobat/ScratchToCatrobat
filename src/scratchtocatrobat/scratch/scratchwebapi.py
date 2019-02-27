@@ -88,8 +88,11 @@ def is_valid_project_url(project_url):
 
     _HTTP_BASE_URL_PATTERN = scratch_base_url + r'\d+/?'
     _HTTP_META_URL_PATTERN = scratch_base_url_meta_data + r'\d+/?'
-    _HTTP_PROJECT_URL_PATTERN = scratch_base_url_projects + r'\d+/?'
-    is_valid = project_url.startswith("https://") and (re.match(_HTTP_BASE_URL_PATTERN, project_url) or re.match(_HTTP_META_URL_PATTERN, project_url) or re.match(_HTTP_PROJECT_URL_PATTERN, project_url) )
+    _HTTP_PROJECT_URL_PATTERN = scratch_base_url_projects+"/" + r'\d+/?'
+    is_valid = project_url.startswith("https://") and \
+               (re.match(_HTTP_BASE_URL_PATTERN, project_url) or
+                re.match(_HTTP_META_URL_PATTERN, project_url) or
+                re.match(_HTTP_PROJECT_URL_PATTERN, project_url) )
     if not is_valid:
         raise ScratchWebApiError("Project URL must be matching '{}' or '{}' or '{}'. Given: {}".format(scratch_base_url + '<project id>', scratch_base_url_meta_data + '<project id>', scratch_base_url_projects + '<project id>', project_url))
 
@@ -106,6 +109,7 @@ def download_project_code(project_id, target_dir):
     from scratchtocatrobat.tools import common
     from scratchtocatrobat.scratch import scratch
     project_code_url = helpers.config.get("SCRATCH_API", "project_url_template").format(project_id)
+    is_valid_project_url(project_code_url)
     project_file_path = os.path.join(target_dir, scratch._PROJECT_FILE_NAME)
     try:
         common.download_file(project_code_url, project_file_path)

@@ -221,9 +221,10 @@ def main():
         sys.exit(helpers.ExitCode.FAILURE)
 
 def validate_scratch_url(url):
-    from scratchtocatrobat.tools import common
     from scratchtocatrobat.scratch import scratchwebapi
+    import os
+    if os.path.isfile(url) :
+        return
     scratchwebapi.is_valid_project_url(url)
-    raise common.ScratchtobatError("Invalid URL for Scratch-project given: %s" % url)
 if __name__ == '__main__':
     main()

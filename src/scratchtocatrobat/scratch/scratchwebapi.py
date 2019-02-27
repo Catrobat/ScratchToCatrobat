@@ -312,7 +312,7 @@ def getMetaDataEntry(projectID, *entryKey):
             try:
                 if key == "visibility" and projectID not in _projectMetaData.keys():
                     metadata.append(ScratchProjectVisibiltyState.PRIVATE)
-                if key == "title" and projectID not in _projectMetaData.keys():
+                elif key == "title" and projectID not in _projectMetaData.keys():
                     metadata.append("Untitled")
                 elif key == "visibility":
                     metadata.append(ScratchProjectVisibiltyState.PUBLIC)

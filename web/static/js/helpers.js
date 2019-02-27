@@ -4,7 +4,7 @@ function createGetJSONCallback(callback, info) {
 }
 
 function fetchProjectDetails(projectID, info, successHandler, errorHandler) {
-  var projectMetadataURL = "https://api.scratch.mit.edu/projects/" + projectID + "/?format=json";
+  var projectMetadataURL = "https://api.scratch.mit.edu/projects/" + projectID;
   $.getJSON(projectMetadataURL, createGetJSONCallback(successHandler, info)).error(errorHandler);
 }
 
@@ -41,9 +41,6 @@ function updateAndShowProjectDetails(projectID) {
     var projectMetadataDiv = $("<div></div>").append(div);
     showSuccessMessage(projectMetadataDiv);
   }, function(event, jqxhr, exception) {
-    showErrorMessage("Invalid project?? No metadata available!");
-    disableSubmitButton();
-    $(this).focus();
   });
 }
 

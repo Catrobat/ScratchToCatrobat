@@ -331,4 +331,4 @@ def getMetaDataEntry(projectID, *entryKey):
         # log error and continue without updating title and/or image URL!
         import logging
 
-        logging.getLogger(__name__).error("Unexpected error at: {}, {}, {}, {}".format(sys.exc_info()[0], exc_type, fname, str(exc_tb.tb_lineno)))
+        logging.getLogger(__name__).error("Unexpected error at: {}, {}, {}, {}".format(sys.exc_info()[0], exc_type, fname, str(exc_tb.tb_lineno))

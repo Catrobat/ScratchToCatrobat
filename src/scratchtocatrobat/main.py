@@ -101,9 +101,8 @@ def run_converter(scratch_project_file_or_url, output_dir,
             is_local_project = True
             if scratch_project_file_or_url.startswith("https://"):
                 is_local_project = False
-                if not scratchwebapi.is_valid_project_url(scratch_project_file_or_url):
-                    raise common.ScratchtobatError("Invalid URL for Scratch-project given: %s" %
-                                                   scratch_project_file_or_url)
+                validate_scratch_url(scratch_project_file_or_url)
+
                 project_ID = scratchwebapi.extract_project_id_from_url(scratch_project_file_or_url)
                 if not scratchwebapi.request_is_project_available(project_ID):
                     raise common.ScratchtobatError("Project with ID %s not available" % project_ID)
@@ -214,18 +213,17 @@ def main():
         project_url_or_package_path = ""
         if arguments["<project-url-or-package-path>"]:
             project_url_or_package_path = arguments["<project-url-or-package-path>"].replace("http://", "https://")
-            scratch_base_url = helpers.config.get("SCRATCH_API", "project_base_url")
-            scratch_apibase_url = helpers.config.get("SCRATCH_API", "project_meta_data_base_url")
-            scratch_projbase_url = helpers.config.get("SCRATCH_API", "internal_project_base_url")
-            valid_url_start = project_url_or_package_path.startswith(scratch_base_url) or project_url_or_package_path.startswith(scratch_apibase_url) or project_url_or_package_path.startswith(scratch_projbase_url)
-            if project_url_or_package_path.startswith("https://") and not valid_url_start:
-                log.error("No valid scratch URL given {0}[ID] valid URLs start with {1} or {2} or {3}".format(project_url_or_package_path,scratch_base_url,scratch_apibase_url,scratch_projbase_url))
-                sys.exit(helpers.ExitCode.FAILURE)
+            validate_scratch_url(project_url_or_package_path)
         exit_code = run_converter(project_url_or_package_path, output_dir, **kwargs)
         sys.exit(exit_code)
     except Exception as e:
         log.exception(e)
         sys.exit(helpers.ExitCode.FAILURE)
 
+def validate_scratch_url(url):
+    from scratchtocatrobat.tools import common
+    from scratchtocatrobat.scratch import scratchwebapi
+    scratchwebapi.is_valid_project_url(url)
+    raise common.ScratchtobatError("Invalid URL for Scratch-project given: %s" % url)
 if __name__ == '__main__':
     main()

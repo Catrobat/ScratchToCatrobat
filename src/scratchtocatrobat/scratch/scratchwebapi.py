@@ -83,8 +83,17 @@ class ResponseDocumentWrapper(object):
 
 def is_valid_project_url(project_url):
     scratch_base_url = helpers.config.get("SCRATCH_API", "project_base_url")
-    _HTTP_PROJECT_URL_PATTERN = scratch_base_url + r'\d+/?'
-    return re.match(_HTTP_PROJECT_URL_PATTERN, project_url)
+    scratch_base_url_meta_data = helpers.config.get("SCRATCH_API", "project_meta_data_base_url")
+    scratch_base_url_projects = helpers.config.get("SCRATCH_API", "internal_project_base_url")
+
+    _HTTP_BASE_URL_PATTERN = scratch_base_url + r'\d+/?'
+    _HTTP_META_URL_PATTERN = scratch_base_url_meta_data + r'\d+/?'
+    _HTTP_PROJECT_URL_PATTERN = scratch_base_url_projects + r'\d+/?'
+    is_valid = project_url.startswith("https://") and (re.match(_HTTP_BASE_URL_PATTERN, project_url) or re.match(_HTTP_META_URL_PATTERN, project_url) or re.match(_HTTP_PROJECT_URL_PATTERN, project_url) )
+    if not is_valid:
+        raise ScratchWebApiError("Project URL must be matching '{}' or '{}' or '{}'. Given: {}".format(scratch_base_url + '<project id>', scratch_base_url_meta_data + '<project id>', scratch_base_url_projects + '<project id>', project_url))
+
+    return is_valid
 
 def extract_project_id_from_url(project_url):
     normalized_url = project_url.strip("/")
@@ -111,9 +120,7 @@ def download_project(project_url, target_dir, progress_bar=None):
     from scratchtocatrobat.tools import common
     from scratchtocatrobat.scratch import scratch
 
-    if not is_valid_project_url(project_url):
-        scratch_base_url = helpers.config.get("SCRATCH_API", "project_base_url")
-        raise ScratchWebApiError("Project URL must be matching '{}'. Given: {}".format(scratch_base_url + '<project id>', project_url))
+    is_valid_project_url(project_url)
     assert len(os.listdir(target_dir)) == 0
 
     project_id = extract_project_id_from_url(project_url)

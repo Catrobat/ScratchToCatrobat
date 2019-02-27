@@ -285,6 +285,7 @@ class WebApiTest(common_testing.BaseTestCase):
         for wrong_url in ['http://www.tugraz.at', 'http://www.ist.tugraz.at/', 'http://scratch.mit.edu/', 'http://scratch.mit.edu/projects']:
             with self.assertRaises(scratchwebapi.ScratchWebApiError):
                 scratchwebapi.download_project(wrong_url, None)
+                assert(False & "Exception should prevent getting here, url validation failed")
 
     def test_can_request_project_code_for_id(self):
         with common.TemporaryDirectory(remove_on_exit=True) as temp_dir:

@@ -219,7 +219,7 @@ def main():
             scratch_projbase_url = helpers.config.get("SCRATCH_API", "internal_project_base_url")
             valid_url_start = project_url_or_package_path.startswith(scratch_base_url) or project_url_or_package_path.startswith(scratch_apibase_url) or project_url_or_package_path.startswith(scratch_projbase_url)
             if project_url_or_package_path.startswith("https://") and not valid_url_start:
-                log.error("No valid scratch URL given {0}[ID]".format(project_url_or_package_path))
+                log.error("No valid scratch URL given {0}[ID] valid URLs start with {1} or {2} or {3}".format(project_url_or_package_path,scratch_base_url,scratch_apibase_url,scratch_projbase_url))
                 sys.exit(helpers.ExitCode.FAILURE)
         exit_code = run_converter(project_url_or_package_path, output_dir, **kwargs)
         sys.exit(exit_code)

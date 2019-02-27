@@ -312,7 +312,7 @@ def getMetaDataEntry(projectID, *entryKey):
             try:
                 if key == "visibility" and projectID not in _projectMetaData.keys():
                     metadata.append(ScratchProjectVisibiltyState.PRIVATE)
-                if key == "title" and projectID not in _projectMetaData.keys():
+                elif key == "title" and projectID not in _projectMetaData.keys():
                     metadata.append("Untitled")
                 elif key == "visibility":
                     metadata.append(ScratchProjectVisibiltyState.PUBLIC)
@@ -331,4 +331,4 @@ def getMetaDataEntry(projectID, *entryKey):
         # log error and continue without updating title and/or image URL!
         import logging
 
-        logging.getLogger(__name__).error("Unexpected error at: {}, {}, {}, {}".format(sys.exc_info()[0], exc_type, fname, str(exc_tb.tb_lineno))
+        logging.getLogger(__name__).error("Unexpected error at: {}, {}, {}, {}".format(sys.exc_info()[0], exc_type, fname, str(exc_tb.tb_lineno)))

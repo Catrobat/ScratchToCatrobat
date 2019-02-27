@@ -247,6 +247,7 @@ def convert_scratch_project(job_ID, host, port, verbose):
         _logger.error("Unexpected error for URL: {}, {}, {}, {}, {}".format(scratch_project_url, \
                                                                 sys.exc_info()[0], exc_type, fname, str(exc_tb.tb_lineno)))
 
+
     _logger.info("Project title is: {}".format(title))
 
     args = {

@@ -31,3 +31,4 @@ local.properties
 /sample_projects
 /sourcecodefilter/workspace
 org.eclipse.core.resources.prefs
+/test/

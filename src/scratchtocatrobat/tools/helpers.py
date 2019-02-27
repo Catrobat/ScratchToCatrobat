@@ -443,8 +443,6 @@ class ProgressBar(object):
                 return
 
             if self.expected_progress == None:
-                if self._output_stream != None:
-                    self._output_stream.write("[WARNING] Iterations not set!")
                 return
 
             iterations_counter = self._iterations.iterations[progress_type]

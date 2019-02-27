@@ -95,7 +95,7 @@ def run_converter(scratch_project_file_or_url, output_dir,
         log.info("calling converter")
         if not os.path.isdir(output_dir):
             raise EnvironmentError("Output folder must be a directory, but is %s" % output_dir)
-
+        scratch3ProjectName = "Untitled"
         progress_bar = helpers.ProgressBar(None, web_mode, sys.stdout)
         with common.TemporaryDirectory(remove_on_exit=temp_rm) as scratch_project_dir:
             is_local_project = True
@@ -106,7 +106,8 @@ def run_converter(scratch_project_file_or_url, output_dir,
                 project_ID = scratchwebapi.extract_project_id_from_url(scratch_project_file_or_url)
                 if not scratchwebapi.request_is_project_available(project_ID):
                     raise common.ScratchtobatError("Project with ID %s not available" % project_ID)
-                if scratchwebapi.getMetaDataEntry(project_ID, "visibility") != scratchwebapi.ScratchProjectVisibiltyState.PUBLIC:
+                [visibility] = scratchwebapi.getMetaDataEntry(project_ID, "visibility")
+                if visibility != scratchwebapi.ScratchProjectVisibiltyState.PUBLIC:
                     log.warn('-'*80)
                     log.warn("CAVE: Project with ID %s is NOT a public project!! Trying to " \
                              "continue the conversion-process anyway, but expecting the " \
@@ -115,6 +116,7 @@ def run_converter(scratch_project_file_or_url, output_dir,
                 log.info("Downloading project from URL: '{}' to temp dir {} ...".format(
                                                 scratch_project_file_or_url, scratch_project_dir))
                 scratchwebapi.download_project(scratch_project_file_or_url, scratch_project_dir, progress_bar)
+                [scratch3ProjectName] = scratchwebapi.getMetaDataEntry(project_ID, "title")
 
             elif os.path.isfile(scratch_project_file_or_url):
                 log.info("Extracting project from path: '{}' ...".format(scratch_project_file_or_url))
@@ -155,6 +157,8 @@ def run_converter(scratch_project_file_or_url, output_dir,
                     json.dump(scratch2Data, file, sort_keys=True, indent=4, separators=(',', ': '))
 
             project = scratch.Project(scratch_project_dir, progress_bar=progress_bar, is_local_project = is_local_project)
+            if isScratch3Project:
+                project.name = scratch3ProjectName
             log.info("Converting scratch project '%s' into output folder: %s", project.name, output_dir)
             context = converter.Context()
             converted_project = converter.converted(project, progress_bar, context)

@@ -245,20 +245,20 @@ def extract_project_remixes_from_data(tree_data, project_id):
 
 
 def extract_project_details(project_id, escape_quotes=True):
-    [title] = getMetaDataEntry(project_id , "title")
+    title = getMetaDataEntry(project_id , "title")
     if title is None: return None
     if escape_quotes: title = title.replace('"','\\"')
 
-    [owner] = getMetaDataEntry(project_id , "username")
+    owner = getMetaDataEntry(project_id , "username")
     if owner is None: return None
     if escape_quotes: owner = owner.replace('"','\\"')
 
     image_url = "{}{}.png".format(SCRATCH_PROJECT_IMAGE_BASE_URL, project_id)
-    [instructions] = getMetaDataEntry(project_id , "instructions")
+    instructions = getMetaDataEntry(project_id , "instructions")
     if escape_quotes and instructions is not None: instructions = instructions.replace('"','\\"')
-    [notes_and_credits] = getMetaDataEntry(project_id , "description")
+    notes_and_credits = getMetaDataEntry(project_id , "description")
     if escape_quotes and notes_and_credits is not None: notes_and_credits = notes_and_credits.replace('"','\\"')
-    [stats] = getMetaDataEntry(project_id , "stats")
+    stats = getMetaDataEntry(project_id , "stats")
     remixes = stats["remixes"]
     extracted_text = stats["views"]
     if extracted_text is None: return None
@@ -272,7 +272,7 @@ def extract_project_details(project_id, escape_quotes=True):
     if extracted_text is None: return None
     loves = int(unicode(extracted_text).strip())
 
-    [extracted_text] = getMetaDataEntry(project_id , "history")
+    extracted_text = getMetaDataEntry(project_id , "history")
     extracted_text = extracted_text["modified"]
     if extracted_text is None: return None
     modified_date_str = unicode(extracted_text).replace("Modified:", "").strip()
@@ -281,7 +281,7 @@ def extract_project_details(project_id, escape_quotes=True):
     except:
         modified_date = None
 
-    [extracted_text] = getMetaDataEntry(project_id , "history")
+    extracted_text = getMetaDataEntry(project_id , "history")
     extracted_text = extracted_text["shared"]
     if extracted_text is None: return None
     shared_date_str = unicode(extracted_text).replace("Shared:", "").strip()
@@ -322,9 +322,12 @@ def getMetaDataEntry(projectID, *entryKey):
                     metadata.append(_projectMetaData[projectID][key])
             except:
                 print(key)
-                return [None]
+                return None
 
-        return metadata
+        if len(metadata) == 1:
+            return metadata[0]
+        else:
+            return metadata
     except:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -332,3 +335,4 @@ def getMetaDataEntry(projectID, *entryKey):
         import logging
 
         logging.getLogger(__name__).error("Unexpected error at: {}, {}, {}, {}".format(sys.exc_info()[0], exc_type, fname, str(exc_tb.tb_lineno)))
+    return None

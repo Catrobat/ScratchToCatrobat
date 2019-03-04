@@ -622,7 +622,7 @@ class Project(RawProject):
             if name is not None:
                 self.name = name
             else:
-                [self.name] = scratchwebapi.getMetaDataEntry(self.project_id, "title")
+                self.name = scratchwebapi.getMetaDataEntry(self.project_id, "title")
 
             # self.name = name if name is not None else scratchwebapi.getMetaDataEntry(self.project_id, "title")
 

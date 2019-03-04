@@ -340,8 +340,12 @@ class WebApiTest(common_testing.BaseTestCase):
             assert extracted_project_remixes == expected_project_remixes, \
                 "'{}' is not equal to '{}'".format(extracted_project_remixes,
                                                    expected_project_remixes)
+    def test_extract_project_details(self):
+        details =  scratchwebapi.extract_project_details(10205819, escape_quotes=True)
+        assert details.as_dict()["modified_date"] != None
+        assert details.as_dict()["shared_date"] != None
 
-    # def test_can_request_project_info_for_id(self):
+# def test_can_request_project_info_for_id(self):
     #     for (project_id, expected_project_title) in TEST_PROJECT_ID_TO_TITLE_MAP.iteritems():
     #         extracted_project_info = scratchwebapi.request_project_details_for(project_id)
     #         assert extracted_project_info is not None

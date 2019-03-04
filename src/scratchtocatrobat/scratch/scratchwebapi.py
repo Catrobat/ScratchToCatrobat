@@ -275,18 +275,18 @@ def extract_project_details(project_id, escape_quotes=True):
     extracted_text = getMetaDataEntry(project_id , "history")
     extracted_text = extracted_text["modified"]
     if extracted_text is None: return None
-    modified_date_str = unicode(extracted_text).replace("Modified:", "").strip()
+    modified_date_str = unicode(extracted_text).replace("Modified:", "").replace("Z","000").strip()
     try:
-        modified_date = datetime.strptime(modified_date_str, '%d %b %Y')
+        modified_date = datetime.strptime(modified_date_str, "%Y-%m-%dT%H:%M:%S.%f")
     except:
         modified_date = None
 
     extracted_text = getMetaDataEntry(project_id , "history")
     extracted_text = extracted_text["shared"]
     if extracted_text is None: return None
-    shared_date_str = unicode(extracted_text).replace("Shared:", "").strip()
+    shared_date_str = unicode(extracted_text).replace("Shared:", "").replace("Z","000").strip()
     try:
-        shared_date = datetime.strptime(shared_date_str, '%d %b %Y')
+        shared_date = datetime.strptime(shared_date_str, "%Y-%m-%dT%H:%M:%S.%f")
     except:
         shared_date = None
 

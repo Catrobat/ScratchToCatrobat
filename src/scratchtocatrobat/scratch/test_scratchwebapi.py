@@ -299,7 +299,7 @@ class WebApiTest(common_testing.BaseTestCase):
 
     def test_can_request_project_title_for_id(self):
         for (project_id, expected_project_title) in TEST_PROJECT_ID_TO_TITLE_MAP.iteritems():
-            [extracted_project_title] = scratchwebapi.getMetaDataEntry(project_id, 'title')
+            extracted_project_title = scratchwebapi.getMetaDataEntry(project_id, 'title')
             assert extracted_project_title is not None
             assert extracted_project_title == expected_project_title, \
                 "'{}' is not equal to '{}'".format(extracted_project_title, expected_project_title)
@@ -311,7 +311,7 @@ class WebApiTest(common_testing.BaseTestCase):
 
     def test_can_request_project_owner_for_id(self):
         for (project_id, expected_project_owner) in TEST_PROJECT_ID_TO_OWNER_MAP.iteritems():
-            [extracted_project_owner] = scratchwebapi.getMetaDataEntry(project_id, 'username')
+            extracted_project_owner = scratchwebapi.getMetaDataEntry(project_id, 'username')
 
         assert extracted_project_owner is not None
         assert extracted_project_owner == expected_project_owner, \
@@ -319,13 +319,13 @@ class WebApiTest(common_testing.BaseTestCase):
 
     def test_can_request_project_instructions_for_id(self):
         for (project_id, expected_project_instructions) in TEST_PROJECT_ID_TO_INSTRUCTIONS_MAP.iteritems():
-            [extracted_project_instructions] = scratchwebapi.getMetaDataEntry(project_id, 'instructions')
+            extracted_project_instructions = scratchwebapi.getMetaDataEntry(project_id, 'instructions')
             assert extracted_project_instructions== expected_project_instructions, \
                 "'{}' is not equal to '{}'".format(extracted_project_instructions, expected_project_instructions)
 
     def test_can_request_project_notes_and_credits_for_id(self):
         for (project_id, expected_project_notes_and_credits) in TEST_PROJECT_ID_TO_NOTES_AND_CREDITS_MAP.iteritems():
-            [extracted_project_notes_and_credits] = scratchwebapi.getMetaDataEntry(project_id, 'description')
+            extracted_project_notes_and_credits = scratchwebapi.getMetaDataEntry(project_id, 'description')
             assert extracted_project_notes_and_credits is not None
             assert extracted_project_notes_and_credits == expected_project_notes_and_credits, \
                 "'{}' is not equal to '{}'".format(extracted_project_notes_and_credits,
@@ -396,7 +396,7 @@ class WebApiTest(common_testing.BaseTestCase):
             "85594786": scratchwebapi.ScratchProjectVisibiltyState.PUBLIC
         }
         for (project_id, expected_visibility_state) in project_visibility_map.iteritems():
-            [detected_visibility_state] = scratchwebapi.getMetaDataEntry(project_id, 'visibility')
+            detected_visibility_state = scratchwebapi.getMetaDataEntry(project_id, 'visibility')
             assert expected_visibility_state == detected_visibility_state
 
 if __name__ == "__main__":

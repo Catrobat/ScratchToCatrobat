@@ -1991,7 +1991,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         [sound_name], sound_list = self.arguments, self.sprite.getSoundList()
         sound_data = {sound_info.getName(): sound_info for sound_info in sound_list}.get(sound_name)
         if not sound_data:
-            raise ConversionError("Sprite does not contain sound with name={}".format(sound_name))
+            log.warning("Sprite does not contain sound with name={}".format(sound_name))
         play_sound_brick = self.CatrobatClass()
         play_sound_brick.setSound(sound_data)
         return play_sound_brick
@@ -2001,7 +2001,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         [sound_name], sound_list = self.arguments, self.sprite.getSoundList()
         sound_data = {sound_info.getName(): sound_info for sound_info in sound_list}.get(sound_name)
         if not sound_data:
-            raise ConversionError("Sprite does not contain sound with name={}".format(sound_name))
+            log.warning("Sprite does not contain sound with name={}".format(sound_name))
         play_sound_and_wait_brick = self.CatrobatClass()
         play_sound_and_wait_brick.setSound(sound_data)
         return play_sound_and_wait_brick

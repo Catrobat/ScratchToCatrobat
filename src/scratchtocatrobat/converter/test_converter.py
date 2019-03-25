@@ -1011,11 +1011,12 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert formula_tree_seconds.value == "1"
 
     # playSound:
-    def test_fail_convert_playsound_block_if_sound_missing(self):
+    def test_can_convert_playsound_block_if_sound_missing(self):
         scratch_block = ["playSound:", "bird"]
         bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert len(bricks) == 1
-        assert isinstance(bricks[0], catbricks.NoteBrick)
+        assert isinstance(bricks[0], catbricks.PlaySoundBrick)
+        assert bricks[0].sound is None
 
     # playSound:
     def test_can_convert_playsound_block(self):
@@ -1026,11 +1027,12 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert catr_brick.sound.getName() == expected_sound_name
 
     # doPlaySoundAndWait
-    def test_fail_convert_doplaysoundandwait_block(self):
+    def test_can_convert_playsoundandwait_block_if_sound_missing(self):
         scratch_block = ["doPlaySoundAndWait", "bird"]
         bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert len(bricks) == 1
-        assert isinstance(bricks[0], catbricks.NoteBrick)
+        assert isinstance(bricks[0], catbricks.PlaySoundAndWaitBrick)
+        assert bricks[0].sound is None
 
     # doPlaySoundAndWait
     def test_can_convert_doplaysoundandwait_block(self):

@@ -274,29 +274,23 @@ def extract_project_details(project_id, escape_quotes=True):
 
     extracted_text = getMetaDataEntry(project_id , "history")
     extracted_text = extracted_text["modified"]
-    if extracted_text is None: return None
-    modified_date_str = unicode(extracted_text).replace("Modified:", "").replace("Z","000").strip()
-    try:
-        modified_date = datetime.strptime(modified_date_str, "%Y-%m-%dT%H:%M:%S.%f")
-    except:
-        modified_date = None
+    modified_date = convertHistoryDatesToDatetime(extracted_text)
 
     extracted_text = getMetaDataEntry(project_id , "history")
     extracted_text = extracted_text["shared"]
-    if extracted_text is None: return None
-    shared_date_str = unicode(extracted_text).replace("Shared:", "").replace("Z","000").strip()
-    try:
-        shared_date = datetime.strptime(shared_date_str, "%Y-%m-%dT%H:%M:%S.%f")
-    except:
-        shared_date = None
+    shared_date = convertHistoryDatesToDatetime(extracted_text)
 
     return ScratchProjectInfo(title = title, owner = owner, image_url = image_url,
                               instructions = instructions, notes_and_credits = notes_and_credits,
                               tags = remixes, views = views, favorites = favorites, loves = loves,
                               modified_date = modified_date, shared_date = shared_date)
 
-
-
+def convertHistoryDatesToDatetime(data):
+    try:
+        datestring =  unicode(data).replace("Z","000").strip()
+        return datetime.strptime(datestring, "%Y-%m-%dT%H:%M:%S.%f")
+    except:
+        return None
 
 def getMetaDataEntry(projectID, *entryKey):
     try:

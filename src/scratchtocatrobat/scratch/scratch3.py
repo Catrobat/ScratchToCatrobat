@@ -170,9 +170,11 @@ class Scratch3Parser(object):
         return scratch2ProjectDict
 
     def build_block_structure(self, blockId, temp_block_dict):
-        block = temp_block_dict[blockId]
-        if block.nextName is not None:
-            block.nextBlock = temp_block_dict[block.nextName]
-        if block.parentName is not None:
-            block.parentBlock = temp_block_dict[block.parentName]
-
+        try:
+            block = temp_block_dict[blockId]
+            if block.nextName is not None:
+                block.nextBlock = temp_block_dict[block.nextName]
+            if block.parentName is not None:
+                block.parentBlock = temp_block_dict[block.parentName]
+        except KeyError as ex:
+            log.warn("Block: " + ex.message + " does not exist in the block dictionary.")

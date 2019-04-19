@@ -78,6 +78,14 @@ sudo apt-get install python
 ```sh
 sudo apt-get install sox
 ```
+* Install npm via aptitude (if not already installed):
+```sh
+sudo apt-get install nodejs
+```
+* Install svg2png via npm (needed for svg conversion):
+```sh
+npm install svg2png -g
+```
 * Jython 2.7 requires java version 1.8 or later. To determine the currently installed java version run the following command on your shell:
 ```sh
 java -version

@@ -91,7 +91,8 @@ def visitCondition(blockcontext):
     block = blockcontext.block
     if not "CONDITION" in block.inputs:
         log.warn("[Scratch3] Possibly empty condition in block {} ({})".format(blockcontext.block.name, blockcontext.block.opcode))
-        return False
+        #if there is no condition block, it evaluates to true in scratch
+        return ['=', 0, 0]
 
     block_id = blockcontext.getInput("CONDITION")[1]
     conditionblock = blockcontext.get_block(block_id)

@@ -36,10 +36,10 @@ TEST_PROJECT_ID_TO_TITLE_MAP = {
 }
 
 TEST_PROJECT_ID_TO_IMAGE_URL_MAP = {
-    "10205819": "https://uploads.scratch.mit.edu/projects/thumbnails/10205819.png",
-    "10132588": "https://uploads.scratch.mit.edu/projects/thumbnails/10132588.png",
-    "2365565" : "https://uploads.scratch.mit.edu/projects/thumbnails/2365565.png",
-    "117300839": "https://uploads.scratch.mit.edu/projects/thumbnails/117300839.png"
+    "10205819": "https://cdn2.scratch.mit.edu/get_image/project/10205819_480x360.png",
+    "10132588": "https://cdn2.scratch.mit.edu/get_image/project/10132588_480x360.png",
+    "2365565" : "https://cdn2.scratch.mit.edu/get_image/project/2365565_480x360.png",
+    "117300839": "https://cdn2.scratch.mit.edu/get_image/project/117300839_480x360.png"
 }
 
 TEST_PROJECT_ID_TO_OWNER_MAP = {
@@ -245,13 +245,6 @@ TEST_PROJECT_ID_TO_REMIXES_MAP = {
     }]
 }
 
-TEST_PROJECT_ID_TO_TAGS_MAP = {
-    "10205819": ['animations', 'castle'],
-    "10132588": ['music', 'simulations', 'animations'],
-    "2365565" : [],
-    "117300839": []
-}
-
 TEST_PROJECT_ID_TO_INSTRUCTIONS_MAP = {
     "10205819": "Click the flag to run the stack. Click the space bar to change it up!",
     "10132588": "D,4,8 for the animals to move.C,A for background. ",
@@ -297,40 +290,6 @@ class WebApiTest(common_testing.BaseTestCase):
                     raw_project = scratch.RawProject.from_project_code_content(project_code_content)
                     assert raw_project is not None
 
-    def test_can_request_project_title_for_id(self):
-        for (project_id, expected_project_title) in TEST_PROJECT_ID_TO_TITLE_MAP.iteritems():
-            extracted_project_title = scratchwebapi.getMetaDataEntry(project_id, 'title')
-            assert extracted_project_title is not None
-            assert extracted_project_title == expected_project_title, \
-                "'{}' is not equal to '{}'".format(extracted_project_title, expected_project_title)
-
-    def test_can_request_project_title_and_image_for_id(self):
-            extracted_project_title, image = scratchwebapi.getMetaDataEntry(10205819, "title", "image")
-            assert extracted_project_title == "Dancin' in the Castle"
-            assert image == "https://cdn2.scratch.mit.edu/get_image/project/10205819_480x360.png"
-
-    def test_can_request_project_owner_for_id(self):
-        for (project_id, expected_project_owner) in TEST_PROJECT_ID_TO_OWNER_MAP.iteritems():
-            extracted_project_owner = scratchwebapi.getMetaDataEntry(project_id, 'username')
-
-        assert extracted_project_owner is not None
-        assert extracted_project_owner == expected_project_owner, \
-            "'{}' is not equal to '{}'".format(extracted_project_owner, expected_project_owner)
-
-    def test_can_request_project_instructions_for_id(self):
-        for (project_id, expected_project_instructions) in TEST_PROJECT_ID_TO_INSTRUCTIONS_MAP.iteritems():
-            extracted_project_instructions = scratchwebapi.getMetaDataEntry(project_id, 'instructions')
-            assert extracted_project_instructions== expected_project_instructions, \
-                "'{}' is not equal to '{}'".format(extracted_project_instructions, expected_project_instructions)
-
-    def test_can_request_project_notes_and_credits_for_id(self):
-        for (project_id, expected_project_notes_and_credits) in TEST_PROJECT_ID_TO_NOTES_AND_CREDITS_MAP.iteritems():
-            extracted_project_notes_and_credits = scratchwebapi.getMetaDataEntry(project_id, 'description')
-            assert extracted_project_notes_and_credits is not None
-            assert extracted_project_notes_and_credits == expected_project_notes_and_credits, \
-                "'{}' is not equal to '{}'".format(extracted_project_notes_and_credits,
-                                                   expected_project_notes_and_credits)
-
     def test_can_request_remixes_for_id(self):
         for (project_id, expected_project_remixes) in TEST_PROJECT_ID_TO_REMIXES_MAP.iteritems():
             extracted_project_remixes = scratchwebapi.request_project_remixes_for(project_id)
@@ -345,40 +304,28 @@ class WebApiTest(common_testing.BaseTestCase):
         assert details.as_dict()["modified_date"] != None
         assert details.as_dict()["shared_date"] != None
 
-# def test_can_request_project_info_for_id(self):
-    #     for (project_id, expected_project_title) in TEST_PROJECT_ID_TO_TITLE_MAP.iteritems():
-    #         extracted_project_info = scratchwebapi.request_project_details_for(project_id)
-    #         assert extracted_project_info is not None
-    #         assert isinstance(extracted_project_info, scratchwebapi.ScratchProjectInfo)
-    #         assert extracted_project_info.title is not None
-    #         assert extracted_project_info.title == expected_project_title, \
-    #                "'{}' is not equal to '{}'".format(extracted_project_info.title, expected_project_title)
-    #         assert extracted_project_info.owner is not None
-    #         assert extracted_project_info.owner == TEST_PROJECT_ID_TO_OWNER_MAP[project_id], \
-    #                "'{}' is not equal to '{}'".format(extracted_project_info.owner, TEST_PROJECT_ID_TO_OWNER_MAP[project_id])
-    #         assert extracted_project_info.image_url is not None
-    #         assert extracted_project_info.image_url == TEST_PROJECT_ID_TO_IMAGE_URL_MAP[project_id], \
-    #                "'{}' is not equal to '{}'".format(extracted_project_info.image_url, TEST_PROJECT_ID_TO_IMAGE_URL_MAP[project_id])
-    #         assert extracted_project_info.instructions == TEST_PROJECT_ID_TO_INSTRUCTIONS_MAP[project_id], \
-    #                "'{}' is not equal to '{}'".format(extracted_project_info.instructions, TEST_PROJECT_ID_TO_INSTRUCTIONS_MAP[project_id])
-    #         assert extracted_project_info.notes_and_credits == TEST_PROJECT_ID_TO_NOTES_AND_CREDITS_MAP[project_id], \
-    #                "'{}' is not equal to '{}'".format(extracted_project_info.notes_and_credits, TEST_PROJECT_ID_TO_NOTES_AND_CREDITS_MAP[project_id])
-    #         assert extracted_project_info.tags is not None
-    #         assert extracted_project_info.tags == TEST_PROJECT_ID_TO_TAGS_MAP[project_id], \
-    #                "'{}' is not equal to '{}'".format(extracted_project_info.tags, TEST_PROJECT_ID_TO_TAGS_MAP[project_id])
-    #         assert extracted_project_info.views is not None
-    #         assert isinstance(extracted_project_info.views, int)
-    #         assert extracted_project_info.views > 0
-    #         assert extracted_project_info.favorites is not None
-    #         assert extracted_project_info.favorites >= 0
-    #         assert isinstance(extracted_project_info.favorites, int)
-    #         assert extracted_project_info.loves is not None
-    #         assert extracted_project_info.loves >= 0
-    #         assert isinstance(extracted_project_info.loves, int)
-    #         assert extracted_project_info.modified_date is not None
-    #         assert isinstance(extracted_project_info.modified_date, datetime)
-    #         assert extracted_project_info.shared_date is not None
-    #         assert isinstance(extracted_project_info.shared_date, datetime)
+    def test_can_request_project_info_for_id(self):
+        for (project_id, expected_project_title) in TEST_PROJECT_ID_TO_TITLE_MAP.iteritems():
+            title, owner, image_url, instructions, notes_and_credits, stats, history\
+                = scratchwebapi.getMetaDataEntry(project_id, 'title', 'username', 'image', 'instructions', 'description', 'stats', 'history')
+            assert title == expected_project_title, \
+                   "'{}' is not equal to '{}'".format(title, expected_project_title)
+            assert owner == TEST_PROJECT_ID_TO_OWNER_MAP[project_id], \
+                   "'{}' is not equal to '{}'".format(owner, TEST_PROJECT_ID_TO_OWNER_MAP[project_id])
+            assert image_url == TEST_PROJECT_ID_TO_IMAGE_URL_MAP[project_id], \
+                   "'{}' is not equal to '{}'".format(image_url, TEST_PROJECT_ID_TO_IMAGE_URL_MAP[project_id])
+            assert instructions == TEST_PROJECT_ID_TO_INSTRUCTIONS_MAP[project_id], \
+                   "'{}' is not equal to '{}'".format(instructions, TEST_PROJECT_ID_TO_INSTRUCTIONS_MAP[project_id])
+            assert notes_and_credits == TEST_PROJECT_ID_TO_NOTES_AND_CREDITS_MAP[project_id], \
+                   "'{}' is not equal to '{}'".format(notes_and_credits, TEST_PROJECT_ID_TO_NOTES_AND_CREDITS_MAP[project_id])
+            assert isinstance(stats['views'], int)
+            assert stats['views'] > 0
+            assert isinstance(stats['favorites'], int)
+            assert stats['favorites'] >= 0
+            assert isinstance(stats['loves'], int)
+            assert stats['loves'] >= 0
+            assert isinstance(scratchwebapi.convertHistoryDatesToDatetime(history['modified']), datetime)
+            assert isinstance(scratchwebapi.convertHistoryDatesToDatetime(history['shared']), datetime)
 
     def test_can_detect_correct_availability_state_of_project(self):
         project_availability_map = {

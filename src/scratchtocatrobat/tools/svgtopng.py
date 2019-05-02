@@ -24,9 +24,6 @@ import re
 from scratchtocatrobat.tools import common
 from scratchtocatrobat.tools import helpers
 from java.io import FileOutputStream
-from org.apache.batik.transcoder.image import PNGTranscoder
-from org.apache.batik.transcoder import TranscoderInput
-from org.apache.batik.transcoder import TranscoderOutput
 from java.nio.file import Paths
 from java.awt.image import BufferedImage
 from java.awt import AlphaComposite
@@ -37,7 +34,7 @@ from java.util import StringTokenizer
 from javax.swing import ImageIcon
 import java.awt.Color
 import xml.etree.cElementTree as ET
-
+import subprocess
 
 _BATIK_CLI_JAR = "batik-rasterizer.jar"
 _log = logging.getLogger(__name__)
@@ -62,6 +59,7 @@ def convert(input_svg_path, rotation_x, rotation_y):
     output_png_path = "{}_rotX_{}_rotY_{}.png".format(input_file_name, rotation_x, rotation_y)
     _log.info("      converting '%s' to Pocket Code compatible png '%s'", input_svg_path, output_png_path)
 
+
     output_svg_path = input_svg_path.replace(".svg", "_modified.svg")
     output_svg_URI = Paths.get(output_svg_path).toUri().toURL().toString()
 
@@ -77,15 +75,10 @@ def convert(input_svg_path, rotation_x, rotation_y):
     error = None
     try:
         _parse_and_rewrite_svg_file(input_svg_path, output_svg_path)
-
-        input_svg_image = TranscoderInput(output_svg_URI)
-
-        output_png_image = TranscoderOutput(FileOutputStream(output_png_path))
-
+        command = "svg2png"
+        out = subprocess.check_output([command, output_svg_path, "-o", output_png_path])
         _log.info("      converting '%s' to Pocket Code compatible png '%s'",
                   input_svg_path, output_png_path)
-        png_converter = PNGTranscoder()
-        png_converter.transcode(input_svg_image, output_png_image)
         assert os.path.exists(output_png_path)
 
         final_image = _translation(output_png_path, rotation_x, rotation_y)
@@ -146,7 +139,7 @@ def _translation(output_png_path, rotation_x, rotation_y):
             end_x = 2*rotation_x
             dst_new_width = start_x + end_x
 
-    # non-overlapping x enhancement        
+    # non-overlapping x enhancement
     elif rotation_x  < 0:
         start_x = 2*abs(rotation_x) + end_x
         dst_new_width = 2*(abs(rotation_x) + end_x)
@@ -162,7 +155,7 @@ def _translation(output_png_path, rotation_x, rotation_y):
             end_y = start_y + end_y
         elif end_y - rotation_y < end_y/2:
             end_y = 2*rotation_y
-            dst_new_height = start_y + end_y        
+            dst_new_height = start_y + end_y
 
     elif rotation_y  < 0:
         start_y = 2*abs(rotation_y) + end_y
@@ -172,10 +165,17 @@ def _translation(output_png_path, rotation_x, rotation_y):
     elif rotation_y >= end_y:
         dst_new_height = 2*rotation_y
 
-    new_buffered_image = BufferedImage(dst_new_width + 1, dst_new_height + 1, BufferedImage.TYPE_INT_ARGB)
+
+    new_buffered_image = BufferedImage(int(dst_new_width + 1), int(dst_new_height + 1), BufferedImage.TYPE_INT_ARGB)
+
     g2d = new_buffered_image.createGraphics()
     g2d.setComposite(AlphaComposite.Clear)
-    g2d.fillRect(0, 0, dst_new_width, dst_new_height)
+    g2d.fillRect(0, 0, int(dst_new_width + 1), int(dst_new_height + 1))
+
+    start_x = int(start_x)
+    start_y = int(start_y)
+    end_x = int(end_x)
+    end_y = int(end_y)
 
     for row_y in xrange(start_y, end_y + 1):
         for column_x in xrange(start_x, end_x + 1):
@@ -198,12 +198,16 @@ def _create_buffered_image(image):
 
 def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
     tree = ET.parse(svg_input_path)
+
+    namespaces = dict([node for _, node in ET.iterparse(svg_input_path,events=['start-ns'])])
+    for prefix, uri in namespaces.items():
+        ET.register_namespace(prefix, uri)
     root = tree.getroot()
 
     #exception is thrown if height or width is less or equal zero
-    if 'height' in root.attrib and float((root.attrib['height']).replace('px', '')) <= 0:
+    if 'height' in root.attrib and float((root.attrib['height']).strip('px%')) <= 0:
         root.attrib['height'] = '1'
-    if 'width' in root.attrib and float((root.attrib['width']).replace('px', '')) <= 0:
+    if 'width' in root.attrib and float((root.attrib['width']).strip('px%')) <= 0:
         root.attrib['width'] = '1'
 
 
@@ -241,16 +245,14 @@ def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
             namespace_tag = (child.tag).replace('text', '')
             dy_value = 0
             if 'font-size' in child.attrib:
-                dy_font_size = int(child.attrib['font-size'])
+                dy_font_size = int(child.attrib['font-size'].strip('px'))
             else:
                 dy_font_size = 12 # default value
             for text_part in list_of_text_parts:
                 tspan = ET.SubElement(child, namespace_tag + 'tspan', x = '0', dy = str(dy_value))
                 tspan.text = text_part
                 dy_value = dy_value + dy_font_size
-
     tree.write(svg_output_path)
-
 
 def _get_viewbox_values(view_box_str):
     view_box_values = []

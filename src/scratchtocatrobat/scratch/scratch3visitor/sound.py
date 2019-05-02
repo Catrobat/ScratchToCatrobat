@@ -15,14 +15,12 @@ def visitStopallsounds(blockcontext):
     return ["stopAllSounds"]
 
 def visitChangeeffectby(blockcontext):
-    block = blockcontext.block
     log.warn("[Scratch3] block {} ({}) possibly not available in Scratch2".format(blockcontext.block.opcode, blockcontext.block.name))
-    pass #TODO: doesnt exist in scratch2/catroid
+    return ["note:", "ChangeEffectBy block is not yet implemented in Catroid"] #TODO: doesnt exist in scratch2/catroid
 
 def visitSeteffectto(blockcontext):
-    block = blockcontext.block
     log.warn("[Scratch3] block {} ({}) possibly not available in Scratch2".format(blockcontext.block.opcode, blockcontext.block.name))
-    pass #TODO: doesnt exist in scratch2/catroid
+    return ["note:", "SetEffect block is not yet implemented in Catroid"] #TODO: doesnt exist in scratch2/catroid
 
 def visitCleareffects(blockcontext):
     log.warn("[Scratch3] block {} ({}) possibly not available in Scratch2".format(blockcontext.block.opcode, blockcontext.block.name))

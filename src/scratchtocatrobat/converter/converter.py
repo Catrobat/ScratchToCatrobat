@@ -343,6 +343,7 @@ class _ScratchToCatrobat(object):
         # WORKAROUND: using ROUND for Catrobat float => Scratch int
         "soundLevel": lambda *_args: catrobat.formula_element_for(catformula.Functions.ROUND,
                                        arguments=[catrobat.formula_element_for(catformula.Sensors.LOUDNESS)]),  # @UndefinedVariable
+        "note:": catbricks.NoteBrick,
     }.items() + math_function_block_parameters_mapping.items() \
               + math_unary_operators_mapping.items() + math_binary_operators_mapping.items() \
               + user_list_block_parameters_mapping.items() \
@@ -2354,3 +2355,11 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             message = str(message)
         return catbricks.BroadcastWaitBrick(message.lower())
 
+    #Note: NoteBricks are not implemented in scratch. We insert one in the Scratch3 parser if there is a problem(e.g.
+    # a block that is not implemented in Catroid) when parsing a block.
+    @_register_handler(_block_name_to_handler_map, "note:")
+    def _convert_note_block(self):
+        arg = self.arguments[0]
+        if isinstance(arg, (str, unicode)) or isinstance(arg, catformula.Formula):
+            return self.CatrobatClass(arg)
+        log.warn("Invalid argument for NoteBrick: " + arg)

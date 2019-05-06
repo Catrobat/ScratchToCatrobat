@@ -2578,18 +2578,14 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
 
 
 class TestConvertProjects(common_testing.ProjectTestCase):
-    def _load_test_scratch_project(self, project_name):
-        if os.path.splitext(project_name)[1]:
-            tempdir = common.TemporaryDirectory()
-            scratch_project_dir = tempdir.name
-            self.addCleanup(tempdir.cleanup)
-            common.extract(common_testing.get_test_project_packed_file(project_name),
-                           scratch_project_dir)
-        else:
-            scratch_project_dir = common_testing.get_test_project_path(project_name)
+    def _load_test_scratch_project(self, project_name, force_download=False):
+        if (not force_download and os.path.exists("test/res/scratch/"+project_name)):
+            is_local_project = True
+
+        scratch_project_dir = common_testing.get_test_project_path(project_name)
 
         scratch_project = scratch.Project(scratch_project_dir, name=project_name,
-                                          project_id=common_testing.PROJECT_DUMMY_ID)
+                                          project_id=common_testing.PROJECT_DUMMY_ID, is_local_project=is_local_project)
         return scratch_project
 
     def _test_project(self, project_name):
@@ -2628,16 +2624,16 @@ class TestConvertProjects(common_testing.ProjectTestCase):
                 assert found_show_var
 
     # full_test_no_var
-    #def test_can_convert_project_without_variables(self):
-    #    self._test_project("full_test_no_var")
+    def test_can_convert_project_without_variables(self):
+        self._test_project("full_test_no_var")
 
     # keys_pressed
     def test_can_convert_project_with_keys(self):
         for project_name in ("keys_pressed", ):
             self._test_project(project_name)
 
-    #def test_can_convert_project_with_mediafiles(self):
-    #    self._test_project("Hannah_Montana")
+    def test_can_convert_project_with_mediafiles(self):
+        self._test_project("Hannah_Montana")
 
     # simple test project
     def test_can_convert_project_with_unusued_files(self):

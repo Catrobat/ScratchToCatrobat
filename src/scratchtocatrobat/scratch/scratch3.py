@@ -84,7 +84,10 @@ class Scratch3Parser(object):
         script_blocks = []
         temp_block_dict = {}
         for block in sprite["blocks"]:
-            temp_block_dict[block] = Scratch3Block(sprite["blocks"][block], block)
+            try:
+                temp_block_dict[block] = Scratch3Block(sprite["blocks"][block], block)
+            except AttributeError as ex:
+                log.warn("Block with id: " + block + " could not be parsed: " + ex.message)
 
         for blockId in temp_block_dict:
             self.build_block_structure(blockId, temp_block_dict)

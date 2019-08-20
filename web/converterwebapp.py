@@ -75,6 +75,9 @@ SCRATCH_PROJECT_MAX_NUM_REMIXES_TO_INCLUDE = int(helpers.config.get("CONVERTER_A
 
 class _MainHandler(tornado.web.RequestHandler):
     app_data = {}
+    def prepare(self):
+        if self.request.protocol == "http":
+            self.redirect("https://" + self.request.host, permanent=False)
     def get(self):
         self.render("index.html", data=_MainHandler.app_data)
 

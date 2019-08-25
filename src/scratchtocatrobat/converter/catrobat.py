@@ -101,7 +101,10 @@ def _sprite_of(scene, sprite_name):
     return sprite
 
 def find_global_or_sprite_user_list_by_name(scene, sprite, list_name):
-    return scene.getDataContainer().getUserList(sprite, list_name)
+    userList = sprite.getUserList(list_name)
+    if userList == None:
+        userList = scene.project.getUserList(list_name)
+    return userList
 
 def find_global_user_list_by_name(project, list_name):
     return project.getDefaultScene().getDataContainer().findProjectList(list_name)
@@ -149,11 +152,14 @@ def create_formula_element_with_value(variable_value):
 def add_user_variable(project, variable_name, sprite=None, sprite_name=None):
     ''' If `sprite_name` is set a sprite variable is added otherwise the variable is added to the project. '''
     _log.debug("adding variable '%s' to sprite '%s'", variable_name, sprite_name if sprite_name is not None else "<Stage>")
-    user_variables = project.getDefaultScene().getDataContainer()
     if sprite_name is None:
-        added_user_variable = user_variables.addProjectUserVariable(variable_name)
+        user_variables = project.userVariables
+        added_user_variable = catformula.UserVariable(variable_name)
+        user_variables.add(added_user_variable)
     else:
-        added_user_variable = user_variables.addSpriteUserVariableToSprite(sprite, variable_name)
+        user_variables = sprite.userVariables
+        added_user_variable = catformula.UserVariable(variable_name)
+        user_variables.add(added_user_variable)
     assert added_user_variable is not None
     return added_user_variable
 
@@ -176,7 +182,7 @@ def media_objects_in(project):
             yield media_object
 
 def add_to_start_script(bricks, sprite, position=0):
-    _log.debug("add to start script of '%s': %s", sprite.getName(), map(simple_name_for, bricks))
+    _log.debug("add to start script of '%s': %s", sprite.getName())
     if len(bricks) == 0: return # nothing to do
 
     def get_or_add_startscript(sprite):

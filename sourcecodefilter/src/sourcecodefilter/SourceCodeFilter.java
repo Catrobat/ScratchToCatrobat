@@ -37,20 +37,22 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.AnnotationTypeDeclaration;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.BodyDeclaration;
 import org.eclipse.jdt.core.dom.EnumDeclaration;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IExtendedModifier;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.ParameterizedType;
 import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.Type;
@@ -92,23 +94,34 @@ public class SourceCodeFilter {
     public static Map<String, Set<String>> classToPreservedMethodsMapping = null;
     public static Map<String, Set<String>> removeFieldsMapping = null;
     public static Map<String, Set<String>> removeMethodsMapping = null;
+    public static Set<String> REMOVE_ANNOTATIONS = null;
+    public static Set<String> REMOVE_SUPERCLASS = null;
+    public static Map<String, Set<String>> removeMethodParameterAtPosition = null;
 
     @SuppressWarnings("deprecation")
 	private static ASTParser astParser = ASTParser.newParser(AST.JLS4);
     static { astParser.setKind(ASTParser.K_COMPILATION_UNIT); }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "deprecation" })
 	private static void removeUnsupportedClassHierarchyTypesIn(ConverterRelevantCatroidSource catroidSource) {
         final List<AbstractTypeDeclaration> types = catroidSource.getSourceAst().types();
         List<Type> superInterfaceTypes = null;
-
+        
         for (AbstractTypeDeclaration abstractTypeDecl : types) {
             if (abstractTypeDecl.getNodeType() == ASTNode.TYPE_DECLARATION) {
                 TypeDeclaration typeDecl = (TypeDeclaration) abstractTypeDecl;
                 superInterfaceTypes = typeDecl.superInterfaceTypes();
+                
                 // Delete inner types
                 for (TypeDeclaration innerType : Arrays.asList(typeDecl.getTypes())) {
                     innerType.delete();
+                }
+                
+                if (typeDecl.getSuperclassType() != null)
+                {
+                	if (REMOVE_SUPERCLASS.contains(typeDecl.getSuperclassType().toString())) {
+                		typeDecl.getSuperclassType().delete();
+                	}
                 }
 
             } else if (abstractTypeDecl.getNodeType() == ASTNode.ENUM_DECLARATION) {
@@ -122,14 +135,23 @@ public class SourceCodeFilter {
             // modify type hierarchy
             for (Iterator<Type> iterator = superInterfaceTypes.iterator(); iterator.hasNext();) {
                 Type interfaceType = iterator.next();
-                if (interfaceType.getNodeType() == ASTNode.SIMPLE_TYPE) {
-                    String interfaceName = ((SimpleType) interfaceType).getName().getFullyQualifiedName();
+                if (interfaceType.getNodeType() == ASTNode.SIMPLE_TYPE ) {
+                    String interfaceName = ((SimpleType)interfaceType).getName().getFullyQualifiedName();
+                    if (! (PRESERVED_INTERFACES.contains(interfaceName))) {
+                        iterator.remove();
+                    }
+                }
+                else if (interfaceType.getNodeType() == ASTNode.PARAMETERIZED_TYPE) {
+                	ParameterizedType t1 = ((ParameterizedType)interfaceType);
+                	SimpleType interfaceName = (SimpleType)(t1.getType());
+                	String n = interfaceName.getName().getFullyQualifiedName();
                     if (! (PRESERVED_INTERFACES.contains(interfaceName))) {
                         iterator.remove();
                     }
                 }
             }
         }
+        
     }
 
     @SuppressWarnings("unchecked")
@@ -148,7 +170,6 @@ public class SourceCodeFilter {
             for (VariableDeclarationFragment varDeclFrgmt : ((List<VariableDeclarationFragment>)fieldDeclaration.fragments())) {
                 String fieldName = varDeclFrgmt.getName().getIdentifier();
                 String fieldNameFirstUpper = Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1);
-                //                System.out.println(methodName + " " + fieldNameFirstUpper);
                 if (methodName.endsWith(fieldNameFirstUpper)) {
                     return true;
                 }
@@ -182,7 +203,7 @@ public class SourceCodeFilter {
             ImportDeclaration importDecl = iterator.next();
             String importName = importDecl.getName().getFullyQualifiedName();
             
-            if (importName.contains("android") || importName.startsWith("com.") || importName.endsWith(".R")
+            if (importName.contains("android") || importName.startsWith("com.") /*|| importName.endsWith(".R")*/
                     || importName.contains("catroid.ui")) {
                 if (!importName.startsWith("com.thoughtworks") && !project.isRelevantClass(importName)) {
                     iterator.remove();
@@ -217,6 +238,21 @@ public class SourceCodeFilter {
     	return false;
     }
 
+    
+    private static void removeUnneededAnnotations(List<ASTNode> modifiers)
+    {
+    	for (ASTNode modifier : modifiers)
+        {
+        	if (modifier.getNodeType() == ASTNode.MARKER_ANNOTATION || modifier.getNodeType() == ASTNode.NORMAL_ANNOTATION)
+        	{
+        		if (REMOVE_ANNOTATIONS.contains(((Annotation)modifier).getTypeName().toString()))
+        		{
+        			modifier.delete();
+        		}
+        	}
+        }
+    }
+    
     @SuppressWarnings("unchecked")
 	private static void removeNonSerializedFieldsAndUnusedMethodsIn(ConverterRelevantCatroidSource source) {
         final List<AbstractTypeDeclaration> types = source.getSourceAst().types();
@@ -231,6 +267,7 @@ public class SourceCodeFilter {
                     assert fieldDecl.fragments().size() == 1 : String.format("Unsupported multi field declaration: '%s'",
                         fieldDecl.toString());
                     String fieldName = ((VariableDeclarationFragment) fieldDecl.fragments().get(0)).getName().getIdentifier();
+                    removeUnneededAnnotations(fieldDecl.modifiers());
                     if (source.isRemovedField(fieldName)) {
                         fieldDecl.delete();
                 	} else if (Modifier.isTransient(fieldDecl.getModifiers()) && !(source.isPreservedField(fieldName))) {
@@ -239,24 +276,36 @@ public class SourceCodeFilter {
                         nonTransientFields.add(fieldDecl);
                     }
                 }
+                else if (bodyDecl.getNodeType() == ASTNode.ANNOTATION_TYPE_DECLARATION)
+                {
+                	AnnotationTypeDeclaration annotationDecl = (AnnotationTypeDeclaration) bodyDecl;
+                	String fieldName = annotationDecl.getName().getIdentifier();
+                	if (source.isRemovedField(fieldName))
+                	{
+                		annotationDecl.delete();
+                	}
+                }
             }
-
             for (BodyDeclaration bodyDecl : new ArrayList<BodyDeclaration>(abstractTypeDecl.bodyDeclarations())) {
                 if (bodyDecl.getNodeType() == ASTNode.METHOD_DECLARATION) {
                     MethodDeclaration methodDeclaration = (MethodDeclaration) bodyDecl;
                     if (! methodDeclaration.isConstructor()) {
                         //                            removeOverrideAnnotation(methodDeclaration);
+                    	
                         final String methodName = methodDeclaration.getName().getIdentifier();
+                        removeUnneededAnnotations(methodDeclaration.modifiers());
+                        
                         if (methodName.equals("init")) {
                             Block body = methodDeclaration.getBody();
                             for (Iterator<Statement> iterator2 = body.statements().iterator(); iterator2.hasNext();) {
                                 iterator2.next();
                                 iterator2.remove();
                             }
-                        } else if (source.isRemovedMethod(methodName)) {
+                        }
+                        else if (source.isRemovedMethod(methodName)) {
                             methodDeclaration.delete();
                         } else if (!(source.isPreservedMethod(methodName))) {
-                            if (!(isRelatedToNonTransientFields(methodName, nonTransientFields)) || isOverriding(methodDeclaration)) {
+                            if (!(isRelatedToNonTransientFields(methodName, nonTransientFields)) /*|| isOverriding(methodDeclaration)*/ ) {
                                 methodDeclaration.delete();
                             }
                         }
@@ -276,15 +325,15 @@ public class SourceCodeFilter {
         for (ConverterRelevantCatroidSource catroidSource : ConverterRelevantCatroidSource.converterRelevantSources(project)) {
 
         	final String fullClassName = catroidSource.getQualifiedClassName();
-
             // if class is part of Pocket Code serialization XML
             if (catroidSource.isSerializationClass()) {
                 // remove types from class type hierarchy in class
                 removeUnsupportedClassHierarchyTypesIn(catroidSource);
                 // remove all fields are not serializable (`transient` keyword) in class. Skip fields to be ignored
                 // remove all methods which method name do not include a serialize field name in class. Skip method names to ignore.
-                removeNonSerializedFieldsAndUnusedMethodsIn(catroidSource);
+                //removeNonSerializedFieldsAndUnusedMethodsIn(catroidSource);
             }
+            removeNonSerializedFieldsAndUnusedMethodsIn(catroidSource);
 
             removeUnsupportedImportsIn(catroidSource, project);
 
@@ -313,7 +362,7 @@ public class SourceCodeFilter {
     		if (tryCatchBlocksToBeRemoved != null) {
 	            new TryCatchFilter(catroidSource, tryCatchBlocksToBeRemoved).removeUnallowedTryCatchBlocks();;
     		}
-    		
+
             Set<String> inlineClassesToBeInjected = INJECT_INLINE_CLASSES_TO_EXISTING_CLASS.get(catroidSource.getQualifiedClassName());
             if (inlineClassesToBeInjected != null) {
 	            new InlineClassInjector(catroidSource, inlineClassesToBeInjected).inject();
@@ -361,7 +410,9 @@ public class SourceCodeFilter {
 	        classToPreservedMethodsMapping = config.getMap("class_to_preserved_methods_mapping");
 	        removeFieldsMapping = config.getMap("remove_fields_mapping");
 	        removeMethodsMapping = config.getMap("remove_methods_mapping");
-
+	        REMOVE_ANNOTATIONS = config.getSet("remove_annotations");
+	        REMOVE_SUPERCLASS = config.getSet("remove_superclass");
+	        removeMethodParameterAtPosition = config.getMap("remove_method_parameter_at_position");
 	        // download Catroid code project from Github
 	        File downloadDir = new File(downloadPath);
 	        downloadDir.mkdirs(); // create intermediate recursive directories if needed...

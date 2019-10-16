@@ -58,6 +58,8 @@ sys.setdefaultencoding('utf-8') #@UndefinedVariable
 MAX_WAIT_SECONDS_BEFORE_SHUTDOWN = int(helpers.config.get("WEBSERVER", "max_wait_seconds_before_shutdown"))
 CERTIFICATE_PATH = helpers.config.get("JOBMONITOR_SERVER", "certificate_path")
 CERTIFICATE_KEY_PATH = helpers.config.get("JOBMONITOR_SERVER", "certificate_key_path")
+WEBSERVER_CERTIFICATE_PATH = helpers.config.get("WEBSERVER", "certificate_path")
+WEBSERVER_CERTIFICATE_KEY_PATH = helpers.config.get("WEBSERVER", "certificate_key_path")
 WEBSERVER_PORT = helpers.config.get("WEBSERVER", "port")
 WEBSERVER_DEBUG_MODE_ENABLED = str(helpers.config.get("WEBSERVER", "debug")) in {"True", "1"}
 WEBSERVER_COOKIE_SECRET = str(helpers.config.get("WEBSERVER", "cookie_secret"))
@@ -139,8 +141,14 @@ def main():
                 _logger.warn("-"*80)
 
             webapp = converterwebapp.ConverterWebApp(**settings)
+            webapp.listen(80)
+
+            ssl_options = {
+                "certfile" : WEBSERVER_CERTIFICATE_PATH,
+                "keyfile" : WEBSERVER_CERTIFICATE_KEY_PATH
+            }
             global web_server
-            web_server = converterhttpserver.ConverterHTTPServer(webapp)
+            web_server = converterhttpserver.ConverterHTTPServer(webapp, ssl_options=ssl_options)
             web_server.listen(WEBSERVER_PORT)
 
         # set up job monitor server

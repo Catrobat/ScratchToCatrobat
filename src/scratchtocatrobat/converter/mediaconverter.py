@@ -272,7 +272,7 @@ class MediaConverter(object):
         for (old_file_name, new_file_name) in self.renamed_files_map.iteritems():
             look_data_or_sound_infos = filter(lambda info: info.fileName == old_file_name,
                                       catrobat.media_objects_in(self.catrobat_program))
-            assert len(look_data_or_sound_infos) > 0
+            # assert len(look_data_or_sound_infos) > 0
 
             for info in look_data_or_sound_infos:
                 info.fileName = new_file_name

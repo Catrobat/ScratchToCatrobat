@@ -222,8 +222,9 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         self._name_of_test_list = "my_test_list"
         self.block_converter = converter._ScratchObjectConverter(self.test_project, None)
         # create and add user list for user list bricks to project
-        data_container = self.block_converter._catrobat_project.getDefaultScene().getDataContainer()
-        data_container.addProjectUserList(self._name_of_test_list)
+        list_to_add = catformula.UserList(self._name_of_test_list)
+        self.block_converter._catrobat_project.userLists.add(list_to_add)
+
         # create dummy sprite
         self.sprite_stub = create_catrobat_background_sprite_stub()
 
@@ -759,16 +760,14 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         catr_do_if = self.block_converter._catrobat_bricks_from(scratch_do_if, DUMMY_CATR_SPRITE)
 
         assert isinstance(scratch_do_if, list)
-        assert len(catr_do_if) == 4
-        expected_brick_classes = [catbricks.IfThenLogicBeginBrick, catbricks.WaitBrick,
-                                  catbricks.WaitBrick, catbricks.IfThenLogicEndBrick]
-        assert [_.__class__ for _ in catr_do_if] == expected_brick_classes
+        assert len(catr_do_if) == 1
+        assert len(catr_do_if[0].ifBranchBricks) == 2
+
+        brickList = catr_do_if + catr_do_if[0].ifBranchBricks
+        expected_brick_classes = [catbricks.IfThenLogicBeginBrick, catbricks.WaitBrick, catbricks.WaitBrick]
+        assert [_.__class__ for _ in brickList] == expected_brick_classes
 
         if_then_logic_begin_brick = catr_do_if[0]
-        if_then_logic_end_brick = catr_do_if[3]
-
-        assert if_then_logic_begin_brick.ifEndBrick == if_then_logic_end_brick
-        assert if_then_logic_end_brick.ifBeginBrick == if_then_logic_begin_brick
 
         formula_tree_value = if_then_logic_begin_brick.getFormulaWithBrickField(catbasebrick.BrickField.IF_CONDITION).formulaTree # @UndefinedVariable
         assert formula_tree_value.type == catformula.FormulaElement.ElementType.OPERATOR
@@ -797,24 +796,17 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         catr_do_if = self.block_converter._catrobat_bricks_from(scratch_do_if, DUMMY_CATR_SPRITE)
 
         assert isinstance(scratch_do_if, list)
-        assert len(catr_do_if) == 5
+        assert len(catr_do_if) == 1
+        assert len(catr_do_if[0].ifBranchBricks) == 1
+        assert len(catr_do_if[0].elseBranchBricks) == 1
         expected_brick_classes = [catbricks.IfLogicBeginBrick, catbricks.WaitBrick,
-                                  catbricks.IfLogicElseBrick, catbricks.WaitBrick,
-                                  catbricks.IfLogicEndBrick]
-        assert [_.__class__ for _ in catr_do_if] == expected_brick_classes
+                                   catbricks.WaitBrick,
+                                  ]
+        brickList = catr_do_if + catr_do_if[0].ifBranchBricks + catr_do_if[0].elseBranchBricks
+        assert [_.__class__ for _ in brickList] == expected_brick_classes
 
         if_logic_begin_brick = catr_do_if[0]
-        if_logic_else_brick = catr_do_if[2]
-        if_logic_end_brick = catr_do_if[4]
 
-        assert if_logic_begin_brick.getIfElseBrick() == if_logic_else_brick
-        assert if_logic_begin_brick.getIfEndBrick() == if_logic_end_brick
-
-        assert if_logic_else_brick.getIfBeginBrick() == if_logic_begin_brick
-        assert if_logic_else_brick.getIfEndBrick() == if_logic_end_brick
-
-        assert if_logic_end_brick.getIfBeginBrick() == if_logic_begin_brick
-        assert if_logic_end_brick.getIfElseBrick() == if_logic_else_brick
 
         formula_tree_value = if_logic_begin_brick.getFormulaWithBrickField(catbasebrick.BrickField.IF_CONDITION).formulaTree # @UndefinedVariable
         assert formula_tree_value.type == catformula.FormulaElement.ElementType.OPERATOR
@@ -840,10 +832,12 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         catr_do_loop = self.block_converter._catrobat_bricks_from(scratch_do_loop, DUMMY_CATR_SPRITE)
         assert isinstance(catr_do_loop, list)
         # 1 loop start + 4 inner loop bricks +2 inner note bricks (playDrum not supported) + 1 loop end = 8
-        assert len(catr_do_loop) == 6
+        assert len(catr_do_loop) == 1
+
+        assert len(catr_do_loop[0].loopBricks) == 4
         expected_brick_classes = [catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.NoteBrick,
-                                  catbricks.MoveNStepsBrick, catbricks.NoteBrick, catbricks.LoopEndBrick]
-        assert [_.__class__ for _ in catr_do_loop] == expected_brick_classes
+                                  catbricks.MoveNStepsBrick, catbricks.NoteBrick]
+        assert [_.__class__ for _ in catr_do_loop + catr_do_loop[0].loopBricks] == expected_brick_classes
 
     # doUntil
     def test_can_convert_do_until_block(self):
@@ -853,10 +847,12 @@ class TestConvertBlocks(common_testing.BaseTestCase):
                          [["forward:", 10], ["wait:elapsed:from:", 1]]]
         catr_do_until_loop = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_do_until_loop, list)
-        assert len(catr_do_until_loop) == 4
+        assert len(catr_do_until_loop) == 1
+        assert len(catr_do_until_loop[0].loopBricks) == 2
+        brickList = catr_do_until_loop + catr_do_until_loop[0].loopBricks
         expected_brick_classes = [catbricks.RepeatUntilBrick, catbricks.MoveNStepsBrick,
-                                  catbricks.WaitBrick, catbricks.LoopEndBrick]
-        assert [_.__class__ for _ in catr_do_until_loop] == expected_brick_classes
+                                  catbricks.WaitBrick]
+        assert [_.__class__ for _ in brickList] == expected_brick_classes
 
         repeat_until_brick = catr_do_until_loop[0]
         assert isinstance(repeat_until_brick, catbricks.RepeatUntilBrick)
@@ -1289,7 +1285,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         variable_name = "test_var"
         project = self.block_converter._catrobat_project
         catrobat.add_user_variable(project, variable_name, DUMMY_CATR_SPRITE, DUMMY_CATR_SPRITE.getName())
-        user_variable = project.getDefaultScene().getDataContainer().getUserVariable(DUMMY_CATR_SPRITE, variable_name)
+        user_variable = DUMMY_CATR_SPRITE.getUserVariable(variable_name)
         assert user_variable is not None
         assert user_variable.getName() == variable_name
 
@@ -1307,7 +1303,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         variable_name = "test_var"
         project = self.block_converter._catrobat_project
         catrobat.add_user_variable(project, variable_name, DUMMY_CATR_SPRITE, DUMMY_CATR_SPRITE.getName())
-        user_variable = project.getDefaultScene().getDataContainer().getUserVariable(DUMMY_CATR_SPRITE, variable_name)
+        user_variable = DUMMY_CATR_SPRITE.getUserVariable(variable_name)
         assert user_variable is not None
         assert user_variable.getName() == variable_name
 
@@ -1436,8 +1432,11 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def test_can_convert_delete_all_lines_from_list_block(self):
         scratch_block = ["deleteLine:ofList:", "all", self._name_of_test_list]
         catr_brick_list = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        assert len(catr_brick_list) == 3
+
+        assert len(catr_brick_list) == 1
         assert isinstance(catr_brick_list[0], catbricks.RepeatBrick)
+        assert len(catr_brick_list[0].loopBricks) == 1
+        assert isinstance(catr_brick_list[0].loopBricks[0], catbricks.DeleteItemOfUserListBrick)
 
         formula_tree_times_to_repeat = catr_brick_list[0].getFormulaWithBrickField(catbasebrick.BrickField.TIMES_TO_REPEAT).formulaTree # @UndefinedVariable
         assert formula_tree_times_to_repeat.type == catformula.FormulaElement.ElementType.FUNCTION
@@ -1450,16 +1449,12 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert formula_element_left_child.leftChild == None
         assert formula_element_left_child.rightChild == None
 
-        formula_tree_list_delete_item = catr_brick_list[1].getFormulaWithBrickField(catbasebrick.BrickField.LIST_DELETE_ITEM).formulaTree # @UndefinedVariable
+        formula_tree_list_delete_item = catr_brick_list[0].loopBricks[0].getFormulaWithBrickField(catbasebrick.BrickField.LIST_DELETE_ITEM).formulaTree # @UndefinedVariable
         assert formula_tree_list_delete_item.type == catformula.FormulaElement.ElementType.NUMBER
         assert formula_tree_list_delete_item.value == "1"
         assert formula_tree_list_delete_item.leftChild == None
         assert formula_tree_list_delete_item.rightChild == None
-        assert catr_brick_list[0].loopEndBrick == catr_brick_list[2]
-        assert catr_brick_list[2].loopBeginBrick == catr_brick_list[0]
 
-        assert isinstance(catr_brick_list[1], catbricks.DeleteItemOfUserListBrick)
-        assert isinstance(catr_brick_list[2], catbricks.LoopEndBrick)
 
     # setLine:ofList:to:
     def test_can_convert_set_line_via_str_index_of_list_to_block(self):
@@ -1814,8 +1809,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME == user_variable.getName()
 
         project = self.block_converter._catrobat_project
-        data_container = project.getDefaultScene().getDataContainer()
-        assert user_variable == data_container.findProjectVariable(converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME)
+        assert user_variable == project.getUserVariable(converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME)
 
     # doAsk (with question as formula)
     def test_can_convert_do_ask_with_question_as_formula_block(self):
@@ -1852,8 +1846,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME == user_variable.getName()
 
         project = self.block_converter._catrobat_project
-        data_container = project.getDefaultScene().getDataContainer()
-        assert user_variable == data_container.findProjectVariable(converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME)
+        assert user_variable == project.getUserVariable(converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME)
 
     # answer
     def test_can_convert_answer_block(self):
@@ -1868,8 +1861,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert formula_element.rightChild is None
 
         project = self.block_converter._catrobat_project
-        data_container = project.getDefaultScene().getDataContainer()
-        user_variable = data_container.findProjectVariable(converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME)
+        user_variable = project.getUserVariable(converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME)
         assert user_variable is not None
         assert converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME == user_variable.getName()
 
@@ -2453,7 +2445,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         catr_script = self.block_converter._catrobat_script_from(raw_project.objects[1].scripts[0], DUMMY_CATR_SPRITE, self.test_project)
         assert isinstance(catr_script, catbase.StartScript)
         brick_list = catr_script.getBrickList()
-        if_brick = brick_list[1]
+        if_brick = brick_list[0].loopBricks[0]
         assert isinstance(if_brick, catbricks.IfThenLogicBeginBrick)
         assert len(if_brick.formulaMap) == 1
         assert if_brick.formulaMap[catbricks.Brick.BrickField.IF_CONDITION] != None
@@ -2569,7 +2561,7 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
         assert isinstance(keyscripts[1], catbase.WhenScript)
 
         key_brick_list = keyscripts[1].getBrickList()
-        assert len(key_brick_list) == 6
+        assert len(key_brick_list) == 3
 
         broadcast_brick = key_brick_list[0]
         assert isinstance(broadcast_brick, catbricks.BroadcastBrick)
@@ -2618,6 +2610,7 @@ class TestConvertProjects(common_testing.ProjectTestCase):
                     if not isinstance(script, catbase.StartScript):
                         continue
                     bricks = script.getBrickList()
+
                     found_show_var = len(filter(lambda brick: isinstance(brick, catbricks.ShowTextBrick) \
                                                 and brick.getUserVariable().getName() == variable, bricks)) > 0
                     if found_show_var: break

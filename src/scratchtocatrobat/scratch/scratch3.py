@@ -135,7 +135,7 @@ class Scratch3Parser(object):
             else:
                 s2Costume["baseLayerMD5"] = s3Costume["assetId"] + "." + s3Costume["dataFormat"]
             s2Costume["rotationCenterX"]= s3Costume["rotationCenterX"]
-            s2Costume["rotationCenterY"]= s3Costume["rotationCenterX"]
+            s2Costume["rotationCenterY"]= s3Costume["rotationCenterY"]
             if "bitmapResolution" in s3Costume:
                 s2Costume["bitmapResolution"] = s3Costume["bitmapResolution"]
             else:

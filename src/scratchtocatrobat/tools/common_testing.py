@@ -57,7 +57,7 @@ TEST_PROJECT_FILENAME_TO_ID_MAP = {
 PROJECT_DUMMY_ID = "1013258"  # dance back
 # TODO: parse from Java annotations
 FIELD_NAMES_TO_XML_NAMES = {"virtualScreenWidth": "screenWidth", "virtualScreenHeight": "screenHeight"}
-IGNORED_XML_HEADER_CLASS_FIELDS = ["serialVersionUID"]
+IGNORED_XML_HEADER_CLASS_FIELDS = ["serialVersionUID", "projectName"]
 OPTIONAL_HEADER_TAGS = ["dateTimeUpload", "description", "tags", "remixOf", "userHandle"]
 
 _log = common.log

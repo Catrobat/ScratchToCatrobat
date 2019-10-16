@@ -54,6 +54,7 @@ public class ConverterRelevantCatroidSource {
     private Set<String> fieldsToRemove;
     private Set<String> methodsToPreserve;
     private Set<String> methodsToRemove;
+    private Set<String> annotationsToRemove;
     private CompilationUnit sourceAst;
     private Boolean isSerializationClass;
     private Document internalSource;

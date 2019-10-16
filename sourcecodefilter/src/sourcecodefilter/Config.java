@@ -78,8 +78,8 @@ public class Config {
 		Map<String, Set<String>> itemsMap = new HashMap<>();
 		for (Entry<String, ArrayList<String>> entry : ((Map<String, ArrayList<String>>)configMap.get(key)).entrySet()) {
 			HashSet<String> itemSet = new HashSet<>();
-			for (String item : entry.getValue()) {
-				itemSet.add(replacePlaceholders(item));
+			for (Object item : entry.getValue()) {
+				itemSet.add(replacePlaceholders(item.toString()));
 			}
 			itemsMap.put(entry.getKey(), itemSet);
 		}

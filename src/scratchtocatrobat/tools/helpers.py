@@ -293,7 +293,7 @@ def inject_git_commmit_hook():
         gitCount=`/usr/bin/env git rev-list $branchName |wc -l | sed 's/^ *//;s/ *$//'`
         buildNumber="$((gitCount + 1))"
 
-        /usr/bin/env python - <<EOF
+        /usr/bin/env python2 - <<EOF
             def update_build_number(config_file_name, number):
                 # TODO: regex...
                 content = open(config_file_name).read()

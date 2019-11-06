@@ -37,7 +37,7 @@ class MainTest(common_testing.ProjectTestCase):
     def __init__(self, *args):
         super(MainTest, self).__init__(*args)
         self._main_method = main.run_converter
-        self.base_exec_args = ["python", os.path.join(common.get_project_base_path(), "run")]
+        self.base_exec_args = [helpers.config.get("PATHS", "python"), os.path.join(common.get_project_base_path(), "run")]
 
     def execute_run_script(self, args, env=None):
         if not env:

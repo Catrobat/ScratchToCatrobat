@@ -291,9 +291,7 @@ def inject_git_commmit_hook():
         CONFIG_CUSTOM_ENV_FILE_PATH="%s"
         branchName=`/usr/bin/env git symbolic-ref HEAD | sed -e 's,.*/\\(.*\\),\\1,'`
         gitCount=`/usr/bin/env git rev-list $branchName |wc -l | sed 's/^ *//;s/ *$//'`
-        simpleBranchName=`/usr/bin/env git rev-parse --abbrev-ref HEAD`
         buildNumber="$((gitCount + 1))"
-        buildNumber+="-$simpleBranchName"
 
         /usr/bin/env python - <<EOF
             def update_build_number(config_file_name, number):

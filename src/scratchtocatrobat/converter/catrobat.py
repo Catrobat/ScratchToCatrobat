@@ -182,7 +182,7 @@ def media_objects_in(project):
             yield media_object
 
 def add_to_start_script(bricks, sprite, position=0):
-    _log.debug("add to start script of '%s': %s", sprite.getName())
+    _log.debug("adding sprite %s to start script",sprite.getName())
     if len(bricks) == 0: return # nothing to do
 
     def get_or_add_startscript(sprite):

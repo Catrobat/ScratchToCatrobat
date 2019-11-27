@@ -116,15 +116,15 @@ class TestProjectInit(unittest.TestCase):
             # TODO: check error message
             scratch.Project(common_testing.get_test_project_path("non_existing_path"))
 
-    # def test_fail_on_project_with_missing_image_and_sound_files(self):
-    #     with self.assertRaises(scratch.ProjectError):
+    def test_fail_on_project_with_missing_sound_files(self):
+        with self.assertRaises(scratch.ProjectError):
     #         TODO: check error type
-            # scratch.Project(common_testing.get_test_project_path("missing_resources"))
+            scratch.Project(common_testing.get_test_project_path("missing_sound_resources"), None, None, None, True)
 
-    # def test_fail_on_project_with_missing_sound_files(self):
-    #     with self.assertRaises(scratch.ProjectError):
+    def test_fail_on_project_with_missing_image_files(self):
+        with self.assertRaises(scratch.ProjectError):
             # TODO: check error type
-            # scratch.Project(common_testing.get_test_project_path("missing_image_resources"))
+            scratch.Project(common_testing.get_test_project_path("missing_image_resources"), None, None, None, True)
 
 
 class TestProjectFunc(unittest.TestCase):

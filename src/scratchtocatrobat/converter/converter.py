@@ -339,6 +339,9 @@ class _ScratchToCatrobat(object):
         "backgroundIndex": catformula.Sensors.OBJECT_BACKGROUND_NUMBER,
         "costumeIndex": catformula.Sensors.OBJECT_LOOK_NUMBER,
 
+	#testBrick
+	"testBlock": None,
+
         # WORKAROUND: using ROUND for Catrobat float => Scratch int
         "soundLevel": lambda *_args: catrobat.formula_element_for(catformula.Functions.ROUND,
                                        arguments=[catrobat.formula_element_for(catformula.Sensors.LOUDNESS)]),  # @UndefinedVariable
@@ -2371,3 +2374,20 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         if isinstance(arg, (str, unicode)) or isinstance(arg, catformula.Formula):
             return self.CatrobatClass(arg)
         log.warn("Invalid argument for NoteBrick: " + arg)
+
+
+    @_register_handler(_block_name_to_handler_map, "testBlock")
+    def _convert_test_brick(self):
+        assert str(self.arguments[0]).upper() == str(catformula.Sensors.LOUDNESS)
+        assert isinstance(self.arguments[1], int)
+
+        condition = catformula.FormulaElement(catElementType.OPERATOR, str(catformula.Operators.GREATER_THAN), None)
+        condition.leftChild = catformula.FormulaElement(catElementType.SENSOR, str(catformula.Sensors.LOUDNESS) , None)
+        condition.rightChild = catformula.FormulaElement(catElementType.NUMBER, str(self.arguments[1]), None)
+
+        if_begin_brick = catbricks.IfThenLogicBeginBrick(catformula.Formula(condition))
+        if_begin_brick.ifBranchBricks = [self.arguments[2]]
+
+        end_brick = catbricks.IfThenLogicEndBrick()
+
+        return [if_begin_brick, self.arguments[2], end_brick]

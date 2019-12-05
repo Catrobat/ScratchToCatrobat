@@ -2407,6 +2407,20 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert isinstance(formula, catformula.FormulaElement)
         assert formula.value == "OBJECT_SIZE"
 
+    #testBrick
+    def test_can_convert_test_brick(self):
+        scratch_block = ["testBlock", "loudness", 4, ["say:", "Hallo!"]]
+        catr_brick = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+
+        assert isinstance(catr_brick[0], catbricks.IfThenLogicBeginBrick)
+        assert isinstance(catr_brick[1], catbricks.SayBubbleBrick)
+        assert isinstance(catr_brick[2], catbricks.IfThenLogicEndBrick)
+
+        if_condition = catr_brick[0].formulaMap[catbricks.Brick.BrickField.IF_CONDITION].formulaTree
+        assert if_condition.value == str(catformula.Operators.GREATER_THAN)
+        assert if_condition.leftChild.value == str(catformula.Sensors.LOUDNESS)
+        assert if_condition.rightChild.value == "4"
+
     def test_can_convert_key_pressed_block(self):
         objectJson = {
                     "objName": "Sprite1",

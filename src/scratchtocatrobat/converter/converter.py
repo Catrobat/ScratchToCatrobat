@@ -1705,22 +1705,29 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         brick_arguments = self.arguments
         if self.block_name == 'doRepeat':
             times_value, nested_bricks = brick_arguments
+            if nested_bricks == None:
+                nested_bricks = []
             catr_loop_start_brick = self.CatrobatClass(catrobat.create_formula_with_value(times_value))
-            catr_loop_start_brick.loopBricks = nested_bricks
+            for brick in nested_bricks:
+                catr_loop_start_brick.loopBricks.add(brick)
         else:
             assert self.block_name == 'doForever', self.block_name
             [nested_bricks] = brick_arguments
             if nested_bricks == None:
                 nested_bricks = []
             catr_loop_start_brick = self.CatrobatClass()
-            catr_loop_start_brick.loopBricks = nested_bricks
+            for brick in nested_bricks:
+                catr_loop_start_brick.loopBricks.add(brick)
         return [catr_loop_start_brick]
 
     @_register_handler(_block_name_to_handler_map, "doUntil")
     def _convert_do_until_block(self):
         condition, nested_bricks = self.arguments
+        if nested_bricks == None:
+            nested_bricks = []
         repeat_until_brick = self.CatrobatClass(catrobat.create_formula_with_value(condition))
-        repeat_until_brick.loopBricks = nested_bricks
+        for brick in nested_bricks:
+            repeat_until_brick.loopBricks.add(brick)
         return repeat_until_brick
 
     @_register_handler(_block_name_to_handler_map, "startScene")
@@ -1829,7 +1836,8 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         if_bricks = self.arguments[1] or []
         assert isinstance(if_bricks, list)
 
-        if_begin_brick.ifBranchBricks = if_bricks
+        for brick in if_bricks:
+            if_begin_brick.ifBranchBricks.add(brick)
         return [if_begin_brick]# + if_bricks + [if_end_brick]
 
     @_register_handler(_block_name_to_handler_map, "doIfElse")
@@ -1839,8 +1847,10 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         if_bricks, [else_bricks] = self.arguments[1], self.arguments[2:] or [[]]
         if_bricks = if_bricks if if_bricks != None else []
         else_bricks = else_bricks if else_bricks != None else []
-        if_begin_brick.ifBranchBricks = if_bricks
-        if_begin_brick.elseBranchBricks = else_bricks
+        for brick in if_bricks:
+            if_begin_brick.ifBranchBricks.add(brick)
+        for brick in else_bricks:
+            if_begin_brick.elseBranchBricks.add(brick)
         return if_begin_brick
 
     @_register_handler(_block_name_to_handler_map, "lookLike:")

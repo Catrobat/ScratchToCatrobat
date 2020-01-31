@@ -1050,7 +1050,8 @@ class _ScratchObjectConverter(object):
         if not scratch_object.is_stage() and scratch_object.get_lists() is not None:
             for user_list_data in scratch_object.get_lists():
                 assert len(user_list_data["listName"]) > 0
-                sprite.userLists.add(user_list_data["listName"])
+                user_list = catformula.UserList(user_list_data["listName"])
+                sprite.userLists.add(user_list)
                 # TODO: check if user list has been added...
 
         for scratch_variable in scratch_object.get_variables():

@@ -2407,6 +2407,29 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert isinstance(formula, catformula.FormulaElement)
         assert formula.value == "OBJECT_SIZE"
 
+    #dragMode
+    def test_can_convert_dragmode_block(self):
+        sprite = create_catrobat_sprite_stub()
+        num_scripts = len(sprite.getScriptList())
+
+        scratch_block = ["dragMode", "draggable"]
+        [setBrick] = self.block_converter._catrobat_bricks_from(scratch_block, sprite)
+        assert setBrick.getUserVariable().getName() == "draggable"
+        assert len(setBrick.getFormulas()) == 1
+        assert setBrick.getFormulas()[0].getFormulaTree().getValue() == "TRUE"
+        assert setBrick.getFormulas()[0].getFormulaTree().getElementType() == catElementType.FUNCTION
+        assert isinstance(setBrick, catbricks.SetVariableBrick)
+        assert len(sprite.getScriptList()) == num_scripts+1
+
+        scratch_block = ["dragMode", "not draggable"]
+        [setBrick] = self.block_converter._catrobat_bricks_from(scratch_block, sprite)
+        assert(setBrick.getUserVariable().getName() == "draggable")
+        assert(len(setBrick.getFormulas()) == 1)
+        assert(setBrick.getFormulas()[0].getFormulaTree().getValue() == "FALSE")
+        assert(setBrick.getFormulas()[0].getFormulaTree().getElementType() == catElementType.FUNCTION)
+        assert isinstance(setBrick, catbricks.SetVariableBrick)
+        assert len(sprite.getScriptList()) == num_scripts+1
+
     def test_can_convert_key_pressed_block(self):
         objectJson = {
                     "objName": "Sprite1",

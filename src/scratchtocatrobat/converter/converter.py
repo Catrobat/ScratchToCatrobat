@@ -657,10 +657,11 @@ class Converter(object):
         if self.scratch_project.global_user_lists is None:
             return
 
-        for global_user_list in self.scratch_project.global_user_lists:
+        for global_user_list_data in self.scratch_project.global_user_lists:
             # TODO: use "visible" as soon as show/hide-formula-list-bricks are available in Catrobat => global_formula_list["visible"]
             # TODO: use "isPersistent" as soon as Catrobat supports this => global_formula_list["isPersistent"]
-            catrobat_scene.project.userLists.add(global_user_list["listName"])
+            global_user_list = catformula.UserList(global_user_list_data["listName"])
+            catrobat_scene.project.userLists.add(global_user_list)
 
     def _add_converted_sprites_to(self, catrobat_scene):
         for scratch_object in self.scratch_project.objects:
@@ -1050,7 +1051,8 @@ class _ScratchObjectConverter(object):
         if not scratch_object.is_stage() and scratch_object.get_lists() is not None:
             for user_list_data in scratch_object.get_lists():
                 assert len(user_list_data["listName"]) > 0
-                sprite.userLists.add(user_list_data["listName"])
+                user_list = catformula.UserList(user_list_data["listName"])
+                sprite.userLists.add(user_list)
                 # TODO: check if user list has been added...
 
         for scratch_variable in scratch_object.get_variables():

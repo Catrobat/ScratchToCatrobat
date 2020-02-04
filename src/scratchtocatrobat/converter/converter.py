@@ -1141,19 +1141,23 @@ class _ScratchObjectConverter(object):
                     continue
                 for value in global_user_list_data["contents"]:
                     catr_value_formula = catrobat.create_formula_with_value(value)
-                    implicit_bricks_to_add += [catbricks.AddItemToUserListBrick(catr_value_formula, catr_user_list)]
+                    add_item_to_list_brick = catbricks.AddItemToUserListBrick(catr_value_formula)
+                    add_item_to_list_brick.setUserList(catr_user_list)
+                    implicit_bricks_to_add += [add_item_to_list_brick]
 
         if not scratch_object.is_stage() and scratch_object.get_lists() is not None:
             for user_list_data in scratch_object.get_lists():
                 list_name = user_list_data["listName"]
                 assert len(list_name) > 0
-                catr_user_list = catrobat.find_sprite_user_list_by_name(catrobat_project, sprite, list_name)
+                catr_user_list = catrobat.find_sprite_user_list_by_name(sprite, list_name)
                 assert catr_user_list
                 if "contents" not in user_list_data:
                     continue
                 for value in user_list_data["contents"]:
                     catr_value_formula = catrobat.create_formula_with_value(value)
-                    implicit_bricks_to_add += [catbricks.AddItemToUserListBrick(catr_value_formula, catr_user_list)]
+                    add_item_to_list_brick = catbricks.AddItemToUserListBrick(catr_value_formula)
+                    add_item_to_list_brick.setUserList(catr_user_list)
+                    implicit_bricks_to_add += [add_item_to_list_brick]
 
         # object's currentCostumeIndex determines active costume at startup
         sprite_startup_look_idx = scratch_object.get_currentCostumeIndex()

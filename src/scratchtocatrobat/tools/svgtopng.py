@@ -210,6 +210,14 @@ def _parse_and_rewrite_svg_file(svg_input_path, svg_output_path):
     if 'width' in root.attrib and float((root.attrib['width']).strip('px%')) <= 0:
         root.attrib['width'] = '1'
 
+    #some SVGs do not contain height and width attributes - viewbox attribute can be used to determine those parameters
+    if not 'height' in root.attrib and not 'width' in root.attrib:
+        if 'viewBox' in root.attrib:
+            viewBox_values = _get_viewbox_values(root.attrib['viewBox'])
+            height = (max(viewBox_values[1], viewBox_values[3]) - min(viewBox_values[1], viewBox_values[3]))
+            width = (max(viewBox_values[0], viewBox_values[2]) - min(viewBox_values[0], viewBox_values[2]))
+            root.set('height', str(height))
+            root.set('width', str(width))
 
     # uncrop image if and only if everything is in a g tag
     for child in root:

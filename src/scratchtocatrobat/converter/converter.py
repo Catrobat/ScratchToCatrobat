@@ -443,6 +443,10 @@ def _create_modified_formula_brick(sensor_type, unconverted_formula, catrobat_pr
     return catformula.Formula(traverser._converted_helper_brick_or_formula_element([formula_left_child, formula_right_child], ">"))
 
 def _create_user_brick(context, scratch_function_header, param_values, declare=False):
+    # TODO: remove the next line of code as soon as user bricks are supported by Catrobat
+    # TODO: also check the other TODOs related to this issue (overall three different places in converter.py)
+    # TODO: refactor this function; maybe split the function into definition of user brick script and usage of the brick
+    return catbricks.NoteBrick("Sorry, we currently do not support user bricks in Catrobat!")
     param_labels = context.user_script_declared_labels_map[scratch_function_header]
     assert context is not None and isinstance(context, SpriteContext)
     assert not param_labels or len(param_labels) == len(param_values)
@@ -1071,6 +1075,10 @@ class _ScratchObjectConverter(object):
         for scratch_script in scratch_object.scripts:
             cat_instance = self._catrobat_script_from(scratch_script, sprite, self._catrobat_project,
                                                       sprite_context)
+            # TODO: remove this if and replace "elif" with "if" as soon as user bricks are supported by Catrobat
+            # TODO: also check the other TODOs related to this issue (overall three different places in converter.py)
+            if isinstance(cat_instance, catbricks.NoteBrick):
+                continue
             if not isinstance(cat_instance, catbricks.UserBrick):
                 assert isinstance(cat_instance, catbase.Script)
                 sprite.addScript(cat_instance)
@@ -1278,7 +1286,11 @@ class _ScratchObjectConverter(object):
                 ignored_blocks += 1
                 continue
             try:
-                if not isinstance(cat_instance, catbricks.UserBrick):
+                # TODO: remove this if and replace "elif" with "if" as soon as user bricks are supported by Catrobat
+                # TODO: also check the other TODOs related to this issue (overall three different places in converter.py)
+                if isinstance(cat_instance, catbricks.NoteBrick):
+                    continue
+                elif not isinstance(cat_instance, catbricks.UserBrick):
                     assert isinstance(cat_instance, catbase.Script)
                     cat_instance.brickList.add(brick)
                 else:

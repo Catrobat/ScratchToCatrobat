@@ -2081,6 +2081,9 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert catr_bricks[0].getFormulas()[0].getFormulaTree().getElementType() == catElementType.USER_LIST
         assert catr_bricks[0].getFormulas()[0].getFormulaTree().getValue() == self._name_of_test_list
 
+    # TODO: uncomment these tests as soon as Catrobat supports user bricks again.
+    # Note: these tests might have to be refactored together with the tested function.
+    '''
     #call
     def test_can_convert_call_block_user_script_already_defined_simple(self):
         function_header = "number1 %n number1"
@@ -2304,6 +2307,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         param_types = sprite_context.user_script_params_map[function_header]
         assert param_types is not None
         assert expected_param_types == param_types
+    '''
 
     #gotoSpriteOrMouse:
     def test_can_convert_go_to_sprite_block_with_sprite_afterwards(self):

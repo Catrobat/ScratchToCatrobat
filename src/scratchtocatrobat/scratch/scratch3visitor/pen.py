@@ -23,7 +23,7 @@ def visitChangePenColorParamBy(blockcontext):
     colorparam = visitGeneric(blockcontext, "COLOR_PARAM")
     value = visitGeneric(blockcontext, "VALUE")
     log.warn("[Scratch3] block {} ({}) possibly not available in Scratch2".format(blockcontext.block.opcode, blockcontext.block.name))
-    return ["changePenHueBy:", colorparam, value] #TODO: not in scratch2? can choose parameter
+    return ["changePenParamBy:", colorparam, value] #TODO: not in scratch2? can choose parameter
 
 def visitPen_menu_colorParam(blockcontext):
     return blockcontext.block.fields["colorParam"][0]
@@ -32,7 +32,7 @@ def visitSetPenColorParamTo(blockcontext):
     colorparam = visitGeneric(blockcontext, "COLOR_PARAM")
     value = visitGeneric(blockcontext, "VALUE")
     log.warn("[Scratch3] block {} ({}) possibly not available in Scratch2".format(blockcontext.block.opcode, blockcontext.block.name))
-    return ["setPenHueTo:", colorparam, value] #TODO: not in scratch2? can choose parameter
+    return ["setPenParamTo:", colorparam, value] #TODO: not in scratch2? can choose parameter
 
 def visitChangePenSizeBy(blockcontext):
     sizechange = visitGeneric(blockcontext, "SIZE")
@@ -50,6 +50,7 @@ def visitChangePenShadeByNumber(blockcontext):
     size = visitGeneric(blockcontext, "SHADE")
     return ["changePenShadeBy:", size]
 
+# TODO: Never seen this in a scratch 3 project.. remove this?
 def visitSetPenHueToNumber(blockcontext):
     size = visitGeneric(blockcontext, "HUE")
     log.warn("[Scratch3] SetPenHue block possibly not available in Scratch2")

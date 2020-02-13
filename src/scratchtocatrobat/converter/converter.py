@@ -27,6 +27,7 @@ import shutil
 import types
 import zipfile
 import re
+import colorsys
 from codecs import open
 from org.catrobat.catroid import ProjectManager
 import org.catrobat.catroid.common as catcommon
@@ -328,11 +329,11 @@ class _ScratchToCatrobat(object):
         "putPenUp": catbricks.PenUpBrick,
         "stampCostume": catbricks.StampBrick,
         "clearPenTrails": catbricks.ClearBackgroundBrick,
-        "penColor:": catbricks.SetPenColorBrick,
-        "penSize:": catbricks.SetPenSizeBrick,
-        "setPenHueTo:": None,
-        #"changePenSizeBy:": None,
-        #"changePenHueBy:": None,
+        "penColor:": None,
+        "penSize:": None,
+        "setPenParamTo:": None,
+        "changePenSizeBy:": None,
+        "changePenParamBy:": None,
 
         #name and number
         "sceneName": catformula.Sensors.OBJECT_BACKGROUND_NAME,
@@ -2266,121 +2267,258 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             time_formula = self._converted_helper_brick_or_formula_element([time_formula, 1], "+")
         return time_formula
 
+    # TODO: as soon as user bricks are supported again, outsource this -
+    # into a workaround by adding a user brick with this functionality to default behavior or scratch.py when needed
+    # see https://de.wikipedia.org/wiki/HSV-Farbraum for the conversion formula, with 0 <= h, s, v <= 1 in our case
+    def _add_hsv_to_rgb_conversion_algorithm_bricks(self):
+        var = {}
+
+        def var_id(variable_name):
+            return catrobat.build_var_id(var[variable_name])
+
+        def var_obj(variable_name):
+            return self.sprite.getUserVariable(var[variable_name])
+
+        for key, variable_name in scratch.S2CC_PEN_COLOR_HELPER_VARIABLE_NAMES.items() + \
+                                  scratch.S2CC_PEN_COLOR_VARIABLE_NAMES.items():
+            assert isinstance(self.sprite.getUserVariable(variable_name), catformula.UserVariable)
+            var[key] = variable_name
+
+        formula = catrobat.create_formula_for(
+            [catformula.Functions.FLOOR, [catformula.Operators.MULT, var_id('h'), 6]])
+        set_h_i_brick = catbricks.SetVariableBrick(formula, var_obj('h_i'))
+
+        formula = catrobat.create_formula_for(
+                [catformula.Operators.MINUS, [catformula.Operators.MULT, var_id('h'), 6], var_id('h_i')])
+        set_f_brick = catbricks.SetVariableBrick(formula, var_obj('f'))
+
+        formula = catrobat.create_formula_for(
+            [catformula.Operators.MULT, var_id('v'), ["()", [catformula.Operators.MINUS, 1, var_id('s')]]])
+        set_p_brick = catbricks.SetVariableBrick(formula, var_obj('p'))
+
+        formula = catrobat.create_formula_for(
+            [catformula.Operators.MULT,
+                var_id('v'),
+                ["()", [catformula.Operators.MINUS, 1, [catformula.Operators.MULT, var_id('s'), var_id('f')]]]])
+        set_q_brick = catbricks.SetVariableBrick(formula, var_obj('q'))
+
+        formula = catrobat.create_formula_for(
+            [catformula.Operators.MULT,
+                var_id('v'),
+                ["()", [catformula.Operators.MINUS,
+                        1,
+                        [catformula.Operators.MULT,
+                         var_id('s'), ["()", [catformula.Operators.MINUS, 1, var_id('f')]]]]]])
+        set_t_brick = catbricks.SetVariableBrick(formula, var_obj('t'))
+
+        formula = catrobat.create_formula_for(
+                [catformula.Operators.LOGICAL_OR,
+                 [catformula.Operators.EQUAL, var_id('h_i'), 0],
+                 [catformula.Operators.EQUAL, var_id('h_i'), 6]])
+        if_h_i_0_or_6_brick = catbricks.IfThenLogicBeginBrick(formula)
+
+        if_h_i_is_value_bricks = {}
+        for i in range(1, 6):
+            formula = catrobat.create_formula_for([catformula.Operators.EQUAL, var_id('h_i'), i])
+            if_h_i_is_value_bricks[i] = catbricks.IfThenLogicBeginBrick(formula)
+
+        def add_set_rgb_variable_bricks_to_if_brick(if_brick, r, g, b):
+            for (color, name) in [(r, 'r'), (g, 'g'), (b, 'b')]:
+                variable_id = var_id(color)
+                formula = catrobat.create_formula_for(
+                    [catformula.Functions.ROUND, [catformula.Operators.MULT, variable_id, 255]]
+                )
+                set_brick = catbricks.SetVariableBrick(formula, var_obj(name))
+                if_brick.ifBranchBricks.add(set_brick)
+            return
+
+        add_set_rgb_variable_bricks_to_if_brick(if_h_i_0_or_6_brick, 'v', 't', 'p')
+        add_set_rgb_variable_bricks_to_if_brick(if_h_i_is_value_bricks[1], 'q', 'v', 'p')
+        add_set_rgb_variable_bricks_to_if_brick(if_h_i_is_value_bricks[2], 'p', 'v', 't')
+        add_set_rgb_variable_bricks_to_if_brick(if_h_i_is_value_bricks[3], 'p', 'q', 'v')
+        add_set_rgb_variable_bricks_to_if_brick(if_h_i_is_value_bricks[4], 't', 'p', 'v')
+        add_set_rgb_variable_bricks_to_if_brick(if_h_i_is_value_bricks[5], 'v', 'p', 'q')
+
+        set_pen_color_brick = catbricks.SetPenColorBrick(
+            catrobat.create_formula_for(var_id('r')),
+            catrobat.create_formula_for(var_id('g')),
+            catrobat.create_formula_for(var_id('b'))
+        )
+
+        return [set_h_i_brick, set_f_brick, set_p_brick, set_q_brick, set_t_brick, if_h_i_0_or_6_brick] + \
+            if_h_i_is_value_bricks.values() + [set_pen_color_brick]
+
     @_register_handler(_block_name_to_handler_map, "penColor:")
     def _convert_pen_color_block(self):
-        [int_color_value] = self.arguments
-        if isinstance(int_color_value, int):
-            color = Color(int_color_value)
-            red, green, blue = color.getRed(), color.getGreen(), color.getBlue()
-            #creating uservariables
-            red_uv, green_uv, blue_uv = catformula.UserVariable("red"), catformula.UserVariable("green"), \
-                                        catformula.UserVariable("blue")
-            red_uv.value, green_uv.value, blue_uv.value = catformula.Formula(red), \
-                                                          catformula.Formula(green), \
-                                                          catformula.Formula(blue)
-            catrobat.add_user_variable(self.project, "red", self.sprite, self.sprite.getName())
-            catrobat.add_user_variable(self.project, "green", self.sprite, self.sprite.getName())
-            catrobat.add_user_variable(self.project, "blue", self.sprite, self.sprite.getName())
-            red_sv = catbricks.SetVariableBrick(catformula.Formula(red), red_uv)
-            green_sv = catbricks.SetVariableBrick(catformula.Formula(green), green_uv)
-            blue_sv = catbricks.SetVariableBrick(catformula.Formula(blue), blue_uv)
+        [argument_color] = self.arguments
 
-            return [red_sv, green_sv, blue_sv, self.CatrobatClass(red, green, blue)]
-        elif isinstance(int_color_value, catformula.FormulaElement):
-            blue = self._converted_helper_brick_or_formula_element([int_color_value, 256], "%")
+        h_variable = self.sprite.getUserVariable(scratch.S2CC_PEN_COLOR_VARIABLE_NAMES["h"])
+        s_variable = self.sprite.getUserVariable(scratch.S2CC_PEN_COLOR_VARIABLE_NAMES["s"])
+        v_variable = self.sprite.getUserVariable(scratch.S2CC_PEN_COLOR_VARIABLE_NAMES["v"])
 
-            blue_parenth = self._converted_helper_brick_or_formula_element([blue], "()")
-            x_minus_blue = self._converted_helper_brick_or_formula_element([int_color_value, blue_parenth], "-")
-            xmb_parenth = self._converted_helper_brick_or_formula_element([x_minus_blue], "()")
-            xmb_divided_256 = self._converted_helper_brick_or_formula_element([xmb_parenth, 256], "/")
-            xmbd_256_parenth = self._converted_helper_brick_or_formula_element([xmb_divided_256], "()")
-            green = self._converted_helper_brick_or_formula_element([xmbd_256_parenth, 256], "%")
+        is_add_color_variable_bricks = False
+        if (isinstance(h_variable, catformula.UserVariable) and isinstance(s_variable, catformula.UserVariable)
+            and isinstance(v_variable, catformula.UserVariable)):
+            is_add_color_variable_bricks = True
 
-            green_parenth = self._converted_helper_brick_or_formula_element([green], "()")
-            xmbd_256_minus_green = self._converted_helper_brick_or_formula_element([xmbd_256_parenth, green_parenth], "-")
-            xmbd_256_mg_parenth = self._converted_helper_brick_or_formula_element([xmbd_256_minus_green], "()")
-            red = self._converted_helper_brick_or_formula_element([xmbd_256_mg_parenth, 256], "/")
+        def add_color_variable_bricks(h, s, v):
+            h_formula = catrobat.create_formula_for(h)
+            s_formula = catrobat.create_formula_for(s)
+            v_formula = catrobat.create_formula_for(v)
 
-            #_create_variable_brick(value, user_variable, Class)
-            red_uv, green_uv, blue_uv = catformula.UserVariable("red"), catformula.UserVariable("green"), \
-                                        catformula.UserVariable("blue")
-            red_uv.value, green_uv.value, blue_uv.value = catformula.Formula(red), catformula.Formula(green),\
-                                                          catformula.Formula(blue)
-            catrobat.add_user_variable(self.project, "red", self.sprite, self.sprite.getName())
-            catrobat.add_user_variable(self.project, "green", self.sprite, self.sprite.getName())
-            catrobat.add_user_variable(self.project, "blue", self.sprite, self.sprite.getName())
-            red_sv = catbricks.SetVariableBrick(catformula.Formula(red), red_uv)
-            green_sv = catbricks.SetVariableBrick(catformula.Formula(green), green_uv)
-            blue_sv = catbricks.SetVariableBrick(catformula.Formula(blue), blue_uv)
+            set_h_variable_brick = catbricks.SetVariableBrick(h_formula, h_variable)
+            set_s_variable_brick = catbricks.SetVariableBrick(s_formula, s_variable)
+            set_v_variable_brick = catbricks.SetVariableBrick(v_formula, v_variable)
 
-            return [red_sv, green_sv, blue_sv, self.CatrobatClass(catformula.Formula(red), catformula.Formula(green), catformula.Formula(blue))]
+            return [set_h_variable_brick, set_s_variable_brick, set_v_variable_brick]
+
+        def convert_rgb_to_hsv(r, g, b):
+            return colorsys.rgb_to_hsv(r / 255.0, g / 255.0, b / 255.0)
+
+        if isinstance(argument_color, basestring):
+            colors_hex = argument_color[1:]
+            (r, g, b) = tuple(int(colors_hex[i:i+2], 16) for i in (0, 2, 4))
+
+            if not is_add_color_variable_bricks:
+                return catbricks.SetPenColorBrick(r, g, b)
+
+            (h, s, v) = convert_rgb_to_hsv(r, g, b)
+            pen_color_variable_bricks = add_color_variable_bricks(h, s, v)
+            hsv_to_rgb_bricks = self._add_hsv_to_rgb_conversion_algorithm_bricks()
+
+            return pen_color_variable_bricks + hsv_to_rgb_bricks
+
+        elif isinstance(argument_color, catformula.FormulaElement):
+            # formula in a change color brick only affects the blue value in RGB, and the value in HSV respectively
+
+            if not is_add_color_variable_bricks:
+                r = catrobat.create_formula_for(0)
+                g = catrobat.create_formula_for(0)
+                b = catrobat.create_formula_for([catformula.Functions.MOD, ["()", argument_color], 256])
+                return catbricks.SetPenColorBrick(r, g, b)
+
+            h = 0.66
+            s = 1.0
+
+            # 0 <= ( arg % 256 / 255 ) <= 1
+            v = catrobat.create_formula_element_for(
+                [catformula.Operators.DIVIDE, [catformula.Functions.MOD, ["()", argument_color], 256], 255.0])
+
+            pen_color_variable_bricks = add_color_variable_bricks(h, s, v)
+            hsv_to_rgb_bricks = self._add_hsv_to_rgb_conversion_algorithm_bricks()
+
+            return pen_color_variable_bricks + hsv_to_rgb_bricks
+
+        return catbricks.NoteBrick("Change pen color brick: Unsupported Argument Type")
+
+    @_register_handler(_block_name_to_handler_map, "setPenParamTo:")
+    def _convert_set_pen_color_param_block(self):
+        [colorparam, value] = self.arguments
+
+        if colorparam == "transparency":
+            log.warn("Returning Note Brick for 'setPenParamTo:'. Reason: colorparam = 'transparency'")
+            return catbricks.NoteBrick("Sorry, we currently do not support transparency changes!")
+        assert colorparam in ["color", "saturation", "brightness"]
+
+        h_variable = self.sprite.getUserVariable(scratch.S2CC_PEN_COLOR_VARIABLE_NAMES["h"])
+        s_variable = self.sprite.getUserVariable(scratch.S2CC_PEN_COLOR_VARIABLE_NAMES["s"])
+        v_variable = self.sprite.getUserVariable(scratch.S2CC_PEN_COLOR_VARIABLE_NAMES["v"])
+        assert(isinstance(h_variable, catformula.UserVariable) and isinstance(s_variable, catformula.UserVariable)
+               and isinstance(v_variable, catformula.UserVariable))
+
+        if colorparam == "color":
+            formula = catrobat.create_formula_for(
+                [catformula.Functions.MOD, [catformula.Operators.DIVIDE, ["()", value], 100], 1])
         else:
-            return catbricks.NoteBrick("Unsupported Argument Type")
+            formula = catrobat.create_formula_for(
+                [catformula.Functions.MAX,
+                    [catformula.Functions.MIN,
+                     [catformula.Operators.DIVIDE, ["()", value], 100],
+                     1],
+                    0])
+
+        param_variable_mapping = {"color": h_variable, "saturation": s_variable, "brightness": v_variable}
+        set_variable_brick = catbricks.SetVariableBrick(formula, param_variable_mapping[colorparam])
+
+        return [set_variable_brick] + self._add_hsv_to_rgb_conversion_algorithm_bricks()
+
+    @_register_handler(_block_name_to_handler_map, "changePenParamBy:")
+    def _convert_change_pen_color_block(self):
+        [colorparam, value] = self.arguments
+
+        if (colorparam == "transparency"):
+            log.warn("Returning Note Brick for 'changePenParamBy:'. Reason: colorparam = 'transparancy'")
+            return catbricks.NoteBrick("Sorry, we currently do not support transparancy changes!")
+        assert colorparam in ["color", "saturation", "brightness"]
+
+        h_variable = self.sprite.getUserVariable(scratch.S2CC_PEN_COLOR_VARIABLE_NAMES["h"])
+        s_variable = self.sprite.getUserVariable(scratch.S2CC_PEN_COLOR_VARIABLE_NAMES["s"])
+        v_variable = self.sprite.getUserVariable(scratch.S2CC_PEN_COLOR_VARIABLE_NAMES["v"])
+        assert(isinstance(h_variable, catformula.UserVariable) and isinstance(s_variable, catformula.UserVariable)
+               and isinstance(v_variable, catformula.UserVariable))
+
+        param_name_mapping = {"color": "h", "saturation": "s", "brightness": "v"}
+        var_id = catrobat.build_var_id(scratch.S2CC_PEN_COLOR_VARIABLE_NAMES[param_name_mapping[colorparam]])
+        if colorparam == "color":
+            formula = catrobat.create_formula_for(
+                [catformula.Functions.MOD,
+                    [catformula.Operators.PLUS, var_id, [catformula.Operators.DIVIDE, ["()", value], 100]],
+                    1])
+        else:
+            formula = catrobat.create_formula_for(
+                [catformula.Functions.MAX,
+                 [catformula.Functions.MIN,
+                  [catformula.Operators.PLUS, var_id, [catformula.Operators.DIVIDE, ["()", value], 100]],
+                  1],
+                 0])
+
+        param_variable_mapping = {"color": h_variable, "saturation": s_variable, "brightness": v_variable}
+        set_variable_brick = catbricks.SetVariableBrick(formula, param_variable_mapping[colorparam])
+
+        return [set_variable_brick] + self._add_hsv_to_rgb_conversion_algorithm_bricks()
+
+    # Scratch' pen size is ~3.65x (scratch.S2CC_PEN_SIZE_MULTIPLIER) bigger than Catrobat's
+    @staticmethod
+    def build_pen_size_formula(value):
+        return catformula.Formula(catrobat.create_formula_element_for(
+            [catformula.Operators.MULT, ["()", value], scratch.S2CC_PEN_SIZE_MULTIPLIER]))
 
     @_register_handler(_block_name_to_handler_map, "penSize:")
     def _convert_pen_size_block(self):
-        [pen_size] = self.arguments
-        pen_size_uv = catformula.UserVariable("pen_size")
-        pen_size_uv.value = catformula.Formula(pen_size)
-        catrobat.add_user_variable(self.project, "pen_size", self.sprite, self.sprite.getName())
-        pen_size_sv = catbricks.SetVariableBrick(catformula.Formula(pen_size), pen_size_uv)
-        return [pen_size_sv, self.CatrobatClass(catformula.Formula(pen_size))]
+        [new_pen_size] = self.arguments
+        pen_size_variable = self.sprite.getUserVariable(scratch.S2CC_PEN_SIZE_VARIABLE_NAME)
 
-#     @_register_handler(_block_name_to_handler_map, "changePenHueBy:")
-#     def _convert_change_pen_color_block(self):
-#         [hue] = self.arguments
-#         #TODO: get old color on old_color
-#         r_, g_, b_ = old_color.getRed()/255.0, old_color.getGreen()/255.0, old_color.getBlue()/255.0
-#         Cmax, Cmin = max([r_, g_, b_]), min([r_, g_, b_])
-#         delta = Cmax - Cmin
-#
-#         h, s, v = 0, 0, Cmax
-#
-#         if delta == 0:
-#             h = 0
-#         elif Cmax == r_:
-#             h = 60*(((g_-b_)/delta)%6)
-#         elif Cmax == g_:
-#             h = 60*(((b_-r_)/delta)+2)
-#         elif Cmax == b_:
-#             h = 60*(((r_-g_)/delta)+4)
-#
-#         if Cmax == 0:
-#             s = 0
-#         else:
-#             s = delta/Cmax
-#
-#         if h + hue > 360:
-#             h = (h + hue) % 360
-#         else:
-#             h = h + hue
-#
-#         C = v*s
-#         X = C*(1-abs( ( (h/60) % 2) -1 ) )
-#         m = v - C
-#
-#         if h < 60 and h >= 0:
-#             r_, g_, b_ = C, X, 0
-#         if h < 120 and h >= 60:
-#             r_, g_, b_ = X, C, 0
-#         if h < 180 and h >= 120:
-#             r_, g_, b_ = 0, C, X
-#         if h < 240 and h >= 180:
-#             r_, g_, b_ = 0, X, C
-#         if h < 300 and h >= 240:
-#             r_, g_, b_ = X, 0, C
-#         if h < 360 and h >= 300:
-#             r_, g_, b_ = C, 0, X
-#
-#         r, g, b = (r_ + m) * 255, (g_ + m) * 255, (b_ + m) * 255
-#         new_color = Color(int(r), int(g), int(b))
-#         return catbricks.SetPenColorBrick(new_color.getRed(), new_color.getGreen(), new_color.getBlue())
-#
-#     @_register_handler(_block_name_to_handler_map, "changePenSizeBy:")
-#     def _convert_change_pen_size_block(self):
-#         [size_add] = self.arguments
-#         #TODO: get old pen size
-#         return catbricks.SetPenSizeBrick(int(old_pen_size) + size_add)
+        new_pen_size_formula = self.build_pen_size_formula(new_pen_size)
+
+        if not isinstance(pen_size_variable, catformula.UserVariable):
+            return catbricks.SetPenSizeBrick(new_pen_size_formula)
+
+        set_pen_size_variable_brick = catbricks.SetVariableBrick(new_pen_size_formula, pen_size_variable)
+
+        read_pen_size_variable_formula_element = catformula.FormulaElement(
+            catElementType.USER_VARIABLE, pen_size_variable.getName(), None
+        )
+        read_pen_size_variable_formula = catformula.Formula(read_pen_size_variable_formula_element)
+        set_pen_size_brick = catbricks.SetPenSizeBrick(read_pen_size_variable_formula)
+        return [set_pen_size_variable_brick, set_pen_size_brick]
+
+    @_register_handler(_block_name_to_handler_map, "changePenSizeBy:")
+    def _convert_change_pen_size_block(self):
+        [change_offset] = self.arguments
+
+        pen_size_variable = self.sprite.getUserVariable(scratch.S2CC_PEN_SIZE_VARIABLE_NAME)
+        assert isinstance(pen_size_variable, catformula.UserVariable)
+
+        change_offset_formula = self.build_pen_size_formula(change_offset)
+        change_pen_size_variable_brick = catbricks.ChangeVariableBrick(change_offset_formula, pen_size_variable)
+
+        read_pen_size_variable_formula_element = catformula.FormulaElement(
+            catElementType.USER_VARIABLE, pen_size_variable.getName(), None
+        )
+        read_pen_size_variable_formula = catformula.Formula(read_pen_size_variable_formula_element)
+        set_pen_size_brick = catbricks.SetPenSizeBrick(read_pen_size_variable_formula)
+
+        return [change_pen_size_variable_brick, set_pen_size_brick]
 
     @_register_handler(_block_name_to_handler_map, "setRotationStyle")
     def _convert_set_rotation_style_block(self):

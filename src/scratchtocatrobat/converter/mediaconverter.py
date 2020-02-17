@@ -272,7 +272,7 @@ class MediaConverter(object):
             basename, _ = os.path.splitext(info.fileName)
 
             # ignore these files, already correctly provided by the converter
-            if any(x in basename for x in ["key", "mouse"]):
+            if any(x in basename for x in ["key", "mouse", "slider", "list_handle_"]):
                 continue
 
             assert basename in self.file_rename_map and \

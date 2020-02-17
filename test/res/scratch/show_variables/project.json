@@ -1,0 +1,320 @@
+{
+	"objName": "Stage",
+	"variables": [{
+			"name": "global_default",
+			"value": 0,
+			"isPersistent": false
+		},
+		{
+			"name": "global_large",
+			"value": 22,
+			"isPersistent": false
+		},
+		{
+			"name": "global_slider",
+			"value": 29,
+			"isPersistent": false
+		}],
+	"sounds": [{
+			"soundName": "pop",
+			"soundID": 0,
+			"md5": "83a9787d4cb6f3b7632b4ddfebf74367.wav",
+			"sampleCount": 258,
+			"rate": 11025,
+			"format": ""
+		}],
+	"costumes": [{
+			"costumeName": "backdrop1",
+			"baseLayerID": 4,
+			"baseLayerMD5": "739b5e2a2435f6e1ec2993791b423146.png",
+			"bitmapResolution": 1,
+			"rotationCenterX": 240,
+			"rotationCenterY": 180
+		}],
+	"currentCostumeIndex": 0,
+	"penLayerMD5": "5c81a336fab8be57adc039a8a2b33ca9.png",
+	"penLayerID": 0,
+	"tempoBPM": 60,
+	"videoAlpha": 0.5,
+	"children": [{
+			"target": "Sprite1",
+			"cmd": "getVar:",
+			"param": "local_default",
+			"color": 15629590,
+			"label": "Sprite1: local_default",
+			"mode": 1,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 5,
+			"y": 5,
+			"visible": true
+		},
+		{
+			"target": "Stage",
+			"cmd": "getVar:",
+			"param": "global_default",
+			"color": 15629590,
+			"label": "global_default",
+			"mode": 1,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 326,
+			"y": 5,
+			"visible": true
+		},
+		{
+			"target": "Stage",
+			"cmd": "getVar:",
+			"param": "global_slider",
+			"color": 15629590,
+			"label": "global_slider",
+			"mode": 3,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 334,
+			"y": 57,
+			"visible": true
+		},
+		{
+			"target": "Sprite1",
+			"cmd": "getVar:",
+			"param": "local_slider",
+			"color": 15629590,
+			"label": "Sprite1: local_slider",
+			"mode": 3,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 10,
+			"y": 62,
+			"visible": true
+		},
+		{
+			"target": "Sprite1",
+			"cmd": "xpos",
+			"param": null,
+			"color": 4877524,
+			"label": "Sprite1: x position",
+			"mode": 2,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 21,
+			"y": 125,
+			"visible": true
+		},
+		{
+			"target": "Stage",
+			"cmd": "getVar:",
+			"param": "global_large",
+			"color": 15629590,
+			"label": "global_large",
+			"mode": 2,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 421,
+			"y": 29,
+			"visible": true
+		},
+		{
+			"target": "Sprite1",
+			"cmd": "getVar:",
+			"param": "local_large",
+			"color": 15629590,
+			"label": "Sprite1: local_large",
+			"mode": 2,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 11,
+			"y": 30,
+			"visible": true
+		},
+		{
+			"target": "Stage",
+			"cmd": "volume",
+			"param": null,
+			"color": 12272323,
+			"label": "volume",
+			"mode": 1,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 362,
+			"y": 105,
+			"visible": true
+		},
+		{
+			"target": "Stage",
+			"cmd": "soundLevel",
+			"param": null,
+			"color": 2926050,
+			"label": "loudness",
+			"mode": 1,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 352,
+			"y": 133,
+			"visible": true
+		},
+		{
+			"objName": "Cheesy-Puffs",
+			"variables": [{
+					"name": "toggle_default",
+					"value": 25,
+					"isPersistent": false
+				},
+				{
+					"name": "toggle_large",
+					"value": 0,
+					"isPersistent": false
+				},
+				{
+					"name": "toggle_slider",
+					"value": 46,
+					"isPersistent": false
+				}],
+			"scripts": [[137,
+					195,
+					[["whenClicked"],
+						["doIfElse",
+							["=", ["readVariable", "toggle_large"], "0"],
+							[["hideVariable:", "toggle_default"], ["hideVariable:", "toggle_large"], ["hideVariable:", "toggle_slider"], ["setVar:to:", "toggle_large", "1"]],
+							[["showVariable:", "toggle_default"], ["showVariable:", "toggle_large"], ["showVariable:", "toggle_slider"], ["setVar:to:", "toggle_large", 0]]]]]],
+			"sounds": [{
+					"soundName": "pop",
+					"soundID": 0,
+					"md5": "83a9787d4cb6f3b7632b4ddfebf74367.wav",
+					"sampleCount": 258,
+					"rate": 11025,
+					"format": ""
+				}],
+			"costumes": [{
+					"costumeName": "cheesy-puffs",
+					"baseLayerID": 1,
+					"baseLayerMD5": "4c99a77ba72abaf6c961e8684f8a8a9f.png",
+					"bitmapResolution": 2,
+					"rotationCenterX": 87,
+					"rotationCenterY": 72
+				}],
+			"currentCostumeIndex": 0,
+			"scratchX": 77,
+			"scratchY": -26,
+			"scale": 1,
+			"direction": 90,
+			"rotationStyle": "normal",
+			"isDraggable": false,
+			"indexInLibrary": 2,
+			"visible": true,
+			"spriteInfo": {
+			}
+		},
+		{
+			"objName": "Sprite1",
+			"variables": [{
+					"name": "local_default",
+					"value": 0,
+					"isPersistent": false
+				},
+				{
+					"name": "local_large",
+					"value": 45,
+					"isPersistent": false
+				},
+				{
+					"name": "local_slider",
+					"value": 76,
+					"isPersistent": false
+				}],
+			"sounds": [{
+					"soundName": "meow",
+					"soundID": 1,
+					"md5": "83c36d806dc92327b9e7049a565c6bff.wav",
+					"sampleCount": 18688,
+					"rate": 22050,
+					"format": ""
+				}],
+			"costumes": [{
+					"costumeName": "costume1",
+					"baseLayerID": 2,
+					"baseLayerMD5": "f9a1c175dbe2e5dee472858dd30d16bb.svg",
+					"bitmapResolution": 1,
+					"rotationCenterX": 47,
+					"rotationCenterY": 55
+				},
+				{
+					"costumeName": "costume2",
+					"baseLayerID": 3,
+					"baseLayerMD5": "6e8bd9ae68fdb02b7e1e3df656a75635.svg",
+					"bitmapResolution": 1,
+					"rotationCenterX": 47,
+					"rotationCenterY": 55
+				}],
+			"currentCostumeIndex": 0,
+			"scratchX": -65,
+			"scratchY": -15,
+			"scale": 1,
+			"direction": 90,
+			"rotationStyle": "normal",
+			"isDraggable": false,
+			"indexInLibrary": 1,
+			"visible": true,
+			"spriteInfo": {
+			}
+		},
+		{
+			"target": "Cheesy-Puffs",
+			"cmd": "getVar:",
+			"param": "toggle_default",
+			"color": 15629590,
+			"label": "Cheesy-Puffs: toggle_default",
+			"mode": 1,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 245,
+			"y": 326,
+			"visible": true
+		},
+		{
+			"target": "Cheesy-Puffs",
+			"cmd": "getVar:",
+			"param": "toggle_large",
+			"color": 15629590,
+			"label": "Cheesy-Puffs: toggle_large",
+			"mode": 2,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 417,
+			"y": 298,
+			"visible": true
+		},
+		{
+			"target": "Cheesy-Puffs",
+			"cmd": "getVar:",
+			"param": "toggle_slider",
+			"color": 15629590,
+			"label": "Cheesy-Puffs: toggle_slider",
+			"mode": 3,
+			"sliderMin": 0,
+			"sliderMax": 100,
+			"isDiscrete": true,
+			"x": 251,
+			"y": 265,
+			"visible": true
+		}],
+	"info": {
+		"flashVersion": "WIN 32,0,0,182",
+		"scriptCount": 1,
+		"spriteCount": 2,
+		"videoOn": false,
+		"userAgent": "Scratch 2.0 Offline Editor",
+		"swfVersion": "v461"
+	}
+}

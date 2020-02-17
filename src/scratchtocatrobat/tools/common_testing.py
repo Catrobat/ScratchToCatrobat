@@ -202,7 +202,7 @@ class ProjectTestCase(BaseTestCase):
             if not elem1 and not elem2:
                 return True
             else:
-                return (elem1.type == elem2.type and elem1.value == elem2.value and _compare_formula_elements(elem1.leftChild, elem2.leftChild) and _compare_formula_elements(elem1.rightChild, elem2.rightChild))
+                return (elem1 and elem2 and elem1.type == elem2.type and elem1.value == elem2.value and _compare_formula_elements(elem1.leftChild, elem2.leftChild) and _compare_formula_elements(elem1.rightChild, elem2.rightChild))
 
         return _compare_formula_elements(formula1.formulaTree, formula2.formulaTree)
 

@@ -21,6 +21,7 @@
 
 import tornado.tcpclient
 from tornado import gen
+from tornado.escape import json_encode
 from jobmonitorserver.jobmonitorprotocol import Request, Reply, TCPConnection, SERVER, CLIENT
 import logging
 import json
@@ -80,7 +81,7 @@ class JobHandler(object):
         args = {
             Request.ARGS_JOB_ID: job_ID,
             Request.ARGS_IMAGE_URL: image_URL,
-            Request.ARGS_TITLE: title,
+            Request.ARGS_TITLE: json_encode(title)[1:-1],
             Request.ARGS_MSG: "Job started"
         }
         request = Request(Request.Command.JOB_STARTED_NOTIFICATION, args)

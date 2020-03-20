@@ -2151,14 +2151,12 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "changeVar:by:", "setVar:to:")
     def _convert_variable_block(self):
         [variable_name, value] = self.arguments
+                
+        # try to access a local variable with the given name
+        # if no local variable is found, a global variable is referenced
         user_variable = self.sprite.getUserVariable(variable_name)
         if user_variable is None:
-            # WORKAROUND: for generated variables added in preprocessing step
-            # must be generated user variable, otherwise the variable must have already been added at this stage!
-            if not _is_generated(variable_name):
-                log.warning("UserVariable with name :'" + variable_name + "' does not exist. Creating it now.")
-            catrobat.add_user_variable(self.project, variable_name, self.sprite, self.sprite.getName())
-        user_variable = self.sprite.getUserVariable(variable_name)
+            user_variable = self.project.getUserVariable(variable_name)
 
         assert user_variable is not None and user_variable.getName() == variable_name, \
                "variable: %s, sprite_name: %s" % (variable_name, self.sprite.getName())

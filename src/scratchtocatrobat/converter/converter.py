@@ -739,32 +739,38 @@ class Converter(object):
         clone_script = catbase.WhenClonedScript()
         clone_goto = catbricks.GoToBrick()
         clone_goto.spinnerSelection = catcommon.BrickValues.GO_TO_TOUCH_POSITION
-
-        listened_keys_names = [key_tuple[0] for key_tuple in self.scratch_project.listened_keys]
-        or_formula_element = catformula.FormulaElement(catElementType.OPERATOR, str(catformula.Operators.LOGICAL_OR), None)
-        colide_with_all_keys = or_formula_element.clone()
-        root =  catformula.FormulaElement(catElementType.OPERATOR, str(catformula.Operators.LOGICAL_NOT), None)
-        root.setRightChild(colide_with_all_keys)
-        for key in listened_keys_names:
-            left = catformula.FormulaElement(catElementType.COLLISION_FORMULA, _key_to_broadcast_message(key), None)
-            colide_with_all_keys.setLeftChild(left)
-            colide_with_all_keys.setRightChild(or_formula_element.clone())
-            colide_with_all_keys.rightChild.parent = colide_with_all_keys
-            colide_with_all_keys.leftChild.parent = colide_with_all_keys
-            colide_with_all_keys = colide_with_all_keys.rightChild
-        #the lowest layer is an or now where the left child is set but no right child. therefore we move that left child up by 1 layer
-        colide_with_all_keys.parent.leftChild.parent = colide_with_all_keys.parent
-        colide_with_all_keys.parent.parent.setRightChild(colide_with_all_keys.parent.leftChild)
-
-        clone_if = catbricks.IfThenLogicBeginBrick(catformula.Formula(root))
         clone_broadcast = catbricks.BroadcastBrick("_mouse_move_")
+
+        # workaround for touching a converted keyboard key with the converted mouse
+        if len(self.scratch_project.listened_keys) > 0:
+            listened_keys_names = [key_tuple[0] for key_tuple in self.scratch_project.listened_keys]
+            or_formula_element = catformula.FormulaElement(catElementType.OPERATOR, str(catformula.Operators.LOGICAL_OR), None)
+            colide_with_all_keys = or_formula_element.clone()
+            root =  catformula.FormulaElement(catElementType.OPERATOR, str(catformula.Operators.LOGICAL_NOT), None)
+            root.setRightChild(colide_with_all_keys)
+            for key in listened_keys_names:
+                left = catformula.FormulaElement(catElementType.COLLISION_FORMULA, _key_to_broadcast_message(key), None)
+                colide_with_all_keys.setLeftChild(left)
+                colide_with_all_keys.setRightChild(or_formula_element.clone())
+                colide_with_all_keys.rightChild.parent = colide_with_all_keys
+                colide_with_all_keys.leftChild.parent = colide_with_all_keys
+                colide_with_all_keys = colide_with_all_keys.rightChild
+            #the lowest layer is an or now where the left child is set but no right child. therefore we move that left child up by 1 layer
+            colide_with_all_keys.parent.leftChild.parent = colide_with_all_keys.parent
+            colide_with_all_keys.parent.parent.setRightChild(colide_with_all_keys.parent.leftChild)
+
+            clone_if = catbricks.IfThenLogicBeginBrick(catformula.Formula(root))
+            clone_if.ifBranchBricks.add(clone_broadcast)
+            clone_bricks = [clone_goto, clone_if]
+            clone_script.brickList.addAll(clone_bricks)
+
+        else:
+            clone_script.brickList.add(clone_broadcast)
+
         clone_kill = catbricks.DeleteThisCloneBrick()
-        clone_if.ifBranchBricks.add(clone_broadcast)
-        clone_bricks = [clone_goto, clone_if,clone_kill]
-        clone_script.brickList.addAll(clone_bricks)
+        clone_script.brickList.add(clone_kill)
         sprite.addScript(clone_script)
         catrobat_scene.addSprite(sprite)
-
 
     @staticmethod
     def _create_key_sprite(key, x_pos, y_pos):

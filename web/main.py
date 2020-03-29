@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 #  ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
 #  Copyright (C) 2013-2017 The Catrobat Team
 #  (<http://developer.catrobat.org/credits>)

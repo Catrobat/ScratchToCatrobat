@@ -1780,8 +1780,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             # 3rd step: determine look number, i.e. (((value - 1) % number_of_looks) + 1)
             index_formula_elem = self._converted_helper_brick_or_formula_element([index_formula_elem, 1], "+")
             index_formula_elem = index_formula_elem if number_of_looks != 1 else 1
-            set_background_by_index_brick = catbricks.SetBackgroundByIndexBrick()
-            set_background_by_index_brick.initializeBrickFields(catrobat.create_formula_with_value(index_formula_elem))
+            set_background_by_index_brick = catbricks.SetBackgroundByIndexBrick(catrobat.create_formula_with_value(index_formula_elem))
             return set_background_by_index_brick
 
         look_name = argument
@@ -1795,8 +1794,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
                 if catrobat.is_background_sprite(self.sprite):
                     return catbricks.PreviousLookBrick()
                 index_formula_elem = self._converted_helper_brick_or_formula_element([index_formula_elem, 1], "-")
-            set_background_by_index_brick = catbricks.SetBackgroundByIndexBrick()
-            set_background_by_index_brick.initializeBrickFields(catrobat.create_formula_with_value(index_formula_elem))
+            set_background_by_index_brick = catbricks.SetBackgroundByIndexBrick(catrobat.create_formula_with_value(index_formula_elem))
             return set_background_by_index_brick
 
         matching_looks = [_ for _ in background_sprite.getLookList() if _.getName() == look_name]
@@ -1832,8 +1830,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             # 3rd step: determine look number, i.e. (((value - 1) % number_of_looks) + 1)
             index_formula_elem = self._converted_helper_brick_or_formula_element([index_formula_elem, 1], "+")
             index_formula_elem = index_formula_elem if number_of_looks != 1 else 1
-            set_background_by_index_and_wait_brick = catbricks.SetBackgroundByIndexAndWaitBrick()
-            set_background_by_index_and_wait_brick.initializeBrickFields(catrobat.create_formula_with_value(index_formula_elem))
+            set_background_by_index_and_wait_brick = catbricks.SetBackgroundByIndexAndWaitBrick(catrobat.create_formula_with_value(index_formula_elem))
             return set_background_by_index_and_wait_brick
 
         look_name = argument

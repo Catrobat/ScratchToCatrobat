@@ -21,6 +21,7 @@
 import logging
 
 log = logging.getLogger("scratchtocatrobat")
+log_file = ""
 
 def _log_level_for_string(log_level_string):
     if log_level_string == "FATAL":
@@ -45,7 +46,9 @@ def setup_logging():
     log.setLevel(logging.DEBUG)
 
     log_dir = helpers.config.get("PATHS", "logging")
-    fh = logging.FileHandler(os.path.join(log_dir, "s2cc-{}.log".format(datetime.now().isoformat().replace(":", "_"))))
+    global log_file
+    log_file = os.path.join(log_dir, "s2cc-{}.log".format(datetime.now().isoformat().replace(":", "_")))
+    fh = logging.FileHandler(log_file)
     fh_fmt = logging.Formatter(helpers.config.get("LOG", "file_log_format").replace("\\", ""))
 
     fh.setLevel(_log_level_for_string(helpers.config.get("LOG", "file_log_level")))

@@ -77,7 +77,7 @@ class ConverterJobHandler(jobhandler.JobHandler):
         assert isinstance(args["outputDir"], (str, unicode))
         job_ID, title, image_URL = args["jobID"], args["title"], args["imageURL"]
 
-        exec_args = ["/usr/bin/env", "python", CONVERTER_RUN_SCRIPT_PATH,
+        exec_args = [helpers.config.get("PATHS", "python"), CONVERTER_RUN_SCRIPT_PATH,
                      args["url"], args["outputDir"], str(args["jobID"]), "--web-mode"]
         process = subprocess.Popen(exec_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         yield self.send_job_started_notification(job_ID, title, image_URL)

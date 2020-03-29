@@ -355,7 +355,8 @@ additional_serialization_classes:
 
 preserved_interfaces:
     [Brick, BroadcastMessage, Converter, LoopBeginBrick, MindstormsSensor,
-    MindstormsCommand, ScriptBrick, UserVariableBrickInterface, Nameable, UserData]
+    MindstormsCommand, ScriptBrick, UserVariableBrickInterface, Nameable, UserData,
+    Serializable]
 
 additional_helper_classes:
     - BroadcastMessage

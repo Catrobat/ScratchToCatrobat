@@ -44,11 +44,15 @@ from scratchtocatrobat.converter import converter
 assert System.getProperty("python.security.respectJavaAccessibility") == 'false', "Jython registry property 'python.security.respectJavaAccessibility' must be set to 'false'"
 
 TEST_PROJECT_URL_TO_ID_MAP = {
-    'https://scratch.mit.edu/projects/10132588/': '10132588',  # dance back
+    # scratch2 projects
+    'https://scratch.mit.edu/projects/10132588/':   '10132588',  # dance back
     # FIXME: fails with error 'http://scratch.mit.edu/projects/10189712/': '10189712',  # kick the ball
-    'https://scratch.mit.edu/projects/10205819/': '10205819',  # dancing in the castle
-    'https://scratch.mit.edu/projects/10530876/': '10530876',  # cat has message
-    'https://scratch.mit.edu/projects/10453283/': '10453283',  # jai ho!
+    'https://scratch.mit.edu/projects/10205819/':   '10205819',  # dancing in the castle
+    'https://scratch.mit.edu/projects/10530876/':   '10530876',  # cat has message
+    'https://scratch.mit.edu/projects/10453283/':   '10453283',  # jai ho!
+    # scratch3 projects
+    'https://scratch.mit.edu/projects/344529508/':  '344529508',  # simple memory
+    'https://scratch.mit.edu/projects/345928950/':  '345928950',  # same image, different objects
 }
 TEST_PROJECT_FILENAME_TO_ID_MAP = {
     'dancing_castle.zip': '10205819',

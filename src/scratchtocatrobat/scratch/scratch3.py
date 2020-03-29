@@ -1,4 +1,6 @@
-from scratchtocatrobat.tools import logger
+from scratchtocatrobat.tools import logger, helpers
+import os
+import json
 
 log = logger.log
 
@@ -181,3 +183,19 @@ class Scratch3Parser(object):
                 block.parentBlock = temp_block_dict[block.parentName]
         except KeyError as ex:
             log.warn("Block: " + ex.message + " does not exist in the block dictionary.")
+
+def is_scratch3_project(scratch_project_dir):
+    if os.path.isfile(scratch_project_dir + '/' + helpers.config.get("SCRATCH", "code_file_name")):
+        with open(os.path.join(scratch_project_dir, helpers.config.get("SCRATCH", "code_file_name")), 'r') as json_file:
+            project_dict = json.load(json_file)
+            if "targets" in project_dict.keys():
+                return True
+            else:
+                return False
+
+def convert_to_scratch2_data(scratch_project_dir):
+    parser = Scratch3Parser(os.path.join(scratch_project_dir, helpers.config.get("SCRATCH", "code_file_name")), scratch_project_dir)
+    scratch2Data = parser.parse_sprites()
+    with open(os.path.join(scratch_project_dir, helpers.config.get("SCRATCH", "code_file_name")), 'w') as json_file:
+        json_file.flush()
+        json.dump(scratch2Data, json_file, sort_keys=True, indent=4, separators=(',', ': '))

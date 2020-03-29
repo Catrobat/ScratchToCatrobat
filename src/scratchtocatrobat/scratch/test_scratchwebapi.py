@@ -22,10 +22,8 @@
 import unittest
 import os
 
-from scratchtocatrobat.tools import common
-from scratchtocatrobat.tools import common_testing
-from scratchtocatrobat.scratch import scratch
-from scratchtocatrobat.scratch import scratchwebapi
+from scratchtocatrobat.tools import common, common_testing
+from scratchtocatrobat.scratch import scratch, scratchwebapi, scratch3
 from datetime import datetime
 
 TEST_PROJECT_ID_TO_TITLE_MAP = {
@@ -271,6 +269,9 @@ class WebApiTest(common_testing.BaseTestCase):
             self._set_testresult_folder_subdir(project_id)
             result_folder_path = self._testresult_folder_path
             scratchwebapi.download_project(project_url, result_folder_path)
+            if scratch3.is_scratch3_project(result_folder_path):
+                scratch3.convert_to_scratch2_data(result_folder_path)
+
             # TODO: replace with verifying function
             assert scratch.Project(result_folder_path) is not None
 
@@ -284,6 +285,8 @@ class WebApiTest(common_testing.BaseTestCase):
         with common.TemporaryDirectory(remove_on_exit=True) as temp_dir:
             for _project_url, project_id in common_testing.TEST_PROJECT_URL_TO_ID_MAP.iteritems():
                 scratchwebapi.download_project_code(project_id, temp_dir)
+                if scratch3.is_scratch3_project(temp_dir):
+                    scratch3.convert_to_scratch2_data(temp_dir)
                 project_file_path = os.path.join(temp_dir, scratch._PROJECT_FILE_NAME)
                 with open(project_file_path, 'r') as project_code_file:
                     project_code_content = project_code_file.read()

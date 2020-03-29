@@ -313,6 +313,7 @@ class _ScratchToCatrobat(object):
         "mouseY": catformula.Sensors.FINGER_Y,
         "timeAndDate": None,
         "touching:": None,
+        "dragMode": None,
 
         # clone
         "createCloneOf": catbricks.CloneBrick,
@@ -443,6 +444,10 @@ def _create_modified_formula_brick(sensor_type, unconverted_formula, catrobat_pr
     return catformula.Formula(traverser._converted_helper_brick_or_formula_element([formula_left_child, formula_right_child], ">"))
 
 def _create_user_brick(context, scratch_function_header, param_values, declare=False):
+    # TODO: remove the next line of code as soon as user bricks are supported by Catrobat
+    # TODO: also check the other TODOs related to this issue (overall three different places in converter.py)
+    # TODO: refactor this function; maybe split the function into definition of user brick script and usage of the brick
+    return catbricks.NoteBrick("Sorry, we currently do not support user bricks in Catrobat!")
     param_labels = context.user_script_declared_labels_map[scratch_function_header]
     assert context is not None and isinstance(context, SpriteContext)
     assert not param_labels or len(param_labels) == len(param_values)
@@ -1071,6 +1076,10 @@ class _ScratchObjectConverter(object):
         for scratch_script in scratch_object.scripts:
             cat_instance = self._catrobat_script_from(scratch_script, sprite, self._catrobat_project,
                                                       sprite_context)
+            # TODO: remove this if and replace "elif" with "if" as soon as user bricks are supported by Catrobat
+            # TODO: also check the other TODOs related to this issue (overall three different places in converter.py)
+            if isinstance(cat_instance, catbricks.NoteBrick):
+                continue
             if not isinstance(cat_instance, catbricks.UserBrick):
                 assert isinstance(cat_instance, catbase.Script)
                 sprite.addScript(cat_instance)
@@ -1236,7 +1245,7 @@ class _ScratchObjectConverter(object):
         if context is None: return
 
         # Display visible variables at start
-        for variable_name in local_sprite_variables:
+        for variable_name in sorted(local_sprite_variables):
             user_variable = catrobat_project.getUserVariable(variable_name) if sprite_name == "Stage" else sprite.getUserVariable(variable_name)
             show_variable_brick = catbricks.ShowTextBrick(context.visible_var_X, context.visible_var_Y)
             show_variable_brick.setUserVariable(user_variable)
@@ -1278,7 +1287,11 @@ class _ScratchObjectConverter(object):
                 ignored_blocks += 1
                 continue
             try:
-                if not isinstance(cat_instance, catbricks.UserBrick):
+                # TODO: remove this if and replace "elif" with "if" as soon as user bricks are supported by Catrobat
+                # TODO: also check the other TODOs related to this issue (overall three different places in converter.py)
+                if isinstance(cat_instance, catbricks.NoteBrick):
+                    continue
+                elif not isinstance(cat_instance, catbricks.UserBrick):
                     assert isinstance(cat_instance, catbase.Script)
                     cat_instance.brickList.add(brick)
                 else:
@@ -1830,6 +1843,81 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         switch_background_brick = self.CatrobatClass()
         switch_background_brick.setLook(matching_looks[0])
         return switch_background_brick
+
+    #returns workaround script for sprites that are draggable at some point. Add workaround only once per sprite.
+    def  _drag_mode_workaround(self, draggable_var):
+        DRAG_NAME_PREFIX = "drag"
+        first_set_bricks = []
+        loop_start_set_bricks = []
+        loop_end_set_bricks = []
+        change_bricks = []
+
+        for coord in ['x', 'y']:
+            drag_stage = catrobat.add_user_variable(self.project, DRAG_NAME_PREFIX + '_stage_' + coord, self.sprite, self.sprite.getName())
+            drag_stage_fe = _variable_for(drag_stage.name)
+            drag_stage_new = catrobat.add_user_variable(self.project, DRAG_NAME_PREFIX + '_stage_new_' + coord, self.sprite, self.sprite.getName())
+            drag_stage_new_fe = _variable_for(drag_stage_new.name)
+            drag_pos = catrobat.add_user_variable(self.project, DRAG_NAME_PREFIX + '_pos_' + coord, self.sprite, self.sprite.getName())
+            drag_pos_fe = _variable_for(drag_pos.name)
+            drag_pos_new = catrobat.add_user_variable(self.project, DRAG_NAME_PREFIX + '_pos_new_' + coord, self.sprite, self.sprite.getName())
+            drag_pos_new_fe = _variable_for(drag_pos_new.name)
+
+            finger_fe = catformula.FormulaElement(catElementType.SENSOR, str(catformula.Sensors.FINGER_X if coord == 'x' else catformula.Sensors.FINGER_Y), None)
+            object_fe = catformula.FormulaElement(catElementType.SENSOR, str(catformula.Sensors.OBJECT_X if coord == 'x' else catformula.Sensors.OBJECT_Y), None)
+
+            first_set_bricks.append(_create_variable_brick(finger_fe, drag_stage, catbricks.SetVariableBrick))
+            first_set_bricks.append(_create_variable_brick(object_fe, drag_pos, catbricks.SetVariableBrick))
+
+            loop_start_set_bricks.append(_create_variable_brick(finger_fe, drag_stage_new, catbricks.SetVariableBrick))
+            loop_start_set_bricks.append(_create_variable_brick(object_fe, drag_pos_new, catbricks.SetVariableBrick))
+            move_fe = catformula.FormulaElement(catElementType.OPERATOR, str(catformula.Operators.PLUS), None)
+            move_pos_diff = catformula.FormulaElement(catElementType.OPERATOR, str(catformula.Operators.MINUS), None)
+            move_pos_diff.setLeftChild(drag_pos_fe)
+            move_pos_diff.setRightChild(drag_pos_new_fe)
+            move_fe.setLeftChild(move_pos_diff)
+            move_stage_diff = catformula.FormulaElement(catElementType.OPERATOR, str(catformula.Operators.MINUS), None)
+            move_stage_diff.setLeftChild(drag_stage_new_fe)
+            move_stage_diff.setRightChild(drag_stage_fe)
+            move_fe.setRightChild(move_stage_diff)
+            change_bricks.append((catbricks.ChangeXByNBrick if coord == 'x' else catbricks.ChangeYByNBrick)(catformula.Formula(move_fe)))
+
+            loop_end_set_bricks.append(_create_variable_brick(drag_stage_new_fe, drag_stage, catbricks.SetVariableBrick))
+            loop_end_set_bricks.append(_create_variable_brick(object_fe, drag_pos, catbricks.SetVariableBrick))
+
+        when_tapped_script = catbase.WhenScript()
+        draggable_var_fe = catformula.FormulaElement(catElementType.USER_VARIABLE, draggable_var.name, None)
+        if_draggable_brick = catbricks.IfThenLogicBeginBrick(catformula.Formula(draggable_var_fe))
+
+        not_touching_fe = catformula.FormulaElement(catElementType.OPERATOR, str(catformula.Operators.LOGICAL_NOT), None)
+        touching_fe = catformula.FormulaElement(catElementType.SENSOR, str(catformula.Sensors.FINGER_TOUCHED), None)
+        not_touching_fe.setRightChild(touching_fe)
+        repeat_until_brick = catbricks.RepeatUntilBrick(catformula.Formula(not_touching_fe))
+
+        wait_brick = catbricks.WaitBrick(5)
+        repeat_until_brick.loopBricks.addAll(loop_start_set_bricks)
+        repeat_until_brick.loopBricks.addAll(change_bricks)
+        repeat_until_brick.loopBricks.addAll(loop_end_set_bricks)
+        repeat_until_brick.loopBricks.add(wait_brick)
+
+        if_draggable_brick.ifBranchBricks.addAll(first_set_bricks)
+        if_draggable_brick.ifBranchBricks.add(repeat_until_brick)
+
+        when_tapped_script.brickList.add(if_draggable_brick)
+        return when_tapped_script
+
+    #replaces set_drag_mode blocks with set user variable "draggable" blocks. Injects workaround script for current sprite if not already added.
+    @_register_handler(_block_name_to_handler_map, "dragMode")
+    def _convert_drag_mode(self):
+        assert len(self.arguments) == 1
+        assert self.arguments[0] in {'draggable', 'not draggable'}
+        draggable_var_name = 'draggable'
+        draggable_var = self.sprite.getUserVariable(draggable_var_name)
+        if not draggable_var:
+            draggable_var = catrobat.add_user_variable(self.project, draggable_var_name, self.sprite, self.sprite.getName())
+            self.sprite.addScript(self._drag_mode_workaround(draggable_var))
+        draggable_fe = catformula.FormulaElement(catElementType.FUNCTION, str(catformula.Functions.TRUE if self.arguments[0] == "draggable" else catformula.Functions.FALSE), None)
+        set_brick = _create_variable_brick(draggable_fe, draggable_var, catbricks.SetVariableBrick)
+        return [set_brick]
 
     @_register_handler(_block_name_to_handler_map, "doIf")
     def _convert_if_block(self):

@@ -21,6 +21,7 @@
 import os
 import unittest
 import re
+from threading import Lock
 
 import org.catrobat.catroid.common as catcommon
 import org.catrobat.catroid.content as catbase
@@ -40,6 +41,7 @@ from scratchtocatrobat.converter import converter
 
 BACKGROUND_LOCALIZED_GERMAN_NAME = "Hintergrund"
 BACKGROUND_ORIGINAL_NAME = "Stage"
+ns_registry_lock = Lock()
 
 
 def create_catrobat_sprite_stub(name=None):
@@ -2081,6 +2083,9 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert catr_bricks[0].getFormulas()[0].getFormulaTree().getElementType() == catElementType.USER_LIST
         assert catr_bricks[0].getFormulas()[0].getFormulaTree().getValue() == self._name_of_test_list
 
+    # TODO: uncomment these tests as soon as Catrobat supports user bricks again.
+    # Note: these tests might have to be refactored together with the tested function.
+    '''
     #call
     def test_can_convert_call_block_user_script_already_defined_simple(self):
         function_header = "number1 %n number1"
@@ -2304,6 +2309,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         param_types = sprite_context.user_script_params_map[function_header]
         assert param_types is not None
         assert expected_param_types == param_types
+    '''
 
     #gotoSpriteOrMouse:
     def test_can_convert_go_to_sprite_block_with_sprite_afterwards(self):
@@ -2406,6 +2412,29 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         [formula] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(formula, catformula.FormulaElement)
         assert formula.value == "OBJECT_SIZE"
+
+    #dragMode
+    def test_can_convert_dragmode_block(self):
+        sprite = create_catrobat_sprite_stub()
+        num_scripts = len(sprite.getScriptList())
+
+        scratch_block = ["dragMode", "draggable"]
+        [setBrick] = self.block_converter._catrobat_bricks_from(scratch_block, sprite)
+        assert setBrick.getUserVariable().getName() == "draggable"
+        assert len(setBrick.getFormulas()) == 1
+        assert setBrick.getFormulas()[0].getFormulaTree().getValue() == "TRUE"
+        assert setBrick.getFormulas()[0].getFormulaTree().getElementType() == catElementType.FUNCTION
+        assert isinstance(setBrick, catbricks.SetVariableBrick)
+        assert len(sprite.getScriptList()) == num_scripts+1
+
+        scratch_block = ["dragMode", "not draggable"]
+        [setBrick] = self.block_converter._catrobat_bricks_from(scratch_block, sprite)
+        assert(setBrick.getUserVariable().getName() == "draggable")
+        assert(len(setBrick.getFormulas()) == 1)
+        assert(setBrick.getFormulas()[0].getFormulaTree().getValue() == "FALSE")
+        assert(setBrick.getFormulas()[0].getFormulaTree().getElementType() == catElementType.FUNCTION)
+        assert isinstance(setBrick, catbricks.SetVariableBrick)
+        assert len(sprite.getScriptList()) == num_scripts+1
 
     def test_can_convert_key_pressed_block(self):
         objectJson = {
@@ -2639,7 +2668,7 @@ class TestConvertProjects(common_testing.ProjectTestCase):
             if re.search('.*}g', child.tag) != None:
                 if 'transform' in child.attrib:
                     assert(child.attrib['transform'] == "matrix(1.5902323722839355, 0, 0, 1.5902323722839355, -0.5, 0.5)")
-        svgtopng._parse_and_rewrite_svg_file("test/res/scratch/Wizard_Spells/3.svg","test/res/scratch/Wizard_Spells/3_changed.svg")
+        svgtopng._parse_and_rewrite_svg_file("test/res/scratch/Wizard_Spells/3.svg","test/res/scratch/Wizard_Spells/3_changed.svg", ns_registry_lock)
         tree = ET.parse("test/res/scratch/Wizard_Spells/3_changed.svg")
         root = tree.getroot()
         for child in root:
@@ -2654,7 +2683,7 @@ class TestConvertProjects(common_testing.ProjectTestCase):
             if re.search('.*}text', child.tag) != None:
                 assert(child.attrib['x'] == '147.5')
                 assert(child.attrib['y'] == '146.1')
-        svgtopng._parse_and_rewrite_svg_file("test/res/scratch/Wizard_Spells/6.svg","test/res/scratch/Wizard_Spells/6_changed.svg")
+        svgtopng._parse_and_rewrite_svg_file("test/res/scratch/Wizard_Spells/6.svg","test/res/scratch/Wizard_Spells/6_changed.svg", ns_registry_lock)
         tree = ET.parse("test/res/scratch/Wizard_Spells/6_changed.svg")
         root = tree.getroot()
         for child in root:

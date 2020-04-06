@@ -815,6 +815,70 @@ class TestScratch3Blocks(unittest.TestCase):
         converted_block = visitBlock(context)
         assert converted_block[0] == "deleteClone"
 
+    ### testcases for pen.py ###################
+    def test_visitClear(self):
+        context = create_block_context("pen_clear")
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "clearPenTrails"
+
+    def test_visitStamp(self):
+        context = create_block_context("pen_stamp")
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "stampCostume"
+
+    def test_visitPenDown(self):
+        context = create_block_context("pen_penDown")
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "putPenDown"
+
+    def test_visitPenUp(self):
+        context = create_block_context("pen_penUp")
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "putPenUp"
+
+    def test_visitSetPenColorToColor(self):
+        context = create_block_context("pen_setPenColorToColor")
+        testblock = context.block
+        addInputOfType(testblock, "COLOR", LiteralType.STRING)
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "penColor:"
+        assert converted_block[1] == "teststring"
+
+    def test_visitSetPenColorParamTo(self):
+        context = create_block_context("pen_setPenColorParamTo")
+        testblock = context.block
+        addInputOfType(testblock, "COLOR_PARAM", LiteralType.STRING)
+        addInputOfType(testblock, "VALUE", LiteralType.INT)
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "setPenParamTo:"
+        assert converted_block[1] == "teststring"
+        assert converted_block[2] == 1234
+
+    def test_visitChangePenColorParamBy(self):
+        context = create_block_context("pen_changePenColorParamBy")
+        testblock = context.block
+        addInputOfType(testblock, "COLOR_PARAM", LiteralType.STRING)
+        addInputOfType(testblock, "VALUE", LiteralType.INT)
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "changePenParamBy:"
+        assert converted_block[1] == "teststring"
+        assert converted_block[2] == 1234
+
+    def test_visitSetPenSizeTo(self):
+        context = create_block_context("pen_setPenSizeTo")
+        testblock = context.block
+        addInputOfType(testblock, "SIZE", LiteralType.INT)
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "penSize:"
+        assert converted_block[1] == 1234
+
+    def test_visitChangePenSizeBy(self):
+        context = create_block_context("pen_changePenSizeBy")
+        testblock = context.block
+        addInputOfType(testblock, "SIZE", LiteralType.INT)
+        converted_block = visitBlock(context)
+        assert converted_block[0] == "changePenSizeBy:"
+        assert converted_block[1] == 1234
 
     def test_visitForever(self):
         context = create_block_context("control_forever")

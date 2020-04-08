@@ -107,29 +107,26 @@ def find_global_or_sprite_user_list_by_name(scene, sprite, list_name):
     return userList
 
 def find_global_user_list_by_name(project, list_name):
-    return project.getDefaultScene().getDataContainer().findProjectList(list_name)
+    return project.getUserList(list_name)
 
-def find_sprite_user_list_by_name(project, sprite, list_name):
-    user_lists = project.getDefaultScene().getDataContainer().getSpriteListMap()[sprite]
-    for user_list in user_lists:
-        if user_list.getName() == list_name:
-            return user_list
-    return None
+def find_sprite_user_list_by_name(sprite, list_name):
+    return sprite.getUserList(list_name)
 
 def user_variable_of(project, variable_name, sprite_name=None):
     '''
     If `sprite_name` is None the project variables are checked.
     '''
-    data_container = project.getDefaultScene().getDataContainer()
     if sprite_name is None:
-        return data_container.findUserVariable(variable_name, data_container.projectVariables)
+        return project.getUserVariable(variable_name)
     else:
         sprite = _sprite_of(project.getDefaultScene(), sprite_name)
-        return data_container.getUserVariable(sprite, variable_name)
+        return sprite.getUserVariable(variable_name)
 
 def create_formula_with_value(variable_value):
     assert variable_value != None
-    if type(variable_value) is int:
+    if type(variable_value) is bool:
+        java_variable_value = java.lang.Integer(int(variable_value))
+    elif type(variable_value) is int:
         java_variable_value = java.lang.Integer(variable_value)
     elif isinstance(variable_value, (float, long)):
         java_variable_value = java.lang.Double(variable_value)
@@ -164,14 +161,13 @@ def add_user_variable(project, variable_name, sprite=None, sprite_name=None):
     return added_user_variable
 
 
-def defined_variable_names_in(project, sprite_name=None, sprite=None):
+def defined_variable_names_in(project, sprite_name=None):
     scene = project.getDefaultScene()
     if sprite_name is None:
-        user_variables = scene.getDataContainer().projectVariables
+        user_variables = project.userVariables
     else:
-        if sprite is None:
-            sprite = _sprite_of(scene, sprite_name)
-        user_variables = scene.getDataContainer().getOrCreateVariableListForSprite(sprite)
+        sprite = _sprite_of(scene, sprite_name)
+        user_variables = sprite.userVariables
     return [user_variable.getName() for user_variable in user_variables]
 
 

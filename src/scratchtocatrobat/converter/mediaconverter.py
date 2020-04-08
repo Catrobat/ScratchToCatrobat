@@ -22,6 +22,7 @@
 import os
 import shutil
 from threading import Thread
+from threading import Lock
 from java.awt import Color
 
 from scratchtocatrobat.tools import logger
@@ -37,6 +38,7 @@ from javax.imageio import ImageIO
 
 MAX_CONCURRENT_THREADS = int(helpers.config.get("MEDIA_CONVERTER", "max_concurrent_threads"))
 log = logger.log
+ns_registry_lock = Lock()
 
 
 class MediaType(object):
@@ -55,7 +57,7 @@ class _MediaResourceConverterThread(Thread):
 
         if media_type == MediaType.UNCONVERTED_SVG:
             # converting svg to png -> new md5 and filename
-            new_src_path = svgtopng.convert(old_src_path, info["rotationCenterX"], info["rotationCenterY"])
+            new_src_path = svgtopng.convert(old_src_path, info["rotationCenterX"], info["rotationCenterY"], ns_registry_lock)
         elif media_type == MediaType.UNCONVERTED_WAV:
             # converting Android-incompatible wav to compatible wav
             new_src_path = wavconverter.convert_to_android_compatible_wav(old_src_path)

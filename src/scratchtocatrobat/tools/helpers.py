@@ -212,20 +212,21 @@ def print_info_or_version_screen(show_version_only, catrobat_language_version):
         exists_color = cli_colors.FAIL if not_exists else cli_colors.OKGREEN
         print("%s[%s]%s %s: %s" % (exists_color, exists_string, cli_colors.ENDC, option, os.path.normpath(entry)))
 
-def _setup_configuration():
+def _setup_configuration(config_file_path = None):
+    if config_file_path is None:
+        config_file_path = os.path.join(CFG_PATH, CFG_DEFAULT_FILE_NAME)
     make_dir_if_not_exists(CFG_PATH)
-    config_default_file_path = os.path.join(CFG_PATH, CFG_DEFAULT_FILE_NAME)
     config_custom_env_file_path = os.path.join(CFG_PATH, CFG_CUSTOM_ENV_FILE_NAME)
 
-    if not os.path.exists(config_default_file_path):
+    if not os.path.exists(config_file_path):
         error("No such file '%s' exists." % CFG_DEFAULT_FILE_NAME)
-    if os.path.isdir(config_default_file_path):
+    if os.path.isdir(config_file_path):
         error("Config file '%s' should be file, but is a directory!" % CFG_DEFAULT_FILE_NAME)
-    if not os.access(config_default_file_path, os.R_OK):
+    if not os.access(config_file_path, os.R_OK):
         error("No file permissions to read helpers file '%s'!" % CFG_DEFAULT_FILE_NAME)
 
     config = CatrobatConfigParser()
-    config.read(config_default_file_path)
+    config.read(config_file_path)
     if os.path.exists(config_custom_env_file_path):
         if os.path.isdir(config_custom_env_file_path):
             error("Config file '%s' should be file, but is a directory!" % CFG_CUSTOM_ENV_FILE_NAME)

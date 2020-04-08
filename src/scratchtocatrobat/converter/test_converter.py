@@ -2513,7 +2513,7 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
 
         key_w = default_scene.spriteList[2]
         assert key_w != None
-        assert key_w.name == 'key w pressed'
+        assert key_w.name == 'key_w_pressed'
 
         scripts = key_w.getScriptList()
         assert len(scripts) == 3
@@ -2575,7 +2575,7 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
 
         broadcast_script = spritescripts[1]
         assert isinstance(broadcast_script, catbase.BroadcastScript)
-        assert broadcast_script.getBroadcastMessage() == 'key space pressed'
+        assert broadcast_script.getBroadcastMessage() == 'key_space_pressed'
 
         sprite_brick_list = spritescripts[1].getBrickList()
         assert len(sprite_brick_list) == 1
@@ -2585,7 +2585,7 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
 
         key_space = default_scene.spriteList[2]
         assert key_space != None
-        assert key_space.name == 'key space pressed'
+        assert key_space.name == 'key_space_pressed'
 
         keyscripts = key_space.getScriptList()
         assert len(keyscripts) == 2
@@ -2596,7 +2596,7 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
 
         broadcast_brick = key_brick_list[0]
         assert isinstance(broadcast_brick, catbricks.BroadcastBrick)
-        assert broadcast_brick.getBroadcastMessage() == 'key space pressed'
+        assert broadcast_brick.getBroadcastMessage() == 'key_space_pressed'
 
 
 

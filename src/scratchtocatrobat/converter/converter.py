@@ -2414,8 +2414,21 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     def _convert_go_to_sprite_or_mouse_block(self):
         [base_sprite], go_to_brick = self.arguments, None
         if base_sprite == "_random_":
-            go_to_brick = self.CatrobatClass()
-            go_to_brick.spinnerSelection = catcommon.BrickValues.GO_TO_RANDOM_POSITION
+            x_root = catformula.FormulaElement(catElementType.FUNCTION, str(catformula.Functions.RAND), None)
+            x_left = catrobat.create_formula_element_with_value(- scratch.STAGE_WIDTH_IN_PIXELS / 2)
+            x_right = catrobat.create_formula_element_with_value(scratch.STAGE_WIDTH_IN_PIXELS / 2)
+            x_root.setLeftChild(x_left)
+            x_root.setRightChild(x_right)
+            x_formula = catformula.Formula(x_root)
+
+            y_root = catformula.FormulaElement(catElementType.FUNCTION, str(catformula.Functions.RAND), None)
+            y_left = catrobat.create_formula_element_with_value(- scratch.STAGE_HEIGHT_IN_PIXELS / 2)
+            y_right = catrobat.create_formula_element_with_value(scratch.STAGE_HEIGHT_IN_PIXELS / 2)
+            y_root.setLeftChild(y_left)
+            y_root.setRightChild(y_right)
+            y_formula = catformula.Formula(y_root)
+
+            go_to_brick = catbricks.PlaceAtBrick(x_formula, y_formula)
         elif isinstance(base_sprite, basestring):
             for sprite in self.scene.spriteList:
                 if sprite.getName() == base_sprite:

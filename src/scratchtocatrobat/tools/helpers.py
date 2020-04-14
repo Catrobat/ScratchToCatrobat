@@ -465,3 +465,39 @@ class ProgressBar(object):
             self._output_stream.write("{}{}{}\n".format(ProgressBar.START_PROGRESS_INDICATOR, \
                                                       round(percentage, 2), \
                                                       ProgressBar.END_PROGRESS_INDICATOR))
+
+
+# create a unique name for a catrobat media file -> name derived from scratch md5-hash
+# since one file might be used for multiple objects, the md5-hash is extended with a unique identifier
+# name used until all files, converted or unconverted, are copied to the catrobat project directory
+def create_catrobat_md5_filename(scratch_md5_name, duplicate_file_set):
+    filename, ext = os.path.splitext(scratch_md5_name)
+    current_filename = filename + "_#0" + ext
+    next_index = 1
+    while current_filename in duplicate_file_set:
+        current_filename = filename + "_#" + str(next_index) + ext
+        next_index += 1
+    duplicate_file_set.add(current_filename)
+    return current_filename
+
+
+class MediaFileIndex:
+    def __init__(self):
+        self.img_idx = 0
+        self.snd_idx = 0
+
+    def increment_image_index(self):
+        self.img_idx += 1
+
+    def increment_sound_index(self):
+        self.snd_idx += 1
+
+    def assign_image_index(self):
+        current_image_index = self.img_idx
+        self.increment_image_index()
+        return current_image_index
+
+    def assign_sound_index(self):
+        current_sound_index = self.snd_idx
+        self.increment_sound_index()
+        return current_sound_index

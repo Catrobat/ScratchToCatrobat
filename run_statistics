@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 #
 #  ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
@@ -44,7 +44,6 @@ if not os.path.isdir(jython_home_dir):
 if not os.path.isfile(jython_exec_path):
     helpers.error("Jython script path '%s' must exist." % jython_exec_path.replace(".bat", "[.bat]"))
 env["PYTHONIOENCODING"] = "utf-8"
-myLocale=locale.setlocale(category=locale.LC_ALL, locale="en_GB.UTF-8")
 
 usage = '''Conversion Statistics of Scratch to Catrobat converter
 
@@ -72,7 +71,7 @@ class Logger(object):
 
     def write(self, message):
         self.terminal.write(message)
-        self.log.write(message.encode('utf-8'))
+        self.log.write(message)
 
     def flush(self):
         pass
@@ -81,6 +80,12 @@ class Logger(object):
 ''' Classes  ############################################################################ '''
 
 class FatalError(object):
+    def __init__(self):
+        self.message = ""
+        self.count = ""
+        self.project_ids = []
+
+class NonFatalError(object):
     def __init__(self):
         self.message = ""
         self.count = ""
@@ -96,6 +101,9 @@ class Statistics(object):
 
         self.fatalErrors = []
         self.number_of_found_crash_causes = 0
+
+        self.nonFatalErrors = []
+        self.numberOfErrors = 0
 
         self.warnings_ = []
         self.number_of_warnings = 0
@@ -143,13 +151,23 @@ def print_statistics(stat):
         print("success rate           no conversions done yet.")
     print("")
     print("warnings               " + str(stat.warnings))
-    print("errors                 " + "total count not yet implemented")
+    print("errors                 " + str(stat.numberOfErrors))
     print_double_separator()
 
     print("Fatal errors that led to conversion crash:")
     print("Found " + str(stat.number_of_found_crash_causes) + " of " + str(stat.failed_conversions) + " total crashes.")
     print_single_separator()
     for error in stat.fatalErrors:
+        print(error.message)
+        print("This error occured " + str(error.count) + " times, in the following projects:")
+        for project in error.project_ids:
+            print(project)
+        print_double_separator()
+    print_double_separator()
+
+    print("Errors that did not lead to conversion crash:")
+    print_single_separator()
+    for error in stat.nonFatalErrors:
         print(error.message)
         print("This error occured " + str(error.count) + " times, in the following projects:")
         for project in error.project_ids:
@@ -168,7 +186,7 @@ project_data_string = "Downloading project from URL: .* to temp dir"
 info_string = " INFO  "
 warning_string = " WARNING  "
 error_string = " ERROR  "
-traceback_string = "traceback"
+traceback_string = "Traceback"
 
 ignore_header = ["Latest Catroid release:", "NEW CATROID RELEASE IS AVAILABLE!",
                  "PLEASE UPDATE THE CLASS HIERARCHY OF THE CONVERTER",
@@ -195,6 +213,73 @@ def add_fatal_error(error_msg, project_id):
         stat.fatalErrors.append(new_error)
     stat.number_of_found_crash_causes += 1
 
+def add_error(error_msg, project_id):
+    msg = error_msg.split("File")
+    msg, counter = message_specific_parsing(msg)
+    if msg == [] or counter == 0:
+        return
+    if len(msg) > 2:
+        error_msg = msg[0] + "...\n  File" + msg[-1]
+    else:
+        error_msg = msg[0]
+        if len(msg) == 2:
+            error_msg += msg[1]
+    error_already_existing = False
+
+    for error in stat.nonFatalErrors:
+        if error_msg == error.message:
+            error.count += counter
+            if project_id not in error.project_ids:
+                error.project_ids.append(project_id)
+            error_already_existing = True
+
+    if not error_already_existing:
+        new_error = NonFatalError()
+        new_error.message = error_msg
+        new_error.count = counter
+        new_error.project_ids.append(project_id)
+        stat.nonFatalErrors.append(new_error)
+
+    stat.numberOfErrors += counter
+
+#add parsing rules here if new difficult to parse errors come along - especially those from image conversion threads
+def message_specific_parsing(msg):
+    svg_to_png_conversion = False
+    get_attribute = False
+    counter = 0
+
+    if "Cannot add default behaviour to sprite object" in msg[0]:
+        msg[0] = "ERROR  Cannot add default behaviour to sprite object"
+    if "__getattribute__ not found on type" in msg[0]:
+        msg[0] = "ERROR  __getattribute__ not found on type Type. See http://bugs.jython.org/issue2487 for details."
+    for i in range(len(msg)):
+        if "svg" in msg[i] or "png" in msg[i] or "SVG" in msg[i] or "PNG" in msg[i] or "subprocess" in msg[i] or "Thread" in msg[i] or "thread" in msg[i]:
+            svg_to_png_conversion = True
+        msg[i] = re.sub(" [^ ]+\.svg", " img.svg", msg[i])
+        msg[i] = re.sub(" [^ ]+\.png", " img.png", msg[i])
+        if "__getattribute__ not found on type" in msg[i] and i > 0:
+            get_attribute = True
+
+    if svg_to_png_conversion:
+        msg, counter = parse_thread_msg(msg, counter)
+    elif get_attribute:
+        msg = []
+    elif msg != []:
+        counter = 1
+
+    return msg, counter
+
+def parse_thread_msg(msg, counter):
+    for i in range(len(msg)):
+        if "ScratchtobatError: SVG to PNG conversion call failed" in msg[i]:
+            counter = counter + 1
+    if counter == 0:
+        msg = []
+    else:
+        msg = ["ScratchtobatError: SVG to PNG conversion call failed"]
+    return msg, counter
+
+
 def find_crashes(foldername, filename, stat):
     checked_scratch_project = "no ID"
     error_msg = ""
@@ -206,16 +291,23 @@ def find_crashes(foldername, filename, stat):
         if conversion_start_string in x:
             if error_msg != "":
                 add_fatal_error(error_msg, checked_scratch_project)
+            error_msg = ""
             checked_scratch_project = "no ID"
         elif re.search(project_data_string, x):
             checked_scratch_project = x.split("/")[4]
         elif conversion_end_string in x or info_string in x or any(str in x for str in ignore_while_conversion):
+            if error_msg != "":
+                add_error(error_msg, checked_scratch_project)
             error_msg = ""
         elif warning_string in x:
             stat.number_of_warnings += 1
+            if error_msg != "":
+                add_error(error_msg, checked_scratch_project)
             error_msg = ""
         elif not any(str in x for str in ignore_header) and not x == "\n":
             if error_string in x:
+                if error_msg != "":
+                    add_error(error_msg, checked_scratch_project)
                 error_msg = ""
                 x = "ERROR" + x.split(error_string)[-1]
             error_msg += x

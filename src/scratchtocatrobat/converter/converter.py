@@ -2097,25 +2097,29 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         #[list_name] = self.arguments
         assert "IMPLEMENT THIS AS SOON AS CATROBAT SUPPORTS THIS!!"
 
-    @_register_handler(_block_name_to_handler_map, "playSound:")
+    @_register_handler(_block_name_to_handler_map, "playSound:", "doPlaySoundAndWait")
     def _convert_sound_block(self):
-        [sound_name], sound_list = self.arguments, self.sprite.getSoundList()
-        sound_data = {sound_info.getName(): sound_info for sound_info in sound_list}.get(sound_name)
-        if not sound_data:
-            log.warning("Sprite does not contain sound with name={}".format(sound_name))
+        [sound_parameter], sound_list = self.arguments, self.sprite.getSoundList()
+        sound_data = {sound_info.getName(): sound_info for sound_info in sound_list}.get(sound_parameter)
+
+        # while scratch allows strings and numbers as parameter for the "play sound"-bricks
+        # pocket code has only the drop down menu for sound selection
+        # until pocket code does not support custom parameters for these bricks the converter selects the first
+        # sound in the list, if available
+        if len(sound_list) == 0:
+            log.warning("The sound list is empty! No sound will be played with this brick!")
+        elif isinstance(sound_parameter, catformula.FormulaElement):
+            log.warning("Pocket code does not support formulas or variables as input for the \"play sound\"-bricks. "\
+                        "Using the first sound in the sound list instead!")
+            sound_data = sound_list[0]
+        elif isinstance(sound_parameter, unicode) and not sound_data:
+            log.warning("Sprite does not contain sound with name=\"{}\". ".format(sound_parameter) + \
+                        "Using the first sound in the sound list instead!")
+            sound_data = sound_list[0]
+
         play_sound_brick = self.CatrobatClass()
         play_sound_brick.setSound(sound_data)
         return play_sound_brick
-
-    @_register_handler(_block_name_to_handler_map, "doPlaySoundAndWait")
-    def _convert_sound_and_wait_block(self):
-        [sound_name], sound_list = self.arguments, self.sprite.getSoundList()
-        sound_data = {sound_info.getName(): sound_info for sound_info in sound_list}.get(sound_name)
-        if not sound_data:
-            log.warning("Sprite does not contain sound with name={}".format(sound_name))
-        play_sound_and_wait_brick = self.CatrobatClass()
-        play_sound_and_wait_brick.setSound(sound_data)
-        return play_sound_and_wait_brick
 
     @_register_handler(_block_name_to_handler_map, "setGraphicEffect:to:")
     def _convert_set_graphic_effect_block(self):

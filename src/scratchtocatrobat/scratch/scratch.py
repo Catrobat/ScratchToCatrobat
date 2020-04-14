@@ -187,7 +187,7 @@ class Object(common.DictAccessWrapper):
             return new_block_list
 
         for script in self.scripts:
-            if has_key_pressed_block(script.blocks): 
+            if has_key_pressed_block(script.blocks):
                 script.blocks = replace_key_pressed_blocks(script.blocks)
                 workaround_info[ADD_KEY_PRESSED_SCRIPT_KEY] = key_pressed_keys
                 # rebuild ScriptElement tree
@@ -199,8 +199,8 @@ class Object(common.DictAccessWrapper):
         def has_distance_to_object_block(block_list, all_sprite_names):
             for block in block_list:
                 if isinstance(block, list) \
-                and ((block[0] == 'distanceTo:' and block[1] in (all_sprite_names) + ['_mouse_']) \
-                     or has_distance_to_object_block(block, all_sprite_names)):
+                        and ((block[0] == 'distanceTo:' and block[1] in (all_sprite_names) + ['_mouse_']) \
+                             or has_distance_to_object_block(block, all_sprite_names)):
                     return True
             return False
 
@@ -213,14 +213,14 @@ class Object(common.DictAccessWrapper):
                         # between both sprite objects
                         new_block_list += [
                             ["computeFunction:of:", "sqrt", ["+",
-                              ["*",
-                                ["()", ["-", ["xpos"], ["readVariable", S2CC_POSITION_X_VARIABLE_NAME_PREFIX + block[1]]]],
-                                ["()", ["-", ["xpos"], ["readVariable", S2CC_POSITION_X_VARIABLE_NAME_PREFIX + block[1]]]]
-                              ], ["*",
-                                ["()", ["-", ["ypos"], ["readVariable", S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + block[1]]]],
-                                ["()", ["-", ["ypos"], ["readVariable", S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + block[1]]]]
-                              ]
-                            ]]
+                                                             ["*",
+                                                              ["()", ["-", ["xpos"], ["readVariable", S2CC_POSITION_X_VARIABLE_NAME_PREFIX + block[1]]]],
+                                                              ["()", ["-", ["xpos"], ["readVariable", S2CC_POSITION_X_VARIABLE_NAME_PREFIX + block[1]]]]
+                                                              ], ["*",
+                                                                  ["()", ["-", ["ypos"], ["readVariable", S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + block[1]]]],
+                                                                  ["()", ["-", ["ypos"], ["readVariable", S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + block[1]]]]
+                                                                  ]
+                                                             ]]
                         ]
                         positions_needed_for_sprite_names.add(block[1])
                         if block[1] == "_mouse_":
@@ -238,6 +238,63 @@ class Object(common.DictAccessWrapper):
                 script.blocks = replace_distance_to_object_blocks(script.blocks, positions_needed_for_sprite_names)
             # parse again ScriptElement tree
             script.script_element = ScriptElement.from_raw_block(script.blocks)
+
+        ############################################################################################
+        # glide to sprite/mouse-pointer/random-position workaround
+        ############################################################################################
+        def has_glide_to_sprite_script(block_list, all_sprite_names):
+            for block in block_list:
+                if isinstance(block, list) and (block[0] == 'glideTo:' \
+                        and block[-1] in all_sprite_names + ['_mouse_', '_random_'] \
+                        or has_glide_to_sprite_script(block, all_sprite_names)):
+                    return True
+            return False
+
+        def add_glide_to_workaround_script(block_list, positions_needed_for_sprite_names):
+            glide_to_workaround_bricks = []
+            for block in block_list:
+                if isinstance(block, list):
+                    if block[0] == 'glideTo:':
+                        sprite_name = block[-1]
+                        time_in_sec = block[1]
+                        random_pos = False
+                        if sprite_name == "_random_":
+                            random_pos = True
+                        elif sprite_name == "_mouse_":
+                            workaround_info[ADD_MOUSE_SPRITE] = True
+                        else:
+                            positions_needed_for_sprite_names.add(sprite_name)
+
+                        if random_pos:
+                            left_x, right_x = -STAGE_WIDTH_IN_PIXELS / 2, STAGE_WIDTH_IN_PIXELS / 2
+                            lower_y, upper_y = -STAGE_HEIGHT_IN_PIXELS / 2, STAGE_HEIGHT_IN_PIXELS / 2
+                            glide_to_workaround_bricks += [[
+                                "glideSecs:toX:y:elapsed:from:",
+                                time_in_sec,
+                                ["randomFrom:to:", left_x, right_x],
+                                ["randomFrom:to:", lower_y, upper_y]
+                            ]]
+                        else:
+                            x_pos_var_name = S2CC_POSITION_X_VARIABLE_NAME_PREFIX + sprite_name
+                            y_pos_var_name = S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + sprite_name
+                            glide_to_workaround_bricks += [[
+                                "glideSecs:toX:y:elapsed:from:",
+                                time_in_sec,
+                                ["readVariable", x_pos_var_name],
+                                ["readVariable", y_pos_var_name]
+                            ]]
+                    else:
+                        glide_to_workaround_bricks += [add_glide_to_workaround_script(block, positions_needed_for_sprite_names)]
+                else:
+                    glide_to_workaround_bricks += [block]
+            return glide_to_workaround_bricks
+
+        for script in self.scripts:
+            if has_glide_to_sprite_script(script.blocks, all_sprite_names):
+                script.blocks = add_glide_to_workaround_script(script.blocks, positions_needed_for_sprite_names)
+            script.script_element = ScriptElement.from_raw_block(script.blocks)
+
+        # save which sprites need position tracking from 'distanceTo'- and 'glideTo'-bricks
         workaround_info[ADD_POSITION_SCRIPT_TO_OBJECTS_KEY] = positions_needed_for_sprite_names
 
         ############################################################################################
@@ -380,7 +437,6 @@ class RawProject(Object):
 
         for destination_sprite_name in position_script_to_be_added:
             if destination_sprite_name == "_mouse_": continue
-
             sprite_object = sprite_name_sprite_mapping[destination_sprite_name]
             assert sprite_object is not None
             self._add_update_position_script_to_object(sprite_object)
@@ -413,9 +469,9 @@ class RawProject(Object):
         # update position script
         script_blocks = [
             ["doForever", [
-              ["setVar:to:", position_x_var_name, ["xpos"]],
-              ["setVar:to:", position_y_var_name, ["ypos"]],
-              ["wait:elapsed:from:", UPDATE_HELPER_VARIABLE_TIMEOUT]
+                ["setVar:to:", position_x_var_name, ["xpos"]],
+                ["setVar:to:", position_y_var_name, ["ypos"]],
+                ["wait:elapsed:from:", UPDATE_HELPER_VARIABLE_TIMEOUT]
             ]]
         ]
         sprite_object.scripts += [Script([0, 0, [[SCRIPT_GREEN_FLAG]] + script_blocks])]
@@ -449,8 +505,8 @@ class RawProject(Object):
         # timer counter script
         script_blocks = [
             ["doForever", [
-              ["changeVar:by:", S2CC_TIMER_VARIABLE_NAME, UPDATE_HELPER_VARIABLE_TIMEOUT],
-              ["wait:elapsed:from:", UPDATE_HELPER_VARIABLE_TIMEOUT]
+                ["changeVar:by:", S2CC_TIMER_VARIABLE_NAME, UPDATE_HELPER_VARIABLE_TIMEOUT],
+                ["wait:elapsed:from:", UPDATE_HELPER_VARIABLE_TIMEOUT]
             ]]
         ]
         self.objects[0].scripts += [Script([0, 0, [[SCRIPT_GREEN_FLAG]] + script_blocks])]
@@ -563,12 +619,12 @@ class RawProject(Object):
                 is_binary_string = lambda bytesdata: bool(bytesdata.translate(None, textchars))
                 fp.seek(0, 0) # set file pointer back to the beginning of the file
                 if is_binary_string(fp.read(1024)): # check first 1024 bytes
-                    raise EnvironmentError("Invalid JSON file. The project's code-file "\
-                            "seems to be a binary file. Project might be very old "\
-                            "Scratch project. Scratch projects lower than 2.0 are "\
-                            "not supported!")
+                    raise EnvironmentError("Invalid JSON file. The project's code-file " \
+                                           "seems to be a binary file. Project might be very old " \
+                                           "Scratch project. Scratch projects lower than 2.0 are " \
+                                           "not supported!")
                 else:
-                    raise EnvironmentError("Invalid JSON file. But the project's "\
+                    raise EnvironmentError("Invalid JSON file. But the project's " \
                                            "code-file seems to be no binary file...")
 
     @classmethod
@@ -626,7 +682,7 @@ class Project(RawProject):
 
             # self.name = name if name is not None else scratchwebapi.getMetaDataEntry(self.project_id, "title")
 
-            self.instructions, self.notes_and_credits, self.automatic_screenshot_image_url =\
+            self.instructions, self.notes_and_credits, self.automatic_screenshot_image_url = \
                 scratchwebapi.getMetaDataEntry(self.project_id, "instructions", "description", "image")
             # self.instructions = scratchwebapi.getMetaDataEntry(self.project_id, "instructions")
             # self.notes_and_credits = scratchwebapi.getMetaDataEntry(self.project_id, "description")
@@ -811,7 +867,7 @@ class Script(object):
             for (block_arg_index, block_arg) in enumerate(block_args):
                 other_block_arg = other_block_args[block_arg_index]
                 if type(block_arg) != type(other_block_arg) \
-                and not (isinstance(block_arg, (str, unicode)) and isinstance(block_arg, (str, unicode))):
+                        and not (isinstance(block_arg, (str, unicode)) and isinstance(block_arg, (str, unicode))):
                     return False
 
                 if isinstance(block_arg, list):

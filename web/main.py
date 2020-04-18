@@ -58,8 +58,6 @@ sys.setdefaultencoding('utf-8') #@UndefinedVariable
 MAX_WAIT_SECONDS_BEFORE_SHUTDOWN = int(helpers.config.get("WEBSERVER", "max_wait_seconds_before_shutdown"))
 CERTIFICATE_PATH = helpers.config.get("JOBMONITOR_SERVER", "certificate_path")
 CERTIFICATE_KEY_PATH = helpers.config.get("JOBMONITOR_SERVER", "certificate_key_path")
-WEBSERVER_CERTIFICATE_PATH = helpers.config.get("WEBSERVER", "certificate_path")
-WEBSERVER_CERTIFICATE_KEY_PATH = helpers.config.get("WEBSERVER", "certificate_key_path")
 WEBSERVER_PORT = helpers.config.get("WEBSERVER", "port")
 WEBSERVER_DEBUG_MODE_ENABLED = str(helpers.config.get("WEBSERVER", "debug")) in {"True", "1"}
 WEBSERVER_COOKIE_SECRET = str(helpers.config.get("WEBSERVER", "cookie_secret"))
@@ -72,10 +70,12 @@ def sig_handler(sig, frame):
     tornado.ioloop.IOLoop.instance().add_callback_from_signal(shutdown)
 
 def shutdown():
-    _logger.info('Stopping TCP server')
-    tcp_server.stop()
-    _logger.info('Stopping HTTP server')
-    web_server.stop()
+    if 'tcp_server' in globals():
+        _logger.info('Stopping TCP server')
+        tcp_server.stop()
+    if 'web_server' in globals():
+        _logger.info('Stopping HTTP server')
+        web_server.stop()
     _logger.info('Will shutdown in %s seconds ...', MAX_WAIT_SECONDS_BEFORE_SHUTDOWN)
     io_loop = tornado.ioloop.IOLoop.instance()
     deadline = time.time() + MAX_WAIT_SECONDS_BEFORE_SHUTDOWN
@@ -87,7 +87,8 @@ def shutdown():
             io_loop.add_timeout(now + 1, stop_io_loop)
         else:
             io_loop.stop()
-            tcp_io_loop.stop()
+            if 'tcp_io_loop' in globals():
+                tcp_io_loop.stop()
             _logger.info('Shutdown IO Loops')
 
     stop_io_loop()
@@ -137,18 +138,12 @@ def main():
                 _logger.warn("-"*80)
             else:
                 _logger.warn("-"*80)
-                _logger.warn(" "*10 + "!!! PRODCTION MODE ENABLED !!!")
+                _logger.warn(" "*10 + "!!! PRODUCTION MODE ENABLED !!!")
                 _logger.warn("-"*80)
 
             webapp = converterwebapp.ConverterWebApp(**settings)
-            webapp.listen(80)
-
-            ssl_options = {
-                "certfile" : WEBSERVER_CERTIFICATE_PATH,
-                "keyfile" : WEBSERVER_CERTIFICATE_KEY_PATH
-            }
             global web_server
-            web_server = converterhttpserver.ConverterHTTPServer(webapp, ssl_options=ssl_options)
+            web_server = converterhttpserver.ConverterHTTPServer(webapp)
             web_server.listen(WEBSERVER_PORT)
 
         # set up job monitor server

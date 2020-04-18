@@ -35,6 +35,6 @@ import tornado.httpserver
 _logger = logging.getLogger(__name__)
 
 class ConverterHTTPServer(tornado.httpserver.HTTPServer):
-    def __init__(self, app, ssl_options=None):
-        super(ConverterHTTPServer, self).__init__(app, ssl_options)
+    def __init__(self, app):
+        super(ConverterHTTPServer, self).__init__(app)
         _logger.info("Converter HTTP Server started")

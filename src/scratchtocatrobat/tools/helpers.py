@@ -245,91 +245,6 @@ def _setup_configuration(config_file_path = None):
         config = config_env
     return config
 
-def inject_git_commmit_hook():
-    git_dir = os.path.join(APP_PATH, ".git")
-    if not os.path.isdir(git_dir): # abort, this seems to be no valid git repository...
-        return
-
-    hook_dir_path = os.path.join(git_dir, "hooks")
-    make_dir_if_not_exists(hook_dir_path)
-    hook_path = os.path.join(hook_dir_path, "pre-commit")
-
-    config_default_file_path = os.path.normpath(os.path.join(CFG_PATH, CFG_DEFAULT_FILE_NAME))
-    config_custom_env_file_path = os.path.normpath(os.path.join(CFG_PATH, CFG_CUSTOM_ENV_FILE_NAME))
-
-    def formatted_shell_script_code(content):
-        lines = content.split('\n')
-        formatted_lines = []
-        ignore_line_indentation = False
-        python_code_line_indentation = -1
-        update_python_code_line_indentation = False
-        for line in lines[1:]: # skip first line
-            if "<<EOF" in line:
-                ignore_line_indentation = True
-            elif "EOF" in line:
-                ignore_line_indentation = False
-            if update_python_code_line_indentation:
-                index = 0
-                for c in line:
-                    if c is not " ":
-                        break
-                    index += 1
-                update_python_code_line_indentation = False
-                python_code_line_indentation = index
-            if ignore_line_indentation and python_code_line_indentation != -1:
-                line = line[python_code_line_indentation:]
-            else:
-                line = line.lstrip()
-            formatted_lines.append(line + '\n')
-            if ignore_line_indentation and python_code_line_indentation == -1:
-                update_python_code_line_indentation = True
-        return ''.join(formatted_lines)
-
-    shell_script_code = """
-        #!/bin/sh
-        PROJECT_DIR=`pwd`
-        CONFIG_DEFAULT_FILE_PATH="%s"
-        CONFIG_CUSTOM_ENV_FILE_PATH="%s"
-        branchName=`/usr/bin/env git symbolic-ref HEAD | sed -e 's,.*/\\(.*\\),\\1,'`
-        gitCount=`/usr/bin/env git rev-list $branchName |wc -l | sed 's/^ *//;s/ *$//'`
-        buildNumber="$((gitCount + 1))"
-
-        /usr/bin/env python2 - <<EOF
-            def update_build_number(config_file_name, number):
-                # TODO: regex...
-                content = open(config_file_name).read()
-                search_str = "build_number:"
-                start_pos = content.find(search_str)
-                if start_pos == -1:
-                    return # not found...
-                else:
-                    start_pos += len(search_str)
-                end_pos = content.find("\\n", start_pos)
-                old_build_no_str = "{0}{1}".format(search_str, content[start_pos:end_pos])
-                new_build_no_str = "{0}  {1}".format(search_str, number)
-                content = content.replace(old_build_no_str, new_build_no_str)
-                with open(config_file_name, 'w') as config_file:
-                    config_file.write(content)
-            update_build_number("${CONFIG_DEFAULT_FILE_PATH}", "${buildNumber}")
-            import os
-            if os.path.isfile("${CONFIG_CUSTOM_ENV_FILE_PATH}"):
-                update_build_number("${CONFIG_CUSTOM_ENV_FILE_PATH}", "${buildNumber}")
-        EOF
-
-        # Add modified config file to the staging area
-        # NOTE: Only the default config file is part of the repository!
-        cd ${PROJECT_DIR}
-        if [ -f "$CONFIG_DEFAULT_FILE_PATH" ]; then
-        /usr/bin/env git add ${CONFIG_DEFAULT_FILE_PATH}
-        fi
-        exit 0
-    """ % (config_default_file_path, config_custom_env_file_path)
-
-    formatted_shell_script_code = formatted_shell_script_code(shell_script_code)
-    with open(hook_path, "w") as shell_script_file:
-        shell_script_file.write(formatted_shell_script_code)
-    os.chmod(hook_path, 0755)
-
 config = _setup_configuration()
 
 JYTHON_RESPECT_JAVA_ACCESSIBILITY_PROPERTY = "python.security.respectJavaAccessibility"
@@ -465,3 +380,39 @@ class ProgressBar(object):
             self._output_stream.write("{}{}{}\n".format(ProgressBar.START_PROGRESS_INDICATOR, \
                                                       round(percentage, 2), \
                                                       ProgressBar.END_PROGRESS_INDICATOR))
+
+
+# create a unique name for a catrobat media file -> name derived from scratch md5-hash
+# since one file might be used for multiple objects, the md5-hash is extended with a unique identifier
+# name used until all files, converted or unconverted, are copied to the catrobat project directory
+def create_catrobat_md5_filename(scratch_md5_name, duplicate_file_set):
+    filename, ext = os.path.splitext(scratch_md5_name)
+    current_filename = filename + "_#0" + ext
+    next_index = 1
+    while current_filename in duplicate_file_set:
+        current_filename = filename + "_#" + str(next_index) + ext
+        next_index += 1
+    duplicate_file_set.add(current_filename)
+    return current_filename
+
+
+class MediaFileIndex:
+    def __init__(self):
+        self.img_idx = 0
+        self.snd_idx = 0
+
+    def increment_image_index(self):
+        self.img_idx += 1
+
+    def increment_sound_index(self):
+        self.snd_idx += 1
+
+    def assign_image_index(self):
+        current_image_index = self.img_idx
+        self.increment_image_index()
+        return current_image_index
+
+    def assign_sound_index(self):
+        current_sound_index = self.snd_idx
+        self.increment_sound_index()
+        return current_sound_index

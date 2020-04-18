@@ -2341,8 +2341,10 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         test_sprite_name = "_random_"
         scratch_block = ["gotoSpriteOrMouse:", test_sprite_name]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        assert isinstance(catr_brick, catbricks.GoToBrick)
-        assert catr_brick.spinnerSelection == catcommon.BrickValues.GO_TO_RANDOM_POSITION
+        assert isinstance(catr_brick, catbricks.PlaceAtBrick)
+        [x_formula, y_formula] = catr_brick.getFormulas()
+        assert(x_formula.getFormulaTree().value == str(catformula.Functions.RAND))
+        assert(y_formula.getFormulaTree().value == str(catformula.Functions.RAND))
 
     #pointTowards:
     def test_can_convert_point_towards_block_basic(self):
@@ -2511,7 +2513,7 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
 
         key_w = default_scene.spriteList[2]
         assert key_w != None
-        assert key_w.name == 'key w pressed'
+        assert key_w.name == 'key_w_pressed'
 
         scripts = key_w.getScriptList()
         assert len(scripts) == 3
@@ -2573,7 +2575,7 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
 
         broadcast_script = spritescripts[1]
         assert isinstance(broadcast_script, catbase.BroadcastScript)
-        assert broadcast_script.getBroadcastMessage() == 'key space pressed'
+        assert broadcast_script.getBroadcastMessage() == 'key_space_pressed'
 
         sprite_brick_list = spritescripts[1].getBrickList()
         assert len(sprite_brick_list) == 1
@@ -2583,7 +2585,7 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
 
         key_space = default_scene.spriteList[2]
         assert key_space != None
-        assert key_space.name == 'key space pressed'
+        assert key_space.name == 'key_space_pressed'
 
         keyscripts = key_space.getScriptList()
         assert len(keyscripts) == 2
@@ -2594,7 +2596,7 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
 
         broadcast_brick = key_brick_list[0]
         assert isinstance(broadcast_brick, catbricks.BroadcastBrick)
-        assert broadcast_brick.getBroadcastMessage() == 'key space pressed'
+        assert broadcast_brick.getBroadcastMessage() == 'key_space_pressed'
 
 
 

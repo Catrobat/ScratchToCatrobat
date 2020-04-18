@@ -270,10 +270,12 @@ class WebApiTest(common_testing.BaseTestCase):
             result_folder_path = self._testresult_folder_path
             scratchwebapi.download_project(project_url, result_folder_path)
             if scratch3.is_scratch3_project(result_folder_path):
-                scratch3.convert_to_scratch2_data(result_folder_path)
+                scratch3.convert_to_scratch2_data(result_folder_path, project_id)
 
             # TODO: replace with verifying function
-            assert scratch.Project(result_folder_path) is not None
+            project = scratch.Project(result_folder_path)
+            assert project is not None
+            assert project.project_id == project_id
 
     def test_fail_download_project_on_wrong_url(self):
         for wrong_url in ['http://www.tugraz.at', 'http://www.ist.tugraz.at/', 'http://scratch.mit.edu/', 'http://scratch.mit.edu/projects']:
@@ -286,7 +288,7 @@ class WebApiTest(common_testing.BaseTestCase):
             for _project_url, project_id in common_testing.TEST_PROJECT_URL_TO_ID_MAP.iteritems():
                 scratchwebapi.download_project_code(project_id, temp_dir)
                 if scratch3.is_scratch3_project(temp_dir):
-                    scratch3.convert_to_scratch2_data(temp_dir)
+                    scratch3.convert_to_scratch2_data(temp_dir, project_id)
                 project_file_path = os.path.join(temp_dir, scratch._PROJECT_FILE_NAME)
                 with open(project_file_path, 'r') as project_code_file:
                     project_code_content = project_code_file.read()

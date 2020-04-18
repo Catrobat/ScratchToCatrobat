@@ -108,7 +108,7 @@ def _placeholder_for_unmapped_blocks_to(*args):
     return catbricks.NoteBrick(UNSUPPORTED_SCRATCH_BLOCK_NOTE_MESSAGE_PREFIX_TEMPLATE.format(_arguments_string(args)))
 
 def _key_to_broadcast_message(key_name):
-    return "key " + key_name + " pressed"
+    return "key_" + key_name + "_pressed"
 
 def _get_existing_sprite_with_name(sprite_list, name):
     for sprite in sprite_list:
@@ -578,15 +578,15 @@ def _key_filename_for(key):
     assert key is not None
     key_path = _key_image_path_for(key)
     # TODO: extract method, already used once
-    return common.md5_hash(key_path) + "_" + _key_to_broadcast_message(key) + os.path.splitext(key_path)[1]
+    key_name = _key_to_broadcast_message(key).replace(" ", "_")
+    _, ext =  os.path.splitext(key_path)
+    return key_name + ext
 
-def _generate_mouse_filename():
-    mouse_path = _mouse_image_path()
-    return common.md5_hash(mouse_path) + "_" + MOUSE_SPRITE_FILENAME
+def _get_mouse_filename():
+    return MOUSE_SPRITE_FILENAME
 
 def generated_variable_name(variable_name):
     return _GENERATED_VARIABLE_PREFIX + variable_name
-
 
 def _sound_length_variable_name_for(resource_name):
     return generated_variable_name(_SOUND_LENGTH_VARIABLE_NAME_FORMAT.format(resource_name))
@@ -669,8 +669,10 @@ class Converter(object):
             catrobat_scene.project.userLists.add(global_user_list)
 
     def _add_converted_sprites_to(self, catrobat_scene):
+        # avoid duplicate filenames -> extend with unique identifier
+        duplicate_filename_set = set()
         for scratch_object in self.scratch_project.objects:
-            catr_sprite = self._scratch_object_converter(scratch_object)
+            catr_sprite = self._scratch_object_converter(scratch_object, duplicate_filename_set)
             catrobat_scene.addSprite(catr_sprite)
 
     def add_cursor_sprite_to(self, catrobat_scene, upcoming_sprites):
@@ -685,7 +687,7 @@ class Converter(object):
 
         look = catcommon.LookData()
         look.setName(MOUSE_SPRITE_NAME)
-        mouse_filename = _generate_mouse_filename()
+        mouse_filename = _get_mouse_filename()
         look.fileName = mouse_filename
         sprite.getLookList().add(look)
 
@@ -1017,10 +1019,10 @@ class _ScratchObjectConverter(object):
         self._progress_bar = progress_bar
         self._context = context
 
-    def __call__(self, scratch_object):
-        return self._catrobat_sprite_from(scratch_object)
+    def __call__(self, scratch_object, duplicate_filename_set):
+        return self._catrobat_sprite_from(scratch_object, duplicate_filename_set)
 
-    def _catrobat_sprite_from(self, scratch_object):
+    def _catrobat_sprite_from(self, scratch_object, duplicate_filename_set):
         if not isinstance(scratch_object, scratch.Object):
             raise common.ScratchtobatError("Input must be of type={}, but is={}".format(scratch.Object, type(scratch_object)))
         sprite_name = scratch_object.name
@@ -1054,10 +1056,10 @@ class _ScratchObjectConverter(object):
                 costume_resolution = current_costume_resolution
             elif current_costume_resolution != costume_resolution:
                 log.warning("Costume resolution not same for all costumes")
-            sprite_looks.add(self._catrobat_look_from(scratch_costume))
+            sprite_looks.add(self._catrobat_look_from(scratch_costume, duplicate_filename_set))
         sprite_sounds = sprite.getSoundList()
         for scratch_sound in scratch_object.get_sounds():
-            sprite_sounds.add(self._catrobat_sound_from(scratch_sound))
+            sprite_sounds.add(self._catrobat_sound_from(scratch_sound, duplicate_filename_set))
 
         if not scratch_object.is_stage() and scratch_object.get_lists() is not None:
             for user_list_data in scratch_object.get_lists():
@@ -1110,7 +1112,7 @@ class _ScratchObjectConverter(object):
         return sprite
 
     @staticmethod
-    def _catrobat_look_from(scratch_costume):
+    def _catrobat_look_from(scratch_costume, duplicate_filename_set):
         if not scratch_costume or not (isinstance(scratch_costume, dict) and all(_ in scratch_costume for _ in (scratchkeys.COSTUME_MD5, scratchkeys.COSTUME_NAME))):
             raise common.ScratchtobatError("Wrong input, must be costume dict: {}".format(scratch_costume))
         look = catcommon.LookData()
@@ -1121,12 +1123,11 @@ class _ScratchObjectConverter(object):
 
         assert scratchkeys.COSTUME_MD5 in scratch_costume
         costume_md5_filename = scratch_costume[scratchkeys.COSTUME_MD5]
-        costume_resource_name = scratch_costume[scratchkeys.COSTUME_NAME]
-        look.fileName = (mediaconverter.catrobat_resource_file_name_for(costume_md5_filename, costume_resource_name))
+        look.fileName = helpers.create_catrobat_md5_filename(costume_md5_filename, duplicate_filename_set)
         return look
 
     @staticmethod
-    def _catrobat_sound_from(scratch_sound):
+    def _catrobat_sound_from(scratch_sound, duplicate_filename_set):
         soundinfo = catcommon.SoundInfo()
 
         assert scratchkeys.SOUND_NAME in scratch_sound
@@ -1135,8 +1136,7 @@ class _ScratchObjectConverter(object):
 
         assert scratchkeys.SOUND_MD5 in scratch_sound
         sound_md5_filename = scratch_sound[scratchkeys.SOUND_MD5]
-        sound_resource_name = scratch_sound[scratchkeys.SOUND_NAME]
-        soundinfo.fileName = (mediaconverter.catrobat_resource_file_name_for(sound_md5_filename, sound_resource_name))
+        soundinfo.fileName = helpers.create_catrobat_md5_filename(sound_md5_filename, duplicate_filename_set)
         return soundinfo
 
     @staticmethod
@@ -1403,7 +1403,7 @@ class ConvertedProject(object):
             for sprite in catrobat_program.getDefaultScene().spriteList:
                 if sprite.name == MOUSE_SPRITE_NAME:
                     mouse_img_path = _mouse_image_path()
-                    shutil.copyfile(mouse_img_path, os.path.join(images_path, _generate_mouse_filename()))
+                    shutil.copyfile(mouse_img_path, os.path.join(images_path, _get_mouse_filename()))
                     break
 
         def download_automatic_screenshot_if_available(output_dir, scratch_project):
@@ -2097,25 +2097,29 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         #[list_name] = self.arguments
         assert "IMPLEMENT THIS AS SOON AS CATROBAT SUPPORTS THIS!!"
 
-    @_register_handler(_block_name_to_handler_map, "playSound:")
+    @_register_handler(_block_name_to_handler_map, "playSound:", "doPlaySoundAndWait")
     def _convert_sound_block(self):
-        [sound_name], sound_list = self.arguments, self.sprite.getSoundList()
-        sound_data = {sound_info.getName(): sound_info for sound_info in sound_list}.get(sound_name)
-        if not sound_data:
-            log.warning("Sprite does not contain sound with name={}".format(sound_name))
+        [sound_parameter], sound_list = self.arguments, self.sprite.getSoundList()
+        sound_data = {sound_info.getName(): sound_info for sound_info in sound_list}.get(sound_parameter)
+
+        # while scratch allows strings and numbers as parameter for the "play sound"-bricks
+        # pocket code has only the drop down menu for sound selection
+        # until pocket code does not support custom parameters for these bricks the converter selects the first
+        # sound in the list, if available
+        if len(sound_list) == 0:
+            log.warning("The sound list is empty! No sound will be played with this brick!")
+        elif isinstance(sound_parameter, catformula.FormulaElement):
+            log.warning("Pocket code does not support formulas or variables as input for the \"play sound\"-bricks. "\
+                        "Using the first sound in the sound list instead!")
+            sound_data = sound_list[0]
+        elif isinstance(sound_parameter, unicode) and not sound_data:
+            log.warning("Sprite does not contain sound with name=\"{}\". ".format(sound_parameter) + \
+                        "Using the first sound in the sound list instead!")
+            sound_data = sound_list[0]
+
         play_sound_brick = self.CatrobatClass()
         play_sound_brick.setSound(sound_data)
         return play_sound_brick
-
-    @_register_handler(_block_name_to_handler_map, "doPlaySoundAndWait")
-    def _convert_sound_and_wait_block(self):
-        [sound_name], sound_list = self.arguments, self.sprite.getSoundList()
-        sound_data = {sound_info.getName(): sound_info for sound_info in sound_list}.get(sound_name)
-        if not sound_data:
-            log.warning("Sprite does not contain sound with name={}".format(sound_name))
-        play_sound_and_wait_brick = self.CatrobatClass()
-        play_sound_and_wait_brick.setSound(sound_data)
-        return play_sound_and_wait_brick
 
     @_register_handler(_block_name_to_handler_map, "setGraphicEffect:to:")
     def _convert_set_graphic_effect_block(self):
@@ -2414,8 +2418,21 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     def _convert_go_to_sprite_or_mouse_block(self):
         [base_sprite], go_to_brick = self.arguments, None
         if base_sprite == "_random_":
-            go_to_brick = self.CatrobatClass()
-            go_to_brick.spinnerSelection = catcommon.BrickValues.GO_TO_RANDOM_POSITION
+            x_root = catformula.FormulaElement(catElementType.FUNCTION, str(catformula.Functions.RAND), None)
+            x_left = catrobat.create_formula_element_with_value(- scratch.STAGE_WIDTH_IN_PIXELS / 2)
+            x_right = catrobat.create_formula_element_with_value(scratch.STAGE_WIDTH_IN_PIXELS / 2)
+            x_root.setLeftChild(x_left)
+            x_root.setRightChild(x_right)
+            x_formula = catformula.Formula(x_root)
+
+            y_root = catformula.FormulaElement(catElementType.FUNCTION, str(catformula.Functions.RAND), None)
+            y_left = catrobat.create_formula_element_with_value(- scratch.STAGE_HEIGHT_IN_PIXELS / 2)
+            y_right = catrobat.create_formula_element_with_value(scratch.STAGE_HEIGHT_IN_PIXELS / 2)
+            y_root.setLeftChild(y_left)
+            y_root.setRightChild(y_right)
+            y_formula = catformula.Formula(y_root)
+
+            go_to_brick = catbricks.PlaceAtBrick(x_formula, y_formula)
         elif isinstance(base_sprite, basestring):
             for sprite in self.scene.spriteList:
                 if sprite.getName() == base_sprite:

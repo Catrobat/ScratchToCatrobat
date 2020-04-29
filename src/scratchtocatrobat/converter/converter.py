@@ -693,10 +693,7 @@ class Converter(object):
 
         if self.scratch_project._has_mouse_position_script:
             position_script = catbase.StartScript()
-
             forever_brick = catbricks.ForeverBrick()
-            forever_end = catbricks.LoopEndBrick(forever_brick)
-            forever_brick.setLoopEndBrick(forever_end)
 
             var_x_name = scratch.S2CC_POSITION_X_VARIABLE_NAME_PREFIX + MOUSE_SPRITE_NAME
             pos_x_uservariable = catformula.UserVariable(var_x_name)
@@ -710,12 +707,12 @@ class Converter(object):
             set_y_formula = catformula.Formula(catformula.FormulaElement(catElementType.SENSOR, "OBJECT_Y", None))
             set_y_brick = catbricks.SetVariableBrick(set_y_formula, pos_y_uservariable)
 
-            catrobat_scene.getProject().projectVariables.add(pos_x_uservariable)
-            catrobat_scene.getProject().projectVariables.add(pos_y_uservariable)
+            catrobat_scene.getProject().userVariables.add(pos_x_uservariable)
+            catrobat_scene.getProject().userVariables.add(pos_y_uservariable)
 
             wait_brick = catbricks.WaitBrick(int(scratch.UPDATE_HELPER_VARIABLE_TIMEOUT * 1000))
-
-            position_script.brickList.addAll([forever_brick, set_x_brick, set_y_brick, wait_brick, forever_end])
+            forever_brick.loopBricks.addAll([set_x_brick, set_y_brick, wait_brick])
+            position_script.brickList.add(forever_brick)
             sprite.addScript(position_script)
 
         move_script = catbase.BroadcastScript("_mouse_move_")
@@ -1404,7 +1401,6 @@ class ConvertedProject(object):
                 if sprite.name == MOUSE_SPRITE_NAME:
                     mouse_img_path = _mouse_image_path()
                     shutil.copyfile(mouse_img_path, os.path.join(images_path, _get_mouse_filename()))
-                    break
 
         def download_automatic_screenshot_if_available(output_dir, scratch_project):
             if scratch_project.automatic_screenshot_image_url is None:

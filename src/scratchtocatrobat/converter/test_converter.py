@@ -32,12 +32,9 @@ import org.catrobat.catroid.formulaeditor as catformula
 import org.catrobat.catroid.formulaeditor.FormulaElement.ElementType as catElementType
 import xml.etree.cElementTree as ET
 
-from scratchtocatrobat.converter import catrobat
-from scratchtocatrobat.tools import common
-from scratchtocatrobat.tools import common_testing
-from scratchtocatrobat.tools import svgtopng
-from scratchtocatrobat.scratch import scratch
-from scratchtocatrobat.converter import converter
+from scratchtocatrobat.converter import catrobat, converter
+from scratchtocatrobat.tools import common, common_testing, svgtopng
+from scratchtocatrobat.scratch import scratch, scratch3
 
 BACKGROUND_LOCALIZED_GERMAN_NAME = "Hintergrund"
 BACKGROUND_ORIGINAL_NAME = "Stage"
@@ -2606,6 +2603,9 @@ class TestConvertProjects(common_testing.ProjectTestCase):
             is_local_project = True
 
         scratch_project_dir = common_testing.get_test_project_path(project_name)
+        isScratch3Project = scratch3.is_scratch3_project(scratch_project_dir)
+        if isScratch3Project:
+            scratch3.convert_to_scratch2_data(scratch_project_dir, 0)
 
         scratch_project = scratch.Project(scratch_project_dir, name=project_name,
                                           project_id=common_testing.PROJECT_DUMMY_ID, is_local_project=is_local_project)
@@ -2619,6 +2619,62 @@ class TestConvertProjects(common_testing.ProjectTestCase):
         self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, project_name,
                                                           unused_scratch_resources=scratch_project.unused_resource_names)
         return converted_project.catrobat_program
+
+    def _test_mouse_pointer_tracking_workaround(self, catrobat_program):
+        scene = catrobat_program.getDefaultScene()
+        sprite_list = scene.getSpriteList()
+
+        # check if the 'distanceTo'- or 'glideTo'-brick with the mouse-pointer as target
+        # was converted correctly -> workaround for this brick is realized during
+        # conversion and needs a scratch.Project() constructor to be tested -> testing this
+        # in a earlier phase not possible
+        mouse_sprite = sprite_list[-1]
+        assert mouse_sprite.name == "_mouse_"
+
+        mouse_sprite_script_list = mouse_sprite.scriptList
+        assert len(mouse_sprite_script_list) == 4
+
+        position_tracking_script = mouse_sprite_script_list[0]
+        go_to_touch_position_script = mouse_sprite_script_list[1]
+        touch_screen_detection_script = mouse_sprite_script_list[2]
+        create_clone_at_touch_position_script = mouse_sprite_script_list[3]
+
+        assert isinstance(position_tracking_script, catbase.StartScript)
+        assert isinstance(go_to_touch_position_script, catbase.BroadcastScript)
+        assert isinstance(touch_screen_detection_script, catbase.StartScript)
+        assert isinstance(create_clone_at_touch_position_script, catbase.WhenClonedScript)
+
+        assert len(position_tracking_script.brickList) == 1
+        assert len(go_to_touch_position_script.brickList) == 1
+        assert len(touch_screen_detection_script.brickList) == 2
+        assert len(create_clone_at_touch_position_script.brickList) == 3
+
+        forever_brick = position_tracking_script.brickList[0]
+        assert isinstance(forever_brick, catbricks.ForeverBrick)
+        assert len(forever_brick.loopBricks) == 3
+        assert isinstance(forever_brick.loopBricks[0], catbricks.SetVariableBrick)
+        assert isinstance(forever_brick.loopBricks[1], catbricks.SetVariableBrick)
+        assert isinstance(forever_brick.loopBricks[2], catbricks.WaitBrick)
+
+        go_to_brick = go_to_touch_position_script.brickList[0]
+        assert isinstance(go_to_brick, catbricks.GoToBrick)
+        assert go_to_brick.spinnerSelection == catcommon.BrickValues.GO_TO_TOUCH_POSITION
+
+        set_transparency_brick = touch_screen_detection_script.brickList[0]
+        forever_brick = touch_screen_detection_script.brickList[1]
+        assert isinstance(set_transparency_brick, catbricks.SetTransparencyBrick)
+        assert isinstance(forever_brick, catbricks.ForeverBrick)
+
+        go_to_brick = create_clone_at_touch_position_script.brickList[0]
+        if_then_logic_brick = create_clone_at_touch_position_script.brickList[1]
+        delete_this_clone_brick = create_clone_at_touch_position_script.brickList[2]
+        assert isinstance(go_to_brick, catbricks.GoToBrick)
+        assert go_to_brick.spinnerSelection == catcommon.BrickValues.GO_TO_TOUCH_POSITION
+        assert isinstance(if_then_logic_brick, catbricks.IfThenLogicBeginBrick)
+        assert len(if_then_logic_brick.ifBranchBricks) == 1
+        broadcast_brick = if_then_logic_brick.ifBranchBricks[0]
+        assert isinstance(broadcast_brick, catbricks.BroadcastBrick)
+        assert isinstance(delete_this_clone_brick, catbricks.DeleteThisCloneBrick)
 
     # Checks if the visible global or local variables in the scratch program are converted into show test bricks in the converted project
     def test_can_convert_visible_variables(self):
@@ -2646,6 +2702,18 @@ class TestConvertProjects(common_testing.ProjectTestCase):
                                                 and brick.getUserVariable().getName() == variable, bricks)) > 0
                     if found_show_var: break
                 assert found_show_var
+
+    # workaround for distanceTo-brick with the mouse-pointer as target
+    def test_can_convert_distance_to_brick_with_mouse_pointer_as_target(self):
+        catrobat_program = self._test_project("distance_to_mouse_pointer")
+        assert catrobat_program is not None
+        self._test_mouse_pointer_tracking_workaround(catrobat_program)
+
+    # glideTo-brick workaround with mouse-pointer as target
+    def test_can_convert_glide_to_brick_with_mouse_pointer_as_target(self):
+        catrobat_program = self._test_project("glide_to_mouse_pointer")
+        assert catrobat_program is not None
+        self._test_mouse_pointer_tracking_workaround(catrobat_program)
 
     # full_test_no_var
     def test_can_convert_project_without_variables(self):

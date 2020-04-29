@@ -1,0 +1,76 @@
+{
+    "children": [
+        {
+            "costumes": [
+                {
+                    "baseLayerID": "b7853f557e4426412e64bb3da6531a99",
+                    "baseLayerMD5": "b7853f557e4426412e64bb3da6531a99.svg",
+                    "bitmapResolution": 1,
+                    "costumeName": "costume1",
+                    "rotationCenterX": 48,
+                    "rotationCenterY": 50
+                }
+            ],
+            "currentCostumeIndex": 0,
+            "direction": 90,
+            "isDraggable": false,
+            "isStage": false,
+            "lists": [],
+            "objName": "Sprite1",
+            "rotationStyle": "all around",
+            "scale": 1.0,
+            "scratchX": -168,
+            "scratchY": -30,
+            "scripts": [
+                [
+                    1,
+                    1,
+                    [
+                        [
+                            "whenKeyPressed",
+                            "space"
+                        ],
+                        [
+                            "say:duration:elapsed:from:",
+                            [
+                                "distanceTo:",
+                                "_mouse_"
+                            ],
+                            2.0
+                        ]
+                    ]
+                ]
+            ],
+            "sounds": [],
+            "variables": [],
+            "visible": true
+        }
+    ],
+    "costumes": [
+        {
+            "baseLayerID": "cd21514d0531fdffb22204e0ec5ed84a",
+            "baseLayerMD5": "cd21514d0531fdffb22204e0ec5ed84a.svg",
+            "bitmapResolution": 1,
+            "costumeName": "backdrop1",
+            "rotationCenterX": 240,
+            "rotationCenterY": 180
+        }
+    ],
+    "currentCostumeIndex": 0,
+    "info": {
+        "agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36",
+        "projectID": 0,
+        "semver": "3.0.0",
+        "vm": "0.2.0-prerelease.20200402182733"
+    },
+    "isStage": true,
+    "lists": [],
+    "objName": "Stage",
+    "penLayerID": 0,
+    "penLayerMD5": "Scratch3Doesn'tHaveThis",
+    "scripts": [],
+    "sounds": [],
+    "tempoBPM": 60,
+    "variables": [],
+    "videoAlpha": 0.5
+}

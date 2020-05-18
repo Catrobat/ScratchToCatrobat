@@ -50,7 +50,6 @@ def run_converter(scratch_project_file_or_url, output_dir,
 
     def check_converter_environment():
         # TODO: refactor to combined class with explicit environment check method
-        tools.svgtopng._checked_batik_jar_path()
         tools.wavconverter._checked_sox_path()
 
     try:

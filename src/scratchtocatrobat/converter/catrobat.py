@@ -28,6 +28,7 @@ import org.catrobat.catroid.common as catcommon
 import org.catrobat.catroid.content as catbase
 import org.catrobat.catroid.content.bricks as catbricks
 import org.catrobat.catroid.formulaeditor as catformula
+import org.catrobat.catroid.formulaeditor.FormulaElement.ElementType as catElementType
 
 # FIXME: consider localization
 _BACKGROUND_SPRITE_NAME = "Hintergrund"
@@ -216,31 +217,89 @@ def encoded_project_name(project_name):
     return project_name
 
 
+def build_var_id(variable_name):
+    return '"' + variable_name + '"'
+
+
 # TODO: extend for all further, default cases
 def formula_element_for(catrobat_enum, arguments=[]):
     # TODO: fetch from unary operators map
+    arguments = (arguments + [None, None])[:2]  # pad arguments
+
     unary_operators = [catformula.Operators.LOGICAL_NOT]
-    package_name = catrobat_enum.getClass().__name__.lower()
-    formula_element = None
-    if package_name in {"functions", "operators", "sensors"}:
-        # pad arguments
-        arguments = (arguments + [None, None])[:2]
 
-        element_type = catformula.FormulaElement.ElementType.valueOf(package_name[:-1].upper())
-        enum_name = catrobat_enum.name()
+    if isinstance(catrobat_enum, catformula.FormulaElement):
+        element_type = "formulaElement"
+    elif hasattr(catrobat_enum, "getClass"):
+        package_name = catrobat_enum.getClass().__name__
+        element_type = catElementType.valueOf(package_name[:-1].upper())
+    elif isinstance(catrobat_enum, basestring) and catrobat_enum[0] == '"' and catrobat_enum[-1] == '"':
+        element_type = catElementType.valueOf("USER_VARIABLE")
+        assert len(catrobat_enum) > 2
+        catrobat_enum = catrobat_enum[1:-1]
+    elif isinstance(catrobat_enum, basestring) and catrobat_enum == "()":
+        element_type = catElementType.valueOf("BRACKET")
+    else:
+        element_type = "value"
+
+    # TODO: rewrite occurrences where this special case is needed in converter.py (e.g. _regular_block_conversion()),
+    #  so that this becomes obsolete
+    arguments = [catformula.FormulaElement(catElementType.STRING, str(arg), None)
+                 if isinstance(arg, unicode) else arg for arg in arguments]
+
+    # unary operator -> either left or right child must be None, child must always be placed on right side
+    if element_type == catElementType.OPERATOR and catrobat_enum in unary_operators or \
+            element_type == catElementType.BRACKET:
+        assert (arguments[0] is None) != (arguments[1] is None)
+        if arguments[1] is None:
+            arguments[0], arguments[1] = arguments[1], arguments[0]
+
+    # TODO: as soon as calls to this function are fixed in converter.py (e.g. _regular_block_conversion())
+    #  uncomment the asserts or call the function recursively for each of its arguments
+    # assert arguments[0] is None or isinstance(arguments[0], catformula.FormulaElement)
+    # assert arguments[1] is None or isinstance(arguments[1], catformula.FormulaElement)
+
+    if element_type in {catElementType.FUNCTION, catElementType.OPERATOR, catElementType.USER_VARIABLE,
+                        catElementType.SENSOR, catElementType.BRACKET}:
         formula_parent = None
-
-        # check if unary operator -> add formula to rightChild instead of leftChild (i.e. set leftChild to None)
-        if element_type == catformula.FormulaElement.ElementType.OPERATOR and catrobat_enum in unary_operators:
-            assert len(arguments) == 2 and arguments[0] != None and arguments[1] == None
-            arguments[0], arguments[1] = arguments[1], arguments[0] # swap leftChild and rightChild
-
-        arguments = [catformula.FormulaElement(catformula.FormulaElement.ElementType.STRING, str(arg), None)
-                      if isinstance(arg, unicode) else arg for arg in arguments]
-
-        formula_element = catformula.FormulaElement(element_type, enum_name, formula_parent, *arguments)  # @UndefinedVariable (valueOf)
-        for formula_child in arguments:
-            if formula_child is not None:
-                formula_child.parent = formula_element
+        # print ("adding args: " + str(arguments) + " to formula element: " + str(catrobat_enum) + " as children")
+        # Needs to throw exception because of _regular_block_conversion()?
+        formula_element = catformula.FormulaElement(element_type, str(catrobat_enum), formula_parent, *arguments)
+    elif element_type == "formulaElement":
+        formula_element = catrobat_enum
+        if arguments[0] is not None:
+            formula_element.setLeftChild(arguments[0])
+        if arguments[1] is not None:
+            formula_element.setRightChild(arguments[1])
+    else:
+        # assert arguments[0] is arguments[1] is None  # must be leaf
+        formula_element = create_formula_element_with_value(catrobat_enum)
 
     return formula_element
+
+
+# see: https://runestone.academy/runestone/books/published/pythonds/Trees/ListofListsRepresentation.html
+#  for nested list representation of trees
+# use with either nested list or single id (e.g. 6, "my_var", etc.)
+# TODO: in converter.py replace occurrences of "formula_element_for()" with this function to standardise calls
+def create_formula_element_for(expression):
+    left_child = []
+    right_child = []
+
+    if not isinstance(expression, list):
+        root = expression
+    else:
+        if len(expression) == 0:
+            return None
+        assert len(expression) <= 3
+
+        root = expression[0]
+        if len(expression) >= 2:
+            left_child = expression[1]
+        if len(expression) == 3:
+            right_child = [] if len(expression) <= 2 else expression[2]
+
+    return formula_element_for(root, [create_formula_element_for(left_child), create_formula_element_for(right_child)])
+
+def create_formula_for(expression):
+    return catformula.Formula(create_formula_element_for(expression))

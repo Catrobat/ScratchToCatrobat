@@ -74,13 +74,28 @@ S2CC_POSITION_X_VARIABLE_NAME_PREFIX = "S2CC:pos_x_"
 S2CC_POSITION_Y_VARIABLE_NAME_PREFIX = "S2CC:pos_y_"
 S2CC_SENSOR_PREFIX = "S2CC:sensor_"
 S2CC_GETATTRIBUTE_PREFIX = "S2CC:getattribute_"
+S2CC_PEN_COLOR_VARIABLE_NAMES = {"h": "S2CC:pen_hue", "s": "S2CC:pen_saturation", "v": "S2CC:pen_value"}
+S2CC_PEN_COLOR_DEFAULT_HSV_VALUE = {"h": 0.67, "s": 1.00, "v": 1.00}
+S2CC_PEN_COLOR_HELPER_VARIABLE_NAMES = {
+    "h_i": "S2CC:_h_i", "f": "S2CC:_f", "p": "S2CC:_p", "q": "S2CC:_q",
+    "t": "S2CC:_t", "r": "S2CC:_red", "g": "S2CC:_green", "b": "S2CC:_blue"
+}
+S2CC_PEN_SIZE_VARIABLE_NAME = "S2CC:pen_size"
+S2CC_PEN_SIZE_MULTIPLIER = 3.65
+S2CC_PEN_SIZE_DEFAULT_VALUE = (1 * S2CC_PEN_SIZE_MULTIPLIER)
 ADD_TIMER_SCRIPT_KEY = "add_timer_script_key"
 ADD_TIMER_RESET_SCRIPT_KEY = "add_timer_reset_script_key"
 ADD_POSITION_SCRIPT_TO_OBJECTS_KEY = "add_position_script_to_objects_key"
 ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY = "add_update_attribute_script_to_objects_key"
 ADD_KEY_PRESSED_SCRIPT_KEY = "add_key_pressed_script_key"
 ADD_MOUSE_SPRITE = "add_mouse_sprite"
+ADD_PEN_DEFAULT_BEHAVIOR = "add_pen_default_behavior"
+ADD_PEN_COLOR_VARIABLES = "add_pen_color_variables"
+ADD_PEN_SIZE_VARIABLE = "add_pen_size_variable"
 UPDATE_HELPER_VARIABLE_TIMEOUT = 0.04
+# TODO: extend whenever new bricks are added
+PEN_BRICK_LIST = ["clearPenTrails", "stampCostume", "putPenDown", "putPenUp", "penColor:", "changePenParamBy:",
+                  "setPenParamTo:", "changePenSizeBy:", "penSize:", "penShade:", "changePenShadeBy:", "penHue:"]
 
 
 def verify_resources_of_scratch_object(scratch_object, md5_to_resource_path_map, project_base_path):
@@ -121,6 +136,9 @@ class Object(common.DictAccessWrapper):
             ADD_POSITION_SCRIPT_TO_OBJECTS_KEY: set(),
             ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY: {},
             ADD_MOUSE_SPRITE: False,
+            ADD_PEN_DEFAULT_BEHAVIOR: False,
+            ADD_PEN_COLOR_VARIABLES: False,
+            ADD_PEN_SIZE_VARIABLE: False
         }
 
         ############################################################################################
@@ -360,6 +378,38 @@ class Object(common.DictAccessWrapper):
             # parse again ScriptElement tree
             script.script_element = ScriptElement.from_raw_block(script.blocks)
         workaround_info[ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY] = sensor_data_needed_for_sprite_names
+
+        ############################################################################################
+        # pen bricks: change pen [something] by [value] workaround
+        ############################################################################################
+        def has_pen_brick(block_list):
+            for block in block_list:
+                if isinstance(block, list) and (block[0] in PEN_BRICK_LIST or has_pen_brick(block)):
+                    return True
+            return False
+
+        def has_pen_color_param_block(block_list):
+            for block in block_list:
+                # TODO: remove transparency case as soon as catrobat supports pen transparency change
+                if isinstance(block, list) and ((block[0] == 'changePenParamBy:' or block[0] == 'setPenParamTo:')
+                and block[1] != 'transparency' or has_pen_color_param_block(block)):
+                    return True
+            return False
+
+        def has_change_pen_size_block(block_list):
+            for block in block_list:
+                if isinstance(block, list) and (block[0] == 'changePenSizeBy:'
+                or has_change_pen_size_block(block)):
+                    return True
+            return False
+
+        for script in self.scripts:
+            if has_pen_brick(script.blocks):
+                workaround_info[ADD_PEN_DEFAULT_BEHAVIOR] = True
+            if has_pen_color_param_block(script.blocks):
+                workaround_info[ADD_PEN_COLOR_VARIABLES] = True
+            if has_change_pen_size_block(script.blocks):
+                workaround_info[ADD_PEN_SIZE_VARIABLE] = True
         return workaround_info
 
     @classmethod
@@ -424,6 +474,12 @@ class RawProject(Object):
             workaround_info = scratch_object.preprocess_object(all_sprite_names)
             if workaround_info[ADD_TIMER_SCRIPT_KEY]: is_add_timer_script = True
             if workaround_info[ADD_TIMER_RESET_SCRIPT_KEY]: is_add_timer_reset_script = True
+            if workaround_info[ADD_PEN_DEFAULT_BEHAVIOR]:
+                self._add_pen_default_behavior_to_object(scratch_object)
+            if workaround_info[ADD_PEN_COLOR_VARIABLES]:
+                self._add_pen_color_variables_to_object(scratch_object)
+                self._add_pen_colo_helper_variables_to_object(scratch_object)
+            if workaround_info[ADD_PEN_SIZE_VARIABLE]: self._add_pen_size_variable_to_object(scratch_object)
             if len(workaround_info[ADD_KEY_PRESSED_SCRIPT_KEY]) > 0:
                 self.listened_keys.update(workaround_info[ADD_KEY_PRESSED_SCRIPT_KEY])
             position_script_to_be_added |= workaround_info[ADD_POSITION_SCRIPT_TO_OBJECTS_KEY]
@@ -551,6 +607,41 @@ class RawProject(Object):
         forever_loop_body_blocks += [["wait:elapsed:from:", UPDATE_HELPER_VARIABLE_TIMEOUT]]
         script_blocks = [["doForever", forever_loop_body_blocks]]
         sprite_object.scripts += [Script([0, 0, [[SCRIPT_GREEN_FLAG]] + script_blocks])]
+
+    def _add_pen_default_behavior_to_object(self, sprite_object):
+        default_pen_size = [unicode("penSize:"), 1.0]
+        default_pen_color = [unicode("penColor:"), "#0000ff"]
+        script_blocks = [default_pen_size, default_pen_color]
+        self._add_to_start_script(sprite_object, script_blocks)
+        return
+
+    def _add_to_start_script(self, sprite_object, bricks):
+        for i, script in enumerate(sprite_object.scripts):
+            if script.type == SCRIPT_GREEN_FLAG:
+                sprite_object.scripts[i] = Script([0, 0, [[SCRIPT_GREEN_FLAG]] + bricks + script.blocks])
+                return
+        sprite_object.scripts += [Script([0, 0, [[SCRIPT_GREEN_FLAG]] + bricks])]
+        return
+
+    def _add_pen_color_variables_to_object(self, sprite_object):
+        for key in S2CC_PEN_COLOR_VARIABLE_NAMES.keys():
+            sprite_object._dict_object["variables"].append({
+                "name": S2CC_PEN_COLOR_VARIABLE_NAMES[key],
+                "value": S2CC_PEN_COLOR_DEFAULT_HSV_VALUE[key],
+                "isPersistent": False
+            })
+        return
+
+    def _add_pen_colo_helper_variables_to_object(self, sprite_object):
+        for variable_name in S2CC_PEN_COLOR_HELPER_VARIABLE_NAMES.values():
+            sprite_object._dict_object["variables"].append({"name": variable_name, "value": 0, "isPersistent": False})
+        return
+
+    def _add_pen_size_variable_to_object(self, sprite_object):
+        sprite_object._dict_object["variables"].append(
+            {"name": S2CC_PEN_SIZE_VARIABLE_NAME, "value": S2CC_PEN_SIZE_DEFAULT_VALUE, "isPersistent": False}
+        )
+        return
 
     def __iter__(self):
         return iter(self.objects)

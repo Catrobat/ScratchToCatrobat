@@ -494,34 +494,26 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     # 10 ^
     def test_can_convert_pow_of_10_block(self):
-        exponent, base = 6, 10
+        exponent = 6
         scratch_block = ["10 ^", exponent]
-        [rounded_result_formula_element] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        assert isinstance(rounded_result_formula_element, catformula.FormulaElement)
-        assert rounded_result_formula_element.type == catformula.FormulaElement.ElementType.FUNCTION
-        assert rounded_result_formula_element.value == catformula.Functions.ROUND.toString() # @UndefinedVariable
-        assert rounded_result_formula_element.rightChild == None
-        result_formula_element = rounded_result_formula_element.leftChild
-        assert result_formula_element.type == catformula.FormulaElement.ElementType.FUNCTION
-        assert result_formula_element.value == catformula.Functions.EXP.toString() # @UndefinedVariable
-        assert result_formula_element.rightChild == None
-        mult_formula_element = result_formula_element.leftChild
-        assert mult_formula_element.type == catformula.FormulaElement.ElementType.OPERATOR
-        assert mult_formula_element.value == catformula.Operators.MULT.toString() # @UndefinedVariable
-        value_formula_element = mult_formula_element.leftChild
-        assert value_formula_element.type == catformula.FormulaElement.ElementType.NUMBER
-        assert value_formula_element.value == str(exponent)
-        assert value_formula_element.leftChild == None
-        assert value_formula_element.rightChild == None
-        ln_formula_element = mult_formula_element.rightChild
-        assert ln_formula_element.type == catformula.FormulaElement.ElementType.FUNCTION
-        assert ln_formula_element.value == catformula.Functions.LN.toString() # @UndefinedVariable
-        assert ln_formula_element.rightChild == None
-        base_formula_element = ln_formula_element.leftChild
-        assert base_formula_element.type == catformula.FormulaElement.ElementType.NUMBER
-        assert base_formula_element.value == str(base)
-        assert base_formula_element.leftChild == None
-        assert base_formula_element.rightChild == None
+        [formula_element] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        self.assertIsInstance(formula_element, catformula.FormulaElement)
+        self.assertEqual(formula_element.type, catformula.FormulaElement.ElementType.FUNCTION)
+        self.assertEqual(formula_element.value, catformula.Functions.POWER.toString())
+
+        base_fe = formula_element.leftChild
+        self.assertIsInstance(base_fe, catformula.FormulaElement)
+        self.assertEqual(base_fe.type, catformula.FormulaElement.ElementType.NUMBER)
+        self.assertEqual(base_fe.value, str(10))
+        self.assertIsNone(base_fe.leftChild)
+        self.assertIsNone(base_fe.rightChild)
+
+        exponent_fe = formula_element.rightChild
+        self.assertIsInstance(exponent_fe, catformula.FormulaElement)
+        self.assertEqual(exponent_fe.type, catformula.FormulaElement.ElementType.NUMBER)
+        self.assertEqual(exponent_fe.value, str(exponent))
+        self.assertIsNone(exponent_fe.leftChild)
+        self.assertIsNone(exponent_fe.rightChild)
 
     # lineCountOfList:
     def test_can_convert_line_count_of_list_block(self):

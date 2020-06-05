@@ -767,6 +767,66 @@ class TestKeyPressedWorkaround(unittest.TestCase):
         expected_script = scratch.Script(expected_first_object_script_data)
         assert script == expected_script
 
+    def test_key_pressed_with_formula(self):
+        cls = self.__class__
+        script_data = [0,0,[["whenGreenFlag"],["doForever", [["doIf", [u'keyPressed:', [u'+', 3.0, 2.0]],[["changeYposBy:", 1]]]]]]]
+        cls.KEYPRESSED_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        raw_project = scratch.RawProject(cls.KEYPRESSED_HELPER_OBJECTS_DATA_TEMPLATE)
+        expected_first_object_script_data = [0,0,[["whenGreenFlag"],["doForever",
+                                                                    [["doIf", ["=", "space", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_space"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "up arrow", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_up arrow"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "down arrow", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_down arrow"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "left arrow", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_left arrow"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "right arrow", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_right arrow"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "1", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_1"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "2", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_2"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "3", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_3"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "4", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_4"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "5", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_5"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "6", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_6"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "7", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_7"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "8", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_8"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "9", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_9"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "0", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_0"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "q", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_q"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "w", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_w"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "e", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_e"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "r", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_r"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "t", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_t"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "z", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_z"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "u", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_u"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "i", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_i"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "o", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_o"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "p", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_p"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "a", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_a"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "s", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_s"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "d", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_d"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "f", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_f"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "g", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_g"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "h", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_h"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "j", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_j"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "k", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_k"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "l", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_l"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "y", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_y"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "x", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_x"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "c", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_c"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "v", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_v"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "b", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_b"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "n", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_n"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "m", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_m"], [["changeYposBy:", 1]]]]],
+                                                                     ["doIf", ["=", "any", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_any"], [["changeYposBy:", 1]]]]]]]]]
+
+        # validate
+        assert len(raw_project.objects) == 2
+        [background_object, sprite_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 0
+
+        script = sprite_object.scripts[0]
+        expected_script = scratch.Script(expected_first_object_script_data)
+        assert script == expected_script
+
 class TestDistanceBlockWorkaround(unittest.TestCase):
     DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE = {
         "objName": "Stage",

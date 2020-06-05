@@ -276,6 +276,12 @@ class Object(common.DictAccessWrapper):
         # key pressed workaround
         ############################################################################################
 
+        key_list = [u'space', u'up arrow', u'down arrow', u'left arrow', u'right arrow',
+                    u'1', u'2', u'3', u'4', u'5', u'6', u'7', u'8', u'9', u'0',
+                    u'q', u'w', u'e', u'r', u't', u'z', u'u', u'i', u'o', u'p',
+                    u'a', u's', u'd', u'f', u'g', u'h', u'j', u'k', u'l',
+                    u'y', u'x', u'c', u'v', u'b', u'n', u'm', u'any']
+
         key_pressed_keys = set()
 
         def has_key_pressed_block(block_list):
@@ -284,11 +290,21 @@ class Object(common.DictAccessWrapper):
                     return True
             return False
 
+        def add_key_pressed_with_formula_workaround(condition_formula, if_then_block):
+            condition_formula = ['()', condition_formula]
+            block_list = []
+            for key_name in key_list:
+                block_list.append([u'doIf', [u'=', key_name, condition_formula], [[u'doIf', ['readVariable', S2CC_KEY_VARIABLE_NAME+key_name], if_then_block]]])
+                key_pressed_keys.add((key_name,"keyPressedBrick"))
+            return block_list
+
         def replace_key_pressed_blocks(block_list):
             new_block_list = []
             for block in block_list:
                 if isinstance(block, list):
-                    if block[0] == 'keyPressed:':
+                    if block[0] == u'doIf' and isinstance(block[1], list) and block[1][0] == 'keyPressed:' and isinstance(block[1][1], list):
+                        new_block_list += add_key_pressed_with_formula_workaround(block[1][1], block[2])
+                    elif block[0] == 'keyPressed:' and not isinstance(block[1], list):
                         new_block_list += [["readVariable", S2CC_KEY_VARIABLE_NAME+block[1]]]
                         key_pressed_keys.add((block[1],"keyPressedBrick"))
                     else:

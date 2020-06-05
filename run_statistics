@@ -360,9 +360,9 @@ if len(sys.argv) == 4:
         print(usage)
         sys.exit(helpers.ExitCode.SUCCESS)
 
-
 if limit != 0:
-    conversion_folder_name = keyword + "_limit=" + str(limit) + "_offset=" + str(offset)
+    name = keyword.replace('/', '')
+    conversion_folder_name = name + "_limit=" + str(limit) + "_offset=" + str(offset)
     conversion_dir = os.path.join(os.path.realpath(os.path.dirname(__file__)), "data/statistics", conversion_folder_name)
     helpers.make_dir_if_not_exists(conversion_dir)
 

@@ -533,7 +533,7 @@ class RawProject(Object):
         raw_variables_and_sensors_data = filter(lambda var: "target" in var, self.get_children())
 
         self.raw_objects = sorted(filter(lambda obj_data: "objName" in obj_data, self.get_children()),
-                                  key=lambda obj_data: obj_data.get("indexInLibrary", 0))
+                                  key=lambda obj_data: obj_data.get("indexInLibrary", 0), reverse=True)
         self.objects = [Object(raw_object) for raw_object in [dict_] + self.raw_objects]
         self.objects_map = {obj.name: obj for obj in self.objects}
         stage_list = [raw_object["objName"] for raw_object in [dict_] + self.raw_objects if "isStage" in raw_object and raw_object["isStage"]]

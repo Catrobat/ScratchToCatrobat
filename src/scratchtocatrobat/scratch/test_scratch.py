@@ -187,7 +187,7 @@ class TestRawProjectFunc(unittest.TestCase):
             assert scratch_object
             assert isinstance(scratch_object, scratch.Object)
         assert self.project.objects[0].name == scratch.STAGE_OBJECT_NAME, "Stage object missing"
-        assert [_.name for _ in self.project.objects] == ['Stage', 'Sprite1', 'Cassy Dance']
+        assert [_.name for _ in self.project.objects] == ['Stage', 'Cassy Dance', 'Sprite1']
 
     def test_can_access_project_variables(self):
         variables_test_code_content = common.content_of(common_testing.get_test_resources_path("scratch_code_only", "variables_test.json"))
@@ -203,8 +203,8 @@ class TestProjectOrderedObjects(unittest.TestCase):
         self.project_without_object_indexes = scratch.Project(common_testing.get_test_project_path("dress_up_tera_without_object_indexes"))
 
     def test_are_scratch_objects_ordered_by_library_index_correctly(self):
-        expected_sorted_object_names = ["Stage", "Cape", "Tera", "Mask", "Hat", "Blouse",
-                                        "Tshirt", "Wings", "Antennae"]
+        expected_sorted_object_names = ["Stage", "Antennae", "Wings", "Tshirt", "Blouse", "Hat",
+                                        "Mask", "Tera", "Cape"]
         assert len(expected_sorted_object_names) == len(self.project_with_object_indexes.objects)
         for idx, scratch_object in enumerate(self.project_with_object_indexes.objects):
             assert scratch_object

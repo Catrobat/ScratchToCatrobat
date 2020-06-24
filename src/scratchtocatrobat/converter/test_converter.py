@@ -700,6 +700,65 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert value2_formula_element.leftChild == None
         assert value2_formula_element.rightChild == None
 
+    # contains
+    def test_can_convert_contains_brick(self):
+        value1 = "Apple"
+        value2 = "app"
+
+        case_insensitivity_string = "(?ui)"
+        empty_string = ""
+        scratch_block = ["contains:", value1, value2]
+        [catr_formula_element] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+
+        # inequality formula
+        assert isinstance(catr_formula_element, catformula.FormulaElement)
+        assert catr_formula_element.type == catformula.FormulaElement.ElementType.OPERATOR
+        assert catr_formula_element.value == catformula.Operators.NOT_EQUAL.toString()
+        assert catr_formula_element.leftChild is not None
+        assert catr_formula_element.rightChild is not None
+
+        # regex formula, left side of inequality
+        regex_formula = catr_formula_element.leftChild
+        assert regex_formula.type == catformula.FormulaElement.ElementType.FUNCTION
+        assert regex_formula.value == catformula.Functions.REGEX.toString()
+        assert regex_formula.leftChild is not None
+        assert regex_formula.rightChild is not None
+
+        # empty string, right side of inequality
+        empty_string_formula = catr_formula_element.rightChild
+        assert empty_string_formula.type == catformula.FormulaElement.ElementType.STRING
+        assert empty_string_formula.value == empty_string
+
+        # join formula, left child of regex
+        join_formula = regex_formula.leftChild
+        assert join_formula.type == catformula.FormulaElement.ElementType.FUNCTION
+        assert join_formula.value == catformula.Functions.JOIN.toString()
+        assert join_formula.leftChild is not None
+        assert join_formula.rightChild is not None
+
+        # extract the values from the formula
+        value1_formula_element = regex_formula.rightChild
+        value2_formula_element = join_formula.rightChild
+        case_insensitivity_string_formula_element = join_formula.leftChild
+
+        # check if '(?ui)' is in left child of the join formula
+        assert case_insensitivity_string_formula_element.type == catformula.FormulaElement.ElementType.STRING
+        assert case_insensitivity_string_formula_element.value == case_insensitivity_string
+        assert case_insensitivity_string_formula_element.leftChild is None
+        assert case_insensitivity_string_formula_element.rightChild is None
+
+        # check if value1 was parsed correctly
+        assert value1_formula_element.type == catformula.FormulaElement.ElementType.STRING
+        assert value1_formula_element.value == value1
+        assert value1_formula_element.leftChild is None
+        assert value1_formula_element.rightChild is None
+
+        # check if value2 was parsed correctly
+        assert value2_formula_element.type == catformula.FormulaElement.ElementType.STRING
+        assert value2_formula_element.value == value2
+        assert value2_formula_element.leftChild is None
+        assert value2_formula_element.rightChild is None
+
     #--------------------------------------------------------------------------------------------------------------
     # touching formula tests
     #--------------------------------------------------------------------------------------------------------------

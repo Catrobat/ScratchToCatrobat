@@ -25,6 +25,7 @@ import itertools
 import json
 import os
 import sys
+from operator import itemgetter
 
 from scratchtocatrobat.tools import common
 from scratchtocatrobat.scratch import scratchwebapi
@@ -52,6 +53,7 @@ class JsonKeys(object):
     PROJECT_ID = 'projectID'
     OBJECT_NAME = "objName"
     SCRIPTS = "scripts"
+    SCRIPT_COMMENTS = "scriptComments"
     SOUND_MD5 = "md5"
     SOUND_ID = "soundID"
     SOUND_NAME = "soundName"
@@ -108,6 +110,50 @@ def verify_resources_of_scratch_object(scratch_object, md5_to_resource_path_map,
             raise ProjectError("Missing resource file at project: {}. Provide resource with md5: {}"
                                .format(project_base_path, resource_md5))
 
+# Returns the count of bricks in blocks (Doesn't count Values, formulas etc.)
+def _get_block_count(blocks):
+    count = 0
+    if isinstance(blocks, list):
+        for (i, block) in enumerate(blocks):
+            if isinstance(block, list):
+                if not isinstance(block[0], list) and block[0] != '()':
+                    count += 1
+                count += _get_block_count(block)
+    return count
+
+def _get_block_position_list(blocks):
+    positions_list = []
+
+    def _visit_condition(condition, block_position):
+        # brackets are injected in sourcecodemodifier => ignore them for correct offset
+        if  condition[0] != '()':
+            positions_list.append(block_position)
+
+    def _traverse_condition(condition, block_position):
+        _visit_condition(condition, block_position)
+        for child_condition in condition:
+            if isinstance(child_condition, list):
+                _traverse_condition(child_condition, block_position)
+
+    def _visit(block, block_position):
+        positions_list.append(block_position)
+
+    def _traverse(blocks):
+        assert isinstance(blocks, list)
+        for (i, block) in enumerate(blocks):
+            assert isinstance(block, list)
+            _visit(block, (blocks, i))
+            for child in block:
+                if isinstance(child, list):
+                    #list of bricks
+                    if isinstance(child[0], list):
+                        _traverse(child)
+                    #Conditions
+                    else:
+                        _traverse_condition(child, (blocks, i))
+    _traverse(blocks)
+    return positions_list
+
 # TODO: rename
 class Object(common.DictAccessWrapper):
 
@@ -119,7 +165,7 @@ class Object(common.DictAccessWrapper):
             else:
                 self.isScratch3 = True
                 return
-        for key in (JsonKeys.SOUNDS, JsonKeys.COSTUMES, JsonKeys.SCRIPTS, JsonKeys.LISTS, JsonKeys.VARIABLES):
+        for key in (JsonKeys.SOUNDS, JsonKeys.COSTUMES, JsonKeys.SCRIPTS, JsonKeys.LISTS, JsonKeys.VARIABLES, JsonKeys.SCRIPT_COMMENTS):
             if key not in object_data:
                 self._dict_object[key] = []
         self.name = self.get_objName()
@@ -140,6 +186,51 @@ class Object(common.DictAccessWrapper):
             ADD_PEN_COLOR_VARIABLES: False,
             ADD_PEN_SIZE_VARIABLE: False
         }
+
+        ############################################################################################
+        # Comment workaround
+        # Before other workarounds, because scratch2 comments uses offsets                         #
+        ############################################################################################
+        if self._dict_object[JsonKeys.SCRIPT_COMMENTS]:
+            # reverse sort, so that adding comments will not invalidate the offset of the next comments
+            comments = sorted(self._dict_object[JsonKeys.SCRIPT_COMMENTS], key=itemgetter(5), reverse=True)
+
+            #fix comment offsets if there are bricks outside of scripts
+            if len(self.get_scripts()) != len(self.scripts):
+                invalid_script_blocks = [None if Script.is_valid_script_input(script) else script[2] for script in self.get_scripts()]
+                script = iter(self.scripts)
+                block_offset = 0
+                for invalid_script_block in invalid_script_blocks:
+                    if invalid_script_block:
+                        invalid_script_length = _get_block_count(invalid_script_block)
+                        # remove comments that are in the invalid script
+                        comments = [c for c in comments if not block_offset <= c[5] < block_offset + invalid_script_length]
+                        # move all the later comments to the correct offset
+                        for comment in comments:
+                            if comment[5] > block_offset:
+                                comment[5] -= invalid_script_length
+                    else:
+                        block_offset += 1 + _get_block_count(script.next().blocks)
+
+            position_list = []
+            for script in self.scripts:
+                position_list.append((script.blocks, 0))
+                position_list.extend(_get_block_position_list(script.blocks))
+
+            for (x, y, width, height, isOpen, blockId, text) in comments:
+                #Add comments not associated to a block into the 1st script
+                if blockId < 0:
+                    block_offset = 0
+                else:
+                    block_offset = blockId
+                if block_offset < len(position_list):
+                    block_list, offset = position_list[block_offset]
+                    block_list.insert(offset, ["note:", text])
+                else:
+                    _log.warn("Comment with blockId of {} can't be converted.".format(blockId))
+
+        for script in self.scripts:
+            script.script_element = ScriptElement.from_raw_block(script.blocks)
 
         ############################################################################################
         # timer and timerReset workaround

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 #  ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
 #  Copyright (C) 2013-2017 The Catrobat Team
 #  (<http://developer.catrobat.org/credits>)
@@ -70,10 +70,12 @@ def sig_handler(sig, frame):
     tornado.ioloop.IOLoop.instance().add_callback_from_signal(shutdown)
 
 def shutdown():
-    _logger.info('Stopping TCP server')
-    tcp_server.stop()
-    _logger.info('Stopping HTTP server')
-    web_server.stop()
+    if 'tcp_server' in globals():
+        _logger.info('Stopping TCP server')
+        tcp_server.stop()
+    if 'web_server' in globals():
+        _logger.info('Stopping HTTP server')
+        web_server.stop()
     _logger.info('Will shutdown in %s seconds ...', MAX_WAIT_SECONDS_BEFORE_SHUTDOWN)
     io_loop = tornado.ioloop.IOLoop.instance()
     deadline = time.time() + MAX_WAIT_SECONDS_BEFORE_SHUTDOWN
@@ -85,7 +87,8 @@ def shutdown():
             io_loop.add_timeout(now + 1, stop_io_loop)
         else:
             io_loop.stop()
-            tcp_io_loop.stop()
+            if 'tcp_io_loop' in globals():
+                tcp_io_loop.stop()
             _logger.info('Shutdown IO Loops')
 
     stop_io_loop()
@@ -135,7 +138,7 @@ def main():
                 _logger.warn("-"*80)
             else:
                 _logger.warn("-"*80)
-                _logger.warn(" "*10 + "!!! PRODCTION MODE ENABLED !!!")
+                _logger.warn(" "*10 + "!!! PRODUCTION MODE ENABLED !!!")
                 _logger.warn("-"*80)
 
             webapp = converterwebapp.ConverterWebApp(**settings)

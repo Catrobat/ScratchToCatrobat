@@ -77,7 +77,7 @@ class ConverterJobHandler(jobhandler.JobHandler):
         assert isinstance(args["outputDir"], (str, unicode))
         job_ID, title, image_URL = args["jobID"], args["title"], args["imageURL"]
 
-        exec_args = ["/usr/bin/env", "python", CONVERTER_RUN_SCRIPT_PATH,
+        exec_args = [helpers.config.get("PATHS", "python"), CONVERTER_RUN_SCRIPT_PATH,
                      args["url"], args["outputDir"], str(args["jobID"]), "--web-mode"]
         process = subprocess.Popen(exec_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         yield self.send_job_started_notification(job_ID, title, image_URL)
@@ -206,34 +206,11 @@ def convert_scratch_project(job_ID, host, port, verbose):
         _logger.error("Cannot find server certificate: %s", CERTIFICATE_PATH)
         return
 
-    # retries = int(helpers.config.get("SCRATCH_API", "http_retries"))
-    # timeout_in_secs = int(helpers.config.get("SCRATCH_API", "http_timeout")) / 1000
-    # backoff = int(helpers.config.get("SCRATCH_API", "http_backoff"))
-    # delay = int(helpers.config.get("SCRATCH_API", "http_delay"))
-    # user_agent = helpers.config.get("SCRATCH_API", "user_agent")
-    #
-    # # preprocessing: fetch project title and project image URL via web API
-    # def retry_hook(exc, tries, delay):
-    #     _logger.warning("  Exception: {}\nRetrying after {}:'{}' in {} secs (remaining trys: {})" \
-    #                     .format(sys.exc_info()[0], type(exc).__name__, exc, delay, tries))
-    #
-    # @helpers.retry((urllib2.URLError, socket.timeout, IOError, BadStatusLine), delay=delay,
-    #                backoff=backoff, tries=retries, hook=retry_hook)
-    # def read_content_of_url(url):
-    #     _logger.info("Fetching project title from: {}".format(scratch_project_url))
-    #     req = urllib2.Request(url, headers={ "User-Agent": user_agent })
-    #     return urllib2.urlopen(req, timeout=timeout_in_secs).read()
-
     title = None
     image_URL = None
     scratch_project_url = "%s%d" % (SCRATCH_PROJECT_META_DATA_BASE_URL, job_ID)
     try:
-        # html_content = read_content_of_url(scratch_project_url)
-
-        # document = webhelpers.ResponseBeautifulSoupDocumentWrapper(BeautifulSoup(html_content.decode('utf-8', 'ignore'), b'html5lib'))
-        # document = document.wrapped_document.text()
         title, image_URL = scratchwebapi.getMetaDataEntry(job_ID, "title", "image")
-        # image_URL = scratchwebapi.getMetaDataEntry(job_ID, "image")
         if title == None:
             raise Warning("Unable to set title of project from the project's website!" \
                           " Reason: Cannot parse title from returned html content!")

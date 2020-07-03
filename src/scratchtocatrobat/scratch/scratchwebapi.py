@@ -155,38 +155,39 @@ def downloadProjectMetaData(project_id, retry_after_http_status_exception=False)
     import urllib2
 
     scratch_project_url = SCRATCH_PROJECT_META_DATA_BASE_URL + str(project_id)
+    retries = HTTP_RETRIES if retry_after_http_status_exception else 0
 
+    def retry_hook(exc, tries, delay):
+        _log.warn("  Exception: {}\nRetrying {} after {}:'{}' in {} secs (remaining" \
+                "tries: {})".format(sys.exc_info()[0], scratch_project_url, type(ex).__name__, exc, \
+                delay, tries))
 
-    try:
-        response = urllib2.urlopen(scratch_project_url,timeout=HTTP_TIMEOUT)
-        html = response.read()
-        document = json.loads(html)
-        if document != None:
-            document["meta_data_timestamp"] = datetime.now()
-            _cached_jsoup_documents[project_id] = document
-            _projectMetaData[project_id] = document
-        return document
-    except urllib2.HTTPError as e:
-        if e.code == 404:
-            _log.error("HTTP 404 - Not found! Project not available.")
-            return None
-        else:
+    @helpers.retry((urllib2.URLError,), tries=retries, delay=HTTP_DELAY, \
+            backoff=HTTP_BACKOFF, hook=retry_hook)
+    def download_request(scratch_url, timeout):
+        try:
+            response = urllib2.urlopen(scratch_url, timeout=timeout)
+            html = response.read()
+            document = json.loads(html)
+            if document != None:
+                document["meta_data_timestamp"] = datetime.now()
+                _cached_jsoup_documents[project_id] = document
+                _projectMetaData[project_id] = document
+            return document
+        except urllib2.HTTPError as e:
+            if e.code == 404:
+                _log.error(str(e) + " Project not available.")
+                return None
             raise e
+    try:
+        return download_request(scratch_project_url, HTTP_TIMEOUT)
     except:
         _log.error("Retry limit exceeded or an unexpected error occurred: {}".format(sys.exc_info()[0]))
         return None
 
 # TODO: class instead of request functions
 def request_is_project_available(project_id):
-    from org.jsoup import HttpStatusException
-    try:
-        return downloadProjectMetaData(project_id, False) is not None
-    except HttpStatusException as e:
-        if e.getStatusCode() == 404:
-            _log.error("HTTP 404 - Not found! Project not available.")
-            return False
-        else:
-            raise e
+    return downloadProjectMetaData(project_id, False) is not None
 
 
 def request_project_remixes_for(project_id):
@@ -274,29 +275,23 @@ def extract_project_details(project_id, escape_quotes=True):
 
     extracted_text = getMetaDataEntry(project_id , "history")
     extracted_text = extracted_text["modified"]
-    if extracted_text is None: return None
-    modified_date_str = unicode(extracted_text).replace("Modified:", "").replace("Z","000").strip()
-    try:
-        modified_date = datetime.strptime(modified_date_str, "%Y-%m-%dT%H:%M:%S.%f")
-    except:
-        modified_date = None
+    modified_date = convertHistoryDatesToDatetime(extracted_text)
 
     extracted_text = getMetaDataEntry(project_id , "history")
     extracted_text = extracted_text["shared"]
-    if extracted_text is None: return None
-    shared_date_str = unicode(extracted_text).replace("Shared:", "").replace("Z","000").strip()
-    try:
-        shared_date = datetime.strptime(shared_date_str, "%Y-%m-%dT%H:%M:%S.%f")
-    except:
-        shared_date = None
+    shared_date = convertHistoryDatesToDatetime(extracted_text)
 
     return ScratchProjectInfo(title = title, owner = owner, image_url = image_url,
                               instructions = instructions, notes_and_credits = notes_and_credits,
                               tags = remixes, views = views, favorites = favorites, loves = loves,
                               modified_date = modified_date, shared_date = shared_date)
 
-
-
+def convertHistoryDatesToDatetime(data):
+    try:
+        datestring =  unicode(data).replace("Z","000").strip()
+        return datetime.strptime(datestring, "%Y-%m-%dT%H:%M:%S.%f")
+    except:
+        return None
 
 def getMetaDataEntry(projectID, *entryKey):
     try:

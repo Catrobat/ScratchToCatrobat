@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.core.internal.resources.refresh.win32.Convert;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
@@ -37,13 +38,14 @@ import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 
 import sourcecodefilter.ConverterRelevantCatroidSource;
+import sourcecodefilter.SourceCodeFilter;
 
 public class MethodInvocationFilter extends ASTVisitor {
 
 	final private ConverterRelevantCatroidSource catroidSource;
 	final private Set<String> methodInvocationsToBeRemoved;
 	final private Set<String> methodInvocationsWithParameterToBeRemoved;
-
+	
 	public MethodInvocationFilter(ConverterRelevantCatroidSource catroidSource,
 			Set<String> methodInvocationsToBeRemoved,
 			Set<String> methodInvocationsWithParameterToBeRemoved) {
@@ -104,6 +106,14 @@ public class MethodInvocationFilter extends ASTVisitor {
 		for (String expectedMethodInvocation : methodInvocationsWithParameterToBeRemoved) {
 			if (methodInvocation.toString().equals(expectedMethodInvocation)) {
             	methodInvocation.getParent().delete();
+			}
+		}
+		
+		if (SourceCodeFilter.removeMethodParameterAtPosition.containsKey(fullName) ) {
+			Set<String> indicesToRemove = SourceCodeFilter.removeMethodParameterAtPosition.get(fullName);
+			for (String indToRemove : indicesToRemove)
+			{
+				methodInvocation.arguments().remove(Integer.parseInt(indToRemove));
 			}
 		}
 		return false;

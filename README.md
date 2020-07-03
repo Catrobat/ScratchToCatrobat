@@ -1,6 +1,6 @@
 <img title="Scratch2Catrobat" src="https://cloud.githubusercontent.com/assets/3843968/9567706/5a084d76-4f35-11e5-9e3b-5a49256fde86.png" width=595 />
 
-[![Version](https://img.shields.io/badge/version-0.9.0b-blue.svg)](https://img.shields.io/badge/version-0.9.0b-blue.svg)
+[![Version](https://img.shields.io/badge/version-0.11.0b-blue.svg)](https://img.shields.io/badge/version-0.11.0b-blue.svg)
 
 A tool for converting Scratch projects into Catrobat programs.
 
@@ -77,6 +77,14 @@ sudo apt-get install python
 * Install sox via aptitude (needed for sound conversion):
 ```sh
 sudo apt-get install sox
+```
+* Install npm via aptitude (if not already installed):
+```sh
+sudo apt-get install nodejs
+```
+* Install svg2png via npm (needed for svg conversion):
+```sh
+npm install svg2png -g
 ```
 * Jython 2.7 requires java version 1.8 or later. To determine the currently installed java version run the following command on your shell:
 ```sh

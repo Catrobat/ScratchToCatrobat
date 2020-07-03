@@ -116,15 +116,15 @@ class TestProjectInit(unittest.TestCase):
             # TODO: check error message
             scratch.Project(common_testing.get_test_project_path("non_existing_path"))
 
-    # def test_fail_on_project_with_missing_image_and_sound_files(self):
-    #     with self.assertRaises(scratch.ProjectError):
+    def test_fail_on_project_with_missing_sound_files(self):
+        with self.assertRaises(scratch.ProjectError):
     #         TODO: check error type
-            # scratch.Project(common_testing.get_test_project_path("missing_resources"))
+            scratch.Project(common_testing.get_test_project_path("missing_sound_resources"), None, None, None, True)
 
-    # def test_fail_on_project_with_missing_sound_files(self):
-    #     with self.assertRaises(scratch.ProjectError):
+    def test_fail_on_project_with_missing_image_files(self):
+        with self.assertRaises(scratch.ProjectError):
             # TODO: check error type
-            # scratch.Project(common_testing.get_test_project_path("missing_image_resources"))
+            scratch.Project(common_testing.get_test_project_path("missing_image_resources"), None, None, None, True)
 
 
 class TestProjectFunc(unittest.TestCase):
@@ -1039,6 +1039,308 @@ class TestDistanceBlockWorkaround(unittest.TestCase):
         assert global_variables[2] == { "name": position_x_var_name1, "value": 0, "isPersistent": False }
         assert global_variables[3] == { "name": position_y_var_name1, "value": 0, "isPersistent": False }
 
+    def test_single_distance_block_to_mouse_pointer(self):
+        cls = self.__class__
+        script_data = [0, 0, [["whenGreenFlag"], ["forward:", ["distanceTo:", "_mouse_"]]]]
+        cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE["children"][1]["scripts"] = []
+        raw_project = scratch.RawProject(cls.DISTANCE_HELPER_OBJECTS_DATA_TEMPLATE)
+        position_x_var_name = scratch.S2CC_POSITION_X_VARIABLE_NAME_PREFIX + "_mouse_"
+        position_y_var_name = scratch.S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + "_mouse_"
+        expected_first_object_script_data = [0, 0, [["whenGreenFlag"], ["forward:",
+            ["computeFunction:of:", "sqrt",
+                ["+",
+                    ["*",
+                        ["()", ["-", ["xpos"], ["readVariable", position_x_var_name]]],
+                        ["()", ["-", ["xpos"], ["readVariable", position_x_var_name]]]
+                    ],
+                    ["*",
+                        ["()", ["-", ["ypos"], ["readVariable", position_y_var_name]]],
+                        ["()", ["-", ["ypos"], ["readVariable", position_y_var_name]]]
+                    ]
+                 ]]
+            ]]]
+
+
+        # validate
+        assert len(raw_project.objects) == 3
+        [background_object, first_object, second_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 0
+
+        # first object
+        assert len(first_object.scripts) == 1
+        script = first_object.scripts[0]
+        expected_script = scratch.Script(expected_first_object_script_data)
+        assert script == expected_script
+
+        # mouse-sprite will be created during conversion and not in the pre-processing ->
+        # for now, the second sprite is irrelevant
+        assert len(second_object.scripts) == 0
+
+        # global variables; for the mouse-pointer workaround, the variables are created during conversion
+        # and not in the pre-process
+        global_variables = background_object._dict_object["variables"]
+        assert len(global_variables) == 0
+
+        # check the flag -> indicates that mouse-sprite has to be created during conversion
+        assert raw_project._has_mouse_position_script
+
+class TestGlideToObjectBlockWorkaround(unittest.TestCase):
+    GLIDE_TO_OBJECTS_DATA_TEMPLATE = {
+        "objName": "Stage",
+        "sounds": [],
+        "costumes": [],
+        "currentCostumeIndex": 0,
+        "penLayerMD5": "5c81a336fab8be57adc039a8a2b33ca9.png",
+        "penLayerID": 0,
+        "tempoBPM": 60,
+        "videoAlpha": 0.5,
+        "children": [{ "objName": "Sprite1", "scripts": None },
+                     { "objName": "Sprite2", "scripts": None }],
+        "info": {}
+    }
+
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        cls = self.__class__
+        cls.GLIDE_TO_OBJECTS_DATA_TEMPLATE["scripts"] = []
+
+    def test_glide_to_different_sprite(self):
+        cls = self.__class__
+        spinner_selection = "Sprite2"
+        time_in_sec = "1"
+        script_data = [0, 0, [["whenGreenFlag"], ["glideTo:", time_in_sec, spinner_selection]]]
+        cls.GLIDE_TO_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        cls.GLIDE_TO_OBJECTS_DATA_TEMPLATE["children"][1]["scripts"] = []
+        raw_project = scratch.RawProject(cls.GLIDE_TO_OBJECTS_DATA_TEMPLATE)
+
+        position_x_var_name = scratch.S2CC_POSITION_X_VARIABLE_NAME_PREFIX + spinner_selection
+        position_y_var_name = scratch.S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + spinner_selection
+        expected_first_object_script_data = \
+            [0, 0, [["whenGreenFlag"], [
+                "glideSecs:toX:y:elapsed:from:",
+                 time_in_sec,
+                ["readVariable", position_x_var_name],
+                ["readVariable", position_y_var_name]
+            ]]]
+
+        expected_second_object_script_data = \
+            [0, 0, [["whenGreenFlag"],[
+                    "doForever", [
+                        ["setVar:to:", position_x_var_name, ["xpos"]],
+                        ["setVar:to:", position_y_var_name, ["ypos"]],
+                        ["wait:elapsed:from:", scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]
+                 ]]
+            ]]
+
+        # validate
+        assert len(raw_project.objects) == 3
+        [background_object, first_object, second_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 0
+
+        # first object
+        assert len(first_object.scripts) == 1
+        script = first_object.scripts[0]
+        expected_script = scratch.Script(expected_first_object_script_data)
+        assert script == expected_script
+
+        # second object
+        assert len(second_object.scripts) == 1
+        script = second_object.scripts[0]
+        expected_script = scratch.Script(expected_second_object_script_data)
+        assert script == expected_script
+
+        # global variables
+        global_variables = background_object._dict_object["variables"]
+        assert len(global_variables) == 2
+        assert global_variables[0] == { "name": position_x_var_name, "value": 0, "isPersistent": False }
+        assert global_variables[1] == { "name": position_y_var_name, "value": 0, "isPersistent": False }
+
+    def test_glide_to_random_position(self):
+        cls = self.__class__
+        spinner_selection = "_random_"
+        time_in_sec = "1"
+        script_data = [0, 0, [["whenGreenFlag"], ["glideTo:", time_in_sec, spinner_selection]]]
+        cls.GLIDE_TO_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        cls.GLIDE_TO_OBJECTS_DATA_TEMPLATE["children"][1]["scripts"] = []
+        raw_project = scratch.RawProject(cls.GLIDE_TO_OBJECTS_DATA_TEMPLATE)
+
+        # random position also needs a workaround -> different resolutions in scratch and pocket code
+        left_x, right_x = -scratch.STAGE_WIDTH_IN_PIXELS / 2, scratch.STAGE_WIDTH_IN_PIXELS / 2
+        lower_y, upper_y = -scratch.STAGE_HEIGHT_IN_PIXELS / 2, scratch.STAGE_HEIGHT_IN_PIXELS / 2
+
+        expected_first_object_script_data = \
+            [0, 0, [["whenGreenFlag"],[
+                "glideSecs:toX:y:elapsed:from:",
+                time_in_sec,
+                ["randomFrom:to:", left_x, right_x],
+                ["randomFrom:to:", lower_y, upper_y]
+            ]]]
+
+        # validate
+        assert len(raw_project.objects) == 3
+        [background_object, first_object, second_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 0
+
+        # first object
+        assert len(first_object.scripts) == 1
+        script = first_object.scripts[0]
+        expected_script = scratch.Script(expected_first_object_script_data)
+        assert script == expected_script
+
+        # second object
+        assert len(second_object.scripts) == 0
+
+    def test_glide_to_mouse_poointer(self):
+        cls = self.__class__
+        spinner_selection = "_mouse_"
+        time_in_sec = "1"
+        script_data = [0, 0, [["whenGreenFlag"], ["glideTo:", time_in_sec, spinner_selection]]]
+        cls.GLIDE_TO_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        cls.GLIDE_TO_OBJECTS_DATA_TEMPLATE["children"][1]["scripts"] = []
+        raw_project = scratch.RawProject(cls.GLIDE_TO_OBJECTS_DATA_TEMPLATE)
+
+        position_x_var_name = scratch.S2CC_POSITION_X_VARIABLE_NAME_PREFIX + spinner_selection
+        position_y_var_name = scratch.S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + spinner_selection
+        expected_first_object_script_data = \
+            [0, 0, [["whenGreenFlag"], [
+                "glideSecs:toX:y:elapsed:from:",
+                time_in_sec,
+                ["readVariable", position_x_var_name],
+                ["readVariable", position_y_var_name]
+            ]]]
+
+        # validate
+        assert len(raw_project.objects) == 3
+        [background_object, first_object, second_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 0
+
+        # first object
+        assert len(first_object.scripts) == 1
+        script = first_object.scripts[0]
+        expected_script = scratch.Script(expected_first_object_script_data)
+        assert script == expected_script
+
+        # same as in the 'distanceTo'-block workaround, the mouse-sprite is created during
+        # conversion and not in the pre-processing -> no mouse-sprite yet
+        assert len(second_object.scripts) == 0
+
+        # global variables; for the mouse-pointer workaround, the variables are created during conversion
+        # and not in the pre-process
+        global_variables = background_object._dict_object["variables"]
+        assert len(global_variables) == 0
+
+        # check the flag -> indicates that mouse-sprite has to be created during conversion
+        assert raw_project._has_mouse_position_script
+
+    def test_glide_to_random_single_nested(self):
+        cls = self.__class__
+        spinner_selection = "_random_"
+        time_in_sec = "1"
+        script_data = [0, 0, [["whenGreenFlag"], ["doForever", ["glideTo:", time_in_sec, spinner_selection]]]]
+        cls.GLIDE_TO_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        cls.GLIDE_TO_OBJECTS_DATA_TEMPLATE["children"][1]["scripts"] = []
+        raw_project = scratch.RawProject(cls.GLIDE_TO_OBJECTS_DATA_TEMPLATE)
+
+        # random position also needs a workaround -> different resolutions in scratch and pocket code
+        left_x, right_x = -scratch.STAGE_WIDTH_IN_PIXELS / 2, scratch.STAGE_WIDTH_IN_PIXELS / 2
+        lower_y, upper_y = -scratch.STAGE_HEIGHT_IN_PIXELS / 2, scratch.STAGE_HEIGHT_IN_PIXELS / 2
+
+        expected_first_object_script_data = \
+            [0, 0, [["whenGreenFlag"],
+                ["doForever",
+                    ["glideSecs:toX:y:elapsed:from:",
+                        time_in_sec,
+                        ["randomFrom:to:", left_x, right_x],
+                        ["randomFrom:to:", lower_y, upper_y]
+                    ]
+                ]
+            ]]
+
+        # validate
+        assert len(raw_project.objects) == 3
+        [background_object, first_object, second_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 0
+
+        # first object
+        assert len(first_object.scripts) == 1
+        script = first_object.scripts[0]
+        expected_script = scratch.Script(expected_first_object_script_data)
+        assert script == expected_script
+
+        # second object
+        assert len(second_object.scripts) == 0
+
+    def test_glide_to_objects_double_nested(self):
+        cls = self.__class__
+        spinner_selection_random = "_random_"
+        spinner_selection_mouse = "_mouse_"
+        time_in_sec = "1"
+
+        script_data = [0, 0, [["whenGreenFlag"],
+                                ["doForever",
+                                    ["doIfElse", [">", ["randomFrom:to:", 1.0, 100.0], "50"],
+                                        ["glideTo:", time_in_sec, spinner_selection_random],
+                                        ["glideTo:", time_in_sec, spinner_selection_mouse]
+                                    ]
+                                ]
+                            ]]
+        cls.GLIDE_TO_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        cls.GLIDE_TO_OBJECTS_DATA_TEMPLATE["children"][1]["scripts"] = []
+        raw_project = scratch.RawProject(cls.GLIDE_TO_OBJECTS_DATA_TEMPLATE)
+
+        # variables for x and y positions of the mouse-pointer
+        position_x_var_name = scratch.S2CC_POSITION_X_VARIABLE_NAME_PREFIX + spinner_selection_mouse
+        position_y_var_name = scratch.S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + spinner_selection_mouse
+
+        # random position option also needs a workaround -> different resolutions in scratch and pocket code
+        left_x, right_x = -scratch.STAGE_WIDTH_IN_PIXELS / 2, scratch.STAGE_WIDTH_IN_PIXELS / 2
+        lower_y, upper_y = -scratch.STAGE_HEIGHT_IN_PIXELS / 2, scratch.STAGE_HEIGHT_IN_PIXELS / 2
+
+        expected_first_object_script_data = \
+            [0, 0, [["whenGreenFlag"],
+                    ["doForever",
+                        ["doIfElse", [">", ["randomFrom:to:", 1.0, 100.0], "50"],
+                            ["glideSecs:toX:y:elapsed:from:",
+                                time_in_sec,
+                                ["randomFrom:to:", left_x, right_x],
+                                ["randomFrom:to:", lower_y, upper_y]
+                            ],
+                            ["glideSecs:toX:y:elapsed:from:",
+                                time_in_sec,
+                                ["readVariable", position_x_var_name],
+                                ["readVariable", position_y_var_name]
+                            ]
+                        ]
+                    ]
+            ]]
+
+        # validate
+        assert len(raw_project.objects) == 3
+        [background_object, first_object, second_object] = raw_project.objects
+
+        # background object
+        assert len(background_object.scripts) == 0
+
+        # first object
+        assert len(first_object.scripts) == 1
+        script = first_object.scripts[0]
+        expected_script = scratch.Script(expected_first_object_script_data)
+        assert script == expected_script
+
+        # second object
+        assert len(second_object.scripts) == 0
+
 
 class TestShowSensorBlockWorkarounds(unittest.TestCase):
     SENSOR_HELPER_OBJECTS_DATA_TEMPLATE = {
@@ -1531,6 +1833,124 @@ class TestGetAttributeBlockWorkarounds(unittest.TestCase):
             assert stage_object_variables[0] == { "name": "result", "value": 1, "isPersistent": False }
             assert stage_object_variables[1] == { "name": variable_name, "value": 0, "isPersistent": False }
 
+
+class CommentWorkaround(unittest.TestCase):
+    COMMENT_DATA_TEMPLATE = {
+        "objName": "Stage",
+        "sounds": [],
+        "costumes": [],
+        "currentCostumeIndex": 0,
+        "penLayerMD5": "5c81a336fab8be57adc039a8a2b33ca9.png",
+        "penLayerID": 0,
+        "tempoBPM": 60,
+        "videoAlpha": 0.5,
+        "children": [],
+        "info": {}
+    }
+
+    def get_stage(self, scripts, comments):
+        data = self.COMMENT_DATA_TEMPLATE
+        data["scriptComments"] = comments
+        data["scripts"] = scripts
+        raw_project = scratch.RawProject(data)
+        self.assertEqual(1, len(raw_project.objects))
+        return raw_project.objects[0]
+
+    @classmethod
+    def get_comment(cls, blockId, text):
+        return [0, 0, 0, 0, False, blockId, text]
+
+    def test_simple_comment(self):
+        for blockId in [-1, 0, 1]:
+            script = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", 1]]]
+            comment = self.get_comment(1, "test_comment")
+            stage = self.get_stage([script], [comment])
+
+            self.assertEqual(1, len(stage.scripts))
+            script = stage.scripts[0]
+            self.assertListEqual([['note:', 'test_comment'], ['wait:elapsed:from:', 1]], script.blocks)
+
+    def test_condition_comment(self):
+        script = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", 1], ["wait:elapsed:from:", ["+", 1, 2]], ["wait:elapsed:from:", 1]]]
+        comments = [self.get_comment(3, "condition_comment"), self.get_comment(4, "wait_comment")]
+        stage = self.get_stage([script], comments)
+
+        self.assertEqual(1, len(stage.scripts))
+        script = stage.scripts[0]
+        expected_blocks = [['wait:elapsed:from:', 1],
+                           ['note:', 'condition_comment'],
+                           ['wait:elapsed:from:', ['+', 1, 2]],
+                           ['note:', 'wait_comment'],
+                           ['wait:elapsed:from:', 1]]
+        self.assertListEqual(expected_blocks, script.blocks)
+
+    def test_comment_in_if(self):
+        script = [0, 0, [["whenGreenFlag"], ["doIf", [">", 5, 4], [["wait:elapsed:from:", 1]]], ["wait:elapsed:from:", 1]]]
+        comments = [self.get_comment(3, "in_if_comment"), self.get_comment(4, "after_if_comment")]
+        stage = self.get_stage([script], comments)
+
+        self.assertEqual(1, len(stage.scripts))
+        script = stage.scripts[0]
+        expected_blocks = [['doIf',
+                            ['>', 5, 4],
+                            [['note:', 'in_if_comment'], ['wait:elapsed:from:', 1]]],
+                           ['note:', 'after_if_comment'],
+                           ['wait:elapsed:from:', 1]]
+        self.assertListEqual(expected_blocks, script.blocks)
+
+    def test_comment_in_else(self):
+        script = [0, 0, [["whenGreenFlag"], ["doIfElse", [">", 5, 4], [["wait:elapsed:from:", 1]], [["wait:elapsed:from:", 2]]], ["wait:elapsed:from:", 1]]]
+        comments = [self.get_comment(3, "in_if_comment"), self.get_comment(4, "in_else_comment"), self.get_comment(5, "after_if_comment")]
+        stage = self.get_stage([script], comments)
+
+        self.assertEqual(1, len(stage.scripts))
+        script = stage.scripts[0]
+        expected_blocks = [['doIfElse',
+                            ['>', 5, 4],
+                            [['note:', 'in_if_comment'], ['wait:elapsed:from:', 1]],
+                            [['note:', 'in_else_comment'], ['wait:elapsed:from:', 2]]],
+                           ['note:', 'after_if_comment'],
+                           ['wait:elapsed:from:', 1]]
+        self.assertListEqual(expected_blocks, script.blocks)
+
+    def test_multiple_comments_same_brick(self):
+        NUM_COMMENTS = 20
+        for blockId in [-1, 0, 1, 2]:
+            script = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["+", 1, 2]]]]
+            comments = [self.get_comment(1, "test_comment_{}".format(i)) for i in range(NUM_COMMENTS)]
+            stage = self.get_stage([script], comments)
+
+            self.assertEqual(1, len(stage.scripts))
+            script = stage.scripts[0]
+            expected_blocks = [["note:", "test_comment_{}".format(i)] for i in range(NUM_COMMENTS)][::-1] + [["wait:elapsed:from:", ["+", 1, 2]]]
+            self.assertListEqual(expected_blocks, script.blocks)
+
+    def test_invalid_blocks(self):
+        scripts = [
+            [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["+", 1, 2]]]],
+            [0, 0, [["+", 4, 3]]],
+            [0, 0, [["wait:elapsed:from:", "-", 2, -1]]],
+            [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["+", 1, 2]]]]
+        ]
+        comments = [self.get_comment(i, "comment_{}".format(i)) for i in range(8)]
+        stage = self.get_stage(scripts, comments)
+
+        self.assertEqual(2, len(stage.scripts))
+        expected_blocks_0 = [['note:', 'comment_0'],
+                             ['note:', 'comment_1'],
+                             ['note:', 'comment_2'],
+                             ['wait:elapsed:from:', ['+', 1, 2]]]
+        self.assertListEqual(expected_blocks_0, stage.scripts[0].blocks)
+        expected_blocks_1 = [['note:', 'comment_5'],
+                             ['note:', 'comment_6'],
+                             ['note:', 'comment_7'],
+                             ['wait:elapsed:from:', ['+', 1, 2]]]
+        self.assertListEqual(expected_blocks_1, stage.scripts[1].blocks)
+
+    def test_general_comment_without_scripts(self):
+        comment = self.get_comment(-1, "general comment")
+        stage = self.get_stage([], [comment])
+        self.assertListEqual([], stage.scripts)
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']

@@ -22,6 +22,7 @@
 import os
 import shutil
 from threading import Thread
+from threading import Lock
 from java.awt import Color
 
 from scratchtocatrobat.tools import logger
@@ -37,6 +38,7 @@ from javax.imageio import ImageIO
 
 MAX_CONCURRENT_THREADS = int(helpers.config.get("MEDIA_CONVERTER", "max_concurrent_threads"))
 log = logger.log
+ns_registry_lock = Lock()
 
 
 class MediaType(object):
@@ -44,24 +46,6 @@ class MediaType(object):
     AUDIO = 2
     UNCONVERTED_SVG = 3
     UNCONVERTED_WAV = 4
-
-
-def catrobat_resource_file_name_for(scratch_md5_name, scratch_resource_name):
-    assert os.path.basename(scratch_md5_name) == scratch_md5_name \
-    and len(os.path.splitext(scratch_md5_name)[0]) == 32, \
-    "Must be MD5 hash with file ext: " + scratch_md5_name
-
-    # remove unsupported unicode characters from filename
-#     if isinstance(scratch_resource_name, unicode):
-#         scratch_resource_name = unicodedata.normalize('NFKD', scratch_resource_name).encode('ascii','ignore')
-#         if (scratch_resource_name == None) or (len(scratch_resource_name) == 0):
-#             scratch_resource_name = "unicode_replaced"
-    resource_ext = os.path.splitext(scratch_md5_name)[1]
-    return scratch_md5_name.replace(resource_ext, "_" + scratch_resource_name.replace("/",'') + resource_ext)
-
-
-def _resource_name_for(file_path):
-    return common.md5_hash(file_path) + os.path.splitext(file_path)[1]
 
 
 class _MediaResourceConverterThread(Thread):
@@ -73,7 +57,7 @@ class _MediaResourceConverterThread(Thread):
 
         if media_type == MediaType.UNCONVERTED_SVG:
             # converting svg to png -> new md5 and filename
-            new_src_path = svgtopng.convert(old_src_path, info["rotationCenterX"], info["rotationCenterY"])
+            new_src_path = svgtopng.convert(old_src_path, info["rotationCenterX"], info["rotationCenterY"], ns_registry_lock)
         elif media_type == MediaType.UNCONVERTED_WAV:
             # converting Android-incompatible wav to compatible wav
             new_src_path = wavconverter.convert_to_android_compatible_wav(old_src_path)
@@ -95,7 +79,7 @@ class MediaConverter(object):
         self.catrobat_program = catrobat_program
         self.images_path = images_path
         self.sounds_path = sounds_path
-        self.renamed_files_map = {}
+        self.file_rename_map = {}
 
 
     def convert(self, progress_bar = None):
@@ -213,8 +197,10 @@ class MediaConverter(object):
         assert reference_index == resource_index and reference_index == num_total_resources
 
         converted_media_files_to_be_removed = set()
+        duplicate_filename_set = set()
         for resource_info in all_used_resources:
-            scratch_md5_name = resource_info["scratch_md5_name"]
+            # reconstruct the temporary catrobat filenames -> catrobat.media_objects_in(self.catrobat_file)
+            current_filename = helpers.create_catrobat_md5_filename(resource_info["scratch_md5_name"], duplicate_filename_set)
 
             # check if path changed after conversion
             old_src_path = resource_info["src_path"]
@@ -256,39 +242,51 @@ class MediaConverter(object):
                     # TODO: move test_converter.py to converter-python-package...
                     image_processing.save_editable_image_as_png_to_disk(editable_image, image_file_path, overwrite=True)
 
-            self._copy_media_file(scratch_md5_name, src_path, resource_info["dest_path"],
-                                  resource_info["media_type"])
+            current_basename, _ = os.path.splitext(current_filename)
+            self.file_rename_map[current_basename] = {}
+            self.file_rename_map[current_basename]["src_path"] = src_path
+            self.file_rename_map[current_basename]["dst_path"] = resource_info["dest_path"]
+            self.file_rename_map[current_basename]["media_type"] = resource_info["media_type"]
 
             if resource_info["media_type"] in { MediaType.UNCONVERTED_SVG, MediaType.UNCONVERTED_WAV }:
                 converted_media_files_to_be_removed.add(src_path)
 
-        self._update_file_names_of_converted_media_files()
+        self.rename_media_files_and_copy()
 
+        # delete converted png files -> only temporary saved
         for media_file_to_be_removed in converted_media_files_to_be_removed:
             os.remove(media_file_to_be_removed)
 
+    # rename the media files and copy them to the catrobat project directory
+    def rename_media_files_and_copy(self):
 
-    def _update_file_names_of_converted_media_files(self):
-        for (old_file_name, new_file_name) in self.renamed_files_map.iteritems():
-            look_data_or_sound_infos = filter(lambda info: info.fileName == old_file_name,
-                                      catrobat.media_objects_in(self.catrobat_program))
-            assert len(look_data_or_sound_infos) > 0
+        def create_new_file_name(provided_file, index_helper, file_type):
+            _, ext = os.path.splitext(provided_file)
+            if file_type in {MediaType.UNCONVERTED_SVG, MediaType.IMAGE}:
+                return "img_#" + str(index_helper.assign_image_index()) + ext
+            else:
+                return "snd_#" + str(index_helper.assign_sound_index()) + ext
 
-            for info in look_data_or_sound_infos:
-                info.fileName = new_file_name
+        media_file_index_helper = helpers.MediaFileIndex()
+        for info in catrobat.media_objects_in(self.catrobat_program):
+            basename, _ = os.path.splitext(info.fileName)
+
+            # ignore these files, already correctly provided by the converter
+            if any(x in basename for x in ["key", "mouse"]):
+                continue
+
+            assert basename in self.file_rename_map and \
+                "src_path" in self.file_rename_map[basename] and \
+                "dst_path" in self.file_rename_map[basename] and \
+                "media_type" in self.file_rename_map[basename]
 
 
-    def _copy_media_file(self, scratch_md5_name, src_path, dest_path, media_type):
-        # for Catrobat separate file is needed for resources which are used multiple times but with different names
-        for scratch_resource_name in self.scratch_project.find_all_resource_names_for(scratch_md5_name):
-            new_file_name = catrobat_resource_file_name_for(scratch_md5_name, scratch_resource_name)
-            if media_type in { MediaType.UNCONVERTED_SVG, MediaType.UNCONVERTED_WAV }:
-                old_file_name = new_file_name
-                converted_scratch_md5_name = _resource_name_for(src_path)
-                new_file_name = catrobat_resource_file_name_for(converted_scratch_md5_name,
-                                                                scratch_resource_name)
-                self.renamed_files_map[old_file_name] = new_file_name
-            shutil.copyfile(src_path, os.path.join(dest_path, new_file_name))
+            src_path = self.file_rename_map[basename]["src_path"]
+            dst_path = self.file_rename_map[basename]["dst_path"]
+            media_type = self.file_rename_map[basename]["media_type"]
+            new_file_name = create_new_file_name(src_path, media_file_index_helper, media_type)
+            shutil.copyfile(src_path, os.path.join(dst_path, new_file_name))
+            info.fileName = new_file_name
 
     def resize_png(self, path_in, path_out, bitmapResolution):
         import java.awt.image.BufferedImage

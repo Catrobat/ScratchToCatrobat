@@ -28,12 +28,13 @@ import org.catrobat.catroid.common as catcommon
 import org.catrobat.catroid.content as catbase
 import org.catrobat.catroid.content.bricks as catbricks
 import org.catrobat.catroid.formulaeditor as catformula
+import org.catrobat.catroid.formulaeditor.FormulaElement.ElementType as catElementType
 
 # FIXME: consider localization
 _BACKGROUND_SPRITE_NAME = "Hintergrund"
 
 ANDROID_IGNORE_MEDIA_MARKER_FILE_NAME = ".nomedia"
-CATROBAT_LANGUAGE_VERSION = float("{0:.3f}".format(catcommon.Constants.CURRENT_CATROBAT_LANGUAGE_VERSION))
+CATROBAT_LANGUAGE_VERSION = float("{0:.5f}".format(catcommon.Constants.CURRENT_CATROBAT_LANGUAGE_VERSION))
 PACKAGED_PROGRAM_FILE_EXTENSION = catcommon.Constants.CATROBAT_EXTENSION
 PROGRAM_SOURCE_FILE_NAME = catcommon.Constants.CODE_XML_FILE_NAME
 
@@ -101,32 +102,32 @@ def _sprite_of(scene, sprite_name):
     return sprite
 
 def find_global_or_sprite_user_list_by_name(scene, sprite, list_name):
-    return scene.getDataContainer().getUserList(sprite, list_name)
+    userList = sprite.getUserList(list_name)
+    if userList == None:
+        userList = scene.project.getUserList(list_name)
+    return userList
 
 def find_global_user_list_by_name(project, list_name):
-    return project.getDefaultScene().getDataContainer().findProjectList(list_name)
+    return project.getUserList(list_name)
 
-def find_sprite_user_list_by_name(project, sprite, list_name):
-    user_lists = project.getDefaultScene().getDataContainer().getSpriteListMap()[sprite]
-    for user_list in user_lists:
-        if user_list.getName() == list_name:
-            return user_list
-    return None
+def find_sprite_user_list_by_name(sprite, list_name):
+    return sprite.getUserList(list_name)
 
 def user_variable_of(project, variable_name, sprite_name=None):
     '''
     If `sprite_name` is None the project variables are checked.
     '''
-    data_container = project.getDefaultScene().getDataContainer()
     if sprite_name is None:
-        return data_container.findUserVariable(variable_name, data_container.projectVariables)
+        return project.getUserVariable(variable_name)
     else:
         sprite = _sprite_of(project.getDefaultScene(), sprite_name)
-        return data_container.getUserVariable(sprite, variable_name)
+        return sprite.getUserVariable(variable_name)
 
 def create_formula_with_value(variable_value):
     assert variable_value != None
-    if type(variable_value) is int:
+    if type(variable_value) is bool:
+        java_variable_value = java.lang.Integer(int(variable_value))
+    elif type(variable_value) is int:
         java_variable_value = java.lang.Integer(variable_value)
     elif isinstance(variable_value, (float, long)):
         java_variable_value = java.lang.Double(variable_value)
@@ -149,23 +150,25 @@ def create_formula_element_with_value(variable_value):
 def add_user_variable(project, variable_name, sprite=None, sprite_name=None):
     ''' If `sprite_name` is set a sprite variable is added otherwise the variable is added to the project. '''
     _log.debug("adding variable '%s' to sprite '%s'", variable_name, sprite_name if sprite_name is not None else "<Stage>")
-    user_variables = project.getDefaultScene().getDataContainer()
     if sprite_name is None:
-        added_user_variable = user_variables.addProjectUserVariable(variable_name)
+        user_variables = project.userVariables
+        added_user_variable = catformula.UserVariable(variable_name)
+        user_variables.add(added_user_variable)
     else:
-        added_user_variable = user_variables.addSpriteUserVariableToSprite(sprite, variable_name)
+        user_variables = sprite.userVariables
+        added_user_variable = catformula.UserVariable(variable_name)
+        user_variables.add(added_user_variable)
     assert added_user_variable is not None
     return added_user_variable
 
 
-def defined_variable_names_in(project, sprite_name=None, sprite=None):
+def defined_variable_names_in(project, sprite_name=None):
     scene = project.getDefaultScene()
     if sprite_name is None:
-        user_variables = scene.getDataContainer().projectVariables
+        user_variables = project.userVariables
     else:
-        if sprite is None:
-            sprite = _sprite_of(scene, sprite_name)
-        user_variables = scene.getDataContainer().getOrCreateVariableListForSprite(sprite)
+        sprite = _sprite_of(scene, sprite_name)
+        user_variables = sprite.userVariables
     return [user_variable.getName() for user_variable in user_variables]
 
 
@@ -176,7 +179,7 @@ def media_objects_in(project):
             yield media_object
 
 def add_to_start_script(bricks, sprite, position=0):
-    _log.debug("add to start script of '%s': %s", sprite.getName(), map(simple_name_for, bricks))
+    _log.debug("adding sprite %s to start script",sprite.getName())
     if len(bricks) == 0: return # nothing to do
 
     def get_or_add_startscript(sprite):
@@ -214,31 +217,89 @@ def encoded_project_name(project_name):
     return project_name
 
 
+def build_var_id(variable_name):
+    return '"' + variable_name + '"'
+
+
 # TODO: extend for all further, default cases
 def formula_element_for(catrobat_enum, arguments=[]):
     # TODO: fetch from unary operators map
+    arguments = (arguments + [None, None])[:2]  # pad arguments
+
     unary_operators = [catformula.Operators.LOGICAL_NOT]
-    package_name = catrobat_enum.getClass().__name__.lower()
-    formula_element = None
-    if package_name in {"functions", "operators", "sensors"}:
-        # pad arguments
-        arguments = (arguments + [None, None])[:2]
 
-        element_type = catformula.FormulaElement.ElementType.valueOf(package_name[:-1].upper())
-        enum_name = catrobat_enum.name()
+    if isinstance(catrobat_enum, catformula.FormulaElement):
+        element_type = "formulaElement"
+    elif hasattr(catrobat_enum, "getClass"):
+        package_name = catrobat_enum.getClass().__name__
+        element_type = catElementType.valueOf(package_name[:-1].upper())
+    elif isinstance(catrobat_enum, basestring) and catrobat_enum[0] == '"' and catrobat_enum[-1] == '"':
+        element_type = catElementType.valueOf("USER_VARIABLE")
+        assert len(catrobat_enum) > 2
+        catrobat_enum = catrobat_enum[1:-1]
+    elif isinstance(catrobat_enum, basestring) and catrobat_enum == "()":
+        element_type = catElementType.valueOf("BRACKET")
+    else:
+        element_type = "value"
+
+    # TODO: rewrite occurrences where this special case is needed in converter.py (e.g. _regular_block_conversion()),
+    #  so that this becomes obsolete
+    arguments = [catformula.FormulaElement(catElementType.STRING, str(arg), None)
+                 if isinstance(arg, unicode) else arg for arg in arguments]
+
+    # unary operator -> either left or right child must be None, child must always be placed on right side
+    if element_type == catElementType.OPERATOR and catrobat_enum in unary_operators or \
+            element_type == catElementType.BRACKET:
+        assert (arguments[0] is None) != (arguments[1] is None)
+        if arguments[1] is None:
+            arguments[0], arguments[1] = arguments[1], arguments[0]
+
+    # TODO: as soon as calls to this function are fixed in converter.py (e.g. _regular_block_conversion())
+    #  uncomment the asserts or call the function recursively for each of its arguments
+    # assert arguments[0] is None or isinstance(arguments[0], catformula.FormulaElement)
+    # assert arguments[1] is None or isinstance(arguments[1], catformula.FormulaElement)
+
+    if element_type in {catElementType.FUNCTION, catElementType.OPERATOR, catElementType.USER_VARIABLE,
+                        catElementType.SENSOR, catElementType.BRACKET}:
         formula_parent = None
-
-        # check if unary operator -> add formula to rightChild instead of leftChild (i.e. set leftChild to None)
-        if element_type == catformula.FormulaElement.ElementType.OPERATOR and catrobat_enum in unary_operators:
-            assert len(arguments) == 2 and arguments[0] != None and arguments[1] == None
-            arguments[0], arguments[1] = arguments[1], arguments[0] # swap leftChild and rightChild
-
-        arguments = [catformula.FormulaElement(catformula.FormulaElement.ElementType.STRING, str(arg), None)
-                      if isinstance(arg, unicode) else arg for arg in arguments]
-
-        formula_element = catformula.FormulaElement(element_type, enum_name, formula_parent, *arguments)  # @UndefinedVariable (valueOf)
-        for formula_child in arguments:
-            if formula_child is not None:
-                formula_child.parent = formula_element
+        # print ("adding args: " + str(arguments) + " to formula element: " + str(catrobat_enum) + " as children")
+        # Needs to throw exception because of _regular_block_conversion()?
+        formula_element = catformula.FormulaElement(element_type, str(catrobat_enum), formula_parent, *arguments)
+    elif element_type == "formulaElement":
+        formula_element = catrobat_enum
+        if arguments[0] is not None:
+            formula_element.setLeftChild(arguments[0])
+        if arguments[1] is not None:
+            formula_element.setRightChild(arguments[1])
+    else:
+        # assert arguments[0] is arguments[1] is None  # must be leaf
+        formula_element = create_formula_element_with_value(catrobat_enum)
 
     return formula_element
+
+
+# see: https://runestone.academy/runestone/books/published/pythonds/Trees/ListofListsRepresentation.html
+#  for nested list representation of trees
+# use with either nested list or single id (e.g. 6, "my_var", etc.)
+# TODO: in converter.py replace occurrences of "formula_element_for()" with this function to standardise calls
+def create_formula_element_for(expression):
+    left_child = []
+    right_child = []
+
+    if not isinstance(expression, list):
+        root = expression
+    else:
+        if len(expression) == 0:
+            return None
+        assert len(expression) <= 3
+
+        root = expression[0]
+        if len(expression) >= 2:
+            left_child = expression[1]
+        if len(expression) == 3:
+            right_child = [] if len(expression) <= 2 else expression[2]
+
+    return formula_element_for(root, [create_formula_element_for(left_child), create_formula_element_for(right_child)])
+
+def create_formula_for(expression):
+    return catformula.Formula(create_formula_element_for(expression))

@@ -1,0 +1,396 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+#
+#  ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
+#  Copyright (C) 2013-2017 The Catrobat Team
+#  (<http://developer.catrobat.org/credits>)
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU Affero General Public License as
+#  published by the Free Software Foundation, either version 3 of the
+#  License, or (at your option) any later version.
+#
+#  An additional term exception under section 7 of the GNU Affero
+#  General Public License, version 3, is available at
+#  http://developer.catrobat.org/license_additional_term
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+#  GNU Affero General Public License for more details.
+#
+#  You should have received a copy of the GNU Affero General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+from __future__ import print_function
+import os
+import locale
+import platform
+import subprocess
+import sys
+import requests
+import subprocess
+import json
+import re
+
+sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "src"))
+from scratchtocatrobat.tools import helpers
+
+[jython_home_dir, jython_exec_path, jython_path] = helpers.config.get("PATHS", ["jython_home", "jython_exec", "jython"])
+env = os.environ
+env['JYTHONPATH'] = jython_path if sys.platform != 'win32' else jython_path.replace(":", ";")
+if not os.path.isdir(jython_home_dir):
+    helpers.error("Invalid jython home path given. No valid directory. Please update 'jython_home' in the config file.")
+if not os.path.isfile(jython_exec_path):
+    helpers.error("Jython script path '%s' must exist." % jython_exec_path.replace(".bat", "[.bat]"))
+env["PYTHONIOENCODING"] = "utf-8"
+
+usage = '''Conversion Statistics of Scratch to Catrobat converter
+
+    Usage:
+      'run_statistics' <search-string>
+      'run_statistics' <search-string> <number of conversions>
+      'run_statistics' <search-string> <number of conversions> <offset>
+
+    Description:
+      Search string can be any term the user wants to find random projects about.
+      Number of conversions is the limit of conversions done (default = 5, maximum = 40).
+      Offset can be used to get scratch projects that are not the first query results
+      returned by scratch search (default = 0).
+
+    -----------------------------------------------------------------------------
+    '''
+
+
+''' Helpers ############################################################################ '''
+
+class Logger(object):
+    def __init__(self):
+        self.terminal = sys.stdout
+        self.log = open("data/statistics/statistics.txt", "w")
+
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+
+    def flush(self):
+        pass
+
+
+''' Classes  ############################################################################ '''
+
+class FatalError(object):
+    def __init__(self):
+        self.message = ""
+        self.count = ""
+        self.project_ids = []
+
+class NonFatalError(object):
+    def __init__(self):
+        self.message = ""
+        self.count = ""
+        self.project_ids = []
+
+class Statistics(object):
+    def __init__(self):
+        self.total_conversions = 0
+        self.warnings = 0
+        self.errors = 0
+        self.failed_conversions = 0
+        self.successful_conversions = 0
+
+        self.fatalErrors = []
+        self.number_of_found_crash_causes = 0
+
+        self.nonFatalErrors = []
+        self.numberOfErrors = 0
+
+        self.warnings_ = []
+        self.number_of_warnings = 0
+
+
+''' Output  ############################################################################ '''
+
+def print_info(title):
+    print("")
+    print("Project for conversion: " + title)
+    print("Converting ...")
+
+def print_result(ret_val):
+    success = "SUCCESS"
+    if ret_val:
+        success = "FAILED"
+    print("Conversion returned with value " + str(ret_val) + " ... " + success)
+
+def print_log_info():
+    print("")
+    print("For detailed information and error messages check logfiles inside each conversion folder.")
+    print("")
+
+def print_single_separator():
+    print("")
+    print("--------------------------------------------------------------------------------------")
+    print("")
+
+def print_double_separator():
+    print("")
+    print("--------------------------------------------------------------------------------------")
+    print("--------------------------------------------------------------------------------------")
+    print("")
+
+def print_statistics(stat):
+    stdout = sys.stdout
+    sys.stdout = Logger()
+    print("")
+    print("total_conversions      " + str(stat.total_conversions))
+    print("successful_conversions " + str(stat.successful_conversions))
+    print("failed_conversions     " + str(stat.failed_conversions))
+    if stat.total_conversions > 0:
+        print("success rate           " + str( float(stat.successful_conversions) / float(stat.total_conversions) * 100.0) + "%")
+    else:
+        print("success rate           no conversions done yet.")
+    print("")
+    print("warnings               " + str(stat.warnings))
+    print("errors                 " + str(stat.numberOfErrors))
+    print_double_separator()
+
+    print("Fatal errors that led to conversion crash:")
+    print("Found " + str(stat.number_of_found_crash_causes) + " of " + str(stat.failed_conversions) + " total crashes.")
+    print_single_separator()
+    for error in stat.fatalErrors:
+        print(error.message)
+        print("This error occured " + str(error.count) + " times, in the following projects:")
+        for project in error.project_ids:
+            print(project)
+        print_double_separator()
+    print_double_separator()
+
+    print("Errors that did not lead to conversion crash:")
+    print_single_separator()
+    for error in stat.nonFatalErrors:
+        print(error.message)
+        print("This error occured " + str(error.count) + " times, in the following projects:")
+        for project in error.project_ids:
+            print(project)
+        print_double_separator()
+
+    sys.stdout = stdout
+
+
+''' Parsing  ############################################################################ '''
+
+conversion_start_string = "INFO     calling converter"
+conversion_end_string = "100% |##########################################################| Time: "
+project_data_string = "Downloading project from URL: .* to temp dir"
+
+info_string = " INFO  "
+warning_string = " WARNING  "
+error_string = " ERROR  "
+traceback_string = "Traceback"
+
+ignore_header = ["Latest Catroid release:", "NEW CATROID RELEASE IS AVAILABLE!",
+                 "PLEASE UPDATE THE CLASS HIERARCHY OF THE CONVERTER",
+                 "WARNING:"]
+ignore_while_conversion = ["/usr/local/bin/sox WARN dither: ", "Retrying https://"]
+
+def add_fatal_error(error_msg, project_id):
+    msg = error_msg.split("File")
+    if len(msg) > 2:
+        error_msg = msg[0] + "...\n  File" + msg[-1]
+    error_already_existing = False
+
+    for error in stat.fatalErrors:
+        if error_msg == error.message:
+            error.count += 1
+            error.project_ids.append(project_id)
+            error_already_existing = True
+
+    if not error_already_existing:
+        new_error = FatalError()
+        new_error.message = error_msg
+        new_error.count = 1
+        new_error.project_ids.append(project_id)
+        stat.fatalErrors.append(new_error)
+    stat.number_of_found_crash_causes += 1
+
+def add_error(error_msg, project_id):
+    msg = error_msg.split("File")
+    msg, counter = message_specific_parsing(msg)
+    if msg == [] or counter == 0:
+        return
+    if len(msg) > 2:
+        error_msg = msg[0] + "...\n  File" + msg[-1]
+    else:
+        error_msg = msg[0]
+        if len(msg) == 2:
+            error_msg += msg[1]
+    error_already_existing = False
+
+    for error in stat.nonFatalErrors:
+        if error_msg == error.message:
+            error.count += counter
+            if project_id not in error.project_ids:
+                error.project_ids.append(project_id)
+            error_already_existing = True
+
+    if not error_already_existing:
+        new_error = NonFatalError()
+        new_error.message = error_msg
+        new_error.count = counter
+        new_error.project_ids.append(project_id)
+        stat.nonFatalErrors.append(new_error)
+
+    stat.numberOfErrors += counter
+
+#add parsing rules here if new difficult to parse errors come along - especially those from image conversion threads
+def message_specific_parsing(msg):
+    svg_to_png_conversion = False
+    get_attribute = False
+    counter = 0
+
+    if "Cannot add default behaviour to sprite object" in msg[0]:
+        msg[0] = "ERROR  Cannot add default behaviour to sprite object"
+    if "__getattribute__ not found on type" in msg[0]:
+        msg[0] = "ERROR  __getattribute__ not found on type Type. See http://bugs.jython.org/issue2487 for details."
+    for i in range(len(msg)):
+        if "svg" in msg[i] or "png" in msg[i] or "SVG" in msg[i] or "PNG" in msg[i] or "subprocess" in msg[i] or "Thread" in msg[i] or "thread" in msg[i]:
+            svg_to_png_conversion = True
+        msg[i] = re.sub(" [^ ]+\.svg", " img.svg", msg[i])
+        msg[i] = re.sub(" [^ ]+\.png", " img.png", msg[i])
+        if "__getattribute__ not found on type" in msg[i] and i > 0:
+            get_attribute = True
+
+    if svg_to_png_conversion:
+        msg, counter = parse_thread_msg(msg, counter)
+    elif get_attribute:
+        msg = []
+    elif msg != []:
+        counter = 1
+
+    return msg, counter
+
+def parse_thread_msg(msg, counter):
+    for i in range(len(msg)):
+        if "ScratchtobatError: SVG to PNG conversion call failed" in msg[i]:
+            counter = counter + 1
+    if counter == 0:
+        msg = []
+    else:
+        msg = ["ScratchtobatError: SVG to PNG conversion call failed"]
+    return msg, counter
+
+
+def find_crashes(foldername, filename, stat):
+    checked_scratch_project = "no ID"
+    error_msg = ""
+    currently_parsing_error = False
+
+    f = open(foldername+"/"+filename, "r")
+
+    for x in f:
+        if conversion_start_string in x:
+            if error_msg != "":
+                add_fatal_error(error_msg, checked_scratch_project)
+            error_msg = ""
+            checked_scratch_project = "no ID"
+        elif re.search(project_data_string, x):
+            checked_scratch_project = x.split("/")[4]
+        elif conversion_end_string in x or info_string in x or any(str in x for str in ignore_while_conversion):
+            if error_msg != "":
+                add_error(error_msg, checked_scratch_project)
+            error_msg = ""
+        elif warning_string in x:
+            stat.number_of_warnings += 1
+            if error_msg != "":
+                add_error(error_msg, checked_scratch_project)
+            error_msg = ""
+        elif not any(str in x for str in ignore_header) and not x == "\n":
+            if error_string in x:
+                if error_msg != "":
+                    add_error(error_msg, checked_scratch_project)
+                error_msg = ""
+                x = "ERROR" + x.split(error_string)[-1]
+            error_msg += x
+
+    if error_msg != "":
+        add_fatal_error(error_msg, checked_scratch_project)
+
+    f.close()
+
+def traverse_file(foldername, filename, stat):
+    f = open(foldername+"/"+filename, "r")
+    for x in f:
+        if conversion_start_string in x:
+            stat.total_conversions += 1
+        elif conversion_end_string in x:
+            stat.successful_conversions += 1
+        elif warning_string in x:
+            stat.warnings += 1
+        stat.failed_conversions = stat.total_conversions - stat.successful_conversions
+    f.close()
+
+    find_crashes(foldername, filename, stat)
+
+
+''' Conversion ############################################################################ '''
+
+keyword = "";
+limit = 5
+offset = 0
+
+if len(sys.argv) == 1 or len(sys.argv) > 4:
+    print(usage)
+    sys.exit(helpers.ExitCode.SUCCESS)
+if len(sys.argv) == 2:
+    keyword = sys.argv[1]
+if len(sys.argv) == 3:
+    keyword = sys.argv[1]
+    limit = int(sys.argv[2])
+    if not (limit >= 0 and limit <= 40):
+        print(usage)
+        sys.exit(helpers.ExitCode.SUCCESS)
+if len(sys.argv) == 4:
+    keyword = sys.argv[1]
+    limit = int(sys.argv[2])
+    if not (limit >= 0 and limit <= 40):
+        print(usage)
+        sys.exit(helpers.ExitCode.SUCCESS)
+    offset = int(sys.argv[3])
+    if offset < 0:
+        print(usage)
+        sys.exit(helpers.ExitCode.SUCCESS)
+
+
+if limit != 0:
+    conversion_folder_name = keyword + "_limit=" + str(limit) + "_offset=" + str(offset)
+    conversion_dir = os.path.join(os.path.realpath(os.path.dirname(__file__)), "data/statistics", conversion_folder_name)
+    helpers.make_dir_if_not_exists(conversion_dir)
+
+    url = "https://api.scratch.mit.edu/search/projects?q=" + keyword + "&limit=" + str(limit) + "&offset=" + str(offset)
+    page = requests.get(url)
+    count = limit+1
+
+    f = open(os.path.join(conversion_dir, "log.txt"), "w")
+    for project in page.json():
+        print_info(project["title"])
+        dir_name = os.path.join("data/statistics", conversion_folder_name, str(count-limit) + "_" + project["title"].replace(".", ""))
+        dir = os.path.join(os.path.realpath(os.path.dirname(__file__)), dir_name)
+        helpers.make_dir_if_not_exists(dir)
+        url = "https://scratch.mit.edu/projects/" + str(project["id"]) + "/"
+        return_value = subprocess.call(["./run", url, dir_name, "--extracted"], stdout=f, stderr=f)
+        count = count + 1
+        print_result(return_value)
+    f.close()
+
+rootdir = os.path.join(os.path.realpath(os.path.dirname(__file__)), "data/statistics")
+stat = Statistics()
+
+for subdir, dirs, files in os.walk(rootdir):
+    for file in files:
+        if file == 'log.txt':
+            traverse_file(subdir, file, stat)
+
+print_statistics(stat)
+print_log_info()
+
+sys.exit(helpers.ExitCode.SUCCESS)

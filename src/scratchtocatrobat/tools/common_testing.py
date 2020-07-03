@@ -44,20 +44,24 @@ from scratchtocatrobat.converter import converter
 assert System.getProperty("python.security.respectJavaAccessibility") == 'false', "Jython registry property 'python.security.respectJavaAccessibility' must be set to 'false'"
 
 TEST_PROJECT_URL_TO_ID_MAP = {
-    'https://scratch.mit.edu/projects/10132588/': '10132588',  # dance back
+    # scratch2 projects
+    'https://scratch.mit.edu/projects/390299427/':   '390299427',  # dance back
     # FIXME: fails with error 'http://scratch.mit.edu/projects/10189712/': '10189712',  # kick the ball
-    'https://scratch.mit.edu/projects/10205819/': '10205819',  # dancing in the castle
-    'https://scratch.mit.edu/projects/10530876/': '10530876',  # cat has message
-    'https://scratch.mit.edu/projects/10453283/': '10453283',  # jai ho!
+    'https://scratch.mit.edu/projects/390300019/':   '390300019',  # dancing in the castle
+    'https://scratch.mit.edu/projects/390300135/':   '390300135',  # cat has message
+    'https://scratch.mit.edu/projects/390300261/':   '390300261',  # jai ho!
+    # scratch3 projects
+    'https://scratch.mit.edu/projects/390300374/':  '390300374',  # simple memory
+    'https://scratch.mit.edu/projects/390300542/':  '390300542',  # same image, different objects
 }
 TEST_PROJECT_FILENAME_TO_ID_MAP = {
-    'dancing_castle.zip': '10205819',
-    'Dance back.zip': '10132588'
+    'dancing_castle.zip': '390300019',
+    'Dance back.zip': '390299427'
 }
 PROJECT_DUMMY_ID = "1013258"  # dance back
 # TODO: parse from Java annotations
 FIELD_NAMES_TO_XML_NAMES = {"virtualScreenWidth": "screenWidth", "virtualScreenHeight": "screenHeight"}
-IGNORED_XML_HEADER_CLASS_FIELDS = ["serialVersionUID"]
+IGNORED_XML_HEADER_CLASS_FIELDS = ["serialVersionUID", "projectName"]
 OPTIONAL_HEADER_TAGS = ["dateTimeUpload", "description", "tags", "remixOf", "userHandle"]
 
 _log = common.log

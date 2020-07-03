@@ -25,6 +25,7 @@ import itertools
 import json
 import os
 import sys
+from operator import itemgetter
 
 from scratchtocatrobat.tools import common
 from scratchtocatrobat.scratch import scratchwebapi
@@ -52,6 +53,7 @@ class JsonKeys(object):
     PROJECT_ID = 'projectID'
     OBJECT_NAME = "objName"
     SCRIPTS = "scripts"
+    SCRIPT_COMMENTS = "scriptComments"
     SOUND_MD5 = "md5"
     SOUND_ID = "soundID"
     SOUND_NAME = "soundName"
@@ -74,13 +76,28 @@ S2CC_POSITION_X_VARIABLE_NAME_PREFIX = "S2CC:pos_x_"
 S2CC_POSITION_Y_VARIABLE_NAME_PREFIX = "S2CC:pos_y_"
 S2CC_SENSOR_PREFIX = "S2CC:sensor_"
 S2CC_GETATTRIBUTE_PREFIX = "S2CC:getattribute_"
+S2CC_PEN_COLOR_VARIABLE_NAMES = {"h": "S2CC:pen_hue", "s": "S2CC:pen_saturation", "v": "S2CC:pen_value"}
+S2CC_PEN_COLOR_DEFAULT_HSV_VALUE = {"h": 0.67, "s": 1.00, "v": 1.00}
+S2CC_PEN_COLOR_HELPER_VARIABLE_NAMES = {
+    "h_i": "S2CC:_h_i", "f": "S2CC:_f", "p": "S2CC:_p", "q": "S2CC:_q",
+    "t": "S2CC:_t", "r": "S2CC:_red", "g": "S2CC:_green", "b": "S2CC:_blue"
+}
+S2CC_PEN_SIZE_VARIABLE_NAME = "S2CC:pen_size"
+S2CC_PEN_SIZE_MULTIPLIER = 3.65
+S2CC_PEN_SIZE_DEFAULT_VALUE = (1 * S2CC_PEN_SIZE_MULTIPLIER)
 ADD_TIMER_SCRIPT_KEY = "add_timer_script_key"
 ADD_TIMER_RESET_SCRIPT_KEY = "add_timer_reset_script_key"
 ADD_POSITION_SCRIPT_TO_OBJECTS_KEY = "add_position_script_to_objects_key"
 ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY = "add_update_attribute_script_to_objects_key"
 ADD_KEY_PRESSED_SCRIPT_KEY = "add_key_pressed_script_key"
 ADD_MOUSE_SPRITE = "add_mouse_sprite"
+ADD_PEN_DEFAULT_BEHAVIOR = "add_pen_default_behavior"
+ADD_PEN_COLOR_VARIABLES = "add_pen_color_variables"
+ADD_PEN_SIZE_VARIABLE = "add_pen_size_variable"
 UPDATE_HELPER_VARIABLE_TIMEOUT = 0.04
+# TODO: extend whenever new bricks are added
+PEN_BRICK_LIST = ["clearPenTrails", "stampCostume", "putPenDown", "putPenUp", "penColor:", "changePenParamBy:",
+                  "setPenParamTo:", "changePenSizeBy:", "penSize:", "penShade:", "changePenShadeBy:", "penHue:"]
 
 
 def verify_resources_of_scratch_object(scratch_object, md5_to_resource_path_map, project_base_path):
@@ -93,6 +110,50 @@ def verify_resources_of_scratch_object(scratch_object, md5_to_resource_path_map,
             raise ProjectError("Missing resource file at project: {}. Provide resource with md5: {}"
                                .format(project_base_path, resource_md5))
 
+# Returns the count of bricks in blocks (Doesn't count Values, formulas etc.)
+def _get_block_count(blocks):
+    count = 0
+    if isinstance(blocks, list):
+        for (i, block) in enumerate(blocks):
+            if isinstance(block, list):
+                if not isinstance(block[0], list) and block[0] != '()':
+                    count += 1
+                count += _get_block_count(block)
+    return count
+
+def _get_block_position_list(blocks):
+    positions_list = []
+
+    def _visit_condition(condition, block_position):
+        # brackets are injected in sourcecodemodifier => ignore them for correct offset
+        if  condition[0] != '()':
+            positions_list.append(block_position)
+
+    def _traverse_condition(condition, block_position):
+        _visit_condition(condition, block_position)
+        for child_condition in condition:
+            if isinstance(child_condition, list):
+                _traverse_condition(child_condition, block_position)
+
+    def _visit(block, block_position):
+        positions_list.append(block_position)
+
+    def _traverse(blocks):
+        assert isinstance(blocks, list)
+        for (i, block) in enumerate(blocks):
+            assert isinstance(block, list)
+            _visit(block, (blocks, i))
+            for child in block:
+                if isinstance(child, list):
+                    #list of bricks
+                    if isinstance(child[0], list):
+                        _traverse(child)
+                    #Conditions
+                    else:
+                        _traverse_condition(child, (blocks, i))
+    _traverse(blocks)
+    return positions_list
+
 # TODO: rename
 class Object(common.DictAccessWrapper):
 
@@ -104,7 +165,7 @@ class Object(common.DictAccessWrapper):
             else:
                 self.isScratch3 = True
                 return
-        for key in (JsonKeys.SOUNDS, JsonKeys.COSTUMES, JsonKeys.SCRIPTS, JsonKeys.LISTS, JsonKeys.VARIABLES):
+        for key in (JsonKeys.SOUNDS, JsonKeys.COSTUMES, JsonKeys.SCRIPTS, JsonKeys.LISTS, JsonKeys.VARIABLES, JsonKeys.SCRIPT_COMMENTS):
             if key not in object_data:
                 self._dict_object[key] = []
         self.name = self.get_objName()
@@ -121,7 +182,55 @@ class Object(common.DictAccessWrapper):
             ADD_POSITION_SCRIPT_TO_OBJECTS_KEY: set(),
             ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY: {},
             ADD_MOUSE_SPRITE: False,
+            ADD_PEN_DEFAULT_BEHAVIOR: False,
+            ADD_PEN_COLOR_VARIABLES: False,
+            ADD_PEN_SIZE_VARIABLE: False
         }
+
+        ############################################################################################
+        # Comment workaround
+        # Before other workarounds, because scratch2 comments uses offsets                         #
+        ############################################################################################
+        if self._dict_object[JsonKeys.SCRIPT_COMMENTS]:
+            # reverse sort, so that adding comments will not invalidate the offset of the next comments
+            comments = sorted(self._dict_object[JsonKeys.SCRIPT_COMMENTS], key=itemgetter(5), reverse=True)
+
+            #fix comment offsets if there are bricks outside of scripts
+            if len(self.get_scripts()) != len(self.scripts):
+                invalid_script_blocks = [None if Script.is_valid_script_input(script) else script[2] for script in self.get_scripts()]
+                script = iter(self.scripts)
+                block_offset = 0
+                for invalid_script_block in invalid_script_blocks:
+                    if invalid_script_block:
+                        invalid_script_length = _get_block_count(invalid_script_block)
+                        # remove comments that are in the invalid script
+                        comments = [c for c in comments if not block_offset <= c[5] < block_offset + invalid_script_length]
+                        # move all the later comments to the correct offset
+                        for comment in comments:
+                            if comment[5] > block_offset:
+                                comment[5] -= invalid_script_length
+                    else:
+                        block_offset += 1 + _get_block_count(script.next().blocks)
+
+            position_list = []
+            for script in self.scripts:
+                position_list.append((script.blocks, 0))
+                position_list.extend(_get_block_position_list(script.blocks))
+
+            for (x, y, width, height, isOpen, blockId, text) in comments:
+                #Add comments not associated to a block into the 1st script
+                if blockId < 0:
+                    block_offset = 0
+                else:
+                    block_offset = blockId
+                if block_offset < len(position_list):
+                    block_list, offset = position_list[block_offset]
+                    block_list.insert(offset, ["note:", text])
+                else:
+                    _log.warn("Comment with blockId of {} can't be converted.".format(blockId))
+
+        for script in self.scripts:
+            script.script_element = ScriptElement.from_raw_block(script.blocks)
 
         ############################################################################################
         # timer and timerReset workaround
@@ -187,7 +296,7 @@ class Object(common.DictAccessWrapper):
             return new_block_list
 
         for script in self.scripts:
-            if has_key_pressed_block(script.blocks): 
+            if has_key_pressed_block(script.blocks):
                 script.blocks = replace_key_pressed_blocks(script.blocks)
                 workaround_info[ADD_KEY_PRESSED_SCRIPT_KEY] = key_pressed_keys
                 # rebuild ScriptElement tree
@@ -199,8 +308,8 @@ class Object(common.DictAccessWrapper):
         def has_distance_to_object_block(block_list, all_sprite_names):
             for block in block_list:
                 if isinstance(block, list) \
-                and ((block[0] == 'distanceTo:' and block[1] in (all_sprite_names) + ['_mouse_']) \
-                     or has_distance_to_object_block(block, all_sprite_names)):
+                        and ((block[0] == 'distanceTo:' and block[1] in (all_sprite_names) + ['_mouse_']) \
+                             or has_distance_to_object_block(block, all_sprite_names)):
                     return True
             return False
 
@@ -213,14 +322,14 @@ class Object(common.DictAccessWrapper):
                         # between both sprite objects
                         new_block_list += [
                             ["computeFunction:of:", "sqrt", ["+",
-                              ["*",
-                                ["()", ["-", ["xpos"], ["readVariable", S2CC_POSITION_X_VARIABLE_NAME_PREFIX + block[1]]]],
-                                ["()", ["-", ["xpos"], ["readVariable", S2CC_POSITION_X_VARIABLE_NAME_PREFIX + block[1]]]]
-                              ], ["*",
-                                ["()", ["-", ["ypos"], ["readVariable", S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + block[1]]]],
-                                ["()", ["-", ["ypos"], ["readVariable", S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + block[1]]]]
-                              ]
-                            ]]
+                                                             ["*",
+                                                              ["()", ["-", ["xpos"], ["readVariable", S2CC_POSITION_X_VARIABLE_NAME_PREFIX + block[1]]]],
+                                                              ["()", ["-", ["xpos"], ["readVariable", S2CC_POSITION_X_VARIABLE_NAME_PREFIX + block[1]]]]
+                                                              ], ["*",
+                                                                  ["()", ["-", ["ypos"], ["readVariable", S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + block[1]]]],
+                                                                  ["()", ["-", ["ypos"], ["readVariable", S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + block[1]]]]
+                                                                  ]
+                                                             ]]
                         ]
                         positions_needed_for_sprite_names.add(block[1])
                         if block[1] == "_mouse_":
@@ -238,6 +347,63 @@ class Object(common.DictAccessWrapper):
                 script.blocks = replace_distance_to_object_blocks(script.blocks, positions_needed_for_sprite_names)
             # parse again ScriptElement tree
             script.script_element = ScriptElement.from_raw_block(script.blocks)
+
+        ############################################################################################
+        # glide to sprite/mouse-pointer/random-position workaround
+        ############################################################################################
+        def has_glide_to_sprite_script(block_list, all_sprite_names):
+            for block in block_list:
+                if isinstance(block, list) and (block[0] == 'glideTo:' \
+                        and block[-1] in all_sprite_names + ['_mouse_', '_random_'] \
+                        or has_glide_to_sprite_script(block, all_sprite_names)):
+                    return True
+            return False
+
+        def add_glide_to_workaround_script(block_list, positions_needed_for_sprite_names):
+            glide_to_workaround_bricks = []
+            for block in block_list:
+                if isinstance(block, list):
+                    if block[0] == 'glideTo:':
+                        sprite_name = block[-1]
+                        time_in_sec = block[1]
+                        random_pos = False
+                        if sprite_name == "_random_":
+                            random_pos = True
+                        elif sprite_name == "_mouse_":
+                            workaround_info[ADD_MOUSE_SPRITE] = True
+                        else:
+                            positions_needed_for_sprite_names.add(sprite_name)
+
+                        if random_pos:
+                            left_x, right_x = -STAGE_WIDTH_IN_PIXELS / 2, STAGE_WIDTH_IN_PIXELS / 2
+                            lower_y, upper_y = -STAGE_HEIGHT_IN_PIXELS / 2, STAGE_HEIGHT_IN_PIXELS / 2
+                            glide_to_workaround_bricks += [[
+                                "glideSecs:toX:y:elapsed:from:",
+                                time_in_sec,
+                                ["randomFrom:to:", left_x, right_x],
+                                ["randomFrom:to:", lower_y, upper_y]
+                            ]]
+                        else:
+                            x_pos_var_name = S2CC_POSITION_X_VARIABLE_NAME_PREFIX + sprite_name
+                            y_pos_var_name = S2CC_POSITION_Y_VARIABLE_NAME_PREFIX + sprite_name
+                            glide_to_workaround_bricks += [[
+                                "glideSecs:toX:y:elapsed:from:",
+                                time_in_sec,
+                                ["readVariable", x_pos_var_name],
+                                ["readVariable", y_pos_var_name]
+                            ]]
+                    else:
+                        glide_to_workaround_bricks += [add_glide_to_workaround_script(block, positions_needed_for_sprite_names)]
+                else:
+                    glide_to_workaround_bricks += [block]
+            return glide_to_workaround_bricks
+
+        for script in self.scripts:
+            if has_glide_to_sprite_script(script.blocks, all_sprite_names):
+                script.blocks = add_glide_to_workaround_script(script.blocks, positions_needed_for_sprite_names)
+            script.script_element = ScriptElement.from_raw_block(script.blocks)
+
+        # save which sprites need position tracking from 'distanceTo'- and 'glideTo'-bricks
         workaround_info[ADD_POSITION_SCRIPT_TO_OBJECTS_KEY] = positions_needed_for_sprite_names
 
         ############################################################################################
@@ -303,6 +469,38 @@ class Object(common.DictAccessWrapper):
             # parse again ScriptElement tree
             script.script_element = ScriptElement.from_raw_block(script.blocks)
         workaround_info[ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY] = sensor_data_needed_for_sprite_names
+
+        ############################################################################################
+        # pen bricks: change pen [something] by [value] workaround
+        ############################################################################################
+        def has_pen_brick(block_list):
+            for block in block_list:
+                if isinstance(block, list) and (block[0] in PEN_BRICK_LIST or has_pen_brick(block)):
+                    return True
+            return False
+
+        def has_pen_color_param_block(block_list):
+            for block in block_list:
+                # TODO: remove transparency case as soon as catrobat supports pen transparency change
+                if isinstance(block, list) and ((block[0] == 'changePenParamBy:' or block[0] == 'setPenParamTo:')
+                and block[1] != 'transparency' or has_pen_color_param_block(block)):
+                    return True
+            return False
+
+        def has_change_pen_size_block(block_list):
+            for block in block_list:
+                if isinstance(block, list) and (block[0] == 'changePenSizeBy:'
+                or has_change_pen_size_block(block)):
+                    return True
+            return False
+
+        for script in self.scripts:
+            if has_pen_brick(script.blocks):
+                workaround_info[ADD_PEN_DEFAULT_BEHAVIOR] = True
+            if has_pen_color_param_block(script.blocks):
+                workaround_info[ADD_PEN_COLOR_VARIABLES] = True
+            if has_change_pen_size_block(script.blocks):
+                workaround_info[ADD_PEN_SIZE_VARIABLE] = True
         return workaround_info
 
     @classmethod
@@ -367,6 +565,12 @@ class RawProject(Object):
             workaround_info = scratch_object.preprocess_object(all_sprite_names)
             if workaround_info[ADD_TIMER_SCRIPT_KEY]: is_add_timer_script = True
             if workaround_info[ADD_TIMER_RESET_SCRIPT_KEY]: is_add_timer_reset_script = True
+            if workaround_info[ADD_PEN_DEFAULT_BEHAVIOR]:
+                self._add_pen_default_behavior_to_object(scratch_object)
+            if workaround_info[ADD_PEN_COLOR_VARIABLES]:
+                self._add_pen_color_variables_to_object(scratch_object)
+                self._add_pen_colo_helper_variables_to_object(scratch_object)
+            if workaround_info[ADD_PEN_SIZE_VARIABLE]: self._add_pen_size_variable_to_object(scratch_object)
             if len(workaround_info[ADD_KEY_PRESSED_SCRIPT_KEY]) > 0:
                 self.listened_keys.update(workaround_info[ADD_KEY_PRESSED_SCRIPT_KEY])
             position_script_to_be_added |= workaround_info[ADD_POSITION_SCRIPT_TO_OBJECTS_KEY]
@@ -380,7 +584,6 @@ class RawProject(Object):
 
         for destination_sprite_name in position_script_to_be_added:
             if destination_sprite_name == "_mouse_": continue
-
             sprite_object = sprite_name_sprite_mapping[destination_sprite_name]
             assert sprite_object is not None
             self._add_update_position_script_to_object(sprite_object)
@@ -413,9 +616,9 @@ class RawProject(Object):
         # update position script
         script_blocks = [
             ["doForever", [
-              ["setVar:to:", position_x_var_name, ["xpos"]],
-              ["setVar:to:", position_y_var_name, ["ypos"]],
-              ["wait:elapsed:from:", UPDATE_HELPER_VARIABLE_TIMEOUT]
+                ["setVar:to:", position_x_var_name, ["xpos"]],
+                ["setVar:to:", position_y_var_name, ["ypos"]],
+                ["wait:elapsed:from:", UPDATE_HELPER_VARIABLE_TIMEOUT]
             ]]
         ]
         sprite_object.scripts += [Script([0, 0, [[SCRIPT_GREEN_FLAG]] + script_blocks])]
@@ -449,8 +652,8 @@ class RawProject(Object):
         # timer counter script
         script_blocks = [
             ["doForever", [
-              ["changeVar:by:", S2CC_TIMER_VARIABLE_NAME, UPDATE_HELPER_VARIABLE_TIMEOUT],
-              ["wait:elapsed:from:", UPDATE_HELPER_VARIABLE_TIMEOUT]
+                ["changeVar:by:", S2CC_TIMER_VARIABLE_NAME, UPDATE_HELPER_VARIABLE_TIMEOUT],
+                ["wait:elapsed:from:", UPDATE_HELPER_VARIABLE_TIMEOUT]
             ]]
         ]
         self.objects[0].scripts += [Script([0, 0, [[SCRIPT_GREEN_FLAG]] + script_blocks])]
@@ -495,6 +698,41 @@ class RawProject(Object):
         forever_loop_body_blocks += [["wait:elapsed:from:", UPDATE_HELPER_VARIABLE_TIMEOUT]]
         script_blocks = [["doForever", forever_loop_body_blocks]]
         sprite_object.scripts += [Script([0, 0, [[SCRIPT_GREEN_FLAG]] + script_blocks])]
+
+    def _add_pen_default_behavior_to_object(self, sprite_object):
+        default_pen_size = [unicode("penSize:"), 1.0]
+        default_pen_color = [unicode("penColor:"), "#0000ff"]
+        script_blocks = [default_pen_size, default_pen_color]
+        self._add_to_start_script(sprite_object, script_blocks)
+        return
+
+    def _add_to_start_script(self, sprite_object, bricks):
+        for i, script in enumerate(sprite_object.scripts):
+            if script.type == SCRIPT_GREEN_FLAG:
+                sprite_object.scripts[i] = Script([0, 0, [[SCRIPT_GREEN_FLAG]] + bricks + script.blocks])
+                return
+        sprite_object.scripts += [Script([0, 0, [[SCRIPT_GREEN_FLAG]] + bricks])]
+        return
+
+    def _add_pen_color_variables_to_object(self, sprite_object):
+        for key in S2CC_PEN_COLOR_VARIABLE_NAMES.keys():
+            sprite_object._dict_object["variables"].append({
+                "name": S2CC_PEN_COLOR_VARIABLE_NAMES[key],
+                "value": S2CC_PEN_COLOR_DEFAULT_HSV_VALUE[key],
+                "isPersistent": False
+            })
+        return
+
+    def _add_pen_colo_helper_variables_to_object(self, sprite_object):
+        for variable_name in S2CC_PEN_COLOR_HELPER_VARIABLE_NAMES.values():
+            sprite_object._dict_object["variables"].append({"name": variable_name, "value": 0, "isPersistent": False})
+        return
+
+    def _add_pen_size_variable_to_object(self, sprite_object):
+        sprite_object._dict_object["variables"].append(
+            {"name": S2CC_PEN_SIZE_VARIABLE_NAME, "value": S2CC_PEN_SIZE_DEFAULT_VALUE, "isPersistent": False}
+        )
+        return
 
     def __iter__(self):
         return iter(self.objects)
@@ -563,12 +801,12 @@ class RawProject(Object):
                 is_binary_string = lambda bytesdata: bool(bytesdata.translate(None, textchars))
                 fp.seek(0, 0) # set file pointer back to the beginning of the file
                 if is_binary_string(fp.read(1024)): # check first 1024 bytes
-                    raise EnvironmentError("Invalid JSON file. The project's code-file "\
-                            "seems to be a binary file. Project might be very old "\
-                            "Scratch project. Scratch projects lower than 2.0 are "\
-                            "not supported!")
+                    raise EnvironmentError("Invalid JSON file. The project's code-file " \
+                                           "seems to be a binary file. Project might be very old " \
+                                           "Scratch project. Scratch projects lower than 2.0 are " \
+                                           "not supported!")
                 else:
-                    raise EnvironmentError("Invalid JSON file. But the project's "\
+                    raise EnvironmentError("Invalid JSON file. But the project's " \
                                            "code-file seems to be no binary file...")
 
     @classmethod
@@ -626,7 +864,7 @@ class Project(RawProject):
 
             # self.name = name if name is not None else scratchwebapi.getMetaDataEntry(self.project_id, "title")
 
-            self.instructions, self.notes_and_credits, self.automatic_screenshot_image_url =\
+            self.instructions, self.notes_and_credits, self.automatic_screenshot_image_url = \
                 scratchwebapi.getMetaDataEntry(self.project_id, "instructions", "description", "image")
             # self.instructions = scratchwebapi.getMetaDataEntry(self.project_id, "instructions")
             # self.notes_and_credits = scratchwebapi.getMetaDataEntry(self.project_id, "description")
@@ -811,7 +1049,7 @@ class Script(object):
             for (block_arg_index, block_arg) in enumerate(block_args):
                 other_block_arg = other_block_args[block_arg_index]
                 if type(block_arg) != type(other_block_arg) \
-                and not (isinstance(block_arg, (str, unicode)) and isinstance(block_arg, (str, unicode))):
+                        and not (isinstance(block_arg, (str, unicode)) and isinstance(block_arg, (str, unicode))):
                     return False
 
                 if isinstance(block_arg, list):

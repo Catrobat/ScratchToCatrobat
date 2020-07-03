@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 #
 #  ScratchToCatrobat: A tool for converting Scratch projects into Catrobat programs.
@@ -39,7 +39,6 @@ if not os.path.isdir(jython_home_dir):
 if not os.path.isfile(jython_exec_path):
     helpers.error("Jython script path '%s' must exist." % jython_exec_path.replace(".bat", "[.bat]"))
 
-helpers.inject_git_commmit_hook()
 
 env = os.environ
 env['JYTHONPATH'] = jython_path if sys.platform != 'win32' else jython_path.replace(":", ";")

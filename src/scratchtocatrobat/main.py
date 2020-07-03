@@ -26,6 +26,7 @@ import sys
 from docopt import docopt
 from scratchtocatrobat.tools import logger
 from scratchtocatrobat.tools import helpers
+from scratchtocatrobat.scratch import scratch3
 
 # TODO: not best solution! {
 reload(sys)
@@ -99,24 +100,25 @@ def run_converter(scratch_project_file_or_url, output_dir,
         progress_bar = helpers.ProgressBar(None, web_mode, sys.stdout)
         with common.TemporaryDirectory(remove_on_exit=temp_rm) as scratch_project_dir:
             is_local_project = True
+            project_id = None
             if scratch_project_file_or_url.startswith("https://"):
                 is_local_project = False
                 validate_scratch_url(scratch_project_file_or_url)
 
-                project_ID = scratchwebapi.extract_project_id_from_url(scratch_project_file_or_url)
-                if not scratchwebapi.request_is_project_available(project_ID):
-                    raise common.ScratchtobatError("Project with ID %s not available" % project_ID)
-                visibility = scratchwebapi.getMetaDataEntry(project_ID, "visibility")
+                project_id = scratchwebapi.extract_project_id_from_url(scratch_project_file_or_url)
+                if not scratchwebapi.request_is_project_available(project_id):
+                    raise common.ScratchtobatError("Project with ID %s not available" % project_id)
+                visibility = scratchwebapi.getMetaDataEntry(project_id, "visibility")
                 if visibility != scratchwebapi.ScratchProjectVisibiltyState.PUBLIC:
                     log.warn('-'*80)
                     log.warn("CAVE: Project with ID %s is NOT a public project!! Trying to " \
                              "continue the conversion-process anyway, but expecting the " \
-                             "conversion to fail or to be incomplete...", project_ID)
+                             "conversion to fail or to be incomplete...", project_id)
                     log.warn('-'*80)
                 log.info("Downloading project from URL: '{}' to temp dir {} ...".format(
                                                 scratch_project_file_or_url, scratch_project_dir))
                 scratchwebapi.download_project(scratch_project_file_or_url, scratch_project_dir, progress_bar)
-                scratch3ProjectName = scratchwebapi.getMetaDataEntry(project_ID, "title")
+                scratch3ProjectName = scratchwebapi.getMetaDataEntry(project_id, "title")
 
             elif os.path.isfile(scratch_project_file_or_url):
                 log.info("Extracting project from path: '{}' ...".format(scratch_project_file_or_url))
@@ -129,32 +131,10 @@ def run_converter(scratch_project_file_or_url, output_dir,
                 log.info("Loading project from path: '{}' ...".format(scratch_project_file_or_url))
                 scratch_project_dir = scratch_project_file_or_url
 
-
-            isScratch3Project = False # TODO: change, currently we can't have Scratch3FromDownload
-            if os.path.isfile(scratch_project_dir + '/' +helpers.config.get("SCRATCH","code_file_name")):
-                with open(os.path.join(scratch_project_dir, helpers.config.get("SCRATCH","code_file_name")),'r') as file:
-                    import json
-                    project_dict = json.load(file)
-                    if "targets" in project_dict.keys():
-                        isScratch3Project = True
-
-
-
-
-                    # isScratch3Project = scratch_project_file_or_url.endswith(".sb3")
-                # if not isScratch3Project:
-                #     project = scratch.RawProject.from_project_folder_path(scratch_project_dir)
-                #     progress_bar.expected_progress = project.expected_progress_of_local_project(progress_bar)
+            isScratch3Project = scratch3.is_scratch3_project(scratch_project_dir)
 
             if isScratch3Project:
-                from scratch.scratch3 import Scratch3Parser
-                parser = Scratch3Parser(os.path.join(scratch_project_dir, helpers.config.get("SCRATCH","code_file_name")), scratch_project_dir)
-                scratch2Data = parser.parse_sprites()
-                with open(os.path.join(scratch_project_dir, helpers.config.get("SCRATCH","code_file_name")),'w') as file:
-                    file.flush()
-                    import json
-                    #json.dump(json.JSONEncoder.encode(scratch3data),file)
-                    json.dump(scratch2Data, file, sort_keys=True, indent=4, separators=(',', ': '))
+                scratch3.convert_to_scratch2_data(scratch_project_dir, project_id)
 
             project = scratch.Project(scratch_project_dir, progress_bar=progress_bar, is_local_project = is_local_project)
             if isScratch3Project:

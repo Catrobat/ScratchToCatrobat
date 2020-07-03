@@ -6,7 +6,9 @@ xstream_class_name: BackwardCompatibleCatrobatLanguageXStream
 archive_extension: "zip"
 #URL: "https://github.com/Catrobat/Catroid/archive/master.%{archive_extension}"
 #URL: "https://github.com/Catrobat/Catroid/archive/%{catroid_version}.%{archive_extension}"
-URL: "https://github.com/Catrobat/Catroid/archive/release-0.9.34.%{archive_extension}"
+#URL: "https://github.com/Catrobat/Catroid/archive/release-0.9.34.%{archive_extension}"
+#URL: "https://github.com/Catrobat/Catroid/archive/v0.9.60.zip"
+URL: "https://github.com/Catrobat/Catroid/archive/v0.9.64.zip"
 xstream_version: "1.4.7"
 xstream_lib_extension: "jar"
 xstream_download_URL: "http://repo.maven.apache.org/maven2/com/thoughtworks/xstream/xstream/%{xstream_version}/xstream-%{xstream_version}.%{xstream_lib_extension}"
@@ -45,15 +47,15 @@ remove_classes: [
     WhenNfcBrick, WhenNfcScript, SetNfcTagBrick,
 
     # Raspi bricks
-    RaspiPwmBrick, RaspiSendDigitalValueBrick, RaspiInterruptScript,
+    RaspiPwmBrick, RaspiSendDigitalValueBrick, RaspiInterruptScript, WhenRaspiPinChangedBrick,
 
     # physics bricks
     CollisionScript, CollisionReceiverBrick, SetBounceBrick, SetFrictionBrick,
     SetGravityBrick, SetMassBrick, SetPhysicsObjectTypeBrick, SetVelocityBrick,
-    TurnLeftSpeedBrick, TurnRightSpeedBrick,
+    TurnLeftSpeedBrick, TurnRightSpeedBrick, WhenBounceOffScript, WhenBounceOffBrick,
 
     # Miscellaneous
-    WhenGamepadButtonBrick, WhenGamepadButtonScript
+    WhenGamepadButtonBrick, WhenGamepadButtonScript, ThreadScheduler, DroneVideoLookData, NfcTagData
 ]
 
 remove_method_invocations:
@@ -65,12 +67,13 @@ remove_method_invocations:
 remove_method_invocations_with_parameter_mapping:
     org.catrobat.catroid.content.Project:
         - removeInvalidVariablesAndLists(oldProject.dataContainer)
+        - backgroundSprite.look.setZIndex(Z_INDEX_BACKGROUND)
     org.catrobat.catroid.content.Scene:
         - background.look.setZIndex(0)
         - addSprite(background)
     org.catrobat.catroid.content.Look:
         - flipLookDataIfNeeded(mode)
-    org.catrobat.catroid.io.StorageHandler:
+    org.catrobat.catroid.io.XstreamSerializer:
         - xstream.alias("nfcTag",NfcTagData.class)
         - xstream.alias("script",WhenNfcScript.class)
         - xstream.alias("script",RaspiInterruptScript.class)
@@ -123,6 +126,13 @@ remove_method_invocations_with_parameter_mapping:
         - xstream.alias("brick",LegoEv3SetLedBrick.class)
         - xstream.alias("script",WhenGamepadButtonScript.class)
         - xstream.alias("brick",WhenGamepadButtonBrick.class)
+        - xstream.alias("brick",WhenRaspiPinChangedBrick.class)
+        - xstream.alias("droneLook",DroneVideoLookData.class)
+        - xstream.omitField(RaspiInterruptScript.class,"receivedMessage")
+        - xstream.omitField(SetNfcTagBrick.class,"nfcTagNdefDefaultType")
+        - xstream.alias("script",WhenBounceOffScript.class)
+        - xstream.alias("brick",WhenBounceOffBrick.class)
+
     org.catrobat.catroid.io.BackwardCompatibleCatrobatLanguageXStream:
         - brickInfo.addBrickFieldToMap("speed",BrickField.LEGO_NXT_SPEED)
         - brickInfoMap.put("legoNxtMotorMoveBrick",brickInfo)
@@ -202,7 +212,9 @@ remove_method_invocations_with_parameter_mapping:
         - brickInfoMap.put("setNfcTagBrick",brickInfo)
         - brickInfoMap.put("whenGamepadButtonBrick",brickInfo)
         - scriptInfoMap.put("whenGamepadButtonScript",WhenGamepadButtonScript.class.getSimpleName())
-
+        - scriptInfoMap.put("collisionScript",WhenBounceOffScript.class.getSimpleName())
+    org.catrobat.catroid.content.bricks.FormulaBrick:
+        - brickFieldToTextViewIdMap.put(brickField,textViewResourceId)
 remove_assignments_mapping:
     org.catrobat.catroid.formulaeditor.Formula:
         - internFormula=new InternFormula(formulaTree.getInternTokenList())
@@ -249,7 +261,17 @@ remove_assignments_mapping:
         - brickInfo=new BrickInfo(TurnRightSpeedBrick.class.getSimpleName())
         - brickInfo=new BrickInfo(SetNfcTagBrick.class.getSimpleName())
         - brickInfo=new BrickInfo(WhenGamepadButtonBrick.class.getSimpleName())
-
+        - brickInfo=new BrickInfo(WhenBounceOffBrick.class.getSimpleName())
+    org.catrobat.catroid.common.LookData:
+        - this.file=file
+    org.catrobat.catroid.common.SoundInfo:
+        - this.file=file
+    org.catrobat.catroid.content.bricks.SetPenColorBrick:
+        - showFormulaEditorStrategy=new ShowColorPickerFormulaEditorStrategy()
+    org.catrobat.catroid.content.bricks.ShowTextColorSizeAlignmentBrick:
+        - showFormulaEditorStrategy=new ShowColorPickerFormulaEditorStrategy()
+    org.catrobat.catroid.content.Look:
+        - scheduler=new ThreadScheduler(this)        
 remove_if_else_blocks_mapping:
     org.catrobat.catroid.io.StorageHandler:
         - "!Utils.externalStorageAvailable()"
@@ -258,6 +280,7 @@ remove_if_else_blocks_mapping:
     org.catrobat.catroid.content.Project:
         - "ScreenValues.SCREEN_HEIGHT == 0 || ScreenValues.SCREEN_WIDTH == 0"
         - "context == null"
+        - "isCastProject"
     org.catrobat.catroid.content.bricks.BroadcastReceiverBrick:
         - "receiveScript != null && receiveScript.isCommentedOut()"
     org.catrobat.catroid.content.bricks.WhenBrick:
@@ -266,6 +289,10 @@ remove_if_else_blocks_mapping:
         - "script != null && script.isCommentedOut()"
     org.catrobat.catroid.content.bricks.WhenTouchDownBrick:
         - "script != null && script.isCommentedOut()"
+    org.catrobat.catroid.common.LookData:
+        - "file != null"
+    org.catrobat.catroid.common.SoundInfo:
+        - "file != null"
 
 remove_variable_declarations_mapping:
     org.catrobat.catroid.content.Look:
@@ -286,6 +313,7 @@ additional_serialization_classes:
     - AllowedAfterDeadEndBrick
     - BaseDataContainer
     - Brick
+    - BrickBaseType
     - Constants
     - DeadEndBrick
     - DroneBrick
@@ -293,6 +321,7 @@ additional_serialization_classes:
     - ElementType
     - Formula
     - FormulaElement
+    - FormulaBrick
     - Functions
     - Operators
     - ScreenModes
@@ -310,16 +339,24 @@ additional_serialization_classes:
     - AskSpeechBrick
     - Project
     - ThreadScheduler
-    - DataContainer
     - SupportProject
     - SupportDataContainer
     - BroadcastMessageBrick
     - XstreamSerializer
+    - Scene
+    - PenColor
+    - ScriptBrickBaseType
+    - UserVariableBrickInterface
+    - Nameable
+    - UserData
+    - R
+
 
 
 preserved_interfaces:
     [Brick, BroadcastMessage, Converter, LoopBeginBrick, MindstormsSensor,
-    MindstormsCommand, ScriptBrick]
+    MindstormsCommand, ScriptBrick, UserVariableBrickInterface, Nameable, UserData,
+    Serializable]
 
 additional_helper_classes:
     - BroadcastMessage
@@ -353,15 +390,10 @@ additional_helper_classes:
     - UserBrickVariableBehaviour
     - ProjectVariableBehaviour
     - ProjectListBehaviour
+    - Nameable
+    - R
 
 class_to_preserved_fields_mapping:
-    DataContainer:
-        - project
-        - spriteVariableBehaviour
-        - spriteListBehaviour
-        - userBrickVariableBehaviour
-        - projectVariableBehaviour
-        - projectListBehaviour
     GoToBrick:
         - oldSelectedObject
     Scene:
@@ -375,13 +407,11 @@ class_to_preserved_fields_mapping:
     PointToBrick:
         - oldSelectedObject
     Script:
-        - brick
+        - scriptBrick
     Sprite:
         [look, isPaused, newUserBrickNext, isBackpackObject]
     SetLookBrick:
         - oldSelectedLook
-        - wait
-    SetLookByIndexBrick:
         - wait
     UserVariable:
         - value
@@ -417,6 +447,7 @@ class_to_preserved_fields_mapping:
         - version
     UserList:
         - list
+        - name
     UserBrickParameter:
         - parent
     SetVariableBrick:
@@ -459,6 +490,9 @@ class_to_preserved_methods_mapping:
         - setIfBrickReferences
         - setIfThenBrickReferences
         - setLoopBrickReferences
+        - getScriptBrick
+    ScriptBrick:
+        - getScript
     StartScript:
         - getScriptBrick
     WhenScript:
@@ -474,6 +508,8 @@ class_to_preserved_methods_mapping:
         - getName
         - isBackgroundObject
         - getDefaultScene
+        - getUserVariable
+        - getUserList
     SoundInfo:
         - compareTo
         - setTitle
@@ -511,6 +547,8 @@ class_to_preserved_methods_mapping:
         - updateUserVariableReferencesInUserVariableBricks
         - getListWithAllBricks
         - addUserBrick
+        - getUserVariable
+        - getUserList
     UserVariablesContainer:
         - addSpriteUserVariableToSprite
         - getOrCreateVariableListForSprite
@@ -519,38 +557,6 @@ class_to_preserved_methods_mapping:
         - getFormulaWithBrickField
         - setFormulaWithBrickField
         - getFormulas
-    DataContainer:
-        - addUserBrickVariableToUserBrick
-        - addUserBrickVariableToUserBrickIfNotExists
-        - addSpriteUserVariable
-        - addSpriteUserVariableToSprite
-        - addSpriteVariableIfDoesNotExist
-        - addProjectUserVariable
-        - getOrCreateVariableListForUserBrick
-        - getOrCreateVariableListForSprite
-        - cleanVariableListForSprite
-        - getUserVariable
-        - getUserVariableContext
-        - addSpriteUserList
-        - addSpriteUserListToSprite
-        - addProjectUserList
-        - getOrCreateUserListListForSprite
-        - findProjectVariable
-        - findProjectList
-        - findSpriteUserVariable
-        - findSpriteUserList
-        - getUserList
-        - existSpriteList
-        - getCurrentUserBrick
-        - setSpriteVariablesForSupportContainer
-        - getProjectVariables
-        - getProjectLists
-        - removeSpriteVariableWithSameSpriteName
-        - setUserBrickVariables
-        - getSpriteListMap
-        - getSpriteVariableMap
-        - getCurrentSprite
-        - getUserBrickVariableMap
     AddItemToUserListBrick:
         - initializeBrickFields
     ChangeTransparencyByNBrick:
@@ -664,6 +670,8 @@ class_to_preserved_methods_mapping:
     XmlHeader:
         - setlandscapeMode
         - setUrl
+        - setProjectName
+        - getProjectName
     NfcTagData:
         - compareTo
     WhenBackgroundChangesScript:
@@ -672,14 +680,71 @@ class_to_preserved_methods_mapping:
         - getScriptBrick
     WhenConditionScript:
         - getScriptBrick
-
+    UserVariableBrickInterface:
+        - getUserVariable
+        - setUserVariable
+    BroadcastReceiverBrick:
+        - getScript
+        - getBroadcastMessage
+        - setBroadcastMessage
+    BroadcastMessageBrick:
+        - getBroadcastMessage
+        - setBroadcastMessage
+    XStreamConcurrentFormulaHashMapConverter:
+        - marshal
+        - unmarshal
+        - canConvert
+    CatroidFieldKeySorter:
+        - sort
+        - findAnnotationInClassHierarchy
+        - sortAlphabeticallyByClassHierarchy
+        - sortByList
+        - getAliasOrFieldName
+        - checkMissingSerializableField
+        - isSerializable
+    SpriteFactory:
+        - newInstance
+    Nameable:
+        - getName
+        - setName
+    XStreamSettingConverter:
+        - doMarshal
+        - canConvert
+        - doUnmarshal
+    XStreamSpriteConverter:
+        - doMarshal
+        - canConvert
+        - doUnmarshal
+    XStreamUserVariableConverter:
+        - doMarshal
+        - canConvert
+        - doUnmarshal
+    XStreamScriptConverter:
+        - doMarshal
+        - canConvert
+        - doUnmarshal
+    XStreamBrickConverter:
+        - doMarshal
+        - canConvert
+        - doUnmarshal
+    CloneBrick:
+        - CloneBrick
+        
 remove_fields_mapping:
+    Brick:
+        [Resources]
     BrickValues:
         [PHYSIC_TYPE, PHYSIC_MASS, PHYSIC_BOUNCE_FACTOR, PHYSIC_FRICTION, PHYSIC_GRAVITY, PHYSIC_VELOCITY, PHYSIC_TURN_DEGREES]
     Constants:
-        [DEFAULT_ROOT, TMP_PATH, TMP_IMAGE_PATH, TMP_LOOKS_PATH, TMP_SOUNDS_PATH, TEXT_TO_SPEECH_TMP_PATH]
+        [
+        DEFAULT_ROOT, TMP_PATH, TMP_IMAGE_PATH, TMP_LOOKS_PATH, TMP_SOUNDS_PATH, TEXT_TO_SPEECH_TMP_PATH,
+        MAIN_URL_HTTPS, SHARE_PROGRAM_URL, CATROBAT_TERMS_OF_USE_URL, CATROBAT_HELP_URL, 
+        CATROBAT_TOKEN_LOGIN_URL, CATROBAT_DELETE_ACCOUNT_URL, CACHE_DIR, EXTERNAL_STORAGE_ROOT_EXPORT_DIRECTORY, 
+        BACKPACK_DIRECTORY, POCKET_PAINT_CACHE_DIR, CAMERA_CACHE_DIR, SOUND_RECORDER_CACHE_DIR, MEDIA_LIBRARY_CACHE_DIR, 
+        BACKPACK_FILE, BACKPACK_SCENE_DIRECTORY, BACKPACK_SOUND_DIRECTORY, BACKPACK_IMAGE_DIRECTORY, LegoSensorType, LegoPort
+        ]
     Look:
-        [actionsToRestart, pixmap, whenParallelAction, shader]
+        [actionsToRestart, pixmap, whenParallelAction, shader, RotationStyle, scheduler]
     NXTSensor:
         - connection
     StorageHandler:
@@ -693,6 +758,10 @@ remove_fields_mapping:
     FormulaBrick:
         - backPackedListData
         - backPackedVariableData
+    ProjectManager:
+        - brickController
+    Sprite:
+        - nfcTagList
 
 remove_methods_mapping:
     GoToBrick:
@@ -704,6 +773,7 @@ remove_methods_mapping:
     Sprite:
         - cloneUserBricks
         - cloneLook
+        - getNfcTagList
     Script:
         - setIfBrickReferences
         - setIfThenBrickReferences
@@ -713,7 +783,7 @@ remove_methods_mapping:
         [uploadProject, loadProject, cancelLoadProject, canLoadProject, saveProject,
         initializeDefaultProject, initializeDroneProject, initializeNewProject,
         deleteCurrentProject, checkCurrentSprite, checkCurrentScript, deleteProject, renameProject,
-        addScript, createAndShowUploadDialog]
+        addScript, createAndShowUploadDialog, loadLegoNXTSettingsFromProject, loadLegoEV3SettingsFromProject, createNewEmptyProject, createNewExampleProject]
     XmlHeader:
         - setTags
     Look:
@@ -734,6 +804,10 @@ remove_methods_mapping:
         - isClone
     UserBrickVariableBehaviour:
         - isClone
+    WhenConditionBrick:
+        - getPositionInScript
+    WhenBackgroundChangesBrick:
+        - getPositionInScript    
 
 remove_packages_mapping:
     - android
@@ -741,3 +815,13 @@ remove_packages_mapping:
     - org.catrobat.catroid.R
     - org.catrobat.catroid.common.Constants.DEFAULT_ROOT
     - org.catrobat.catroid.pocketmusic
+    
+remove_annotations:
+    - VisibleForTesting
+    - Look.RotationStyle
+remove_superclass:
+    - Image
+remove_method_parameter_at_position:
+    addAllowedBrickField:
+        - 1
+    

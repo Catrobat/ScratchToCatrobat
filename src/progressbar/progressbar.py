@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
 # progressbar  - Text progress bar library for Python.
@@ -35,11 +34,8 @@ try:
 except ImportError:
     pass
 
-from compat import *  # for: any, next
-import widgets
-
-
-class UnknownLength: pass
+from .compat import *  # for: any, next
+from . import widgets
 
 
 class ProgressBar(object):
@@ -96,7 +92,7 @@ class ProgressBar(object):
     _DEFAULT_WIDGETS = [widgets.Percentage(), ' ', widgets.Bar()]
 
     def __init__(self, maxval=None, widgets=None, term_width=None, poll=1,
-                 left_justify=True, fd=sys.stderr):
+                 left_justify=True, fd=None):
         """Initializes a progress bar with sane defaults."""
 
         # Don't share a reference with any other progress bars
@@ -105,7 +101,7 @@ class ProgressBar(object):
 
         self.maxval = maxval
         self.widgets = widgets
-        self.fd = fd
+        self.fd = fd if fd is not None else sys.stderr
         self.left_justify = left_justify
 
         self.signal_set = False
@@ -139,7 +135,7 @@ class ProgressBar(object):
             self.maxval = len(iterable)
         except:
             if self.maxval is None:
-                self.maxval = UnknownLength
+                self.maxval = widgets.UnknownLength
 
         self.__iterable = iter(iterable)
         return self
@@ -184,9 +180,11 @@ class ProgressBar(object):
 
     def percentage(self):
         """Returns the progress as a percentage."""
+        if self.maxval is widgets.UnknownLength:
+                return float("NaN")
         if self.currval >= self.maxval:
             return 100.0
-        return self.currval * 100.0 / self.maxval
+        return (self.currval * 100.0 / self.maxval) if self.maxval else 100.00
 
     percent = property(percentage)
 
@@ -245,8 +243,8 @@ class ProgressBar(object):
     def update(self, value=None):
         """Updates the ProgressBar to a new value."""
 
-        if value is not None and value is not UnknownLength:
-            if (self.maxval is not UnknownLength
+        if value is not None and value is not widgets.UnknownLength:
+            if (self.maxval is not widgets.UnknownLength
                 and not 0 <= value <= self.maxval):
 
                 raise ValueError('Value out of range')
@@ -262,6 +260,7 @@ class ProgressBar(object):
         self.seconds_elapsed = now - self.start_time
         self.next_update = self.currval + self.update_interval
         self.fd.write(self._format_line() + '\r')
+        self.fd.flush()
         self.last_update_time = now
 
 
@@ -283,7 +282,7 @@ class ProgressBar(object):
         self.num_intervals = max(100, self.term_width)
         self.next_update = 0
 
-        if self.maxval is not UnknownLength:
+        if self.maxval is not widgets.UnknownLength:
             if self.maxval < 0: raise ValueError('Value out of range')
             self.update_interval = self.maxval / self.num_intervals
 

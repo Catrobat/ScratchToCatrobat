@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
 # progressbar  - Text progress bar library for Python.
@@ -33,6 +32,8 @@ except ImportError:
 else:
     AbstractWidget = ABCMeta('AbstractWidget', (object,), {})
 
+class UnknownLength:
+  pass
 
 def format_updatable(updatable, pbar):
     if hasattr(updatable, 'update'): return updatable.update(pbar)
@@ -108,7 +109,7 @@ class ETA(Timer):
     def update(self, pbar):
         """Updates the widget to show the ETA or total time when finished."""
 
-        if pbar.currval == 0:
+        if pbar.maxval is UnknownLength or pbar.currval == 0:
             return 'ETA:  --:--:--'
         elif pbar.finished:
             return 'Time: %s' % self.format_time(pbar.seconds_elapsed)
@@ -123,7 +124,7 @@ class AdaptiveETA(Timer):
 
     Uses a weighted average of two estimates:
       1) ETA based on the total progress and time elapsed so far
-      2) ETA based on the progress as per tha last 10 update reports
+      2) ETA based on the progress as per the last 10 update reports
 
     The weight depends on the current progress so that to begin with the
     total progress is used and at the end only the most recent progress is
@@ -146,7 +147,7 @@ class AdaptiveETA(Timer):
 
     def update(self, pbar):
         """Updates the widget to show the ETA or total time when finished."""
-        if pbar.currval == 0:
+        if pbar.maxval is UnknownLength or pbar.currval == 0:
             return 'ETA:  --:--:--'
         elif pbar.finished:
             return 'Time: %s' % self.format_time(pbar.seconds_elapsed)
@@ -166,7 +167,7 @@ class AdaptiveETA(Timer):
 class FileTransferSpeed(Widget):
     """Widget for showing the transfer speed (useful for file transfers)."""
 
-    FORMAT = '%6.2f %s%s/s'
+    FMT = '%6.2f %s%s/s'
     PREFIXES = ' kMGTPEZY'
     __slots__ = ('unit',)
 
@@ -183,7 +184,7 @@ class FileTransferSpeed(Widget):
             power = int(math.log(speed, 1000))
             scaled = speed / 1000.**power
 
-        return self.FORMAT % (scaled, self.PREFIXES[power], self.unit)
+        return self.FMT % (scaled, self.PREFIXES[power], self.unit)
 
 
 class AnimatedMarker(Widget):
@@ -270,7 +271,7 @@ class SimpleProgress(Widget):
         self.sep = sep
 
     def update(self, pbar):
-        return '%d%s%d' % (pbar.currval, self.sep, pbar.maxval)
+        return '%d%s%s' % (pbar.currval, self.sep, pbar.maxval)
 
 
 class Bar(WidgetHFill):
@@ -303,7 +304,7 @@ class Bar(WidgetHFill):
 
         width -= len(left) + len(right)
         # Marked must *always* have length of 1
-        if pbar.maxval:
+        if pbar.maxval is not UnknownLength and pbar.maxval:
           marked *= int(pbar.currval / pbar.maxval * width)
         else:
           marked = ''

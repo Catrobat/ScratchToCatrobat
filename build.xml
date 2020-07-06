@@ -24,7 +24,6 @@
         <echo>Environment configuration:</echo>
         <echo>JYTHON_HOME=${env.JYTHON_HOME}</echo>
         <echo>JYTHON_STANDALONE_JAR=${env.JYTHON_STANDALONE_JAR}</echo>
-        <echo>BATIK_HOME=${env.BATIK_HOME}</echo>
     </target>
 
     <target name="init" depends="echo-env">

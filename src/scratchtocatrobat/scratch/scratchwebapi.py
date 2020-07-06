@@ -39,7 +39,6 @@ SCRATCH_PROJECT_IMAGE_BASE_URL = helpers.config.get("SCRATCH_API", "project_imag
 SCRATCH_PROJECT_META_DATA_BASE_URL = helpers.config.get("SCRATCH_API", "project_meta_data_base_url")
 
 _log = logger.log
-_cached_jsoup_documents = {}
 _cached_remix_info_data = {}
 
 _projectMetaData = {}
@@ -171,7 +170,6 @@ def downloadProjectMetaData(project_id, retry_after_http_status_exception=False)
             document = json.loads(html)
             if document != None:
                 document["meta_data_timestamp"] = datetime.now()
-                _cached_jsoup_documents[project_id] = document
                 _projectMetaData[project_id] = document
             return document
         except urllib2.HTTPError as e:

@@ -37,19 +37,7 @@ import xml.etree.cElementTree as ET
 import subprocess
 from threading import Lock
 
-_BATIK_CLI_JAR = "batik-rasterizer.jar"
 _log = logging.getLogger(__name__)
-_batik_jar_path = None
-
-
-# TODO: refactor to single mediaconverter class together with wavconverter
-def _checked_batik_jar_path():
-    batik_home_dir = helpers.config.get("PATHS", "batik_home")
-    batik_jar_path = os.path.join(batik_home_dir, _BATIK_CLI_JAR)
-    if not os.path.exists(batik_jar_path):
-        raise EnvironmentError("Batik jar '{}' must be existing in {}.".format(batik_jar_path, os.path.dirname(batik_jar_path)))
-    _batik_jar_path = batik_jar_path
-    return _batik_jar_path
 
 
 def convert(input_svg_path, rotation_x, rotation_y, ns_registry_lock):

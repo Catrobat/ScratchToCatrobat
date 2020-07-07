@@ -1008,7 +1008,7 @@ class Converter(object):
         catrobat_scene.addSprite(sprite)
 
     @classmethod
-    def _add_monitors_to(cls, sprite, sprite_context, catrobat_scene, catrobat_project):
+    def _add_monitors_to(cls, sprite, sprite_context, catrobat_scene, catrobat_project, sprite_list):
         def add_generic_variable_bricks(show_script, hide_script, variable, x, y, color="#000000"):
             show_brick = catbricks.ShowTextColorSizeAlignmentBrick(x, y, VISIBLE_VAR_DEFAULT_FONTSIZE, color)
             show_brick.alignmentSelection = catbricks.ShowTextColorSizeAlignmentBrick.ALIGNMENT_STYLE_LEFT
@@ -1276,18 +1276,23 @@ class Converter(object):
         def add_variables():
             show_visible_list = []
             for name, monitor in sprite_context.monitors.iteritems():
-                variable = sprite.getUserVariable(name)
-                is_global = False
+                for any_sprite in sprite_list:
+                    variable = any_sprite.getUserVariable(name)
+                    if variable:
+                        is_global = False
+                        break
                 if not variable:
                     variable = catrobat_project.getUserVariable(name)
                     is_global = True
-                assert variable
+                if not variable:
+                    log.warning("Variable for monitor should exist at this time. Monitor might not work as expected.")
+                    continue
                 #Bricks that show/hide the variable. Added to workaround sprite if there's one, else to the sprite itself.
                 startbricks = [get_show_brick_from_monitor(monitor, sprite, variable, is_hide=not monitor.get("visible"))]
                 #Ignore Large Mode(2) which doesn't need a workaround
                 if monitor.get("mode", 1) in [1, 3] and monitor.get("has_show_call"):
-                    base_x = absolute_to_catrobat_x(monitor["x"]) + 5
-                    base_y = absolute_to_catrobat_y(monitor["y"]) - 2
+                    base_x = int(round(absolute_to_catrobat_x(monitor["x"]) + 5))
+                    base_y = int(round(absolute_to_catrobat_y(monitor["y"]) - 2))
                     label_text = monitor["label"]
 
                     show_script = catbase.BroadcastScript(get_broadcast_show_msg(sprite.getName(), name))
@@ -1317,7 +1322,9 @@ class Converter(object):
                     if not shown_list:
                         shown_list = catrobat_project.getUserList(name)
                         is_global = True
-                    assert shown_list
+                    if not shown_list:
+                        log.warning("List for monitor should exist at this time. Monitor might not work as expected.")
+                        continue
                     add_list(catrobat_scene, sprite, name, monitor["label"], is_global, absolute_to_catrobat_x(monitor["x"]), absolute_to_catrobat_y(monitor["y"]), num_lines, monitor.get("has_hide_call"), startbricks)
 
         add_variables()
@@ -1326,7 +1333,7 @@ class Converter(object):
     @classmethod
     def _add_all_monitors(cls, catrobat_scene, catrobat_project, context):
         for sprite, sprite_context in zip(catrobat_scene.getSpriteList(), context.sprite_contexts):
-            cls._add_monitors_to(sprite, sprite_context, catrobat_scene, catrobat_project)
+            cls._add_monitors_to(sprite, sprite_context, catrobat_scene, catrobat_project, catrobat_scene.getSpriteList())
             
     
     @staticmethod
@@ -2812,13 +2819,13 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "showList:")
     def _convert_show_list_block(self):
         assert len(self.arguments) == 1
-        show_list_brick = get_show_brick(project, self.sprite, self.sprite_context, self.arguments[0], is_list=True)
+        show_list_brick = get_show_brick(self.project, self.sprite, self.sprite_context, self.arguments[0], is_list=True)
         return [show_list_brick]
 
     @_register_handler(_block_name_to_handler_map, "hideList:")
     def _convert_hide_list_block(self):
         assert len(self.arguments) == 1
-        hide_list_brick = get_show_brick(project, self.sprite, self.sprite_context, self.arguments[0], is_list=True, is_hide=True)
+        hide_list_brick = get_show_brick(self.project, self.sprite, self.sprite_context, self.arguments[0], is_list=True, is_hide=True)
         return [hide_list_brick]
 
     @_register_handler(_block_name_to_handler_map, "playSound:", "doPlaySoundAndWait")

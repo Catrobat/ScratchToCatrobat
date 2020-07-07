@@ -86,7 +86,9 @@ class Scratch3Parser(object):
         for sprite in scratch2Data['sprites']:
             stageSprite["children"].append(sprite)
         for monitor in self.raw_dict["monitors"]:
-            stageSprite["children"].append(self.parse_monitor(monitor))
+            parsed_monitor = self.parse_monitor(monitor)
+            if parsed_monitor:
+                stageSprite["children"].append(parsed_monitor)
 
         stageSprite["info"] = self.raw_dict["meta"]
         stageSprite["penLayerMD5"] = "Scratch3Doesn'tHaveThis"
@@ -141,9 +143,15 @@ class Scratch3Parser(object):
             "data_variable": lambda param: param["VARIABLE"],
             "sensing_current": lambda param: MONITOR_CURRENT_MAPPING[param["CURRENTMENU"]]
         }
-        assert monitor["mode"] in MONITOR_MODE_MAPPING
+        if not monitor["mode"] in MONITOR_MODE_MAPPING:
+            log.warn("Monitor with unknown mode will not be created.")
+            return None
+        #assert monitor["mode"] in MONITOR_MODE_MAPPING
         if monitor["mode"] == 'list':
-            assert "LIST" in monitor["params"]
+            if not "LIST" in monitor["params"]:
+                log.warn("Monitor with mode 'list' contains no parameter 'LIST' and will not be created.")
+                return None
+            #assert "LIST" in monitor["params"]
             scratch2_monitor = {
                 "listName": monitor["params"]["LIST"],
                 "contents": monitor.get("value", []),
@@ -161,7 +169,10 @@ class Scratch3Parser(object):
                     monitor["opcode"] = "looks_backdropname"
                 else:
                     monitor["opcode"] = "looks_backdropnumber"
-            assert monitor["opcode"] in MONITOR_CMD_MAPPING
+            #assert monitor["opcode"] in MONITOR_CMD_MAPPING
+            if not monitor["opcode"] in MONITOR_CMD_MAPPING:
+                log.warn("Monitor with unknown opcode will not be created.")
+                return None
             target = monitor.get("spriteName", None)
             param = (MONITOR_PARAM_MAPPING[monitor["opcode"]](monitor["params"]) if monitor["opcode"] in MONITOR_PARAM_MAPPING else None)
             if monitor["opcode"] in ["data_variable", "sensing_current"]:
@@ -227,7 +238,9 @@ class Scratch3Parser(object):
         lists = []
         for id in sprite["lists"].keys():
             matching_raws = [m for m in self.raw_dict["monitors"] if m.get("id") == id]
-            assert len(matching_raws) == 1
+            if len(matching_raws) == 0:
+                log.warn("Monitor information is missing, this monitor will not be created.")
+                continue
             curlist = self.parse_monitor(matching_raws[0])
             lists.append(curlist)
         scratch2ProjectDict["lists"] = lists

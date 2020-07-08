@@ -1330,42 +1330,6 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert formula_right_child.leftChild is None
         assert formula_right_child.rightChild is None
 
-    # showVariableBrick:
-    def test_can_convert_show_variable_block(self):
-        # create user variable
-        variable_name = "test_var"
-        project = self.block_converter._catrobat_project
-        catrobat.add_user_variable(project, variable_name, DUMMY_CATR_SPRITE, DUMMY_CATR_SPRITE.getName())
-        user_variable = DUMMY_CATR_SPRITE.getUserVariable(variable_name)
-        assert user_variable is not None
-        assert user_variable.getName() == variable_name
-
-        # create and validate show variable brick
-        scratch_block = ["showVariable:", variable_name]
-        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        assert isinstance(catr_brick, catbricks.ShowTextBrick)
-        assert catr_brick.userVariable.getName() == variable_name
-        assert user_variable == catr_brick.getUserVariable()
-        assert catr_brick.getUserVariable().getName() == variable_name
-
-    # hideVariableBrick:
-    def test_can_convert_hide_variable_block(self):
-        # create user variable
-        variable_name = "test_var"
-        project = self.block_converter._catrobat_project
-        catrobat.add_user_variable(project, variable_name, DUMMY_CATR_SPRITE, DUMMY_CATR_SPRITE.getName())
-        user_variable = DUMMY_CATR_SPRITE.getUserVariable(variable_name)
-        assert user_variable is not None
-        assert user_variable.getName() == variable_name
-
-        # create and validate show variable brick
-        scratch_block = ["hideVariable:", variable_name]
-        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        assert isinstance(catr_brick, catbricks.HideTextBrick)
-        assert catr_brick.userVariable.getName() == variable_name
-        assert user_variable == catr_brick.getUserVariable()
-        assert catr_brick.getUserVariable().getName() == variable_name
-
     # append:toList:
     def test_can_convert_append_number_to_list_block(self):
         value = "1.23"
@@ -3038,7 +3002,6 @@ class TestConvertProjects(common_testing.ProjectTestCase):
     # Checks if the visible global or local variables in the scratch program are converted into show test bricks in the converted project
     def test_can_convert_visible_variables(self):
         scratch_project = self._load_test_scratch_project("visible_variables")
-        sprite_to_vars_map = scratch_project.sprite_variables_map
         catrobat_program = self._test_project("visible_variables")
         scene = catrobat_program.getDefaultScene()
         sprite_dict = {}
@@ -3047,18 +3010,18 @@ class TestConvertProjects(common_testing.ProjectTestCase):
             sprite_name = sprite.getName()
             sprite_name = sprite_name.replace(BACKGROUND_LOCALIZED_GERMAN_NAME, BACKGROUND_ORIGINAL_NAME)
             sprite_dict[sprite_name] = sprite
-        for sprite_name, variable_list in sprite_to_vars_map.iteritems():
+        for scratch_sprite in scratch_project.objects:
+            sprite_name = scratch_sprite.name
             sprite_object = sprite_dict[sprite_name]
+            variable_list = scratch_sprite.monitors.keys()
             for variable in variable_list:
                 scripts = sprite_object.getScriptList()
                 found_show_var = False
                 for script in scripts:
-                    if not isinstance(script, catbase.StartScript):
-                        continue
                     bricks = script.getBrickList()
-
-                    found_show_var = len(filter(lambda brick: isinstance(brick, catbricks.ShowTextBrick) \
-                                                and brick.getUserVariable().getName() == variable, bricks)) > 0
+                    found_show_var = any(filter(lambda brick: (isinstance(brick, catbricks.ShowTextBrick) \
+                                                    or isinstance(brick, catbricks.ShowTextColorSizeAlignmentBrick)) \
+                                                    and brick.getUserVariable().getName() == variable, bricks))
                     if found_show_var: break
                 assert found_show_var
 
@@ -3119,6 +3082,114 @@ class TestConvertProjects(common_testing.ProjectTestCase):
             if re.search('.*}text', child.tag) != None:
                 assert(child.attrib['x'] == '3')
                 assert(child.attrib['y'] == '24')
+
+class TestShowVariablesWorkaround(unittest.TestCase):
+    def setUp(self):
+        self.scratch_project = scratch.Project(common_testing.get_test_project_path("show_variables"))
+        assert self.scratch_project
+        self.context = converter.Context()
+        self.catrobat_project = converter.converted(self.scratch_project, None, self.context)
+        assert self.catrobat_project
+        self.default_scene = self.catrobat_project.catrobat_program.getDefaultScene()
+        assert self.default_scene
+        sprite_list = self.default_scene.getSpriteList()
+        self.assertEqual(6, len(sprite_list))
+        [self.stage_sprite, self.sprite1, self.sprite2, self.global_slider_sprite, self.local_slider_sprite, self.toggle_slider_sprite] = sprite_list
+
+    def test_sprite1_correct_events_added(self):
+        #Sprite1
+        self.assertEqual(5, self.sprite1.getNumberOfScripts())
+        scriptlist = self.sprite1.getScriptList()
+        self.assertIsInstance(self.sprite1.getScript(0), catbase.StartScript)
+        self.assertIsInstance(self.sprite1.getScript(1), catbase.BroadcastScript)
+        self.assertEqual(("S2CC:slider_" + self.sprite1.getName() + "_" + "local_slider").lower(),
+                         self.sprite1.getScript(1).getBroadcastMessage())
+        self.assertIsInstance(self.sprite1.getScript(2), catbase.WhenConditionScript)
+        self.assertIsInstance(self.sprite1.getScript(3), catbase.BroadcastScript)
+        self.assertEqual(converter.get_broadcast_show_msg(self.sprite1.getName(), "local_slider", False),
+                         self.sprite1.getScript(3).getBroadcastMessage())
+        self.assertIsInstance(self.sprite1.getScript(4), catbase.BroadcastScript)
+        self.assertEqual(converter.get_broadcast_show_msg(self.sprite1.getName(), "local_default", False),
+                         self.sprite1.getScript(4).getBroadcastMessage())
+        #local slider sprite
+        assert self.local_slider_sprite.getName().startswith(converter.SLIDER_SPRITE_NAME + self.sprite1.getName())
+        self.assertEqual(3, self.local_slider_sprite.getNumberOfScripts())
+        self.assertIsInstance(self.local_slider_sprite.getScript(0), catbase.StartScript)
+        self.assertIsInstance(self.local_slider_sprite.getScript(1), catbase.WhenScript)
+        self.assertIsInstance(self.local_slider_sprite.getScript(2), catbase.BroadcastScript)
+        self.assertEqual(converter.get_broadcast_show_msg(self.sprite1.getName(), "local_slider", False),
+                         self.local_slider_sprite.getScript(2).getBroadcastMessage())
+
+    def test_sprite2_correct_events_added(self):
+        #Sprite2
+        self.assertEqual(8, self.sprite2.getNumberOfScripts())
+        self.assertIsInstance(self.sprite2.getScript(0), catbase.StartScript)
+        self.assertIsInstance(self.sprite2.getScript(1), catbase.WhenScript)
+        self.assertIsInstance(self.sprite2.getScript(2), catbase.BroadcastScript)
+        self.assertEqual(("S2CC:slider_" + self.sprite2.getName() + "_" + "toggle_slider").lower(),
+                         self.sprite2.getScript(2).getBroadcastMessage())
+        self.assertIsInstance(self.sprite2.getScript(3), catbase.WhenConditionScript)
+        self.assertIsInstance(self.sprite2.getScript(4), catbase.BroadcastScript)
+        self.assertEqual(converter.get_broadcast_show_msg(self.sprite2.getName(), "toggle_slider"),
+                         self.sprite2.getScript(4).getBroadcastMessage())
+        self.assertIsInstance(self.sprite2.getScript(5), catbase.BroadcastScript)
+        self.assertEqual(converter.get_broadcast_show_msg(self.sprite2.getName(), "toggle_slider", is_hide=True),
+                         self.sprite2.getScript(5).getBroadcastMessage())
+        self.assertIsInstance(self.sprite2.getScript(6), catbase.BroadcastScript)
+        self.assertEqual(converter.get_broadcast_show_msg(self.sprite2.getName(), "toggle_default"),
+                         self.sprite2.getScript(6).getBroadcastMessage())
+        self.assertIsInstance(self.sprite2.getScript(7), catbase.BroadcastScript)
+        self.assertEqual(converter.get_broadcast_show_msg(self.sprite2.getName(), "toggle_default", is_hide=True),
+                         self.sprite2.getScript(7).getBroadcastMessage())
+        #toggle slider sprite
+        assert self.toggle_slider_sprite.getName().startswith(converter.SLIDER_SPRITE_NAME + self.sprite2.getName())
+        self.assertEqual(4, self.toggle_slider_sprite.getNumberOfScripts())
+        self.assertIsInstance(self.toggle_slider_sprite.getScript(0), catbase.StartScript)
+        self.assertIsInstance(self.toggle_slider_sprite.getScript(1), catbase.WhenScript)
+        self.assertIsInstance(self.toggle_slider_sprite.getScript(2), catbase.BroadcastScript)
+        self.assertEqual(converter.get_broadcast_show_msg(self.sprite2.getName(), "toggle_slider", False),
+                         self.toggle_slider_sprite.getScript(2).getBroadcastMessage())
+        self.assertIsInstance(self.toggle_slider_sprite.getScript(3), catbase.BroadcastScript)
+        self.assertEqual(converter.get_broadcast_show_msg(self.sprite2.getName(), "toggle_slider", False, True),
+                         self.toggle_slider_sprite.getScript(3).getBroadcastMessage())
+
+    def test_stage_correct_events_added(self):
+        assert self.global_slider_sprite.getName().startswith(converter.SLIDER_SPRITE_NAME + self.stage_sprite.getName())
+        #Stage
+        self.assertEqual(3, self.stage_sprite.getNumberOfScripts())
+        self.assertIsInstance(self.stage_sprite.getScript(0), catbase.StartScript)
+        self.assertIsInstance(self.stage_sprite.getScript(1), catbase.BroadcastScript)
+        self.assertEqual(converter.get_broadcast_show_msg(self.stage_sprite.getName(), "s2cc:sensor_stage_soundlevel", True),
+                         self.stage_sprite.getScript(1).getBroadcastMessage())
+        self.assertIsInstance(self.stage_sprite.getScript(2), catbase.BroadcastScript)
+        self.assertEqual(converter.get_broadcast_show_msg(self.stage_sprite.getName(), "global_default", True),
+                         self.stage_sprite.getScript(2).getBroadcastMessage())
+        #global slider sprite
+        self.assertEqual(4, self.global_slider_sprite.getNumberOfScripts())
+        self.assertIsInstance(self.global_slider_sprite.getScript(0), catbase.StartScript)
+        self.assertIsInstance(self.global_slider_sprite.getScript(1), catbase.WhenConditionScript)
+        self.assertIsInstance(self.global_slider_sprite.getScript(2), catbase.WhenScript)
+        self.assertIsInstance(self.global_slider_sprite.getScript(3), catbase.BroadcastScript)
+        self.assertEqual(converter.get_broadcast_show_msg(self.global_slider_sprite.getName(), "global_slider", True),
+                         self.global_slider_sprite.getScript(3).getBroadcastMessage())
+
+    def test_local_sensor_converted(self):
+        sprite_start = self.sprite1.scriptList[0]
+        [copy_loop] = filter(lambda brick: isinstance(brick, catbricks.ForeverBrick), sprite_start.getBrickList())
+        copy_bricks = filter(lambda brick: isinstance(brick, catbricks.SetVariableBrick), copy_loop.loopBricks)
+        self.assertEqual(1, len(copy_bricks))
+        [copy_brick] = copy_bricks
+        self.assertIsInstance(copy_brick, catbricks.SetVariableBrick)
+        self.assertEqual("S2CC:sensor_Sprite1_xpos", copy_brick.getUserVariable().getName())
+
+    def test_global_sensor_converted(self):
+        stage_start = self.stage_sprite.scriptList[0]
+        [copy_loop] = filter(lambda brick: isinstance(brick, catbricks.ForeverBrick), stage_start.getBrickList())
+        copy_bricks = filter(lambda brick: isinstance(brick, catbricks.SetVariableBrick), copy_loop.loopBricks)
+        self.assertEqual(1, len(copy_bricks))
+        [copy_brick] = copy_bricks
+        self.assertIsInstance(copy_brick, catbricks.SetVariableBrick)
+        self.assertEqual("S2CC:sensor_Stage_soundLevel", copy_brick.getUserVariable().getName())
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']

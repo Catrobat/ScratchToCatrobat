@@ -219,7 +219,7 @@ class _ScratchToCatrobat(object):
         "rounded": catformula.Functions.ROUND,
         "randomFrom:to:": catformula.Functions.RAND,
         "%": catformula.Functions.MOD,
-        "10 ^": None,
+        "10 ^": lambda value: catrobat.create_formula_element_for([catformula.Functions.POWER, 10, value]),
         "floor": catformula.Functions.FLOOR,
         "ceiling": catformula.Functions.CEIL,
     }
@@ -252,7 +252,8 @@ class _ScratchToCatrobat(object):
         # string functions
         "stringLength:": catformula.Functions.LENGTH,
         "letter:of:": catformula.Functions.LETTER,
-        "concatenate:with:": catformula.Functions.JOIN
+        "concatenate:with:": catformula.Functions.JOIN,
+        "contains:": None
     }
 
     script_mapping = {
@@ -2099,26 +2100,6 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         formula_element.setRightChild(value)
         return formula_element
 
-    @_register_handler(_block_name_to_handler_map, "10 ^")
-    def _convert_pow_of_10_block(self):
-        [value] = self.arguments
-
-        # unfortunately 10^x and pow(x) functions are not yet available in Catroid
-        # but Catroid already supports exp(x) and ln(x) functions
-        # since 10^x == exp(x*ln(10)) we can use 3 math functions to achieve the correct result!
-
-        # ln(10)
-        ln_formula_elem = self._converted_helper_brick_or_formula_element([10], "ln")
-
-        # x*ln(10)     (where x:=value)
-        exponent_formula_elem = self._converted_helper_brick_or_formula_element([value, ln_formula_elem], "*")
-
-        # exp(x*ln(10))
-        result_formula_elem = self._converted_helper_brick_or_formula_element([exponent_formula_elem], "e^")
-
-        # round(exp(x*ln(10)))     (use round-function to get rid of rounding errors)
-        return self._converted_helper_brick_or_formula_element([result_formula_elem], "rounded")
-
     @_register_handler(_block_name_to_handler_map, "lineCountOfList:")
     def _convert_line_count_of_list_block(self):
         [list_name] = self.arguments
@@ -2195,6 +2176,27 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         value2_formula_elem = catrobat.create_formula_element_with_value(value2)
         formula_element.setRightChild(value2_formula_elem)
         return formula_element
+
+    # workaround for contains brick
+    # ( regular expression( join( '(?ui)' , <substring formula> ) , <formula for long string> )  != '' )
+    @_register_handler(_block_name_to_handler_map, "contains:")
+    def _convert_contains_substring_block(self):
+        [value1, value2] = self.arguments
+        string_formula = catrobat.create_formula_element_with_value(value1)
+        substring_formula = catrobat.create_formula_element_with_value(value2)
+        case_insensitivity_string = catrobat.create_formula_element_with_value("(?ui)")
+        empty_string = catrobat.create_formula_element_with_value("")
+
+        inequality_formula = catformula.FormulaElement(catElementType.OPERATOR, catformula.Operators.NOT_EQUAL.toString(), None)
+        regex_formula = catformula.FormulaElement(catElementType.FUNCTION, catformula.Functions.REGEX.toString(), None)
+        join_formula = catformula.FormulaElement(catElementType.FUNCTION, catformula.Functions.JOIN.toString(), None)
+        join_formula.setLeftChild(case_insensitivity_string)
+        join_formula.setRightChild(substring_formula)
+        regex_formula.setLeftChild(join_formula)
+        regex_formula.setRightChild(string_formula)
+        inequality_formula.setLeftChild(regex_formula)
+        inequality_formula.setRightChild(empty_string)
+        return inequality_formula
 
     # action and other blocks
     @_register_handler(_block_name_to_handler_map, "doRepeat", "doForever")

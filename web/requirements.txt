@@ -1,0 +1,3 @@
+rq<=0.11
+redis<3
+tornado<5

@@ -1834,6 +1834,124 @@ class TestGetAttributeBlockWorkarounds(unittest.TestCase):
             assert stage_object_variables[1] == { "name": variable_name, "value": 0, "isPersistent": False }
 
 
+class CommentWorkaround(unittest.TestCase):
+    COMMENT_DATA_TEMPLATE = {
+        "objName": "Stage",
+        "sounds": [],
+        "costumes": [],
+        "currentCostumeIndex": 0,
+        "penLayerMD5": "5c81a336fab8be57adc039a8a2b33ca9.png",
+        "penLayerID": 0,
+        "tempoBPM": 60,
+        "videoAlpha": 0.5,
+        "children": [],
+        "info": {}
+    }
+
+    def get_stage(self, scripts, comments):
+        data = self.COMMENT_DATA_TEMPLATE
+        data["scriptComments"] = comments
+        data["scripts"] = scripts
+        raw_project = scratch.RawProject(data)
+        self.assertEqual(1, len(raw_project.objects))
+        return raw_project.objects[0]
+
+    @classmethod
+    def get_comment(cls, blockId, text):
+        return [0, 0, 0, 0, False, blockId, text]
+
+    def test_simple_comment(self):
+        for blockId in [-1, 0, 1]:
+            script = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", 1]]]
+            comment = self.get_comment(1, "test_comment")
+            stage = self.get_stage([script], [comment])
+
+            self.assertEqual(1, len(stage.scripts))
+            script = stage.scripts[0]
+            self.assertListEqual([['note:', 'test_comment'], ['wait:elapsed:from:', 1]], script.blocks)
+
+    def test_condition_comment(self):
+        script = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", 1], ["wait:elapsed:from:", ["+", 1, 2]], ["wait:elapsed:from:", 1]]]
+        comments = [self.get_comment(3, "condition_comment"), self.get_comment(4, "wait_comment")]
+        stage = self.get_stage([script], comments)
+
+        self.assertEqual(1, len(stage.scripts))
+        script = stage.scripts[0]
+        expected_blocks = [['wait:elapsed:from:', 1],
+                           ['note:', 'condition_comment'],
+                           ['wait:elapsed:from:', ['+', 1, 2]],
+                           ['note:', 'wait_comment'],
+                           ['wait:elapsed:from:', 1]]
+        self.assertListEqual(expected_blocks, script.blocks)
+
+    def test_comment_in_if(self):
+        script = [0, 0, [["whenGreenFlag"], ["doIf", [">", 5, 4], [["wait:elapsed:from:", 1]]], ["wait:elapsed:from:", 1]]]
+        comments = [self.get_comment(3, "in_if_comment"), self.get_comment(4, "after_if_comment")]
+        stage = self.get_stage([script], comments)
+
+        self.assertEqual(1, len(stage.scripts))
+        script = stage.scripts[0]
+        expected_blocks = [['doIf',
+                            ['>', 5, 4],
+                            [['note:', 'in_if_comment'], ['wait:elapsed:from:', 1]]],
+                           ['note:', 'after_if_comment'],
+                           ['wait:elapsed:from:', 1]]
+        self.assertListEqual(expected_blocks, script.blocks)
+
+    def test_comment_in_else(self):
+        script = [0, 0, [["whenGreenFlag"], ["doIfElse", [">", 5, 4], [["wait:elapsed:from:", 1]], [["wait:elapsed:from:", 2]]], ["wait:elapsed:from:", 1]]]
+        comments = [self.get_comment(3, "in_if_comment"), self.get_comment(4, "in_else_comment"), self.get_comment(5, "after_if_comment")]
+        stage = self.get_stage([script], comments)
+
+        self.assertEqual(1, len(stage.scripts))
+        script = stage.scripts[0]
+        expected_blocks = [['doIfElse',
+                            ['>', 5, 4],
+                            [['note:', 'in_if_comment'], ['wait:elapsed:from:', 1]],
+                            [['note:', 'in_else_comment'], ['wait:elapsed:from:', 2]]],
+                           ['note:', 'after_if_comment'],
+                           ['wait:elapsed:from:', 1]]
+        self.assertListEqual(expected_blocks, script.blocks)
+
+    def test_multiple_comments_same_brick(self):
+        NUM_COMMENTS = 20
+        for blockId in [-1, 0, 1, 2]:
+            script = [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["+", 1, 2]]]]
+            comments = [self.get_comment(1, "test_comment_{}".format(i)) for i in range(NUM_COMMENTS)]
+            stage = self.get_stage([script], comments)
+
+            self.assertEqual(1, len(stage.scripts))
+            script = stage.scripts[0]
+            expected_blocks = [["note:", "test_comment_{}".format(i)] for i in range(NUM_COMMENTS)][::-1] + [["wait:elapsed:from:", ["+", 1, 2]]]
+            self.assertListEqual(expected_blocks, script.blocks)
+
+    def test_invalid_blocks(self):
+        scripts = [
+            [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["+", 1, 2]]]],
+            [0, 0, [["+", 4, 3]]],
+            [0, 0, [["wait:elapsed:from:", "-", 2, -1]]],
+            [0, 0, [["whenGreenFlag"], ["wait:elapsed:from:", ["+", 1, 2]]]]
+        ]
+        comments = [self.get_comment(i, "comment_{}".format(i)) for i in range(8)]
+        stage = self.get_stage(scripts, comments)
+
+        self.assertEqual(2, len(stage.scripts))
+        expected_blocks_0 = [['note:', 'comment_0'],
+                             ['note:', 'comment_1'],
+                             ['note:', 'comment_2'],
+                             ['wait:elapsed:from:', ['+', 1, 2]]]
+        self.assertListEqual(expected_blocks_0, stage.scripts[0].blocks)
+        expected_blocks_1 = [['note:', 'comment_5'],
+                             ['note:', 'comment_6'],
+                             ['note:', 'comment_7'],
+                             ['wait:elapsed:from:', ['+', 1, 2]]]
+        self.assertListEqual(expected_blocks_1, stage.scripts[1].blocks)
+
+    def test_general_comment_without_scripts(self):
+        comment = self.get_comment(-1, "general comment")
+        stage = self.get_stage([], [comment])
+        self.assertListEqual([], stage.scripts)
+
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

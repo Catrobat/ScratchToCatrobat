@@ -1327,5 +1327,17 @@ class TestScratch3Blocks(unittest.TestCase):
         assert converted_block[1] == "teststring"
 
 
+    ### Unsupported block testcase ###################
+    def test_unsupportedBlock(self):
+        context = create_block_context("not_supported_block")
+        testblock = context.block
+        addInputOfType(testblock, "STRING", LiteralType.STRING)
+
+        converted_block = visitBlock(context)
+
+        assert converted_block[0] == "note:"
+        assert converted_block[1] == "ERROR: BLOCK NOT FOUND: not_supported_block"
+
+
 if __name__ == "__main__":
     unittest.main()

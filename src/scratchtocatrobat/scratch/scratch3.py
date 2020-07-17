@@ -355,7 +355,22 @@ class Scratch3Parser(object):
 def is_scratch3_project(scratch_project_dir):
     if os.path.isfile(scratch_project_dir + '/' + helpers.config.get("SCRATCH", "code_file_name")):
         with open(os.path.join(scratch_project_dir, helpers.config.get("SCRATCH", "code_file_name")), 'r') as json_file:
-            project_dict = json.load(json_file)
+            try:
+                project_dict = json.load(json_file)
+            except:
+                # guess if is binary file, since Scratch 1.x saves project data in a binary file
+                # instead of a JSON file like in 2.x
+                textchars = bytearray({7,8,9,10,12,13,27} | set(range(0x20, 0x100)) - {0x7f})
+                is_binary_string = lambda bytesdata: bool(bytesdata.translate(None, textchars))
+                json_file.seek(0, 0) # set file pointer back to the beginning of the file
+                if is_binary_string(json_file.read(1024)): # check first 1024 bytes
+                    raise EnvironmentError("Invalid JSON file. The project's code-file " \
+                                           "seems to be a binary file. Project might be very old " \
+                                           "Scratch project. Scratch projects lower than 2.0 are " \
+                                           "not supported!")
+                else:
+                    raise EnvironmentError("Invalid JSON file. But the project's " \
+                                           "code-file seems to be no binary file...")
             if "targets" in project_dict.keys():
                 return True
             else:

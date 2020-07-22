@@ -1,7 +1,7 @@
 import unittest
 from scratchtocatrobat.scratch.scratch3visitor.looks import *
 from scratchtocatrobat.scratch.scratch3 import Scratch3Block
-from scratchtocatrobat.scratch.scratch3visitor.visitorUtil import BlockContext, visitBlock
+from scratchtocatrobat.scratch.scratch3visitor.visitorUtil import BlockContext, visitBlock, visitLiteral
 
 
 # define more enums here, if necessary
@@ -1325,6 +1325,11 @@ class TestScratch3Blocks(unittest.TestCase):
 
         assert converted_block[0] == "stringLength:"
         assert converted_block[1] == "teststring"
+
+    def test_visit_literal(self):
+        test_list = [4, "10-"]
+        x = visitLiteral(test_list)
+        assert "10-" == x
 
 
 if __name__ == "__main__":

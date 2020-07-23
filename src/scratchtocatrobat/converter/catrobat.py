@@ -230,15 +230,20 @@ def formula_element_for(catrobat_enum, arguments=[]):
 
     if isinstance(catrobat_enum, catformula.FormulaElement):
         element_type = "formulaElement"
-    elif hasattr(catrobat_enum, "getClass"):
-        package_name = catrobat_enum.getClass().__name__
-        element_type = catElementType.valueOf(package_name[:-1].upper())
+    elif isinstance(catrobat_enum, catformula.UserVariable):
+        catrobat_enum = catrobat_enum.name
+        element_type = catElementType.valueOf("USER_VARIABLE")
     elif isinstance(catrobat_enum, basestring) and catrobat_enum[0] == '"' and catrobat_enum[-1] == '"':
         element_type = catElementType.valueOf("USER_VARIABLE")
         assert len(catrobat_enum) > 2
         catrobat_enum = catrobat_enum[1:-1]
+    elif hasattr(catrobat_enum, "getClass"):
+        package_name = catrobat_enum.getClass().__name__
+        element_type = catElementType.valueOf(package_name[:-1].upper())
     elif isinstance(catrobat_enum, basestring) and catrobat_enum == "()":
         element_type = catElementType.valueOf("BRACKET")
+    elif isinstance(catrobat_enum, (int, float)):
+        element_type = catElementType.NUMBER
     else:
         element_type = "value"
 
@@ -260,7 +265,7 @@ def formula_element_for(catrobat_enum, arguments=[]):
     # assert arguments[1] is None or isinstance(arguments[1], catformula.FormulaElement)
 
     if element_type in {catElementType.FUNCTION, catElementType.OPERATOR, catElementType.USER_VARIABLE,
-                        catElementType.SENSOR, catElementType.BRACKET}:
+                        catElementType.SENSOR, catElementType.BRACKET, catElementType.NUMBER}:
         formula_parent = None
         # print ("adding args: " + str(arguments) + " to formula element: " + str(catrobat_enum) + " as children")
         # Needs to throw exception because of _regular_block_conversion()?

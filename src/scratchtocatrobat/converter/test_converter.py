@@ -2829,11 +2829,27 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
         converted_project = converter.converted(scratch_project, None, context)
 
         default_scene = converted_project.catrobat_program.getDefaultScene()
-        assert len(default_scene.spriteList) == 3
+        assert len(default_scene.spriteList) == 5
 
-        key_w = default_scene.spriteList[2]
-        assert key_w != None
-        assert key_w.name == 'key_w_pressed'
+        key_tilt = default_scene.spriteList[2]
+        assert key_tilt is not None
+        assert key_tilt.name == 'key_tilt_none'
+
+        tilt_scripts = key_tilt.getScriptList()
+        assert len(tilt_scripts) == 10
+        assert isinstance(tilt_scripts[1], catbase.WhenScript)
+
+        key_row4_visibility = default_scene.spriteList[3]
+        assert key_row4_visibility is not None
+        assert key_row4_visibility.name == 'key_row4_visibility'
+
+        hide_scripts = key_row4_visibility.getScriptList()
+        assert len(hide_scripts) == 2
+        assert isinstance(hide_scripts[1], catbase.WhenScript)
+
+        key_w = default_scene.spriteList[4]
+        assert key_w is not None
+        assert key_w.name == 'key_w'
 
         scripts = key_w.getScriptList()
         assert len(scripts) == 3
@@ -2884,10 +2900,10 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
         converted_project = converter.converted(scratch_project, None, context)
 
         default_scene = converted_project.catrobat_program.getDefaultScene()
-        assert len(default_scene.spriteList) == 3
+        assert len(default_scene.spriteList) == 4
 
         sprite = default_scene.spriteList[1]
-        assert sprite != None
+        assert sprite is not None
         assert sprite.name == 'Sprite1'
 
         spritescripts = sprite.getScriptList()
@@ -2903,12 +2919,20 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
         move_brick = sprite_brick_list[0]
         assert isinstance(move_brick, catbricks.MoveNStepsBrick)
 
-        key_space = default_scene.spriteList[2]
-        assert key_space != None
-        assert key_space.name == 'key_space_pressed'
+        key_row1_visibility = default_scene.spriteList[2]
+        assert key_row1_visibility is not None
+        assert key_row1_visibility.name == 'key_row1_visibility'
+
+        hide_scripts = key_row1_visibility.getScriptList()
+        assert len(hide_scripts) == 2
+        assert isinstance(hide_scripts[1], catbase.WhenScript)
+
+        key_space = default_scene.spriteList[3]
+        assert key_space is not None
+        assert key_space.name == 'key_space'
 
         keyscripts = key_space.getScriptList()
-        assert len(keyscripts) == 2
+        assert len(keyscripts) == 3
         assert isinstance(keyscripts[1], catbase.WhenScript)
 
         key_brick_list = keyscripts[1].getBrickList()
@@ -2917,7 +2941,6 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
         broadcast_brick = key_brick_list[0]
         assert isinstance(broadcast_brick, catbricks.BroadcastBrick)
         assert broadcast_brick.getBroadcastMessage() == 'key_space_pressed'
-
 
 
 class TestConvertProjects(common_testing.ProjectTestCase):

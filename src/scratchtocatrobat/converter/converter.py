@@ -2240,8 +2240,6 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     def _converted_script_element(self):
         script_element = self.script_element
         if script_element.name == "computeFunction:of:":
-            # removing block name which is common prefix for all function blocks:
-            # [Block("computeFunction:of:"), BlockValue("tan"), ...] is changed to [Block("tan"), ...]
             assert len(self.arguments) >= 1
             self.script_element = scratch.Block(name=self.arguments[0])
             self.arguments = self.arguments[1:]
@@ -2273,10 +2271,17 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             converted_element = [script_element.name]
         else:
             assert isinstance(self.script_element, scratch.BlockList)
-            # TODO: readability
-            converted_element = [[arg2 for arg1 in self.arguments \
-                                            for arg2 in (arg1.to_placeholder_brick(self.block_name) \
-                                                if isinstance(arg1, UnmappedBlock) else [arg1])]]
+
+            list_of_converted_element = []
+            for arg1 in self.arguments:
+                if isinstance(arg1, UnmappedBlock):
+                    for arg2 in arg1.to_placeholder_brick(self.block_name):
+                        list_of_converted_element.append(arg2)
+                else:
+                    for arg2 in [arg1]:
+                        list_of_converted_element.append(arg2)
+            converted_element = [list_of_converted_element]
+
         return converted_element
 
     def _regular_block_conversion(self):

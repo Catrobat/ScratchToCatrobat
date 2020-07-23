@@ -78,9 +78,24 @@ sudo apt-get install python
 ```sh
 sudo apt-get install sox
 ```
-* Install npm via aptitude (if not already installed):
+* Install nvm via wget:
 ```sh
-sudo apt-get install nodejs
+wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.34.0/install.sh | bash
+```
+* Now close and reopen the terminal. Then install Node.js via nvm: 
+```sh
+nvm install v14.5.0
+```
+* This step is *optional*, only do this if nvm doesn't set the default node version to 14.5.0:
+```sh
+nvm alias default 14.5.0
+```
+* Verify that Node.js version 14.5.0 and npm version 6.14.5
+```sh
+node -v
+```
+```sh
+npm -version
 ```
 * Install svg2png via npm (needed for svg conversion):
 ```sh
@@ -90,9 +105,13 @@ npm install svg2png -g
 ```sh
 java -version
 ```
+* If no java version is installed make sure to install at least java 1.8 (in this guide we will install java 1.11)
+```sh
+sudo apt-get install openjdk-11-jre-headless
+```
 * Now, download jython e.g. by using wget (at least version 2.7):
 ```sh
-wget http://search.maven.org/remotecontent?filepath=org/python/jython-installer/2.7.0/jython-installer-2.7.0.jar
+wget -O jython-installer-2.7.0.jar http://search.maven.org/remotecontent?filepath=org/python/jython-installer/2.7.0/jython-installer-2.7.0.jar
 ```
 * To install jython issue the following command and fill in the parameters listed below:
 ```sh
@@ -165,3 +184,13 @@ For more details on how to use the script, please execute the following line:
 ```sh
 ./run --help
 ```
+
+To be able to run the test script *run_tests*, just make it executable and run it: 
+```sh
+chmod +x ./run_tests
+./run_tests
+```
+
+Basically the setup is now finished, but if you want to use an IDE check the following link: 
+https://confluence.catrob.at/display/S2CC/Setting+up+a+development+environment
+

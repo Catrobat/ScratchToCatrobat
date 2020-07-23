@@ -107,10 +107,7 @@ Please mail any suggestions regarding these licenses to webmaster@catrobat.org.
 Licenses of all used 3rd party libraries in ScratchToCatrobat
 
 Libraries of our converter tool:
-Batik 1.7   Apache License Version 2.0
-jsoup       under MIT license, Copyright © 2009 - 2016 Jonathan Hedley (jonathan@hedley.net)
 xmlpull     Initial authors: Stefan Haustein and Aleksander Slominski
-xpp3_min    Copyright 2002 Extreme! Lab, Indiana University. All rights reserved.
 xstream     Copyright by the BSD license
 
 Web libraries:

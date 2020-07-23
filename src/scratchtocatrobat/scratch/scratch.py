@@ -25,6 +25,7 @@ import itertools
 import json
 import os
 import sys
+from operator import itemgetter
 
 from scratchtocatrobat.tools import common
 from scratchtocatrobat.scratch import scratchwebapi
@@ -52,6 +53,7 @@ class JsonKeys(object):
     PROJECT_ID = 'projectID'
     OBJECT_NAME = "objName"
     SCRIPTS = "scripts"
+    SCRIPT_COMMENTS = "scriptComments"
     SOUND_MD5 = "md5"
     SOUND_ID = "soundID"
     SOUND_NAME = "soundName"
@@ -108,6 +110,50 @@ def verify_resources_of_scratch_object(scratch_object, md5_to_resource_path_map,
             raise ProjectError("Missing resource file at project: {}. Provide resource with md5: {}"
                                .format(project_base_path, resource_md5))
 
+# Returns the count of bricks in blocks (Doesn't count Values, formulas etc.)
+def _get_block_count(blocks):
+    count = 0
+    if isinstance(blocks, list):
+        for (i, block) in enumerate(blocks):
+            if isinstance(block, list):
+                if not isinstance(block[0], list) and block[0] != '()':
+                    count += 1
+                count += _get_block_count(block)
+    return count
+
+def _get_block_position_list(blocks):
+    positions_list = []
+
+    def _visit_condition(condition, block_position):
+        # brackets are injected in sourcecodemodifier => ignore them for correct offset
+        if  condition[0] != '()':
+            positions_list.append(block_position)
+
+    def _traverse_condition(condition, block_position):
+        _visit_condition(condition, block_position)
+        for child_condition in condition:
+            if isinstance(child_condition, list):
+                _traverse_condition(child_condition, block_position)
+
+    def _visit(block, block_position):
+        positions_list.append(block_position)
+
+    def _traverse(blocks):
+        assert isinstance(blocks, list)
+        for (i, block) in enumerate(blocks):
+            assert isinstance(block, list)
+            _visit(block, (blocks, i))
+            for child in block:
+                if isinstance(child, list):
+                    #list of bricks
+                    if isinstance(child[0], list):
+                        _traverse(child)
+                    #Conditions
+                    else:
+                        _traverse_condition(child, (blocks, i))
+    _traverse(blocks)
+    return positions_list
+
 # TODO: rename
 class Object(common.DictAccessWrapper):
 
@@ -119,11 +165,13 @@ class Object(common.DictAccessWrapper):
             else:
                 self.isScratch3 = True
                 return
-        for key in (JsonKeys.SOUNDS, JsonKeys.COSTUMES, JsonKeys.SCRIPTS, JsonKeys.LISTS, JsonKeys.VARIABLES):
+        for key in (JsonKeys.SOUNDS, JsonKeys.COSTUMES, JsonKeys.SCRIPTS, JsonKeys.LISTS, JsonKeys.VARIABLES, JsonKeys.SCRIPT_COMMENTS):
             if key not in object_data:
                 self._dict_object[key] = []
         self.name = self.get_objName()
         self.scripts = [Script(script) for script in self.get_scripts() if Script.is_valid_script_input(script)]
+        self.monitors = {}
+        self.list_monitors = {}
         number_of_ignored_scripts = len(self.get_scripts()) - len(self.scripts)
         if number_of_ignored_scripts > 0:
             _log.debug("Ignored %s scripts", number_of_ignored_scripts)
@@ -140,6 +188,51 @@ class Object(common.DictAccessWrapper):
             ADD_PEN_COLOR_VARIABLES: False,
             ADD_PEN_SIZE_VARIABLE: False
         }
+
+        ############################################################################################
+        # Comment workaround
+        # Before other workarounds, because scratch2 comments uses offsets                         #
+        ############################################################################################
+        if self._dict_object[JsonKeys.SCRIPT_COMMENTS]:
+            # reverse sort, so that adding comments will not invalidate the offset of the next comments
+            comments = sorted(self._dict_object[JsonKeys.SCRIPT_COMMENTS], key=itemgetter(5), reverse=True)
+
+            #fix comment offsets if there are bricks outside of scripts
+            if len(self.get_scripts()) != len(self.scripts):
+                invalid_script_blocks = [None if Script.is_valid_script_input(script) else script[2] for script in self.get_scripts()]
+                script = iter(self.scripts)
+                block_offset = 0
+                for invalid_script_block in invalid_script_blocks:
+                    if invalid_script_block:
+                        invalid_script_length = _get_block_count(invalid_script_block)
+                        # remove comments that are in the invalid script
+                        comments = [c for c in comments if not block_offset <= c[5] < block_offset + invalid_script_length]
+                        # move all the later comments to the correct offset
+                        for comment in comments:
+                            if comment[5] > block_offset:
+                                comment[5] -= invalid_script_length
+                    else:
+                        block_offset += 1 + _get_block_count(script.next().blocks)
+
+            position_list = []
+            for script in self.scripts:
+                position_list.append((script.blocks, 0))
+                position_list.extend(_get_block_position_list(script.blocks))
+
+            for (x, y, width, height, isOpen, blockId, text) in comments:
+                #Add comments not associated to a block into the 1st script
+                if blockId < 0:
+                    block_offset = 0
+                else:
+                    block_offset = blockId
+                if block_offset < len(position_list):
+                    block_list, offset = position_list[block_offset]
+                    block_list.insert(offset, ["note:", text])
+                else:
+                    _log.warn("Comment with blockId of {} can't be converted.".format(blockId))
+
+        for script in self.scripts:
+            script.script_element = ScriptElement.from_raw_block(script.blocks)
 
         ############################################################################################
         # timer and timerReset workaround
@@ -439,27 +532,48 @@ class RawProject(Object):
         self.dict_ = dict_
         raw_variables_and_sensors_data = filter(lambda var: "target" in var, self.get_children())
 
-        # preprocessing for conversion of visible variables
-        self.sprite_variables_map = {}
-        sprite_sensors_map = {}
-        for info in raw_variables_and_sensors_data:
-            assert "target" in info and "param" in info and "visible" in info
-            if not info["visible"]: continue
-            sprite_name = info["target"]
-            if info["cmd"] == "getVar:":
-                # case variable
-                if sprite_name not in self.sprite_variables_map:
-                    self.sprite_variables_map[sprite_name] = []
-                self.sprite_variables_map[sprite_name] += [info["param"]]
-            else:
-                # case sensor
-                if sprite_name not in sprite_sensors_map:
-                    sprite_sensors_map[sprite_name] = []
-                sprite_sensors_map[sprite_name] += [(info["cmd"], info["param"])]
-
         self.raw_objects = sorted(filter(lambda obj_data: "objName" in obj_data, self.get_children()),
                                   key=lambda obj_data: obj_data.get("indexInLibrary", 0))
         self.objects = [Object(raw_object) for raw_object in [dict_] + self.raw_objects]
+        self.objects_map = {obj.name: obj for obj in self.objects}
+        stage_list = [raw_object["objName"] for raw_object in [dict_] + self.raw_objects if "isStage" in raw_object and raw_object["isStage"]]
+        self.stageName = stage_list[0] if stage_list else "Stage"
+
+        # preprocessing for conversion of visible variables
+        sprite_sensors_map = {}
+        for info in raw_variables_and_sensors_data:
+            assert info.get("mode", 1) != 4
+            if info.get("mode", 1) != 4:
+                assert "target" in info and "param" in info and "visible" in info and "cmd" in info
+                sprite_name = info["target"]
+                sprite_object = self.objects_map.get(sprite_name, self.objects[0])
+                if not sprite_name:
+                    sprite_name = self.stageName
+                info["hex_color"] = '#' + hex(info.get("color", 0)).lstrip("0x")
+                if info["cmd"] == "getVar:":
+                    #normal variable
+                    info["label"] = info["param"] if sprite_name == self.stageName else sprite_name + ": " + info["param"]
+                    sprite_object.monitors[info["param"]] = info
+                elif info["visible"]:
+                    # case sensor
+                    if not sprite_name in sprite_sensors_map:
+                        sprite_sensors_map[sprite_name] = []
+                    sprite_sensors_map[sprite_name] += [info]
+        #preprocessing for conversion of visible lists
+        for sprite in self.objects:
+            list_of_lists = sprite._dict_object[JsonKeys.LISTS]
+            if list_of_lists:
+                sprite_name = sprite.get_objName()
+                for local_list in list_of_lists:
+                    local_list["label"] = sprite_name + ": " + local_list["listName"]
+                sprite.list_monitors = {l["listName"]: l for l in list_of_lists}
+        global_list_of_lists = self._dict_object[JsonKeys.LISTS]
+        if global_list_of_lists:
+            sprite_name = self.stageName
+            for global_list in global_list_of_lists:
+                global_list["label"] = global_list["listName"]
+            self.objects[0].list_monitors = {l["listName"]: l for l in global_list_of_lists}
+
         self.resource_names = [self._resource_name_from(raw_resource) for raw_resource in self._raw_resources()]
         self.unique_resource_names = list(set(self.resource_names))
         is_add_timer_script = False
@@ -496,7 +610,6 @@ class RawProject(Object):
             sprite_object = sprite_name_sprite_mapping[destination_sprite_name]
             assert sprite_object is not None
             self._add_update_position_script_to_object(sprite_object)
-
         for sprite_name, sensors_info in sprite_sensors_map.iteritems():
             sprite_object = sprite_name_sprite_mapping[sprite_name]
             assert sprite_object is not None
@@ -577,36 +690,35 @@ class RawProject(Object):
         from scratchtocatrobat.converter import converter
         forever_loop_body_blocks = []
         sprite_name = sprite_object.get_objName()
-        for command, param in sensors_info:
+        for info in sensors_info:
+            command = info["cmd"]
+            param = info["param"]
             if not converter.is_supported_block(command) and command != "timer":
                 continue
-
-            if sprite_name not in self.sprite_variables_map:
-                self.sprite_variables_map[sprite_name] = []
 
             stage_object = self.objects[0]
             if command == "timer":
                 variable_name = S2CC_TIMER_VARIABLE_NAME
-                self.sprite_variables_map[sprite_name] += [variable_name]
                 if not is_add_timer_script:
                     self._add_timer_script_to_stage_object()
-                continue
             elif command == "answer":
                 variable_name = converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME
-                self.sprite_variables_map[sprite_name] += [variable_name]
                 stage_object._dict_object["variables"].append({ "name": variable_name, "value": "", "isPersistent": False })
-                continue
+            else:
+                variable_name = S2CC_SENSOR_PREFIX + "{}_{}{}".format(sprite_name, command, "_" + param if param else "")
+                sprite_object._dict_object["variables"].append({ "name": variable_name, "value": 0, "isPersistent": False })
+                reporter_block = [command] if param is None else [command, param]
+                forever_loop_body_blocks += [["setVar:to:", variable_name, reporter_block]]
+            new_info = info.copy()
+            new_info["param"] = variable_name
+            new_info["label"] = command
+            new_info["cmd"] = "getVar:"
+            sprite_object.monitors[variable_name] = info
 
-            variable_name = S2CC_SENSOR_PREFIX + "{}_{}{}".format(sprite_name, command, "_" + param if param else "")
-            self.sprite_variables_map[sprite_name] += [variable_name]
-            sprite_object._dict_object["variables"].append({ "name": variable_name, "value": 0, "isPersistent": False })
-            reporter_block = [command] if param is None else [command, param]
-            forever_loop_body_blocks += [["setVar:to:", variable_name, reporter_block]]
-
-        if len(forever_loop_body_blocks) == 0: return
-        forever_loop_body_blocks += [["wait:elapsed:from:", UPDATE_HELPER_VARIABLE_TIMEOUT]]
-        script_blocks = [["doForever", forever_loop_body_blocks]]
-        sprite_object.scripts += [Script([0, 0, [[SCRIPT_GREEN_FLAG]] + script_blocks])]
+        if forever_loop_body_blocks:
+            forever_loop_body_blocks += [["wait:elapsed:from:", UPDATE_HELPER_VARIABLE_TIMEOUT]]
+            script_blocks = [["doForever", forever_loop_body_blocks]]
+            sprite_object.scripts += [Script([0, 0, [[SCRIPT_GREEN_FLAG]] + script_blocks])]
 
     def _add_pen_default_behavior_to_object(self, sprite_object):
         default_pen_size = [unicode("penSize:"), 1.0]

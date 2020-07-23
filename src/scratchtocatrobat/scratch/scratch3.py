@@ -4,31 +4,45 @@ import json
 
 log = logger.log
 
+MONITOR_COLORS = {
+    "motion":  5019647,#"rgb( 76,151,255)"
+    "looks":  10053375,#"rgb(153,102,255)"
+    "sound":  13591503,#"rgb(207, 99,207)"
+    "sensing": 6074838,#"rgb( 92,177,214)"
+    "data":   16747546,#"rgb(255,140, 26)"
+}
+MONITOR_MODE_MAPPING = {
+    "default": 1,
+    "large": 2,
+    "slider": 3,
+    "list": 4
+}
+
 def get_block_attribute(block, key):
     if key in block.keys():
         return block[key]
     return None
 
-
 class Scratch3Block(object):
 
     def __init__(self, block, name):
         self.name = name
-        self.opcode = get_block_attribute(block, "opcode")
-        self.nextName = get_block_attribute(block, "next")
-        self.parentName = get_block_attribute(block, "parent")
+        self.opcode = block.get("opcode")
+        self.nextName = block.get("next")
+        self.parentName = block.get("parent")
         self.nextBlock = None
         self.parentBlock = None
-        self.inputs = get_block_attribute(block, "inputs")
-        self.fields = get_block_attribute(block, "fields")
-        self.topLevel = get_block_attribute(block, "topLevel")
-        self.shadow = get_block_attribute(block, "shadow")
-        self.mutation = get_block_attribute(block, "mutation")
+        self.inputs = block.get("inputs")
+        self.fields = block.get("fields")
+        self.topLevel = block.get("topLevel")
+        self.shadow = block.get("shadow")
+        self.mutation = block.get("mutation")
+        self.comment = block.get("comment")
         self.x = 0
         self.y = 0
         if self.topLevel:
-            self.x = block["x"]
-            self.y = block["y"]
+            self.x = block.get("x")
+            self.y = block.get("y")
 
 class Scratch3Parser(object):
     scratch2dict = {}
@@ -71,12 +85,111 @@ class Scratch3Parser(object):
         stageSprite["children"] = []
         for sprite in scratch2Data['sprites']:
             stageSprite["children"].append(sprite)
+        for monitor in self.raw_dict["monitors"]:
+            stageSprite["children"].append(self.parse_monitor(monitor))
+
         stageSprite["info"] = self.raw_dict["meta"]
         stageSprite["penLayerMD5"] = "Scratch3Doesn'tHaveThis"
         stageSprite["penLayerID"] = 0 #TODO: this doesn't exist in scratch3 what is this!?
         stageSprite["tempoBPM"] = 60
         stageSprite["videoAlpha"] = 0.5
         return stageSprite
+
+    @staticmethod
+    def parse_monitor(monitor):
+        assert "opcode" in monitor and "mode" in monitor and "params" in monitor and "x" in monitor and "y" in monitor
+        MONITOR_CMD_MAPPING = {
+            "sensing_answer": "answer",
+            "looks_backdropnumber": "backgroundIndex",
+            "looks_backdropname": "sceneName",
+            "looks_costumenumbername": "costumeIndex",
+            "data_variable": "getVar:",
+            "motion_direction": "heading",
+            "looks_size": "scale",
+            "sensing_loudness": "soundLevel",
+            "sensing_current": "timeAndDate",
+            "sensing_timer": "timer",
+            "sensing_username": "username",
+            "sound_volume": "volume",
+            "motion_xposition": "xpos",
+            "motion_yposition": "ypos"
+        }
+        MONITOR_LABEL_MAPPING = {
+            "sensing_answer": "answer",
+            "looks_backdropnumber": "backdrop number",
+            "looks_backdropname": "backdrop name",
+            "looks_costumenumbername": "costume number",
+            "motion_direction": "direction",
+            "looks_size": "size",
+            "sensing_loudness": "loudness",
+            "sensing_timer": "timer",
+            "sensing_username": "username",
+            "sound_volume": "volume",
+            "motion_xposition": "x position",
+            "motion_yposition": "y position"
+        }
+        MONITOR_CURRENT_MAPPING = {
+            "YEAR": "year",
+            "MONTH": "month",
+            "DATE": "date",
+            "DAYOFWEEK": "day of week",
+            "HOUR": "hour",
+            "MINUTE": "minute",
+            "SECOND": "second"
+        }
+        MONITOR_PARAM_MAPPING = {
+            "data_variable": lambda param: param["VARIABLE"],
+            "sensing_current": lambda param: MONITOR_CURRENT_MAPPING[param["CURRENTMENU"]]
+        }
+        assert monitor["mode"] in MONITOR_MODE_MAPPING
+        if monitor["mode"] == 'list':
+            assert "LIST" in monitor["params"]
+            scratch2_monitor = {
+                "listName": monitor["params"]["LIST"],
+                "contents": monitor.get("value", []),
+                "isPersistent": monitor.get("isPersistent", False),
+                "x": monitor["x"],
+                "y": monitor["y"],
+                "width": monitor["width"] if "width" in monitor and monitor["width"] != 0 else 100,
+                "height": monitor["height"] if "height" in monitor and monitor["height"] != 0 else 200,
+                "visible": monitor["visible"]
+            }
+        else:
+            #sb3 has same opcode for background # and name, sb2 has two different opcodes => decide opcode depending on param
+            if monitor["opcode"] == "looks_backdropnumbername":
+                if monitor.get("params", {}).get("NUMBER_NAME") == "name":
+                    monitor["opcode"] = "looks_backdropname"
+                else:
+                    monitor["opcode"] = "looks_backdropnumber"
+            assert monitor["opcode"] in MONITOR_CMD_MAPPING
+            target = monitor.get("spriteName", None)
+            param = (MONITOR_PARAM_MAPPING[monitor["opcode"]](monitor["params"]) if monitor["opcode"] in MONITOR_PARAM_MAPPING else None)
+            if monitor["opcode"] in ["data_variable", "sensing_current"]:
+                label = param
+            else:
+                label = MONITOR_LABEL_MAPPING[monitor["opcode"]]
+
+            scratch2_monitor = {
+                "cmd": MONITOR_CMD_MAPPING[monitor["opcode"]],
+                "mode": MONITOR_MODE_MAPPING[monitor["mode"]],
+                "isDiscrete": monitor.get("isDiscrete", True),
+                "label": ((target + ": ") if target else "") + label,
+                "param": param,
+                "sliderMax": monitor.get("sliderMax", 100),
+                "sliderMin": monitor.get("sliderMin", 0),
+                "target": target,
+                "visible": monitor["visible"],
+                "x": monitor["x"],
+                "y": monitor["y"],
+            }
+            for color_name, color_code in MONITOR_COLORS.items():
+                if monitor["opcode"].startswith(color_name):
+                    scratch2_monitor["color"] = color_code
+                    break
+            else:
+                log.info("Can't find color for opcode " + monitor["opcode"] + ". Using black.")
+                scratch2_monitor["color"] = 0
+        return scratch2_monitor
 
     def parse_sprite(self, sprite):
         from scratch3visitor.visitorUtil import BlockContext, visitScriptBlock
@@ -111,18 +224,11 @@ class Scratch3Parser(object):
             curvar["isPersistent"] = var[2] if len(var) > 2 else False
             variables.append(curvar)
 
-        #TODO: check if list is global, if it is add it to the list list of the stage, same for variables
         lists = []
-        for list in sprite["lists"].values():
-            curlist = {}
-            curlist["listName"] = list[0]
-            curlist["contents"] = list[1]
-            curlist["isPersistent"] = list[2] if len(list) > 2 else False
-            curlist["x"] = 1
-            curlist["y"] = 1
-            curlist["width"] = 1
-            curlist["height"] = 1
-            curlist["visible"] = True
+        for id in sprite["lists"].keys():
+            matching_raws = [m for m in self.raw_dict["monitors"] if m.get("id") == id]
+            assert len(matching_raws) == 1
+            curlist = self.parse_monitor(matching_raws[0])
             lists.append(curlist)
         scratch2ProjectDict["lists"] = lists
 
@@ -145,9 +251,7 @@ class Scratch3Parser(object):
             scratch2ProjectDict["costumes"].append(s2Costume)
 
         scratch2ProjectDict["sounds"] = []
-        i = 0
-        for s3Sound in sprite["sounds"]:
-            i += 1
+        for i, s3Sound in enumerate(sprite["sounds"]):
             s2Sound = {}
             s2Sound["assetId"] =  s3Sound["assetId"]
             s2Sound["soundName"] =  s3Sound["name"]
@@ -171,6 +275,70 @@ class Scratch3Parser(object):
             # scratch2ProjectDict["indexInLibrary"] = sprite["indexInLibrary"]
             # scratch2ProjectDict["spriteInfo"] = sprite["spriteInfo"]
             scratch2ProjectDict["visible"] = sprite["visible"]
+
+        def _to_scratch2_comment(comment, offset):
+            return [
+                comment["x"],
+                comment["y"],
+                comment["width"],
+                comment["height"],
+                not comment["minimized"],
+                offset,
+                comment["text"]]
+
+
+        #return a list of all input values. Adds values with keys SUBSTACK and SUBSTACK2 as last.
+        def get_ordered_input_values(input_map):
+            substack = None
+            substack2 = None
+            childs = []
+            for name, value in input_map.iteritems():
+                if name == "SUBSTACK":
+                    substack = value
+                elif name == "SUBSTACK2":
+                    substack2 = value
+                else:
+                    childs.append(value)
+            if substack:
+                childs.append(substack)
+            if substack2:
+                childs.append(substack2)
+            return childs
+
+        def get_scratch2_comments_for_script(script_block, comments, offset=0):
+            scratch2_comments = []
+            block = script_block
+            while block:
+                if block.comment:
+                    comment = comments.get(block.comment, None)
+                    if comment:
+                        scratch2_comments.append(_to_scratch2_comment(comment, offset))
+                    else:
+                        log.warn("Comment with ID: {} not found.".format(block.comment))
+                offset += 1
+                if block.inputs:
+                    for sub_input_array in get_ordered_input_values(block.inputs):
+                        if isinstance(sub_input_array[1], basestring):
+                            sub_input = temp_block_dict.get(sub_input_array[1], None)
+                            if sub_input and not sub_input.shadow:
+                                child_scratch2_comments, offset = get_scratch2_comments_for_script(sub_input, comments, offset)
+                                scratch2_comments.extend(child_scratch2_comments)
+                block = block.nextBlock
+            return scratch2_comments, offset
+
+        def get_scratch2_comments(script_blocks, comments):
+            offset = 0
+            scratch2_comments = []
+            for comment in comments.values():
+                if not comment["blockId"]:
+                    scratch2_comments.append(_to_scratch2_comment(comment, -1))
+            for script_block in script_blocks:
+                if script_block.opcode.startswith("event_"):
+                    script_comments, offset = get_scratch2_comments_for_script(script_block, comments, offset)
+                    scratch2_comments.extend(script_comments)
+            return scratch2_comments
+
+        scratch2ProjectDict["scriptComments"] = get_scratch2_comments(script_blocks, sprite["comments"])
 
         return scratch2ProjectDict
 

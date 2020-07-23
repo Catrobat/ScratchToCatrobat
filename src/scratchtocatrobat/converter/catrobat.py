@@ -148,9 +148,9 @@ def create_formula_element_with_value(variable_value):
     return create_formula_with_value(variable_value).getRoot()
 
 def add_user_variable(project, variable_name, sprite=None, sprite_name=None):
-    ''' If `sprite_name` is set a sprite variable is added otherwise the variable is added to the project. '''
-    _log.debug("adding variable '%s' to sprite '%s'", variable_name, sprite_name if sprite_name is not None else "<Stage>")
-    if sprite_name is None:
+    ''' If `sprite` is set a sprite variable is added otherwise the variable is added to the project. '''
+    _log.debug("adding variable '%s' to sprite '%s'", variable_name, sprite.getName() if sprite is not None else "<Stage>")
+    if sprite is None:
         user_variables = project.userVariables
         added_user_variable = catformula.UserVariable(variable_name)
         user_variables.add(added_user_variable)
@@ -302,7 +302,7 @@ def create_formula_element_for(expression):
         if len(expression) >= 2:
             left_child = expression[1]
         if len(expression) == 3:
-            right_child = [] if len(expression) <= 2 else expression[2]
+            right_child = expression[2]
 
     return formula_element_for(root, [create_formula_element_for(left_child), create_formula_element_for(right_child)])
 

@@ -50,7 +50,6 @@ def run_converter(scratch_project_file_or_url, output_dir,
 
     def check_converter_environment():
         # TODO: refactor to combined class with explicit environment check method
-        tools.svgtopng._checked_batik_jar_path()
         tools.wavconverter._checked_sox_path()
 
     try:
@@ -140,9 +139,8 @@ def run_converter(scratch_project_file_or_url, output_dir,
             if isScratch3Project:
                 project.name = scratch3ProjectName
             log.info("Converting scratch project '%s' into output folder: %s", project.name, output_dir)
-            context = converter.Context()
-            converted_project = converter.converted(project, progress_bar, context)
-            catrobat_program_path = converted_project.save_as_catrobat_package_to(output_dir, archive_name, progress_bar, context)
+            converted_project = converter.converted(project, progress_bar)
+            catrobat_program_path = converted_project.save_as_catrobat_package_to(output_dir, archive_name, progress_bar)
             if extract_resulting_catrobat:
                 extraction_path = os.path.join(output_dir, os.path.splitext(os.path.basename(catrobat_program_path))[0])
                 common.rm_dir(extraction_path)

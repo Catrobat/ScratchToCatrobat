@@ -302,6 +302,12 @@ class TestScriptInit(unittest.TestCase):
             with self.assertRaises(scratch.ScriptError):
                 scratch.Script(faulty_input)
 
+    def test_fail_with_no_multi_list_on_third_param(self):
+        faulty_input = [
+            1,
+            1,
+            [u'']]
+        self.assertRaises(scratch.ScriptError, lambda: scratch.Script.is_valid_script_input(faulty_input))
 
 class TestScriptFunc(unittest.TestCase):
 

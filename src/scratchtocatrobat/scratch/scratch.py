@@ -1025,11 +1025,13 @@ class Script(object):
     @classmethod
     def is_valid_script_input(cls, json_input):
         are_all_positional_values_numbers = all(isinstance(positional_value, (int, float)) for positional_value in json_input[0:2])
-        if (isinstance(json_input, list) and len(json_input) == 3 and are_all_positional_values_numbers and isinstance(json_input[2], list)):
-            # NOTE: could use a json validator instead
-            script_content = json_input[2]
-            if script_content[0][0] in SCRIPTS:
-                return True
+        try:
+            if (isinstance(json_input, list) and len(json_input) == 3 and are_all_positional_values_numbers and isinstance(json_input[2], list)):
+                script_content = json_input[2]
+                if script_content[0][0] in SCRIPTS:
+                    return True
+        except:
+            raise ScriptError("Not valid script input")
         return False
 
     def get_type(self):

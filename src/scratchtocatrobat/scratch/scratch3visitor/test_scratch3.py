@@ -1328,8 +1328,28 @@ class TestScratch3Blocks(unittest.TestCase):
 
     def test_visit_literal(self):
         test_list = [4, "10-"]
-        x = visitLiteral(test_list)
-        assert "10-" == x
+        test_list2 = [12, "Test2"]
+        test_list3 = [13, "Test3"]
+        test_list4 = [5, "Test4"]
+        test_list5 = [5, None]
+        test_list6 = [9, "Test6"]
+
+
+        test_float = visitLiteral(test_list)
+        test_twelve = visitLiteral(test_list2)
+        test_thirteen = visitLiteral(test_list3)
+        test_five = visitLiteral(test_list4)
+        test_five_none = visitLiteral(test_list5)
+        test_nine = visitLiteral(test_list6)
+
+        assert test_float == "10-"
+        assert test_twelve == ["readVariable", "Test2"]
+        assert test_thirteen == ["contentsOfList:", "Test3"]
+        assert test_five == "Test4"
+        assert test_five_none == 0
+        assert test_nine == "Test6"
+
+
 
 
 if __name__ == "__main__":

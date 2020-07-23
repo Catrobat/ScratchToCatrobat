@@ -2224,14 +2224,17 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         if not isinstance(new_stack_values, list):
             new_stack_values = [new_stack_values]
 
-        # TODO: simplify this...
-        if len(self._child_stack) > 0 and len(new_stack_values) == len([val for val in new_stack_values if isinstance(val, catbricks.Brick)]):
+        brick_check = len(new_stack_values)
+        for val in new_stack_values:
+            if not isinstance(val, catbricks.Brick):
+                brick_check = 0
+
+        if len(self._child_stack) > 0 and len(new_stack_values) == brick_check:
             for brick_list in reversed(self._child_stack):
                 self._stack += brick_list
             self._child_stack = []
 
-        if len(new_stack_values) > 1 and isinstance(new_stack_values[-1], catformula.FormulaElement):
-            # TODO: lambda check if all entries are instance of Brick
+        if len(new_stack_values) > 1 and isinstance(new_stack_values[-1], catformula.FormulaElement) and brick_check:
             self._child_stack += [new_stack_values[:-1]]
             new_stack_values = [new_stack_values[-1]]
 

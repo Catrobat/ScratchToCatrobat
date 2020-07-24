@@ -81,6 +81,79 @@ class MediaConverter(object):
         self.sounds_path = sounds_path
         self.file_rename_map = {}
 
+    def get_info(self, file_name, is_costume=False):
+        if is_costume:
+            costume_info = {"costume_file_name": file_name,
+                            "costume_src_path": os.path.join(self.scratch_project.project_base_path, file_name),
+                            "file_ext": os.path.splitext(file_name)[1].lower()}
+            if not os.path.exists(costume_info["costume_src_path"]):
+            # media files of local projects are NOT named by their hash-value -> change name
+                costume_info["costume_src_path"] = self.scratch_project.md5_to_resource_path_map[file_name]
+            return costume_info
+        else:
+            sound_info = {"sound_file_name": file_name,
+                          "sound_src_path": os.path.join(self.scratch_project.project_base_path, file_name),
+                          "file_ext": os.path.splitext(file_name)[1].lower()}
+            if not os.path.exists(sound_info["sound_src_path"]):
+                sound_info["sound_src_path"] = self.scratch_project.md5_to_resource_path_map[file_name]
+            return sound_info
+
+
+    def setup_resource_info(self, file_name, src_path, is_unconverted, info, all_used_resources,
+                            unconverted_media_resources, converted_media_resources_paths, progress_bar,
+                            defined_scratch_object, ispng=False, is_costume=False):
+
+        if is_costume:
+            media_type = MediaType.UNCONVERTED_SVG if is_unconverted else MediaType.IMAGE
+        else:
+            media_type = MediaType.UNCONVERTED_WAV if is_unconverted else MediaType.AUDIO
+
+        resource_info = {
+            "scratch_md5_name": file_name,
+            "src_path": src_path,
+            "dest_path": self.images_path if is_costume else self.sounds_path,
+            "media_type": media_type,
+            "info": info
+        }
+
+        all_used_resources.append(resource_info)
+
+        if is_unconverted:
+            unconverted_media_resources.append(resource_info)
+        elif progress_bar is not None and src_path not in converted_media_resources_paths:
+            # update progress bar for all those media files that don't have to be converted
+            #TODO: background gets scaled too, shouldn't be the case
+            if ispng:
+                isStageCostume = defined_scratch_object.name == "Stage"
+                self.convertPNG(isStageCostume, info, src_path, src_path)
+            converted_media_resources_paths.add(src_path)
+            progress_bar.update(ProgressType.CONVERT_MEDIA_FILE)
+
+    def setup_costume_info(self, defined_scratch_object, all_used_resources, unconverted_media_resources,
+                           converted_media_resources_paths, progress_bar):
+        for costume_info in defined_scratch_object.get_costumes():
+            costume_dict = self.get_info(costume_info[JsonKeys.COSTUME_MD5], True)
+
+            assert os.path.exists(costume_dict["costume_src_path"]), "Not existing: {}".format(costume_dict["costume_src_path"])
+            assert costume_dict["file_ext"] in {".png", ".svg", ".jpg", ".gif"}, \
+                "Unsupported image file extension: %s" % costume_dict["costume_src_path"]
+            ispng = costume_dict["file_ext"] == ".png"
+            is_unconverted = costume_dict["file_ext"] == ".svg"
+            self.setup_resource_info(costume_dict["costume_file_name"], costume_dict["costume_src_path"], is_unconverted, costume_info,
+                                     all_used_resources, unconverted_media_resources, converted_media_resources_paths,
+                                     progress_bar, defined_scratch_object, ispng, True)
+
+    def setup_sound_info(self, defined_scratch_object, all_used_resources, unconverted_media_resources, converted_media_resources_paths, progress_bar):
+        for sound_info in defined_scratch_object.get_sounds():
+            sound_dict = self.get_info(sound_info[JsonKeys.SOUND_MD5])
+
+            assert os.path.exists(sound_dict["sound_src_path"]), "Not existing: {}".format(sound_dict["sound_src_path"])
+            assert sound_dict["file_ext"] in {".wav", ".mp3"}, "Unsupported sound file extension: %s" % sound_dict["sound_src_path"]
+            is_unconverted = sound_dict["file_ext"] == ".wav" and not wavconverter.is_android_compatible_wav(sound_dict["sound_src_path"])
+
+            self.setup_resource_info(sound_dict["sound_file_name"], sound_dict["sound_src_path"], is_unconverted, sound_info,
+                                     all_used_resources, unconverted_media_resources, converted_media_resources_paths,
+                                     progress_bar, defined_scratch_object)
 
     def convert(self, progress_bar = None):
         all_used_resources = []
@@ -97,75 +170,10 @@ class MediaConverter(object):
         # }
 
         for scratch_object in self.scratch_project.objects:
-            project_base_path = self.scratch_project.project_base_path
-
-            for costume_info in scratch_object.get_costumes():
-                costume_file_name = costume_info[JsonKeys.COSTUME_MD5]
-                costume_src_path = os.path.join(project_base_path, costume_file_name)
-                file_ext = os.path.splitext(costume_file_name)[1].lower()
-
-                if not os.path.exists(costume_src_path):
-                    # media files of local projects are NOT named by their hash-value -> change name
-                    costume_src_path = self.scratch_project.md5_to_resource_path_map[costume_file_name]
-
-                assert os.path.exists(costume_src_path), "Not existing: {}".format(costume_src_path)
-                assert file_ext in {".png", ".svg", ".jpg", ".gif"}, \
-                       "Unsupported image file extension: %s" % costume_src_path
-                ispng = file_ext == ".png"
-                is_unconverted = file_ext == ".svg"
-
-                resource_info = {
-                    "scratch_md5_name": costume_file_name,
-                    "src_path": costume_src_path,
-                    "dest_path": self.images_path,
-                    "media_type": MediaType.UNCONVERTED_SVG if is_unconverted else MediaType.IMAGE,
-                    "info": costume_info
-                }
-
-                all_used_resources.append(resource_info)
-
-                if is_unconverted:
-                    unconverted_media_resources.append(resource_info)
-                elif progress_bar != None and costume_src_path not in converted_media_resources_paths:
-                    # update progress bar for all those media files that don't have to be converted
-                    #TODO: background gets scaled too, shouldn't be the case
-                    if ispng:
-                        isStageCostume = scratch_object.name == "Stage"
-                        self.convertPNG(isStageCostume, costume_info,costume_src_path, costume_src_path)
-                    converted_media_resources_paths.add(costume_src_path)
-                    progress_bar.update(ProgressType.CONVERT_MEDIA_FILE)
-
-
-            for sound_info in scratch_object.get_sounds():
-                sound_file_name = sound_info[JsonKeys.SOUND_MD5]
-                sound_src_path = os.path.join(project_base_path, sound_file_name)
-                file_ext = os.path.splitext(sound_file_name)[1].lower()
-
-                if not os.path.exists(sound_src_path):
-                    # media files of local projects are NOT named by their hash-value -> change name
-                    sound_src_path = self.scratch_project.md5_to_resource_path_map[sound_file_name]
-
-                assert os.path.exists(sound_src_path), "Not existing: {}".format(sound_src_path)
-                assert file_ext in {".wav", ".mp3"}, "Unsupported sound file extension: %s" % sound_src_path
-
-                is_unconverted = file_ext == ".wav" and not wavconverter.is_android_compatible_wav(sound_src_path)
-                resource_info = {
-                    "scratch_md5_name": sound_file_name,
-                    "src_path": sound_src_path,
-                    "dest_path": self.sounds_path,
-                    "media_type": MediaType.UNCONVERTED_WAV if is_unconverted else MediaType.AUDIO,
-                    "info": sound_info
-                }
-
-                all_used_resources.append(resource_info)
-
-                if is_unconverted:
-                    unconverted_media_resources.append(resource_info)
-                elif progress_bar != None and sound_src_path not in converted_media_resources_paths:
-                    # update progress bar for all those media files that don't have to be converted
-                    progress_bar.update(ProgressType.CONVERT_MEDIA_FILE)
-                    converted_media_resources_paths.add(sound_src_path)
-
+            self.setup_costume_info(scratch_object, all_used_resources, unconverted_media_resources,
+                                    converted_media_resources_paths, progress_bar)
+            self.setup_sound_info(scratch_object, all_used_resources, unconverted_media_resources,
+                                  converted_media_resources_paths, progress_bar)
 
         # schedule concurrent conversions (one conversion per thread)
         new_src_paths = {}

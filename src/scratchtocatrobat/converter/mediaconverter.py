@@ -98,8 +98,7 @@ class MediaConverter(object):
                 sound_info["sound_src_path"] = self.scratch_project.md5_to_resource_path_map[file_name]
             return sound_info
 
-
-    def setup_resource_info(self, file_name, src_path, is_unconverted, info, all_used_resources,
+    def setup_resource_info_dict(self, file_name, src_path, is_unconverted, info, all_used_resources,
                             unconverted_media_resources, converted_media_resources_paths, progress_bar,
                             defined_scratch_object, ispng=False, is_costume=False):
 
@@ -139,7 +138,7 @@ class MediaConverter(object):
                 "Unsupported image file extension: %s" % costume_dict["costume_src_path"]
             ispng = costume_dict["file_ext"] == ".png"
             is_unconverted = costume_dict["file_ext"] == ".svg"
-            self.setup_resource_info(costume_dict["costume_file_name"], costume_dict["costume_src_path"], is_unconverted, costume_info,
+            self.setup_resource_info_dict(costume_dict["costume_file_name"], costume_dict["costume_src_path"], is_unconverted, costume_info,
                                      all_used_resources, unconverted_media_resources, converted_media_resources_paths,
                                      progress_bar, defined_scratch_object, ispng, True)
 
@@ -151,30 +150,11 @@ class MediaConverter(object):
             assert sound_dict["file_ext"] in {".wav", ".mp3"}, "Unsupported sound file extension: %s" % sound_dict["sound_src_path"]
             is_unconverted = sound_dict["file_ext"] == ".wav" and not wavconverter.is_android_compatible_wav(sound_dict["sound_src_path"])
 
-            self.setup_resource_info(sound_dict["sound_file_name"], sound_dict["sound_src_path"], is_unconverted, sound_info,
+            self.setup_resource_info_dict(sound_dict["sound_file_name"], sound_dict["sound_src_path"], is_unconverted, sound_info,
                                      all_used_resources, unconverted_media_resources, converted_media_resources_paths,
                                      progress_bar, defined_scratch_object)
 
-    def convert(self, progress_bar = None):
-        all_used_resources = []
-        unconverted_media_resources = []
-        converted_media_resources_paths = set()
-
-        # TODO: remove this block later {
-        for scratch_md5_name, src_path in self.scratch_project.md5_to_resource_path_map.iteritems():
-            if scratch_md5_name in self.scratch_project.unused_resource_names:
-                log.info("Ignoring unused resource file: %s", src_path)
-                if progress_bar != None:
-                    progress_bar.update(ProgressType.CONVERT_MEDIA_FILE)
-                continue
-        # }
-
-        for scratch_object in self.scratch_project.objects:
-            self.setup_costume_info(scratch_object, all_used_resources, unconverted_media_resources,
-                                    converted_media_resources_paths, progress_bar)
-            self.setup_sound_info(scratch_object, all_used_resources, unconverted_media_resources,
-                                  converted_media_resources_paths, progress_bar)
-
+    def conversion_svgtopng_wav(self, unconverted_media_resources, progress_bar):
         # schedule concurrent conversions (one conversion per thread)
         new_src_paths = {}
         resource_index = 0
@@ -203,52 +183,50 @@ class MediaConverter(object):
             for thread in threads: thread.join()
             resource_index = next_resources_end_index
         assert reference_index == resource_index and reference_index == num_total_resources
+        return new_src_paths
 
-        converted_media_files_to_be_removed = set()
-        duplicate_filename_set = set()
+    def font_setup(self, costume_info, src_path):
+            text = costume_info[JsonKeys.COSTUME_TEXT]
+            x, y, width, height = costume_info[JsonKeys.COSTUME_TEXT_RECT]
+            # TODO: extract RGBA
+            # text_color = costume_info[JsonKeys.COSTUME_TEXT_COLOR]
+            font_name = "NO FONT"
+            font_style = "regular"
+            font_scaling_factor = costume_info[JsonKeys.COSTUME_RESOLUTION] if JsonKeys.COSTUME_RESOLUTION in costume_info else 1
+            if len(costume_info[JsonKeys.COSTUME_FONT_NAME].split()) == 2:
+                [font_name, font_style] = costume_info[JsonKeys.COSTUME_FONT_NAME].split()
+            else:
+                log.warning("font JSON parameters wrong '{0}', replacing with known font '{1}'".format(costume_info[JsonKeys.COSTUME_FONT_NAME], image_processing._supported_fonts_path_mapping.keys()[0]))
+                font_scaling_factor = font_scaling_factor * 1.1 # the original font might be smaller, better scale it down than cut it off
+            if(font_name not in image_processing._supported_fonts_path_mapping):
+                log.warning("font name '{0}' unknown, replacing with known font '{1}'".format(font_name, image_processing._supported_fonts_path_mapping.keys()[0]))
+                font_name = image_processing._supported_fonts_path_mapping.keys()[0]
+                font_scaling_factor = font_scaling_factor * 1.1 # the original font might be smaller, better scale it down than cut it off
+            is_bold = font_style == "Bold"
+            is_italic = font_style == "Italic"
+            font_size = float(costume_info[JsonKeys.COSTUME_FONT_SIZE]) / float(font_scaling_factor)
+            image_file_path = src_path
+            font = image_processing.create_font(font_name, font_size, is_bold, is_italic)
+            assert font is not None
+            editable_image = image_processing.read_editable_image_from_disk(image_file_path)
+            fonty = float(y) + (height * float(font_scaling_factor) / 2.0) # I think this might not work if we rotate something outside of the picture
+            editable_image = image_processing.add_text_to_image(editable_image, text, font, Color.BLACK, float(x), float(fonty), float(width), float(height))
+
+            # TODO: create duplicate...
+            # TODO: move test_converter.py to converter-python-package...
+            image_processing.save_editable_image_as_png_to_disk(editable_image, image_file_path, overwrite=True)
+
+    def resource_info_setup(self, all_used_resources, duplicate_filename_set, new_src_paths, converted_media_files_to_be_removed):
         for resource_info in all_used_resources:
             # reconstruct the temporary catrobat filenames -> catrobat.media_objects_in(self.catrobat_file)
             current_filename = helpers.create_catrobat_md5_filename(resource_info["scratch_md5_name"], duplicate_filename_set)
-
             # check if path changed after conversion
             old_src_path = resource_info["src_path"]
-            if old_src_path in new_src_paths:
-                src_path = new_src_paths[old_src_path]
-            else:
-                src_path = old_src_path
-
+            src_path = new_src_paths[old_src_path] if old_src_path in new_src_paths else old_src_path
             if resource_info["media_type"] in { MediaType.IMAGE, MediaType.UNCONVERTED_SVG }:
                 costume_info = resource_info["info"]
                 if "text" in costume_info:
-                    text = costume_info[JsonKeys.COSTUME_TEXT]
-                    x, y, width, height = costume_info[JsonKeys.COSTUME_TEXT_RECT]
-                    # TODO: extract RGBA
-                    # text_color = costume_info[JsonKeys.COSTUME_TEXT_COLOR]
-                    font_name = "NO FONT"
-                    font_style = "regular"
-                    font_scaling_factor = costume_info[JsonKeys.COSTUME_RESOLUTION] if JsonKeys.COSTUME_RESOLUTION in costume_info else 1
-                    if len(costume_info[JsonKeys.COSTUME_FONT_NAME].split()) == 2 :
-                        [font_name, font_style] = costume_info[JsonKeys.COSTUME_FONT_NAME].split()
-                    else:
-                        log.warning("font JSON parameters wrong '{0}', replacing with known font '{1}'".format(costume_info[JsonKeys.COSTUME_FONT_NAME], image_processing._supported_fonts_path_mapping.keys()[0]))
-                        font_scaling_factor = font_scaling_factor * 1.1 # the original font might be smaller, better scale it down than cut it off
-                    if(font_name not in image_processing._supported_fonts_path_mapping):
-                        log.warning("font name '{0}' unknown, replacing with known font '{1}'".format(font_name, image_processing._supported_fonts_path_mapping.keys()[0]))
-                        font_name = image_processing._supported_fonts_path_mapping.keys()[0]
-                        font_scaling_factor = font_scaling_factor * 1.1 # the original font might be smaller, better scale it down than cut it off
-                    is_bold = font_style == "Bold"
-                    is_italic = font_style == "Italic"
-                    font_size = float(costume_info[JsonKeys.COSTUME_FONT_SIZE]) / float(font_scaling_factor)
-                    image_file_path = src_path
-                    font = image_processing.create_font(font_name, font_size, is_bold, is_italic)
-                    assert font is not None
-                    editable_image = image_processing.read_editable_image_from_disk(image_file_path)
-                    fonty = float(y) + (height * float(font_scaling_factor) / 2.0) # I think this might not work if we rotate something outside of the picture
-                    editable_image = image_processing.add_text_to_image(editable_image, text, font, Color.BLACK, float(x), float(fonty), float(width), float(height))
-
-                    # TODO: create duplicate...
-                    # TODO: move test_converter.py to converter-python-package...
-                    image_processing.save_editable_image_as_png_to_disk(editable_image, image_file_path, overwrite=True)
+                    self.font_setup(costume_info, src_path)
 
             current_basename, _ = os.path.splitext(current_filename)
             self.file_rename_map[current_basename] = {}
@@ -259,8 +237,31 @@ class MediaConverter(object):
             if resource_info["media_type"] in { MediaType.UNCONVERTED_SVG, MediaType.UNCONVERTED_WAV }:
                 converted_media_files_to_be_removed.add(src_path)
 
-        self.rename_media_files_and_copy()
+    def convert(self, progress_bar=None):
+        all_used_resources = []
+        unconverted_media_resources = []
+        converted_media_resources_paths = set()
 
+        # TODO: remove this block later {
+        for scratch_md5_name, src_path in self.scratch_project.md5_to_resource_path_map.iteritems():
+            if scratch_md5_name in self.scratch_project.unused_resource_names:
+                log.info("Ignoring unused resource file: %s", src_path)
+                if progress_bar != None:
+                    progress_bar.update(ProgressType.CONVERT_MEDIA_FILE)
+                continue
+        # }
+
+        for scratch_object in self.scratch_project.objects:
+            self.setup_costume_info(scratch_object, all_used_resources, unconverted_media_resources,
+                                    converted_media_resources_paths, progress_bar)
+            self.setup_sound_info(scratch_object, all_used_resources, unconverted_media_resources,
+                                  converted_media_resources_paths, progress_bar)
+
+        new_src_paths = self.conversion_svgtopng_wav(unconverted_media_resources, progress_bar)
+        converted_media_files_to_be_removed = set()
+        duplicate_filename_set = set()
+        self.resource_info_setup(all_used_resources, duplicate_filename_set, new_src_paths, converted_media_resources_paths)
+        self.rename_media_files_and_copy()
         # delete converted png files -> only temporary saved
         for media_file_to_be_removed in converted_media_files_to_be_removed:
             os.remove(media_file_to_be_removed)
@@ -320,8 +321,8 @@ class MediaConverter(object):
                     if alpha > 0:
                         empty = False
                         break
-                    if not empty:
-                        break
+                if not empty:
+                    break
             if empty:
                 argb = (80 << 24) | (0x00FF00)
                 resized.setRGB(0,0,argb)

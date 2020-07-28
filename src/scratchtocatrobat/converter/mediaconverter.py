@@ -71,7 +71,6 @@ class _MediaResourceConverterThread(Thread):
         assert os.path.exists(new_src_path), "Not existing: {}. Available files in directory: {}" \
                .format(new_src_path, os.listdir(os.path.dirname(new_src_path)))
 
-
 class MediaConverter(object):
 
     def __init__(self, scratch_project, catrobat_program, images_path, sounds_path):
@@ -80,6 +79,12 @@ class MediaConverter(object):
         self.images_path = images_path
         self.sounds_path = sounds_path
         self.file_rename_map = {}
+
+    def multi_thread_convert(self, info, src_path, converted_media_resources_paths, progress_bar):
+        self.convertPNG(info, src_path, src_path)
+        converted_media_resources_paths.add(src_path)
+        progress_bar.update(ProgressType.CONVERT_MEDIA_FILE)
+
 
     def get_info(self, file_name, is_costume=False):
         if is_costume:
@@ -100,7 +105,7 @@ class MediaConverter(object):
 
     def setup_resource_info_dict(self, file_name, src_path, is_unconverted, info, all_used_resources,
                             unconverted_media_resources, converted_media_resources_paths, progress_bar,
-                            defined_scratch_object, ispng=False, is_costume=False):
+                            defined_scratch_object, threads, ispng=False, is_costume=False):
 
         if is_costume:
             media_type = MediaType.UNCONVERTED_SVG if is_unconverted else MediaType.IMAGE
@@ -123,13 +128,14 @@ class MediaConverter(object):
             # update progress bar for all those media files that don't have to be converted
             #TODO: background gets scaled too, shouldn't be the case
             if ispng:
-                isStageCostume = defined_scratch_object.name == "Stage"
-                self.convertPNG(isStageCostume, info, src_path, src_path)
+                 threads.append(Thread(target=self.multi_thread_convert, args=(info, src_path, converted_media_resources_paths, progress_bar)))
+                 return
             converted_media_resources_paths.add(src_path)
             progress_bar.update(ProgressType.CONVERT_MEDIA_FILE)
 
     def setup_costume_info(self, defined_scratch_object, all_used_resources, unconverted_media_resources,
                            converted_media_resources_paths, progress_bar):
+        threads = []
         for costume_info in defined_scratch_object.get_costumes():
             costume_dict = self.get_info(costume_info[JsonKeys.COSTUME_MD5], True)
 
@@ -140,11 +146,14 @@ class MediaConverter(object):
             is_unconverted = costume_dict["file_ext"] == ".svg"
             self.setup_resource_info_dict(costume_dict["costume_file_name"], costume_dict["costume_src_path"], is_unconverted, costume_info,
                                      all_used_resources, unconverted_media_resources, converted_media_resources_paths,
-                                     progress_bar, defined_scratch_object, ispng, True)
+                                     progress_bar, defined_scratch_object, threads, ispng, True)
+        for thread in threads: thread.start()
+        for thread in threads: thread.join()
 
     def setup_sound_info(self, defined_scratch_object, all_used_resources, unconverted_media_resources, converted_media_resources_paths, progress_bar):
         for sound_info in defined_scratch_object.get_sounds():
             sound_dict = self.get_info(sound_info[JsonKeys.SOUND_MD5])
+
 
             assert os.path.exists(sound_dict["sound_src_path"]), "Not existing: {}".format(sound_dict["sound_src_path"])
             assert sound_dict["file_ext"] in {".wav", ".mp3"}, "Unsupported sound file extension: %s" % sound_dict["sound_src_path"]
@@ -152,7 +161,7 @@ class MediaConverter(object):
 
             self.setup_resource_info_dict(sound_dict["sound_file_name"], sound_dict["sound_src_path"], is_unconverted, sound_info,
                                      all_used_resources, unconverted_media_resources, converted_media_resources_paths,
-                                     progress_bar, defined_scratch_object)
+                                     progress_bar, defined_scratch_object, [])
 
     def conversion_svgtopng_wav(self, unconverted_media_resources, progress_bar):
         # schedule concurrent conversions (one conversion per thread)
@@ -335,7 +344,7 @@ class MediaConverter(object):
         ImageIO.write(resized, "png", output)
         return path_out
 
-    def convertPNG(self, isStageCostume, costume_info, costume_src_path , costume_dest_path):
+    def convertPNG(self, costume_info, costume_src_path , costume_dest_path):
         import java.io.File
         new_image = svgtopng._translation(costume_src_path, costume_info["rotationCenterX"], costume_info["rotationCenterY"])
         ImageIO.write(new_image, "png", java.io.File(costume_dest_path))

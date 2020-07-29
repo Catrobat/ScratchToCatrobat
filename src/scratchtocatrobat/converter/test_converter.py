@@ -3117,7 +3117,7 @@ class TestShowVariablesWorkaround(unittest.TestCase):
         assert self.default_scene
         sprite_list = self.default_scene.getSpriteList()
         self.assertEqual(6, len(sprite_list))
-        [self.stage_sprite, self.sprite1, self.sprite2, self.global_slider_sprite, self.local_slider_sprite, self.toggle_slider_sprite] = sprite_list
+        [self.stage_sprite, self.sprite2, self.sprite1, self.global_slider_sprite, self.toggle_slider_sprite, self.local_slider_sprite] = sprite_list
 
     def test_sprite1_correct_events_added(self):
         #Sprite1

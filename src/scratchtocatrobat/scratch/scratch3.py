@@ -272,7 +272,7 @@ class Scratch3Parser(object):
             scratch2ProjectDict["direction"] = sprite["direction"]
             scratch2ProjectDict["rotationStyle"] = sprite["rotationStyle"]
             scratch2ProjectDict["isDraggable"] = sprite["draggable"]
-            # scratch2ProjectDict["indexInLibrary"] = sprite["indexInLibrary"]
+            scratch2ProjectDict["indexInLibrary"] = -sprite["layerOrder"] #layerOrder is reversed to indexInLayer
             # scratch2ProjectDict["spriteInfo"] = sprite["spriteInfo"]
             scratch2ProjectDict["visible"] = sprite["visible"]
 

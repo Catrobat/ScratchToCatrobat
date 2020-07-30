@@ -855,11 +855,15 @@ class Project(RawProject):
             for res_file_path in glob.glob(os.path.join(project_base_path, "*.*")):
                 resource_name = common.md5_hash(res_file_path) + os.path.splitext(res_file_path)[1]
                 md5_to_resource_path_map[resource_name] = res_file_path
+            # penLayerMD5 refers to the 'image file in the project ZIP archive containing the pen trails
+            # on the stage when the project was saved'.
+            # penLayerID is always -1 if project.json was downloaded from Scratch server
+            # and it seems that the penLayer image file is never included, so this information can be removed.
+            # Information from: https://en.scratch-wiki.info/wiki/Scratch_File_Format_(2.0)
+            # Scratch3 project.json does not include this information at all.
             try:
-                # penLayer is no regular resource file
                 del md5_to_resource_path_map[self['penLayerMD5']]
             except KeyError:
-                # TODO: include penLayer download in webapi
                 pass
             assert self['penLayerMD5'] not in md5_to_resource_path_map
             return md5_to_resource_path_map

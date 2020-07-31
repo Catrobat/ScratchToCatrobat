@@ -695,13 +695,13 @@ def _get_or_create_shared_global_answer_variable(project):
     "variable: %s" % (_SHARED_GLOBAL_ANSWER_VARIABLE_NAME)
     return shared_global_answer_user_variable
 
-#TODO: refactor
-# TODO: refactor _key_* functions to be used just once
-def _key_image_path_for(key):
+def _key_image_path_for(key, file_name):
     key_images_path = os.path.join(common.get_project_base_path(), 'resources', 'images', 'keys')
     for key_filename in os.listdir(key_images_path):
         basename, _ = os.path.splitext(key_filename)
         if basename.lower().endswith("_" + "_".join(key.split())):
+            if file_name:
+                return key_filename
             return os.path.join(key_images_path, key_filename)
     log.warning("Key '%s' not found in %s" % (key, os.listdir(key_images_path)))
     raise Exception("Key '%s' not found in %s" % (key, os.listdir(key_images_path)))
@@ -714,15 +714,6 @@ def _slider_image_path():
 
 def _show_list_image_path(num_lines):
     return os.path.join(common.get_project_base_path(), 'resources', 'images', 'show_list', SHOW_LIST_SPRITE_FILENAME.format(num_lines))
-
-# TODO:  refactor _key_* functions to be used just once
-def _key_filename_for(key):
-    assert key is not None
-    key_path = _key_image_path_for(key)
-    # TODO: extract method, already used once
-    key_name = _key_to_broadcast_message(key).replace(" ", "_")
-    _, ext =  os.path.splitext(key_path)
-    return key_name + ext
 
 def _get_mouse_filename():
     return MOUSE_SPRITE_FILENAME
@@ -1455,13 +1446,13 @@ class Converter(object):
         key_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, key_name)
         key_look_main = catcommon.LookData()
         key_look_main.setName(key_name)
-        key_look_main.fileName = _key_filename_for(key_data.key_name)
+        key_look_main.fileName = _key_image_path_for(key_data.key_name, True)
         key_sprite.getLookList().add(key_look_main)
 
         for look_name in additional_looks:
             key_look = catcommon.LookData()
             key_look.setName("key_" + look_name)
-            key_look.fileName = _key_filename_for(look_name)
+            key_look.fileName = _key_image_path_for(look_name, True)
             key_sprite.getLookList().add(key_look)
 
         #set looks and position via started script
@@ -2112,11 +2103,11 @@ class ConvertedProject(object):
             # copying key images needed for keyPressed substitution
             for listened_key_tuple in self.scratch_project.listened_keys:
                 try:
-                    key_image_path = _key_image_path_for(listened_key_tuple[0])
+                    key_image_path = _key_image_path_for(listened_key_tuple[0], False)
                 except:
                     continue
 
-                shutil.copyfile(key_image_path, os.path.join(images_path, _key_filename_for(listened_key_tuple[0])))
+                shutil.copyfile(key_image_path, os.path.join(images_path, _key_image_path_for(listened_key_tuple[0], True)))
             for sprite in catrobat_program.getDefaultScene().spriteList:
                 if sprite.name == MOUSE_SPRITE_NAME:
                     mouse_img_path = _mouse_image_path()

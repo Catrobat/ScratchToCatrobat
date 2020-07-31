@@ -89,8 +89,8 @@ class Scratch3Parser(object):
             stageSprite["children"].append(self.parse_monitor(monitor))
 
         stageSprite["info"] = self.raw_dict["meta"]
-        stageSprite["penLayerMD5"] = "Scratch3Doesn'tHaveThis"
-        stageSprite["penLayerID"] = 0 #TODO: this doesn't exist in scratch3 what is this!?
+        stageSprite["penLayerMD5"] = "DummyValue-Scratch3Doesn'tHaveThis"
+        stageSprite["penLayerID"] = -1
         stageSprite["tempoBPM"] = 60
         stageSprite["videoAlpha"] = 0.5
         return stageSprite

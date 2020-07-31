@@ -90,7 +90,7 @@ def visitGeneric(blockcontext, attributename):
 
 def visitDefault(blockcontext):
     log.warn("block not yet implemented: " + blockcontext.block.opcode)
-    return ["say:", "ERROR: BLOCK NOT FOUND: " + blockcontext.block.opcode]
+    return ["note:", "ERROR: BLOCK NOT FOUND: " + blockcontext.block.opcode]
 
 def visitCondition(blockcontext):
     block = blockcontext.block

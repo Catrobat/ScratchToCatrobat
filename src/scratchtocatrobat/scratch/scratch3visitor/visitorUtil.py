@@ -39,6 +39,7 @@ def visitScriptBlock(blockcontext):
     return blocklist
 
 def visitLiteral(literal):
+
     if literal is None:
         return None #TODO: Warning or error message maybe?
     elif literal[0] == 12:
@@ -55,7 +56,11 @@ def visitLiteral(literal):
     elif literal[0] == 4 or literal[0] == 8:
         if literal[1] == '':
             return 0.0
-        return float(literal[1])
+        try:
+            return float(literal[1])
+        except:
+            return str(literal[1])
+
     elif literal[0] == 9:
         return literal[1]
     else:

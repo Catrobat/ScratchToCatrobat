@@ -71,6 +71,7 @@ class _MediaResourceConverterThread(Thread):
         assert os.path.exists(new_src_path), "Not existing: {}. Available files in directory: {}" \
                .format(new_src_path, os.listdir(os.path.dirname(new_src_path)))
 
+
 class MediaConverter(object):
 
     def __init__(self, scratch_project, catrobat_program, images_path, sounds_path):
@@ -80,11 +81,63 @@ class MediaConverter(object):
         self.sounds_path = sounds_path
         self.file_rename_map = {}
 
-    def multi_thread_convert(self, info, src_path, converted_media_resources_paths, progress_bar):
-        self.convertPNG(info, src_path, src_path)
-        converted_media_resources_paths.add(src_path)
-        progress_bar.update(ProgressType.CONVERT_MEDIA_FILE)
+    def convert(self, progress_bar=None):
+        all_used_resources = []
+        unconverted_media_resources = []
+        converted_media_resources_paths = set()
 
+        # TODO: remove this block later {
+        for scratch_md5_name, src_path in self.scratch_project.md5_to_resource_path_map.iteritems():
+            if scratch_md5_name in self.scratch_project.unused_resource_names:
+                log.info("Ignoring unused resource file: %s", src_path)
+                if progress_bar != None:
+                    progress_bar.update(ProgressType.CONVERT_MEDIA_FILE)
+                continue
+        # }
+
+        for scratch_object in self.scratch_project.objects:
+            self.setup_costume_info(scratch_object, all_used_resources, unconverted_media_resources,
+                                    converted_media_resources_paths, progress_bar)
+            self.setup_sound_info(scratch_object, all_used_resources, unconverted_media_resources,
+                                  converted_media_resources_paths, progress_bar)
+
+        new_src_paths = self.conversion_svgtopng_wav(unconverted_media_resources, progress_bar)
+        converted_media_files_to_be_removed = set()
+        duplicate_filename_set = set()
+        self.resource_info_setup(all_used_resources, duplicate_filename_set, new_src_paths, converted_media_resources_paths)
+        self.rename_media_files_and_copy()
+
+        # delete converted png files -> only temporary saved
+        for media_file_to_be_removed in converted_media_files_to_be_removed:
+            os.remove(media_file_to_be_removed)
+
+    def setup_costume_info(self, defined_scratch_object, all_used_resources, unconverted_media_resources,
+                           converted_media_resources_paths, progress_bar):
+        threads = []
+        for costume_info in defined_scratch_object.get_costumes():
+            costume_dict = self.get_info(costume_info[JsonKeys.COSTUME_MD5], True)
+
+            assert os.path.exists(costume_dict["costume_src_path"]), "Not existing: {}".format(costume_dict["costume_src_path"])
+            assert costume_dict["file_ext"] in {".png", ".svg", ".jpg", ".gif"}, \
+                "Unsupported image file extension: %s" % costume_dict["costume_src_path"]
+            ispng = costume_dict["file_ext"] == ".png"
+            is_unconverted = costume_dict["file_ext"] == ".svg"
+            self.setup_resource_info_dict(costume_dict["costume_file_name"], costume_dict["costume_src_path"], is_unconverted, costume_info,
+                                          all_used_resources, unconverted_media_resources, converted_media_resources_paths,
+                                          progress_bar, threads, ispng, True)
+        for thread in threads: thread.start()
+        for thread in threads: thread.join()
+
+    def setup_sound_info(self, defined_scratch_object, all_used_resources, unconverted_media_resources, converted_media_resources_paths, progress_bar):
+        for sound_info in defined_scratch_object.get_sounds():
+            sound_dict = self.get_info(sound_info[JsonKeys.SOUND_MD5])
+            assert os.path.exists(sound_dict["sound_src_path"]), "Not existing: {}".format(sound_dict["sound_src_path"])
+            assert sound_dict["file_ext"] in {".wav", ".mp3"}, "Unsupported sound file extension: %s" % sound_dict["sound_src_path"]
+            is_unconverted = sound_dict["file_ext"] == ".wav" and not wavconverter.is_android_compatible_wav(sound_dict["sound_src_path"])
+
+            self.setup_resource_info_dict(sound_dict["sound_file_name"], sound_dict["sound_src_path"], is_unconverted, sound_info,
+                                          all_used_resources, unconverted_media_resources, converted_media_resources_paths,
+                                          progress_bar, [])
 
     def get_info(self, file_name, is_costume=False):
         if is_costume:
@@ -104,9 +157,8 @@ class MediaConverter(object):
             return sound_info
 
     def setup_resource_info_dict(self, file_name, src_path, is_unconverted, info, all_used_resources,
-                            unconverted_media_resources, converted_media_resources_paths, progress_bar,
-                            defined_scratch_object, threads, ispng=False, is_costume=False):
-
+                                 unconverted_media_resources, converted_media_resources_paths, progress_bar,
+                                 threads, ispng=False, is_costume=False):
         if is_costume:
             media_type = MediaType.UNCONVERTED_SVG if is_unconverted else MediaType.IMAGE
         else:
@@ -119,9 +171,7 @@ class MediaConverter(object):
             "media_type": media_type,
             "info": info
         }
-
         all_used_resources.append(resource_info)
-
         if is_unconverted:
             unconverted_media_resources.append(resource_info)
         elif progress_bar is not None and src_path not in converted_media_resources_paths:
@@ -132,36 +182,6 @@ class MediaConverter(object):
                  return
             converted_media_resources_paths.add(src_path)
             progress_bar.update(ProgressType.CONVERT_MEDIA_FILE)
-
-    def setup_costume_info(self, defined_scratch_object, all_used_resources, unconverted_media_resources,
-                           converted_media_resources_paths, progress_bar):
-        threads = []
-        for costume_info in defined_scratch_object.get_costumes():
-            costume_dict = self.get_info(costume_info[JsonKeys.COSTUME_MD5], True)
-
-            assert os.path.exists(costume_dict["costume_src_path"]), "Not existing: {}".format(costume_dict["costume_src_path"])
-            assert costume_dict["file_ext"] in {".png", ".svg", ".jpg", ".gif"}, \
-                "Unsupported image file extension: %s" % costume_dict["costume_src_path"]
-            ispng = costume_dict["file_ext"] == ".png"
-            is_unconverted = costume_dict["file_ext"] == ".svg"
-            self.setup_resource_info_dict(costume_dict["costume_file_name"], costume_dict["costume_src_path"], is_unconverted, costume_info,
-                                     all_used_resources, unconverted_media_resources, converted_media_resources_paths,
-                                     progress_bar, defined_scratch_object, threads, ispng, True)
-        for thread in threads: thread.start()
-        for thread in threads: thread.join()
-
-    def setup_sound_info(self, defined_scratch_object, all_used_resources, unconverted_media_resources, converted_media_resources_paths, progress_bar):
-        for sound_info in defined_scratch_object.get_sounds():
-            sound_dict = self.get_info(sound_info[JsonKeys.SOUND_MD5])
-
-
-            assert os.path.exists(sound_dict["sound_src_path"]), "Not existing: {}".format(sound_dict["sound_src_path"])
-            assert sound_dict["file_ext"] in {".wav", ".mp3"}, "Unsupported sound file extension: %s" % sound_dict["sound_src_path"]
-            is_unconverted = sound_dict["file_ext"] == ".wav" and not wavconverter.is_android_compatible_wav(sound_dict["sound_src_path"])
-
-            self.setup_resource_info_dict(sound_dict["sound_file_name"], sound_dict["sound_src_path"], is_unconverted, sound_info,
-                                     all_used_resources, unconverted_media_resources, converted_media_resources_paths,
-                                     progress_bar, defined_scratch_object, [])
 
     def conversion_svgtopng_wav(self, unconverted_media_resources, progress_bar):
         # schedule concurrent conversions (one conversion per thread)
@@ -194,6 +214,27 @@ class MediaConverter(object):
         assert reference_index == resource_index and reference_index == num_total_resources
         return new_src_paths
 
+    def resource_info_setup(self, all_used_resources, duplicate_filename_set, new_src_paths, converted_media_files_to_be_removed):
+        for resource_info in all_used_resources:
+            # reconstruct the temporary catrobat filenames -> catrobat.media_objects_in(self.catrobat_file)
+            current_filename = helpers.create_catrobat_md5_filename(resource_info["scratch_md5_name"], duplicate_filename_set)
+            # check if path changed after conversion
+            old_src_path = resource_info["src_path"]
+            src_path = new_src_paths[old_src_path] if old_src_path in new_src_paths else old_src_path
+            if resource_info["media_type"] in { MediaType.IMAGE, MediaType.UNCONVERTED_SVG }:
+                costume_info = resource_info["info"]
+                if "text" in costume_info:
+                    self.font_setup(costume_info, src_path)
+
+            current_basename, _ = os.path.splitext(current_filename)
+            self.file_rename_map[current_basename] = {}
+            self.file_rename_map[current_basename]["src_path"] = src_path
+            self.file_rename_map[current_basename]["dst_path"] = resource_info["dest_path"]
+            self.file_rename_map[current_basename]["media_type"] = resource_info["media_type"]
+
+            if resource_info["media_type"] in { MediaType.UNCONVERTED_SVG, MediaType.UNCONVERTED_WAV }:
+                converted_media_files_to_be_removed.add(src_path)
+
     def font_setup(self, costume_info, src_path):
             text = costume_info[JsonKeys.COSTUME_TEXT]
             x, y, width, height = costume_info[JsonKeys.COSTUME_TEXT_RECT]
@@ -225,55 +266,10 @@ class MediaConverter(object):
             # TODO: move test_converter.py to converter-python-package...
             image_processing.save_editable_image_as_png_to_disk(editable_image, image_file_path, overwrite=True)
 
-    def resource_info_setup(self, all_used_resources, duplicate_filename_set, new_src_paths, converted_media_files_to_be_removed):
-        for resource_info in all_used_resources:
-            # reconstruct the temporary catrobat filenames -> catrobat.media_objects_in(self.catrobat_file)
-            current_filename = helpers.create_catrobat_md5_filename(resource_info["scratch_md5_name"], duplicate_filename_set)
-            # check if path changed after conversion
-            old_src_path = resource_info["src_path"]
-            src_path = new_src_paths[old_src_path] if old_src_path in new_src_paths else old_src_path
-            if resource_info["media_type"] in { MediaType.IMAGE, MediaType.UNCONVERTED_SVG }:
-                costume_info = resource_info["info"]
-                if "text" in costume_info:
-                    self.font_setup(costume_info, src_path)
-
-            current_basename, _ = os.path.splitext(current_filename)
-            self.file_rename_map[current_basename] = {}
-            self.file_rename_map[current_basename]["src_path"] = src_path
-            self.file_rename_map[current_basename]["dst_path"] = resource_info["dest_path"]
-            self.file_rename_map[current_basename]["media_type"] = resource_info["media_type"]
-
-            if resource_info["media_type"] in { MediaType.UNCONVERTED_SVG, MediaType.UNCONVERTED_WAV }:
-                converted_media_files_to_be_removed.add(src_path)
-
-    def convert(self, progress_bar=None):
-        all_used_resources = []
-        unconverted_media_resources = []
-        converted_media_resources_paths = set()
-
-        # TODO: remove this block later {
-        for scratch_md5_name, src_path in self.scratch_project.md5_to_resource_path_map.iteritems():
-            if scratch_md5_name in self.scratch_project.unused_resource_names:
-                log.info("Ignoring unused resource file: %s", src_path)
-                if progress_bar != None:
-                    progress_bar.update(ProgressType.CONVERT_MEDIA_FILE)
-                continue
-        # }
-
-        for scratch_object in self.scratch_project.objects:
-            self.setup_costume_info(scratch_object, all_used_resources, unconverted_media_resources,
-                                    converted_media_resources_paths, progress_bar)
-            self.setup_sound_info(scratch_object, all_used_resources, unconverted_media_resources,
-                                  converted_media_resources_paths, progress_bar)
-
-        new_src_paths = self.conversion_svgtopng_wav(unconverted_media_resources, progress_bar)
-        converted_media_files_to_be_removed = set()
-        duplicate_filename_set = set()
-        self.resource_info_setup(all_used_resources, duplicate_filename_set, new_src_paths, converted_media_resources_paths)
-        self.rename_media_files_and_copy()
-        # delete converted png files -> only temporary saved
-        for media_file_to_be_removed in converted_media_files_to_be_removed:
-            os.remove(media_file_to_be_removed)
+    def multi_thread_convert(self, info, src_path, converted_media_resources_paths, progress_bar):
+        self.convertPNG(info, src_path, src_path)
+        converted_media_resources_paths.add(src_path)
+        progress_bar.update(ProgressType.CONVERT_MEDIA_FILE)
 
     # rename the media files and copy them to the catrobat project directory
     def rename_media_files_and_copy(self):

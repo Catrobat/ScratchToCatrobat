@@ -33,8 +33,9 @@ import org.catrobat.catroid.formulaeditor as catformula
 import org.catrobat.catroid.formulaeditor.FormulaElement.ElementType as catElementType
 import xml.etree.cElementTree as ET
 
-from scratchtocatrobat.converter import catrobat, converter
-from scratchtocatrobat.tools import common, common_testing, svgtopng
+from scratchtocatrobat.converter import catrobat, converter, mediaconverter
+from scratchtocatrobat.converter.converter import Converter
+from scratchtocatrobat.tools import common, common_testing, svgtopng, wavconverter
 from scratchtocatrobat.scratch import scratch, scratch3
 
 BACKGROUND_LOCALIZED_GERMAN_NAME = "Hintergrund"
@@ -769,14 +770,14 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert isinstance(catr_formula_element, catformula.FormulaElement)
         assert str(catr_formula_element.getElementType()) == 'SENSOR'
         assert catr_formula_element.getValue() == 'COLLIDES_WITH_FINGER'
-    
+
     def test_can_convert_touching_block_edge(self):
         scratch_block = ['touching:', '_edge_']
         [catr_formula_element] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_formula_element, catformula.FormulaElement)
         assert str(catr_formula_element.getElementType()) == 'SENSOR'
         assert catr_formula_element.getValue() == 'COLLIDES_WITH_EDGE'
-    
+
     def test_can_convert_touching_block_object(self):
         scratch_block = ['touching:', '_some_object_']
         [catr_formula_element] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
@@ -2762,8 +2763,8 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         objectJson = {
                     "objName": "Sprite1",
                     "scripts": [[107,108,[["whenGreenFlag"],
-                                            ["doForever", 
-                                                [["doIf", ["keyPressed:", "w"], 
+                                            ["doForever",
+                                                [["doIf", ["keyPressed:", "w"],
                                                   [["changeYposBy:", 1]]]]]]]],
                     "currentCostumeIndex": 0,
                     "indexInLibrary": 1,
@@ -2782,8 +2783,8 @@ class TestConvertBlocks(common_testing.BaseTestCase):
             "children": [{
                     "objName": "Sprite1",
                     "scripts": [[107,108,[["whenGreenFlag"],
-                                            ["doForever", 
-                                                [["doIf", ["keyPressed:", "w"], 
+                                            ["doForever",
+                                                [["doIf", ["keyPressed:", "w"],
                                                   [["changeYposBy:", 1]]]]]]]],
                     "currentCostumeIndex": 0,
                     "indexInLibrary": 1,
@@ -2888,7 +2889,7 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
         set_variable_notpressed_formula_tree = set_variable_notpressed_formula.formulaTree
         assert set_variable_notpressed_formula_tree.value == str(0.0)
         assert set_variable_notpressed_formula_tree.type == catElementType.NUMBER
-        
+
         catrobat_zip_file_name = converted_project.save_as_catrobat_package_to(self._testresult_folder_path)
         self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, project_name,
                                                           unused_scratch_resources=scratch_project.unused_resource_names)
@@ -2965,6 +2966,158 @@ class TestConvertProjects(common_testing.ProjectTestCase):
         self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, project_name,
                                                           unused_scratch_resources=scratch_project.unused_resource_names)
         return converted_project.catrobat_program
+
+    def _setup_media_converter(self):
+        project_name = 'key_pressed_block'
+        scratch_project = self._load_test_scratch_project(project_name)
+        catrobat_program = self._test_project("key_pressed_block")
+        with common.TemporaryDirectory() as catrobat_program_dir:
+            sounds_path = os.path.join(catrobat_program_dir, "Scene 1", "sounds")
+            os.makedirs(sounds_path)
+            images_path = os.path.join(catrobat_program_dir, "Scene 1", "images")
+            os.makedirs(images_path)
+            for _ in (catrobat_program_dir, sounds_path, images_path):
+                open(os.path.join(_, catrobat.ANDROID_IGNORE_MEDIA_MARKER_FILE_NAME), 'a').close()
+        media_converter = mediaconverter.MediaConverter(scratch_project, catrobat_program,
+                                                        images_path, sounds_path)
+        return media_converter
+
+    def _setup_media_converter_unconverted_media_resources(self, media_converter):
+        progress_bar = None
+        all_used_resources = []
+        unconverted_media_resources = []
+        converted_media_resources_paths = set()
+
+        for scratch_object in media_converter.scratch_project.objects:
+            media_converter.setup_costume_info(scratch_object, all_used_resources, unconverted_media_resources,
+                                               converted_media_resources_paths, progress_bar)
+        return unconverted_media_resources
+
+    def _setup_media_converter_new_src_path(self, media_converter):
+        test_unconv_media_res = self._setup_media_converter_unconverted_media_resources(media_converter)
+        return media_converter.conversion_svgtopng_wav(test_unconv_media_res, None)
+
+    def _setup_media_converter_all_used_resources(self, media_converter):
+        progress_bar = None
+        all_used_resources = []
+        unconverted_media_resources = []
+        converted_media_resources_paths = set()
+
+        for scratch_object in media_converter.scratch_project.objects:
+            media_converter.setup_costume_info(scratch_object, all_used_resources, unconverted_media_resources,
+                                           converted_media_resources_paths, progress_bar)
+        for scratch_object in media_converter.scratch_project.objects:
+            media_converter.setup_sound_info(scratch_object, all_used_resources, unconverted_media_resources,
+                                             converted_media_resources_paths, progress_bar)
+        return all_used_resources
+
+
+
+    def test_media_converter_setup_costume_info(self):
+        media_converter = self._setup_media_converter()
+        progress_bar = None
+        all_used_resources = []
+        unconverted_media_resources = []
+        converted_media_resources_paths = set()
+
+        for scratch_object in media_converter.scratch_project.objects:
+            media_converter.setup_costume_info(scratch_object, all_used_resources, unconverted_media_resources,
+                                               converted_media_resources_paths, progress_bar)
+
+        assert progress_bar is None
+        assert not converted_media_resources_paths
+        assert len(unconverted_media_resources)
+        for val in unconverted_media_resources:
+            assert val['media_type'] == 3
+        assert len(all_used_resources)
+
+    def test_media_converter_setup_sound_info(self):
+        media_converter = self._setup_media_converter()
+        progress_bar = None
+        all_used_resources = []
+        unconverted_media_resources = []
+        converted_media_resources_paths = set()
+
+        for scratch_object in media_converter.scratch_project.objects:
+            media_converter.setup_sound_info(scratch_object, all_used_resources, unconverted_media_resources,
+                                             converted_media_resources_paths, progress_bar)
+        assert progress_bar is None
+        assert not converted_media_resources_paths
+        #since it is android_compatible_wav
+        assert len(unconverted_media_resources) == 0
+        assert len(all_used_resources)
+
+    def test_media_converter_setup_resource_info_dict_costume(self):
+        progress_bar = None
+        all_used_resources = []
+        unconverted_media_resources = []
+        converted_media_resources_paths = set()
+        media_converter = self._setup_media_converter()
+        threads = []
+        defined_scratch_object = media_converter.scratch_project.objects[0]
+        costume_info = defined_scratch_object.get_costumes()[0]
+        costume_dict = media_converter.get_info(costume_info["baseLayerMD5"], True)
+        assert os.path.exists(costume_dict["costume_src_path"]), "Not existing: {}".format(costume_dict["costume_src_path"])
+        assert costume_dict["file_ext"] in {".png", ".svg", ".jpg", ".gif"}, \
+                    "Unsupported image file extension: %s" % costume_dict["costume_src_path"]
+        ispng = costume_dict["file_ext"] == ".png"
+        is_unconverted = costume_dict["file_ext"] == ".svg"
+        media_converter.setup_resource_info_dict(costume_dict["costume_file_name"], costume_dict["costume_src_path"], is_unconverted, costume_info,
+                                              all_used_resources, unconverted_media_resources, converted_media_resources_paths,
+                                              progress_bar, threads, ispng, True)
+        assert progress_bar is None
+        assert not converted_media_resources_paths
+        assert len(unconverted_media_resources) == 0
+        assert len(all_used_resources)
+
+    def test_media_converter_setup_resource_info_dict_sound(self):
+        progress_bar = None
+        all_used_resources = []
+        unconverted_media_resources = []
+        converted_media_resources_paths = set()
+        media_converter = self._setup_media_converter()
+        defined_scratch_object = media_converter.scratch_project.objects[0]
+        sound_info = defined_scratch_object.get_sounds()[0]
+        sound_dict = media_converter.get_info(sound_info["md5"])
+        assert os.path.exists(sound_dict["sound_src_path"]), "Not existing: {}".format(sound_dict["sound_src_path"])
+        assert sound_dict["file_ext"] in {".wav", ".mp3"}, "Unsupported sound file extension: %s" % sound_dict["sound_src_path"]
+        is_unconverted = sound_dict["file_ext"] == ".wav" and not wavconverter.is_android_compatible_wav(sound_dict["sound_src_path"])
+        media_converter.setup_resource_info_dict(sound_dict["sound_file_name"], sound_dict["sound_src_path"], is_unconverted, sound_info,
+                                      all_used_resources, unconverted_media_resources, converted_media_resources_paths,
+                                      progress_bar, [])
+        assert progress_bar is None
+        assert not converted_media_resources_paths
+        assert len(unconverted_media_resources) == 0
+        assert len(all_used_resources)
+
+    def test_media_converter_get_info(self):
+        media_converter = self._setup_media_converter()
+        defined_scratch_object = media_converter.scratch_project.objects[0]
+        costume_info = defined_scratch_object.get_costumes()[0]
+        costume_dict = media_converter.get_info(costume_info["baseLayerMD5"], True)
+        assert os.path.exists(costume_dict["costume_src_path"]), "Not existing: {}".format(costume_dict["costume_src_path"])
+        assert costume_dict["file_ext"] in {".png", ".svg", ".jpg", ".gif"}, \
+        "Unsupported image file extension: %s" % costume_dict["costume_src_path"]
+
+        sound_info = defined_scratch_object.get_sounds()[0]
+        sound_dict = media_converter.get_info(sound_info["md5"])
+        assert os.path.exists(sound_dict["sound_src_path"]), "Not existing: {}".format(sound_dict["sound_src_path"])
+        assert sound_dict["file_ext"] in {".wav", ".mp3"}, "Unsupported sound file extension: %s" % sound_dict["sound_src_path"]
+
+    def test_media_converter_conversion_svgtopng_wav(self):
+        media_converter = self._setup_media_converter()
+        test_unconv_media_res = self._setup_media_converter_unconverted_media_resources(media_converter)
+        new_src_paths = media_converter.conversion_svgtopng_wav(test_unconv_media_res, None)
+        assert len(new_src_paths) > 0
+
+    def test_resource_info_setup(self):
+        media_converter = self._setup_media_converter()
+        test_unconv_media_res = set()
+        test_new_src_path = self._setup_media_converter_new_src_path(media_converter)
+        all_used_resources = self._setup_media_converter_all_used_resources(media_converter)
+        duplicate_filename_set = set()
+        media_converter.resource_info_setup(all_used_resources, duplicate_filename_set, test_new_src_path, test_unconv_media_res)
+        assert len(test_unconv_media_res) > 0
 
     def _test_mouse_pointer_tracking_workaround(self, catrobat_program):
         scene = catrobat_program.getDefaultScene()
@@ -3213,6 +3366,9 @@ class TestShowVariablesWorkaround(unittest.TestCase):
         [copy_brick] = copy_bricks
         self.assertIsInstance(copy_brick, catbricks.SetVariableBrick)
         self.assertEqual("S2CC:sensor_Stage_soundLevel", copy_brick.getUserVariable().getName())
+
+
+
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']

@@ -1799,7 +1799,6 @@ class _ScratchObjectConverter(object):
                 assert len(user_list_data["listName"]) > 0
                 user_list = catformula.UserList(user_list_data["listName"])
                 sprite.userLists.add(user_list)
-                # TODO: check if user list has been added...
 
         for scratch_variable in scratch_object.get_variables():
             variable_name = scratch_variable["name"]

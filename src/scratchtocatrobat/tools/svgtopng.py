@@ -167,9 +167,10 @@ def _translation(output_png_path, rotation_x, rotation_y):
     end_y = int(end_y)
 
     for row_y in xrange(start_y, end_y + 1):
-        for column_x in xrange(start_x, end_x + 1):
-            if row_y - start_y < buffered_image.getHeight() and column_x - start_x < buffered_image.getWidth():
-                new_buffered_image.setRGB(column_x,row_y, buffered_image_matrix[row_y-start_y][column_x-start_x])
+        if row_y - start_y < buffered_image.getHeight():
+            for column_x in xrange(start_x, end_x + 1):
+                if column_x - start_x < buffered_image.getWidth():
+                    new_buffered_image.setRGB(column_x,row_y, buffered_image_matrix[row_y-start_y][column_x-start_x])
     return new_buffered_image
 
 def _transpose_matrix(matrix):

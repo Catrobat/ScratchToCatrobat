@@ -94,6 +94,7 @@ ADD_MOUSE_SPRITE = "add_mouse_sprite"
 ADD_PEN_DEFAULT_BEHAVIOR = "add_pen_default_behavior"
 ADD_PEN_COLOR_VARIABLES = "add_pen_color_variables"
 ADD_PEN_SIZE_VARIABLE = "add_pen_size_variable"
+ADD_BACKDROP_RECEIVE = "add_backdrop_receive"
 UPDATE_HELPER_VARIABLE_TIMEOUT = 0.04
 # TODO: extend whenever new bricks are added
 PEN_BRICK_LIST = ["clearPenTrails", "stampCostume", "putPenDown", "putPenUp", "penColor:", "changePenParamBy:",
@@ -186,7 +187,8 @@ class Object(common.DictAccessWrapper):
             ADD_MOUSE_SPRITE: False,
             ADD_PEN_DEFAULT_BEHAVIOR: False,
             ADD_PEN_COLOR_VARIABLES: False,
-            ADD_PEN_SIZE_VARIABLE: False
+            ADD_PEN_SIZE_VARIABLE: False,
+            ADD_BACKDROP_RECEIVE: set()
         }
 
         ############################################################################################
@@ -233,6 +235,19 @@ class Object(common.DictAccessWrapper):
 
         for script in self.scripts:
             script.script_element = ScriptElement.from_raw_block(script.blocks)
+
+        ############################################################################################
+        # next/random backdrop workaround
+        ############################################################################################
+        for script in self.scripts:
+            for blocks in script.blocks:
+                if isinstance(blocks, list) and len(blocks) >= 2:
+                    if not self.is_stage() and isinstance(blocks[1], basestring) and 'backdrop' in blocks[1]:
+                        blocks[0] = 'broadcast:'
+                        workaround_info[ADD_BACKDROP_RECEIVE].add(blocks[1])
+                    elif self.is_stage() and blocks[1] == 'random backdrop':
+                        blocks[1] = ['randomFrom:to:', 1.0, float(len(self._dict_object[JsonKeys.COSTUMES]))]
+            script.script_element = script.script_element.from_raw_block(script.blocks)
 
         ############################################################################################
         # timer and timerReset workaround
@@ -600,6 +615,8 @@ class RawProject(Object):
         update_attribute_script_to_be_added = {}
         self.listened_keys = set()
         self._has_mouse_position_script = False
+        random_backdrop = ['randomFrom:to:', 1.0, float(len(self._dict_object[JsonKeys.COSTUMES]))]
+        workaround_applied = set()
         for scratch_object in self.objects:
             workaround_info = scratch_object.preprocess_object(all_sprite_names)
             if workaround_info[ADD_TIMER_SCRIPT_KEY]: is_add_timer_script = True
@@ -612,6 +629,11 @@ class RawProject(Object):
             if workaround_info[ADD_PEN_SIZE_VARIABLE]: self._add_pen_size_variable_to_object(scratch_object)
             if len(workaround_info[ADD_KEY_PRESSED_SCRIPT_KEY]) > 0:
                 self.listened_keys.update(workaround_info[ADD_KEY_PRESSED_SCRIPT_KEY])
+            for broadcast in workaround_info[ADD_BACKDROP_RECEIVE]:
+                if broadcast not in workaround_applied:
+                    update = random_backdrop if 'random' in broadcast else broadcast
+                    self.objects[0].scripts.append(Script([1, 1, [['whenIReceive', broadcast], ['startScene', update]]]))
+                    workaround_applied.add(broadcast)
             position_script_to_be_added |= workaround_info[ADD_POSITION_SCRIPT_TO_OBJECTS_KEY]
             self._has_mouse_position_script |= workaround_info[ADD_MOUSE_SPRITE]
 

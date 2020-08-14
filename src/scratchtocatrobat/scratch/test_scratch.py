@@ -736,6 +736,185 @@ class TestTimerAndResetTimerBlockWorkarounds(unittest.TestCase):
         assert len(global_variables) == 1
         assert global_variables[0] == { "name": scratch.S2CC_TIMER_VARIABLE_NAME, "value": 0, "isPersistent": False }
 
+class TestBackdropWorkaround(unittest.TestCase):
+    BACKDROP_HELPER_OBJECTS_DATA_TEMPLATE = {
+        "objName": "Stage",
+        "sounds": [],
+        "costumes": [{'baseLayerMD5': ''}, {'baseLayerMD5': ''}, {'baseLayerMD5': ''}],
+        "currentCostumeIndex": 0,
+        "penLayerMD5": "5c81a336fab8be57adc039a8a2b33ca9.png",
+        "penLayerID": 0,
+        "tempoBPM": 60,
+        "videoAlpha": 0.5,
+        "scripts": [],
+        "children": [{ "objName": "Sprite1", "scripts": [] }],
+        "info": {}
+    }
+
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        cls = self.__class__
+        cls.BACKDROP_HELPER_OBJECTS_DATA_TEMPLATE["scripts"] = []
+
+    def _setup_objects(self, blocks, backdrop_script = [], multiple_sprites = 1):
+        cls = self.__class__
+        cls.BACKDROP_HELPER_OBJECTS_DATA_TEMPLATE["children"] = [{ "objName": "Sprite1", "scripts": [] }]
+        input_script = [0, 0, [["whenGreenFlag"]]]
+        expected_sprite_script = [0, 0, [["whenGreenFlag"]]]
+
+        # parse backdrop input and output
+        if backdrop_script:
+            cls.BACKDROP_HELPER_OBJECTS_DATA_TEMPLATE["scripts"] = [backdrop_script]
+            backdrop_script = [backdrop_script]
+
+        # validate backgrounds
+        assert len(cls.BACKDROP_HELPER_OBJECTS_DATA_TEMPLATE["costumes"]) == 3
+
+        # initialize backdrop scripts
+        for block in set(blocks):
+            if "random" not in block:
+                backdrop_script.append([0, 0, [["whenIReceive", block], ["startScene", block]]])
+            else:
+                backdrop_script.append([0, 0, [["whenIReceive", block], ["startScene", ['randomFrom:to:', 1.0, 3.0]]]])
+
+        # parse input and expected output
+        for i in range(4):
+            for block in blocks:
+                input_script[2].extend([["startScene", block],["wait:elapsed:from:", 1]])
+                expected_sprite_script[2].extend([["broadcast:", block], ["wait:elapsed:from:", 1]])
+
+        # multiple sprites?
+        cls.BACKDROP_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [input_script]
+        if multiple_sprites == 2:
+            cls.BACKDROP_HELPER_OBJECTS_DATA_TEMPLATE["children"].append({"objName": "Sprite1", "scripts": []})
+            cls.BACKDROP_HELPER_OBJECTS_DATA_TEMPLATE["children"][1]["scripts"] = [input_script]
+
+        # prepare values for return
+        expected_sprite_script = scratch.Script(expected_sprite_script)
+        expected_backdrop = []
+        for script in backdrop_script:
+            expected_backdrop.append(scratch.Script(script))
+        raw_project = scratch.RawProject(cls.BACKDROP_HELPER_OBJECTS_DATA_TEMPLATE)
+        return {"converted": raw_project, "expected": {"Backdrop": expected_backdrop, "Sprite": [expected_sprite_script]}}
+
+    def test_previous_backdrop_in_single_sprite(self):
+        test_data = self._setup_objects(["previous backdrop"], [])
+
+        assert len(test_data["converted"].objects) == 2
+        assert len(test_data["converted"].objects[0].scripts) == 1 # stage sprite
+        assert len(test_data["converted"].objects[1].scripts) == 1 # sprite1
+
+        assert test_data["converted"].objects[0].scripts == test_data["expected"]["Backdrop"]
+        assert test_data["converted"].objects[1].scripts == test_data["expected"]["Sprite"]
+
+    def test_previous_backdrop_multiple_sprites(self):
+        test_data = self._setup_objects(["previous backdrop"], [], 2)
+
+        assert len(test_data["converted"].objects) == 3 # stage, sprite1, sprite2
+        assert len(test_data["converted"].objects[0].scripts) == 1 # stage sprite
+        assert len(test_data["converted"].objects[1].scripts) == 1 # sprite1
+        assert len(test_data["converted"].objects[2].scripts) == 1 # sprite2
+
+        assert test_data["converted"].objects[0].scripts == test_data["expected"]["Backdrop"]
+        assert test_data["converted"].objects[1].scripts == test_data["expected"]["Sprite"]
+        assert test_data["converted"].objects[2].scripts == test_data["expected"]["Sprite"]
+
+    def test_previous_backdrop_multiple_backdrop_scripts_single_sprite(self):
+        test_data = self._setup_objects(["previous backdrop"], [0, 0, [['whenGreenFlag'], ["wait:elapsed:from:", 1]]])
+
+        assert len(test_data["converted"].objects) == 2
+        assert len(test_data["converted"].objects[0].scripts) == 2 # stage sprite
+        assert len(test_data["converted"].objects[1].scripts) == 1 # sprite1
+
+        assert test_data["converted"].objects[0].scripts == test_data["expected"]["Backdrop"]
+        assert test_data["converted"].objects[1].scripts == test_data["expected"]["Sprite"]
+
+    def test_previous_backdrop_multiple_backdrop_scripts_multiple_sprites(self):
+        test_data = self._setup_objects(["previous backdrop"], [0, 0, [['whenGreenFlag'], ["wait:elapsed:from:", 1]]], 2)
+
+        assert len(test_data["converted"].objects) == 3 # stage, sprite1, sprite2
+        assert len(test_data["converted"].objects[0].scripts) == 2 # stage sprite
+        assert len(test_data["converted"].objects[1].scripts) == 1 # sprite1
+        assert len(test_data["converted"].objects[2].scripts) == 1 # sprite2
+
+        assert test_data["converted"].objects[0].scripts == test_data["expected"]["Backdrop"]
+        assert test_data["converted"].objects[1].scripts == test_data["expected"]["Sprite"]
+        assert test_data["converted"].objects[2].scripts == test_data["expected"]["Sprite"]
+
+    def test_random_backdrop_in_stage(self):
+        cls = self.__class__
+        cls.BACKDROP_HELPER_OBJECTS_DATA_TEMPLATE["children"] = []
+        cls.BACKDROP_HELPER_OBJECTS_DATA_TEMPLATE["scripts"] = [[0,0,[['whenGreenFlag'], ['startScene', 'random backdrop']]]]
+        expected = scratch.Script([0,0,[['whenGreenFlag'], ['startScene', ['randomFrom:to:', 1.0, 3.0]]]])
+        converted_project = scratch.RawProject(cls.BACKDROP_HELPER_OBJECTS_DATA_TEMPLATE)
+
+        assert len(converted_project.objects) == 1
+        assert len(converted_project.objects[0].scripts) == 1
+
+        assert converted_project.objects[0].scripts[0] == expected
+
+    def test_next_backdrop_and_previous_backdrop_in_single_sprite(self):
+        test_data = self._setup_objects(["next backdrop", "previous backdrop"], [])
+
+        assert len(test_data["converted"].objects) == 2
+        assert len(test_data["converted"].objects[0].scripts) == 2 # stage sprite
+        assert len(test_data["converted"].objects[1].scripts) == 1 # sprite1
+
+        assert test_data["converted"].objects[0].scripts == test_data["expected"]["Backdrop"]
+        assert test_data["converted"].objects[1].scripts == test_data["expected"]["Sprite"]
+
+    def test_next_backdrop_and_random_backdrop_in_single_sprite(self):
+        test_data = self._setup_objects(["next backdrop", "random backdrop"], [])
+
+        assert len(test_data["converted"].objects) == 2
+        assert len(test_data["converted"].objects[0].scripts) == 2 # stage sprite
+        assert len(test_data["converted"].objects[1].scripts) == 1 # sprite1
+
+        assert test_data["converted"].objects[0].scripts == test_data["expected"]["Backdrop"]
+        assert test_data["converted"].objects[1].scripts == test_data["expected"]["Sprite"]
+
+    def test_previous_backdrop_and_random_backdrop_in_single_sprite(self):
+        test_data = self._setup_objects(["previous backdrop", "random backdrop"], [])
+
+        assert len(test_data["converted"].objects) == 2
+        assert len(test_data["converted"].objects[0].scripts) == 2 # stage sprite
+        assert len(test_data["converted"].objects[1].scripts) == 1 # sprite1
+
+        assert test_data["converted"].objects[0].scripts == test_data["expected"]["Backdrop"]
+        assert test_data["converted"].objects[1].scripts == test_data["expected"]["Sprite"]
+
+    def test_previous_backdrop_next_backdrop_and_random_backdrop_in_single_sprite(self):
+        test_data = self._setup_objects(["previous backdrop", "next backdrop", "random backdrop"], [])
+
+        assert len(test_data["converted"].objects) == 2
+        assert len(test_data["converted"].objects[0].scripts) == 3 # stage sprite
+        assert len(test_data["converted"].objects[1].scripts) == 1 # sprite1
+
+        assert test_data["converted"].objects[0].scripts == test_data["expected"]["Backdrop"]
+        assert test_data["converted"].objects[1].scripts == test_data["expected"]["Sprite"]
+
+    def test_previous_backdrop_next_backdrop_and_random_backdrop_multiple_backdrop_scripts_in_single_sprite(self):
+        test_data = self._setup_objects(["previous backdrop", "next backdrop", "random backdrop"],
+                                        [0, 0, [['whenGreenFlag'], ["wait:elapsed:from:", 1]]])
+
+        assert len(test_data["converted"].objects) == 2
+        assert len(test_data["converted"].objects[0].scripts) == 4 # stage sprite
+        assert len(test_data["converted"].objects[1].scripts) == 1 # sprite1
+
+        assert test_data["converted"].objects[0].scripts == test_data["expected"]["Backdrop"]
+        assert test_data["converted"].objects[1].scripts == test_data["expected"]["Sprite"]
+
+    def test_previous_backdrop_next_backdrop_and_random_backdrop_multiple_backdrop_scripts_in_multiple_sprites(self):
+        test_data = self._setup_objects(["previous backdrop", "next backdrop", "random backdrop"],
+                                        [0, 0, [['whenGreenFlag'], ["wait:elapsed:from:", 1]]], 2)
+
+        assert len(test_data["converted"].objects) == 3
+        assert len(test_data["converted"].objects[0].scripts) == 4 # stage sprite
+        assert len(test_data["converted"].objects[1].scripts) == 1 # sprite1
+
+        assert test_data["converted"].objects[0].scripts == test_data["expected"]["Backdrop"]
+        assert test_data["converted"].objects[1].scripts == test_data["expected"]["Sprite"]
+
 class TestKeyPressedWorkaround(unittest.TestCase):
     KEYPRESSED_HELPER_OBJECTS_DATA_TEMPLATE = {
         "objName": "Stage",

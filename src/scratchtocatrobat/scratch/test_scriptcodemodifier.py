@@ -104,6 +104,55 @@ class TestInjectMissingBracketsModifier(common_testing.BaseTestCase):
         modified_block_list = self._modifier.modify(block_list)
         assert modified_block_list == expected_block_list
 
+    def test_should_not_inject_brackets_when_addition_occurs_within_equality_op_in_formula(self):
+        block_list = [["wait:elapsed:from:", ["=", 1, ["+", 2, 3]]]]
+        expected_block_list = [["wait:elapsed:from:", ["=", 1, ["+", 2, 3]]]]
+        modified_block_list = self._modifier.modify(block_list)
+        assert modified_block_list == expected_block_list
+
+    def test_should_not_inject_brackets_when_multiplication_occurs_within_equality_op_in_formula(self):
+        block_list = [["wait:elapsed:from:", ["=", 1, ["*", 2, 3]]]]
+        expected_block_list = [["wait:elapsed:from:", ["=", 1, ["*", 2, 3]]]]
+        modified_block_list = self._modifier.modify(block_list)
+        assert modified_block_list == expected_block_list
+
+    def test_should_not_inject_brackets_when_equality_op_occurs_within_equality_op_in_formula(self):
+        block_list = [["wait:elapsed:from:", ["=", 1, ["=", 2, 3]]]]
+        expected_block_list = [["wait:elapsed:from:", ["=", 1, ["=", 2, 3]]]]
+        modified_block_list = self._modifier.modify(block_list)
+        assert modified_block_list == expected_block_list
+
+    def test_should_inject_brackets_when_logic_and_occurs_within_equality_op_in_formula(self):
+        block_list = [["wait:elapsed:from:", ["=", 1, ["&", 2, 3]]]]
+        expected_block_list = [["wait:elapsed:from:", ["=", 1, ["()", ["&", 2, 3]]]]]
+        modified_block_list = self._modifier.modify(block_list)
+        assert modified_block_list == expected_block_list
+
+    def test_should_not_inject_brackets_when_logic_or_occurs_within_logic_or_in_formula(self):
+        block_list = [["wait:elapsed:from:", ["|", 1, ["|", 2, 3]]]]
+        expected_block_list = [["wait:elapsed:from:", ["|", 1, ["|", 2, 3]]]]
+        modified_block_list = self._modifier.modify(block_list)
+        assert modified_block_list == expected_block_list
+
+    def test_should_not_inject_brackets_when_multiplication_occurs_within_logic_or_in_formula(self):
+        block_list = [["wait:elapsed:from:", ["|", 1, ["*", 2, 3]]]]
+        expected_block_list = [["wait:elapsed:from:", ["|", 1, ["*", 2, 3]]]]
+        modified_block_list = self._modifier.modify(block_list)
+        assert modified_block_list == expected_block_list
+
+    def test_should_not_inject_brackets_when_addition_occurs_within_logic_or_in_formula(self):
+        block_list = [["wait:elapsed:from:", ["|", 1, ["+", 2, 3]]]]
+        expected_block_list = [["wait:elapsed:from:", ["|", 1, ["+", 2, 3]]]]
+        modified_block_list = self._modifier.modify(block_list)
+        assert modified_block_list == expected_block_list
+
+    def test_should_not_inject_brackets_when_greater_than_occurs_within_logic_or_in_formula(self):
+        block_list = [["wait:elapsed:from:", ["|", 1, [">", 2, 3]]]]
+        expected_block_list = [["wait:elapsed:from:", ["|", 1, [">", 2, 3]]]]
+        modified_block_list = self._modifier.modify(block_list)
+        assert modified_block_list == expected_block_list
+
+
 
 if __name__ == "__main__":
     unittest.main()

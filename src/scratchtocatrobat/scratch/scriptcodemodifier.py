@@ -84,17 +84,21 @@ class InjectMissingBracketsModifier(ScriptCodeModifier):
             return False
 
         line_operators = ["+", "-"]
-        punctuation_operators = ["*", "/"]
-        logic_operators = ["|","&", "not"]
+        punctuation_operators = ["*", "/", "%"]
+        logic_operators = ["|", "&", "not"]
         comparison_operator = ["<", ">", "="]
 
-        if previous_operator in punctuation_operators and curr_operator in line_operators:
+        if previous_operator in punctuation_operators:
             return True
 
         if previous_operator in line_operators and curr_operator in punctuation_operators:
             return False
 
-        if (previous_operator == "%") or (previous_operator in comparison_operator) or (previous_operator in logic_operators):
-            return True
+        if previous_operator in comparison_operator and (curr_operator in punctuation_operators or
+                                                         curr_operator in line_operators):
+            return False
+
+        if previous_operator in logic_operators:
+            return False
 
         return previous_operator != curr_operator

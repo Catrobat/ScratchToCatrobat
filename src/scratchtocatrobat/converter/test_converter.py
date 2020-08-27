@@ -2017,53 +2017,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.ClearBackgroundBrick)
 
-    # traverse two formula elements to check if the tree is the same
-    @staticmethod
-    def is_same_formula(fe1, fe2):
-        if fe1 is None and fe2 is None:
-            return True
-        elif ((fe1 is None) != (fe2 is None)) or (fe1.getValue() != fe2.getValue()):
-            return False
-        return TestConvertBlocks.is_same_formula(fe1.leftChild, fe2.leftChild) and \
-            TestConvertBlocks.is_same_formula(fe1.rightChild, fe2.rightChild)
-
-    @staticmethod
-    def get_color_formulas(set_color_brick):
-        r = set_color_brick.getFormulaWithBrickField(catbricks.Brick.BrickField.PEN_COLOR_RED).getFormulaTree()
-        g = set_color_brick.getFormulaWithBrickField(catbricks.Brick.BrickField.PEN_COLOR_GREEN).getFormulaTree()
-        b = set_color_brick.getFormulaWithBrickField(catbricks.Brick.BrickField.PEN_COLOR_BLUE).getFormulaTree()
-        return (r, g, b)
-
-    # penColor: with formula (without HSV conversion algorithm compiled into bricks)
-    def test_can_convert_set_pen_color_block_with_formula(self):
-        test_val = catrobat.create_formula_element_for([catformula.Operators.PLUS, [42], [0]])
-        scratch_block = ["penColor:", test_val]
-        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        assert isinstance(catr_brick, catbricks.SetPenColorBrick)
-
-        (r, g, b) = self.get_color_formulas(catr_brick)
-
-        assert r.getValue() == str(0)
-        assert g.getValue() == str(0)
-        test_fe = catrobat.create_formula_element_for([catformula.Functions.MOD, ["()", test_val], 256])
-        assert TestConvertBlocks.is_same_formula(test_fe, b)
-
-    # penColor: with string (without HSV conversion algorithm compiled into bricks)
-    def test_can_convert_set_pen_color_block_with_string(self):
-        color = "#adfadf"
-        scratch_block = ["penColor:", color]
-        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
-        assert isinstance(catr_brick, catbricks.SetPenColorBrick)
-
-        (r, g, b) = self.get_color_formulas(catr_brick)
-
-        color_hex = color[1:]
-        (r_check, g_check, b_check) = tuple(int(color_hex[i:i+2], 16) for i in (0, 2, 4))
-
-        assert r.getValue() == str(r_check)
-        assert g.getValue() == str(g_check)
-        assert b.getValue() == str(b_check)
-
+    #helper functions for pen brick testing
     def build_test_project(self, brick_list):
         sprite_name = "Sprite1"
         raw_json = {
@@ -2095,6 +2049,75 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert isinstance(catr_script, catbase.StartScript)
         return catr_script.getBrickList(), sprite, raw_project
 
+    # traverse two formula elements to check if the tree is the same
+    @staticmethod
+    def is_same_formula(fe1, fe2):
+        if fe1 is None and fe2 is None:
+            return True
+        elif ((fe1 is None) != (fe2 is None)) or (fe1.getValue() != fe2.getValue()):
+            return False
+        return TestConvertBlocks.is_same_formula(fe1.leftChild, fe2.leftChild) and \
+            TestConvertBlocks.is_same_formula(fe1.rightChild, fe2.rightChild)
+
+    @staticmethod
+    def get_color_formulas(set_color_brick):
+        r = set_color_brick.getFormulaWithBrickField(catbricks.Brick.BrickField.PEN_COLOR_RED).getFormulaTree()
+        g = set_color_brick.getFormulaWithBrickField(catbricks.Brick.BrickField.PEN_COLOR_GREEN).getFormulaTree()
+        b = set_color_brick.getFormulaWithBrickField(catbricks.Brick.BrickField.PEN_COLOR_BLUE).getFormulaTree()
+        return (r, g, b)
+
+    @staticmethod
+    def assert_set_variable_brick_properties(brick, userVariable, test_fe):
+        assert isinstance(brick, catbricks.SetVariableBrick)
+        assert brick.userVariable == userVariable
+        assert TestConvertBlocks.is_same_formula(test_fe, brick.getFormulas()[0].getFormulaTree())
+
+    # penColor: with formula (without HSV conversion algorithm compiled into bricks)
+    def test_can_convert_set_pen_color_block_with_formula(self):
+        test_val = catrobat.create_formula_element_for([catformula.Operators.PLUS, [42], [0]])
+        scratch_block = ["penColor:", test_val]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.SetPenColorBrick)
+
+        def modulo_fe(left, right):
+            return catrobat.create_formula_element_for([catformula.Functions.MOD, ["()", left], right])
+
+        (r, g, b) = self.get_color_formulas(catr_brick)
+
+        transparency_multiplier = 256**3
+        red_multiplier = 256**2
+        green_multiplier = 256
+
+        test_fe1 = catrobat.create_formula_element_for([catformula.Operators.DIVIDE,
+                                                        [catformula.Operators.MINUS, modulo_fe(test_val, transparency_multiplier),
+                                                         modulo_fe(modulo_fe(test_val, transparency_multiplier), red_multiplier)],
+                                                        red_multiplier])
+        test_fe2 = catrobat.create_formula_element_for([catformula.Operators.DIVIDE,
+                                                        [catformula.Operators.MINUS, modulo_fe(modulo_fe(test_val, transparency_multiplier), red_multiplier),
+                                                         modulo_fe(modulo_fe(modulo_fe(test_val, transparency_multiplier), red_multiplier), green_multiplier)],
+                                                        green_multiplier])
+        test_fe3 = catrobat.create_formula_element_for([catformula.Functions.MOD, ["()", test_val], 256])
+
+        assert TestConvertBlocks.is_same_formula(test_fe1, r)
+        assert TestConvertBlocks.is_same_formula(test_fe2, g)
+        assert TestConvertBlocks.is_same_formula(test_fe3, b)
+
+    # penColor: with string (without HSV conversion algorithm compiled into bricks)
+    def test_can_convert_set_pen_color_block_with_string(self):
+        color = "#adfadf"
+        scratch_block = ["penColor:", color]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.SetPenColorBrick)
+
+        (r, g, b) = self.get_color_formulas(catr_brick)
+
+        color_hex = color[1:]
+        (r_check, g_check, b_check) = tuple(int(color_hex[i:i+2], 16) for i in (0, 2, 4))
+
+        assert r.getValue() == str(r_check)
+        assert g.getValue() == str(g_check)
+        assert b.getValue() == str(b_check)
+
     # helper function to test the color conversion algorithm used by penColor:, setPenParamTo: and changePenParamBy:
     @staticmethod
     def assert_hsv_to_rgb_algorithm(sprite, bricks):
@@ -2110,42 +2133,29 @@ class TestConvertBlocks(common_testing.BaseTestCase):
             assert isinstance(sprite.getUserVariable(variable_name), catformula.UserVariable)
             var[key] = variable_name
 
-        assert isinstance(bricks[0], catbricks.SetVariableBrick)
-        assert bricks[0].userVariable == var_obj('h_i')
         test_fe = catrobat.create_formula_element_for(
             [catformula.Functions.FLOOR, [catformula.Operators.MULT, var_id('h'), 6]])
-        assert TestConvertBlocks.is_same_formula(test_fe, bricks[0].getFormulas()[0].getFormulaTree())
+        TestConvertBlocks.assert_set_variable_brick_properties(bricks[0], var_obj('h_i'), test_fe)
 
-        assert isinstance(bricks[1], catbricks.SetVariableBrick)
-        assert bricks[1].userVariable == var_obj('f')
         test_fe = catrobat.create_formula_element_for(
             [catformula.Operators.MINUS, [catformula.Operators.MULT, var_id('h'), 6], var_id('h_i')])
-        assert TestConvertBlocks.is_same_formula(test_fe, bricks[1].getFormulas()[0].getFormulaTree())
+        TestConvertBlocks.assert_set_variable_brick_properties(bricks[1], var_obj('f'), test_fe)
 
-        assert isinstance(bricks[2], catbricks.SetVariableBrick)
-        assert bricks[2].userVariable == var_obj('p')
         test_fe = catrobat.create_formula_element_for(
             [catformula.Operators.MULT, var_id('v'), ["()", [catformula.Operators.MINUS, 1, var_id('s')]]])
-        assert TestConvertBlocks.is_same_formula(test_fe, bricks[2].getFormulas()[0].getFormulaTree())
+        TestConvertBlocks.assert_set_variable_brick_properties(bricks[2], var_obj('p'), test_fe)
 
-        assert isinstance(bricks[3], catbricks.SetVariableBrick)
-        assert bricks[3].userVariable == var_obj('q')
         test_fe = catrobat.create_formula_element_for(
-            [catformula.Operators.MULT,
-             var_id('v'),
+            [catformula.Operators.MULT, var_id('v'),
              ["()", [catformula.Operators.MINUS, 1, [catformula.Operators.MULT, var_id('s'), var_id('f')]]]])
-        assert TestConvertBlocks.is_same_formula(test_fe, bricks[3].getFormulas()[0].getFormulaTree())
+        TestConvertBlocks.assert_set_variable_brick_properties(bricks[3], var_obj('q'), test_fe)
 
-        assert isinstance(bricks[4], catbricks.SetVariableBrick)
-        assert bricks[4].userVariable == var_obj('t')
         test_fe = catrobat.create_formula_element_for(
-            [catformula.Operators.MULT,
-             var_id('v'),
+            [catformula.Operators.MULT, var_id('v'),
              ["()", [catformula.Operators.MINUS,
-                     1,
-                     [catformula.Operators.MULT,
+                     1, [catformula.Operators.MULT,
                       var_id('s'), ["()", [catformula.Operators.MINUS, 1, var_id('f')]]]]]])
-        assert TestConvertBlocks.is_same_formula(test_fe, bricks[4].getFormulas()[0].getFormulaTree())
+        TestConvertBlocks.assert_set_variable_brick_properties(bricks[4], var_obj('t'), test_fe)
 
         def test_inner_bricks(if_brick, r, g, b):
             for (i, (color, name)) in enumerate([(r, 'r'), (g, 'g'), (b, 'b')]):
@@ -2181,6 +2191,65 @@ class TestConvertBlocks(common_testing.BaseTestCase):
             fe_test = catrobat.create_formula_element_for(var_id(color))
             assert TestConvertBlocks.is_same_formula(fe_test, fe)
 
+    # helper function to test the color conversion algorithm from Scratch2 shade to hsv,
+    # used by Scratch2 setShade blocks:
+    @staticmethod
+    def assert_shade_to_hsv_algorithm(sprite, bricks):
+        var = {}
+        def var_id(variable_name):
+            return catrobat.build_var_id(var[variable_name])
+
+        def var_obj(variable_name):
+            return sprite.getUserVariable(var[variable_name])
+
+        for key, variable_name in scratch.S2CC_PEN_COLOR_HELPER_VARIABLE_NAMES.items() + \
+                                  scratch.S2CC_PEN_COLOR_VARIABLE_NAMES.items():
+            assert isinstance(sprite.getUserVariable(variable_name), catformula.UserVariable)
+            var[key] = variable_name
+
+        test_fe = catrobat.create_formula_element_for([catformula.Functions.MOD, var_obj('scratch2_shade'), 200])
+        TestConvertBlocks.assert_set_variable_brick_properties(bricks[0], var_obj('shade_helper'), test_fe)
+
+        assert isinstance(bricks[1], catbricks.IfLogicBeginBrick)
+        test_fe = catrobat.create_formula_element_for(
+            [catformula.Operators.LOGICAL_AND,
+             [catformula.Operators.GREATER_THAN, var_obj('shade_helper'), 50],
+             [catformula.Operators.SMALLER_THAN, var_obj('shade_helper'), 150]])
+        assert TestConvertBlocks.is_same_formula(test_fe, bricks[1].getFormulas()[0].getFormulaTree())
+
+        def test_if_branch_bricks(bricks):
+            test_fe = catrobat.create_formula_element_for(
+                [catformula.Functions.MAX, [catformula.Functions.MIN,
+                  [catformula.Operators.DIVIDE, [catformula.Functions.ABS,
+                    [catformula.Operators.MINUS, var_obj('shade_helper'), 100]], 50], 1], 0])
+            TestConvertBlocks.assert_set_variable_brick_properties(bricks[0], var_obj('s'), test_fe)
+
+            test_fe = catformula.FormulaElement(catElementType.NUMBER, '1.0', None)
+            TestConvertBlocks.assert_set_variable_brick_properties(bricks[1], var_obj('v'), test_fe)
+
+        def test_else_branch_bricks(bricks):
+            assert isinstance(bricks[0], catbricks.IfThenLogicBeginBrick)
+            test_fe = catrobat.create_formula_element_for([catformula.Operators.GREATER_THAN, var_obj('shade_helper'), 100])
+            assert TestConvertBlocks.is_same_formula(test_fe, bricks[0].getFormulas()[0].getFormulaTree())
+
+            inner_if_branch = bricks[0].ifBranchBricks
+            test_fe = catrobat.create_formula_element_for(
+                [catformula.Functions.ABS,
+                 [catformula.Operators.MINUS, var_id('shade_helper'), 200]])
+            TestConvertBlocks.assert_set_variable_brick_properties(inner_if_branch[0], var_obj('shade_helper'), test_fe)
+
+            test_fe = catformula.FormulaElement(catElementType.NUMBER, '1.0', None)
+            TestConvertBlocks.assert_set_variable_brick_properties(bricks[1], var_obj('s'), test_fe)
+
+            test_fe = catrobat.create_formula_element_for(
+                [catformula.Functions.MAX,
+                 [catformula.Functions.MIN,
+                  [catformula.Operators.DIVIDE, ["()", var_obj('shade_helper')], 50], 1], 0])
+            TestConvertBlocks.assert_set_variable_brick_properties(bricks[2], var_obj('v'), test_fe)
+
+        test_if_branch_bricks(bricks[1].ifBranchBricks)
+        test_else_branch_bricks(bricks[1].elseBranchBricks)
+
     # test the color conversion algorithm used by penColor:, setPenParamTo: and changePenParamBy:
     def test_hsv_to_rgb_algorithm(self):
         brick_list, sprite, raw_project = self.build_test_project([["changePenParamBy:", "color", 42]])
@@ -2190,8 +2259,22 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert workaround_info[scratch.ADD_PEN_COLOR_VARIABLES]
 
         # algorithm is 12 bricks long (excluding inner bricks from e.g. if statements)
-        bricks = brick_list[-12:]
-        self.assert_hsv_to_rgb_algorithm(sprite, bricks)
+        self.assert_hsv_to_rgb_algorithm(sprite, brick_list[-12:])
+
+    # test the color conversion algorithm from Scratch2 shade to hsv,
+    # used by Scratch2 setHue and setShade blocks:
+    def test_shade_to_hsv_algorithm(self):
+        brick_list, sprite, raw_project = self.build_test_project([["changePenShadeBy:", 42]])
+
+        workaround_info = raw_project.objects[1].preprocess_object([raw_project.objects[0].name, raw_project.objects[1].name])
+        assert workaround_info[scratch.ADD_PEN_DEFAULT_BEHAVIOR]
+        assert workaround_info[scratch.ADD_PEN_COLOR_VARIABLES]
+
+        # shade to hsv algorithm is 2 bricks long (excluding inner bricks from e.g. if statements)
+        self.assert_shade_to_hsv_algorithm(sprite, brick_list[-14: -12])
+
+        # hsv to rgb algorithm is 12 bricks long (excluding inner bricks from e.g. if statements)
+        self.assert_hsv_to_rgb_algorithm(sprite, brick_list[-12:])
 
     # penColor: with 1) string as argument 2) formula as argument. changePenParamBy: -> add conversion algorithm.
     def test_can_convert_set_pen_color_block_with_conversion_algorithm(self):
@@ -2205,35 +2288,44 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         def assert_set_hsv_bricks(bricks, h, s, v):
             assert len(bricks) == 3
             for (brick, variable_name, variable_formula) in zip(bricks, ['h', 's', 'v'], [h, s, v]):
-                assert isinstance(brick, catbricks.SetVariableBrick)
-                assert brick.userVariable == sprite.getUserVariable(scratch.S2CC_PEN_COLOR_VARIABLE_NAMES[variable_name])
                 test_fe = catrobat.create_formula_element_for(variable_formula)
-                assert self.is_same_formula(test_fe, brick.getFormulas()[0].getFormulaTree())
+                affected_user_variable = sprite.getUserVariable(scratch.S2CC_PEN_COLOR_VARIABLE_NAMES[variable_name])
+                self.assert_set_variable_brick_properties(brick, affected_user_variable, test_fe)
 
         # penColor: with string as argument
         # algorithm is 12 bricks long (excluding inner bricks from e.g. if statements)
-        bricks = brick_list[-12:]
-        self.assert_hsv_to_rgb_algorithm(sprite, bricks)
+        self.assert_hsv_to_rgb_algorithm(sprite, brick_list[-12:])
 
         colors_hex = test_val1[1:]
         (r, g, b) = tuple(int(colors_hex[i:i+2], 16) for i in (0, 2, 4))
         (h, s, v) = colorsys.rgb_to_hsv(r / 255.0, g / 255.0, b / 255.0)
 
-        bricks = brick_list[-15:-12]
-        assert_set_hsv_bricks(bricks, h, s, v)
+        assert_set_hsv_bricks(brick_list[-15:-12], h, s, v)
+
+        def modulo_fe(left, right):
+            return catrobat.create_formula_element_for([catformula.Functions.MOD, ["()", left], right])
 
         # penColor: with formula as argument
-        bricks = brick_list[-27:-15]
-        self.assert_hsv_to_rgb_algorithm(sprite, bricks)
+        assert isinstance(brick_list[-16], catbricks.SetPenColorBrick)
+        (r, g, b) = self.get_color_formulas(brick_list[-16])
 
-        h = 0.66
-        s = 1.0
-        v = catrobat.create_formula_element_for(
-            [catformula.Operators.DIVIDE, [catformula.Functions.MOD, ["()", test_val2], 256], 255.0]
-        )
+        transparency_multiplier = 256**3
+        red_multiplier = 256**2
+        green_multiplier = 256
 
-        bricks = brick_list[-30:-27]
-        assert_set_hsv_bricks(bricks, h, s, v)
+        test_fe1 = catrobat.create_formula_element_for([catformula.Operators.DIVIDE,
+                                                        [catformula.Operators.MINUS, modulo_fe(test_val2, transparency_multiplier),
+                                                         modulo_fe(modulo_fe(test_val2, transparency_multiplier), red_multiplier)],
+                                                        red_multiplier])
+        test_fe2 = catrobat.create_formula_element_for([catformula.Operators.DIVIDE,
+                                                        [catformula.Operators.MINUS, modulo_fe(modulo_fe(test_val2, transparency_multiplier), red_multiplier),
+                                                         modulo_fe(modulo_fe(modulo_fe(test_val2, transparency_multiplier), red_multiplier), green_multiplier)],
+                                                        green_multiplier])
+        test_fe3 = catrobat.create_formula_element_for([catformula.Functions.MOD, ["()", test_val2], 256])
+
+        assert TestConvertBlocks.is_same_formula(test_fe1, r)
+        assert TestConvertBlocks.is_same_formula(test_fe2, g)
+        assert TestConvertBlocks.is_same_formula(test_fe3, b)
 
     # setPenParamTo:
     def test_can_convert_set_pen_param_to(self):
@@ -2247,39 +2339,31 @@ class TestConvertBlocks(common_testing.BaseTestCase):
                                                                    ["setPenParamTo:", "color", test_val1]])
 
         def test_bricks(bricks, affected_variable_name, test_fe):
-            assert isinstance(bricks[0], catbricks.SetVariableBrick)
-            assert bricks[0].userVariable == \
-                   sprite.getUserVariable(scratch.S2CC_PEN_COLOR_VARIABLE_NAMES[affected_variable_name])
-            assert self.is_same_formula(test_fe, bricks[0].getFormulas()[0].getFormulaTree())
+            affected_user_variable = sprite.getUserVariable(scratch.S2CC_PEN_COLOR_VARIABLE_NAMES[affected_variable_name])
+            self.assert_set_variable_brick_properties(bricks[0], affected_user_variable, test_fe)
             self.assert_hsv_to_rgb_algorithm(sprite, bricks[1:])
 
         # setPenParamTo:, "color", int
-        bricks = brick_list[-13:]
         test_fe = catrobat.create_formula_element_for(
             [catformula.Functions.MOD, [catformula.Operators.DIVIDE, ["()", test_val1], 100], 1])
-        test_bricks(bricks, 'h', test_fe)
+        test_bricks(brick_list[-13:], 'h', test_fe)
 
         def get_test_fe(value):
             return catrobat.create_formula_element_for(
                 [catformula.Functions.MAX,
                  [catformula.Functions.MIN,
-                  [catformula.Operators.DIVIDE, ["()", value], 100],
-                  1],
-                 0])
+                  [catformula.Operators.DIVIDE, ["()", value], 100], 1], 0])
 
         # setPenParamTo:, "saturation", int
-        bricks = brick_list[-26:-13]
         test_fe = get_test_fe(test_val2)
-        test_bricks(bricks, 's', test_fe)
+        test_bricks(brick_list[-26:-13], 's', test_fe)
 
         # setPenParamTo:, "brightness", formula
-        bricks = brick_list[-39:-26]
         test_fe = get_test_fe(test_val3)
-        test_bricks(bricks, 'v', test_fe)
+        test_bricks(brick_list[-39:-26], 'v', test_fe)
 
         # setPenParamTo:, "transparency", int
-        bricks = brick_list[-40]
-        assert isinstance(bricks, catbricks.NoteBrick)
+        assert isinstance(brick_list[-40], catbricks.NoteBrick)
 
     # changePenParamBy:
     def test_can_convert_change_pen_param_by(self):
@@ -2293,46 +2377,122 @@ class TestConvertBlocks(common_testing.BaseTestCase):
                                                                    ["changePenParamBy:", "color", test_val1]])
 
         def test_bricks(bricks, affected_variable_name, test_fe):
-            assert isinstance(bricks[0], catbricks.SetVariableBrick)
-            assert bricks[0].userVariable == \
-                   sprite.getUserVariable(scratch.S2CC_PEN_COLOR_VARIABLE_NAMES[affected_variable_name])
-            assert self.is_same_formula(test_fe, bricks[0].getFormulas()[0].getFormulaTree())
+            affected_user_variable = sprite.getUserVariable(scratch.S2CC_PEN_COLOR_VARIABLE_NAMES[affected_variable_name])
+            self.assert_set_variable_brick_properties(bricks[0], affected_user_variable, test_fe)
             self.assert_hsv_to_rgb_algorithm(sprite, bricks[1:])
 
         param_name_mapping = {"color": "h", "saturation": "s", "brightness": "v"}
 
         # setPenParamTo:, "color", int
-        bricks = brick_list[-13:]
         var_id = catrobat.build_var_id(scratch.S2CC_PEN_COLOR_VARIABLE_NAMES[param_name_mapping["color"]])
         test_fe = catrobat.create_formula_element_for(
                 [catformula.Functions.MOD,
-                 [catformula.Operators.PLUS, var_id, [catformula.Operators.DIVIDE, ["()", test_val1], 100]],
-                 1])
-        test_bricks(bricks, 'h', test_fe)
+                 [catformula.Operators.PLUS, var_id, [catformula.Operators.DIVIDE, ["()", test_val1], 100]], 1])
+        test_bricks(brick_list[-13:], 'h', test_fe)
 
         def get_test_fe(var_id, value):
             return catrobat.create_formula_element_for(
                 [catformula.Functions.MAX,
                  [catformula.Functions.MIN,
-                  [catformula.Operators.PLUS, var_id, [catformula.Operators.DIVIDE, ["()", value], 100]],
-                  1],
-                 0])
+                  [catformula.Operators.PLUS, var_id, [catformula.Operators.DIVIDE, ["()", value], 100]], 1], 0])
 
         # setPenParamTo:, "saturation", int
-        bricks = brick_list[-26:-13]
         var_id = catrobat.build_var_id(scratch.S2CC_PEN_COLOR_VARIABLE_NAMES[param_name_mapping["saturation"]])
         test_fe = get_test_fe(var_id, test_val2)
-        test_bricks(bricks, 's', test_fe)
+        test_bricks(brick_list[-26:-13], 's', test_fe)
 
         # setPenParamTo:, "brightness", formula
-        bricks = brick_list[-39:-26]
         var_id = catrobat.build_var_id(scratch.S2CC_PEN_COLOR_VARIABLE_NAMES[param_name_mapping["brightness"]])
         test_fe = get_test_fe(var_id, test_val3)
-        test_bricks(bricks, 'v', test_fe)
+        test_bricks(brick_list[-39:-26], 'v', test_fe)
 
         # setPenParamTo:, "transparency", int
-        bricks = brick_list[-40]
-        assert isinstance(bricks, catbricks.NoteBrick)
+        assert isinstance(brick_list[-40], catbricks.NoteBrick)
+
+    def test_can_convert_scratch2_set_hue_to(self):
+        test_val1 = 42
+        test_val2 = 3.14
+        test_val3 = catrobat.create_formula_element_for([catformula.Operators.MULT, 3, 4])
+
+        brick_list, sprite, raw_project = self.build_test_project([["setPenHueTo:", test_val1],
+                                                                   ["setPenHueTo:", test_val2],
+                                                                   ["setPenHueTo:", test_val3]])
+
+        hue_user_variable = sprite.getUserVariable('S2CC:pen_hue')
+
+        def test_bricks(bricks, affected_user_variable, test_val):
+            test_fe = catrobat.create_formula_element_for(
+                [catformula.Functions.MOD, [catformula.Operators.DIVIDE, ["()", test_val], 200], 1])
+            self.assert_set_variable_brick_properties(bricks[0], affected_user_variable, test_fe)
+            self.assert_hsv_to_rgb_algorithm(sprite, bricks[1:])
+
+        test_bricks(brick_list[-13:], hue_user_variable, test_val3)
+        test_bricks(brick_list[-26:-13], hue_user_variable, test_val2)
+        test_bricks(brick_list[-39:-26], hue_user_variable, test_val1)
+
+    def test_can_convert_scratch2_change_hue_by(self):
+        test_val1 = 42
+        test_val2 = 3.14
+        test_val3 = catrobat.create_formula_element_for([catformula.Operators.MULT, 3, 4])
+
+        brick_list, sprite, raw_project = self.build_test_project([["changePenHueBy:", test_val1],
+                                                                   ["changePenHueBy:", test_val2],
+                                                                   ["changePenHueBy:", test_val3]])
+
+        hue_user_variable = sprite.getUserVariable('S2CC:pen_hue')
+
+        def test_bricks(bricks, affected_user_variable, test_val):
+            test_fe = catrobat.create_formula_element_for(
+                [catformula.Functions.MOD,
+                 [catformula.Operators.PLUS,
+                   affected_user_variable, [catformula.Operators.DIVIDE, ["()", test_val], 200]], 1])
+            self.assert_set_variable_brick_properties(bricks[0], affected_user_variable, test_fe)
+            self.assert_hsv_to_rgb_algorithm(sprite, bricks[1:])
+
+        test_bricks(brick_list[-13:], hue_user_variable, test_val3)
+        test_bricks(brick_list[-26:-13], hue_user_variable, test_val2)
+        test_bricks(brick_list[-39:-26], hue_user_variable, test_val1)
+
+    def test_can_convert_scratch2_set_shade_to(self):
+        test_val1 = 42
+        test_val2 = 3.14
+        test_val3 = catrobat.create_formula_element_for([catformula.Operators.MULT, 3, 4])
+
+        brick_list, sprite, raw_project = self.build_test_project([["setPenShadeTo:", test_val1],
+                                                                   ["setPenShadeTo:", test_val2],
+                                                                   ["setPenShadeTo:", test_val3]])
+
+        shade_user_variable = sprite.getUserVariable('STCC:_scratch2_shade')
+
+        def test_bricks(bricks, affected_user_variable, test_fe):
+            self.assert_set_variable_brick_properties(bricks[0], affected_user_variable, test_fe)
+            self.assert_shade_to_hsv_algorithm(sprite, bricks[1:3])
+            self.assert_hsv_to_rgb_algorithm(sprite, bricks[3:])
+
+        test_bricks(brick_list[-15:], shade_user_variable, test_val3)
+        test_bricks(brick_list[-30:-15], shade_user_variable, catrobat.create_formula_element_for(test_val2))
+        test_bricks(brick_list[-45:-30], shade_user_variable, catrobat.create_formula_element_for(test_val1))
+
+    def test_can_convert_scratch2_change_shade_by(self):
+        test_val1 = 42
+        test_val2 = 3.14
+        test_val3 = catrobat.create_formula_element_for([catformula.Operators.MULT, 3, 4])
+
+        brick_list, sprite, raw_project = self.build_test_project([["changePenShadeBy:", test_val1],
+                                                                   ["changePenShadeBy:", test_val2],
+                                                                   ["changePenShadeBy:", test_val3]])
+
+        shade_user_variable = sprite.getUserVariable('STCC:_scratch2_shade')
+
+        def test_bricks(bricks, affected_user_variable, test_val):
+            test_fe = catrobat.create_formula_element_for([catformula.Operators.PLUS, shade_user_variable, test_val])
+            self.assert_set_variable_brick_properties(bricks[0], affected_user_variable, test_fe)
+            self.assert_shade_to_hsv_algorithm(sprite, bricks[1:3])
+            self.assert_hsv_to_rgb_algorithm(sprite, bricks[3:])
+
+        test_bricks(brick_list[-15:], shade_user_variable, test_val3)
+        test_bricks(brick_list[-30:-15], shade_user_variable, test_val2)
+        test_bricks(brick_list[-45:-30], shade_user_variable, test_val1)
 
     # pen size formula check function
     @staticmethod

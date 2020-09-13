@@ -60,7 +60,7 @@ TEST_PROJECT_PATH = common_testing.get_test_project_path("dancing_castle")
 
 
 def _dummy_project():
-        return scratch.Project(TEST_PROJECT_PATH, name="dummy")
+    return scratch.Project(TEST_PROJECT_PATH, name="dummy")
 
 # TODO: fix / reorganize test
 #
@@ -297,11 +297,11 @@ class TestConvertBlocks(common_testing.BaseTestCase):
             "penLayerID": 0,
             "tempoBPM": 60,
             "children": [{
-                    "objName": "Sprite1",
-                    "scripts": [[72, 132, [["whenSensorGreaterThan", "timer", ["+", 2, 1]], ["say:", "Hello!"]]]],
-                    "currentCostumeIndex": 0,
-                    "indexInLibrary": 1,
-                    "spriteInfo": {}
+                "objName": "Sprite1",
+                "scripts": [[72, 132, [["whenSensorGreaterThan", "timer", ["+", 2, 1]], ["say:", "Hello!"]]]],
+                "currentCostumeIndex": 0,
+                "indexInLibrary": 1,
+                "spriteInfo": {}
             }],
             "info": {}
         }
@@ -310,8 +310,8 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         workaround_info = raw_project.objects[1].preprocess_object([raw_project.objects[0].name, raw_project.objects[1].name])
         assert workaround_info[scratch.ADD_TIMER_SCRIPT_KEY] == True
         timer_background_workaround = [['whenGreenFlag'], ['doForever', \
-                                           [['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, scratch.UPDATE_HELPER_VARIABLE_TIMEOUT],
-                                           ['wait:elapsed:from:', scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]]]]
+                                                           [['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, scratch.UPDATE_HELPER_VARIABLE_TIMEOUT],
+                                                            ['wait:elapsed:from:', scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]]]]
         assert raw_project.objects[0].scripts[0].raw_script == timer_background_workaround
 
         catr_script = self.block_converter._catrobat_script_from(raw_project.objects[1].scripts[0], DUMMY_CATR_SPRITE, self.test_project)
@@ -343,19 +343,19 @@ class TestConvertBlocks(common_testing.BaseTestCase):
             "objName": "Stage",
             "scripts": [[47, 97, [["whenSceneStarts", "look1"]]]],
             "costumes": [{
-                    "costumeName": "backdrop1",
-                    "baseLayerID": 3,
-                    "baseLayerMD5": "739b5e2a2435f6e1ec2993791b423146.png",
-                    "bitmapResolution": 1,
-                    "rotationCenterX": 240,
-                    "rotationCenterY": 180
-                }],
+                "costumeName": "backdrop1",
+                "baseLayerID": 3,
+                "baseLayerMD5": "739b5e2a2435f6e1ec2993791b423146.png",
+                "bitmapResolution": 1,
+                "rotationCenterX": 240,
+                "rotationCenterY": 180
+            }],
             "children": [],
             "currentCostumeIndex": 0,
             "penLayerMD5": "5c81a336fab8be57adc039a8a2b33ca9.png",
             "penLayerID": 0,
             "tempoBPM": 60,
-                "info": {}
+            "info": {}
         }
 
         raw_project = scratch.RawProject(raw_json)
@@ -852,7 +852,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert len(catr_do_if[0].ifBranchBricks) == 1
         assert len(catr_do_if[0].elseBranchBricks) == 1
         expected_brick_classes = [catbricks.IfLogicBeginBrick, catbricks.WaitBrick,
-                                   catbricks.WaitBrick,
+                                  catbricks.WaitBrick,
                                   ]
         brickList = catr_do_if + catr_do_if[0].ifBranchBricks + catr_do_if[0].elseBranchBricks
         assert [_.__class__ for _ in brickList] == expected_brick_classes
@@ -2026,7 +2026,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         elif ((fe1 is None) != (fe2 is None)) or (fe1.getValue() != fe2.getValue()):
             return False
         return TestConvertBlocks.is_same_formula(fe1.leftChild, fe2.leftChild) and \
-            TestConvertBlocks.is_same_formula(fe1.rightChild, fe2.rightChild)
+               TestConvertBlocks.is_same_formula(fe1.rightChild, fe2.rightChild)
 
     @staticmethod
     def get_color_formulas(set_color_brick):
@@ -2306,9 +2306,9 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         bricks = brick_list[-13:]
         var_id = catrobat.build_var_id(scratch.S2CC_PEN_COLOR_VARIABLE_NAMES[param_name_mapping["color"]])
         test_fe = catrobat.create_formula_element_for(
-                [catformula.Functions.MOD,
-                 [catformula.Operators.PLUS, var_id, [catformula.Operators.DIVIDE, ["()", test_val1], 100]],
-                 1])
+            [catformula.Functions.MOD,
+             [catformula.Operators.PLUS, var_id, [catformula.Operators.DIVIDE, ["()", test_val1], 100]],
+             1])
         test_bricks(bricks, 'h', test_fe)
 
         def get_test_fe(var_id, value):
@@ -2761,14 +2761,14 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     def test_can_convert_key_pressed_block(self):
         objectJson = {
-                    "objName": "Sprite1",
-                    "scripts": [[107,108,[["whenGreenFlag"],
-                                            ["doForever",
-                                                [["doIf", ["keyPressed:", "w"],
-                                                  [["changeYposBy:", 1]]]]]]]],
-                    "currentCostumeIndex": 0,
-                    "indexInLibrary": 1,
-                    "spriteInfo": {}
+            "objName": "Sprite1",
+            "scripts": [[107,108,[["whenGreenFlag"],
+                                  ["doForever",
+                                   [["doIf", ["keyPressed:", "w"],
+                                     [["changeYposBy:", 1]]]]]]]],
+            "currentCostumeIndex": 0,
+            "indexInLibrary": 1,
+            "spriteInfo": {}
         }
         obj = scratch.Object(objectJson)
         workaround_info = obj.preprocess_object([obj.name])
@@ -2781,14 +2781,14 @@ class TestConvertBlocks(common_testing.BaseTestCase):
             "penLayerID": 0,
             "tempoBPM": 60,
             "children": [{
-                    "objName": "Sprite1",
-                    "scripts": [[107,108,[["whenGreenFlag"],
-                                            ["doForever",
-                                                [["doIf", ["keyPressed:", "w"],
-                                                  [["changeYposBy:", 1]]]]]]]],
-                    "currentCostumeIndex": 0,
-                    "indexInLibrary": 1,
-                    "spriteInfo": {}
+                "objName": "Sprite1",
+                "scripts": [[107,108,[["whenGreenFlag"],
+                                      ["doForever",
+                                       [["doIf", ["keyPressed:", "w"],
+                                         [["changeYposBy:", 1]]]]]]]],
+                "currentCostumeIndex": 0,
+                "indexInLibrary": 1,
+                "spriteInfo": {}
             }],
             "info": {}
         }
@@ -2984,140 +2984,115 @@ class TestConvertProjects(common_testing.ProjectTestCase):
 
     def _setup_media_converter_unconverted_media_resources(self, media_converter):
         progress_bar = None
-        all_used_resources = []
-        unconverted_media_resources = []
-        converted_media_resources_paths = set()
-
         for scratch_object in media_converter.scratch_project.objects:
-            media_converter.setup_costume_info(scratch_object, all_used_resources, unconverted_media_resources,
-                                               converted_media_resources_paths, progress_bar)
-        return unconverted_media_resources
+            media_converter.setup_costume_info(scratch_object,
+                                               progress_bar)
 
     def _setup_media_converter_new_src_path(self, media_converter):
-        test_unconv_media_res = self._setup_media_converter_unconverted_media_resources(media_converter)
-        return media_converter.conversion_svgtopng_wav(test_unconv_media_res, None)
+        self._setup_media_converter_unconverted_media_resources(media_converter)
+        return media_converter.conversion_svgtopng_wav(None)
 
     def _setup_media_converter_all_used_resources(self, media_converter):
         progress_bar = None
-        all_used_resources = []
-        unconverted_media_resources = []
-        converted_media_resources_paths = set()
 
         for scratch_object in media_converter.scratch_project.objects:
-            media_converter.setup_costume_info(scratch_object, all_used_resources, unconverted_media_resources,
-                                           converted_media_resources_paths, progress_bar)
+            media_converter.setup_costume_info(scratch_object,
+                                               progress_bar)
         for scratch_object in media_converter.scratch_project.objects:
-            media_converter.setup_sound_info(scratch_object, all_used_resources, unconverted_media_resources,
-                                             converted_media_resources_paths, progress_bar)
-        return all_used_resources
+            media_converter.setup_sound_info(scratch_object,
+                                             progress_bar)
 
 
 
     def test_media_converter_setup_costume_info(self):
         media_converter = self._setup_media_converter()
         progress_bar = None
-        all_used_resources = []
-        unconverted_media_resources = []
-        converted_media_resources_paths = set()
 
         for scratch_object in media_converter.scratch_project.objects:
-            media_converter.setup_costume_info(scratch_object, all_used_resources, unconverted_media_resources,
-                                               converted_media_resources_paths, progress_bar)
+            media_converter.setup_costume_info(scratch_object,
+                                               progress_bar)
 
         assert progress_bar is None
-        assert not converted_media_resources_paths
-        assert len(unconverted_media_resources)
-        for val in unconverted_media_resources:
+        assert not media_converter.resources.converted_media_resources_paths
+        assert len(media_converter.resources.unconverted_media_resources)
+        for val in media_converter.resources.unconverted_media_resources:
             assert val['media_type'] == 3
-        assert len(all_used_resources)
+        assert len(media_converter.resources.all_used_resources)
 
     def test_media_converter_setup_sound_info(self):
         media_converter = self._setup_media_converter()
         progress_bar = None
-        all_used_resources = []
-        unconverted_media_resources = []
-        converted_media_resources_paths = set()
 
         for scratch_object in media_converter.scratch_project.objects:
-            media_converter.setup_sound_info(scratch_object, all_used_resources, unconverted_media_resources,
-                                             converted_media_resources_paths, progress_bar)
+            media_converter.setup_sound_info(scratch_object,
+                                             progress_bar)
         assert progress_bar is None
-        assert not converted_media_resources_paths
+        assert not media_converter.resources.converted_media_resources_paths
         #since it is android_compatible_wav
-        assert len(unconverted_media_resources) == 0
-        assert len(all_used_resources)
+        assert len(media_converter.resources.unconverted_media_resources) == 0
+        assert len(media_converter.resources.all_used_resources)
 
     def test_media_converter_setup_resource_info_dict_costume(self):
         progress_bar = None
-        all_used_resources = []
-        unconverted_media_resources = []
-        converted_media_resources_paths = set()
         media_converter = self._setup_media_converter()
         threads = []
         defined_scratch_object = media_converter.scratch_project.objects[0]
         costume_info = defined_scratch_object.get_costumes()[0]
-        costume_dict = media_converter.get_info(costume_info["baseLayerMD5"], True)
-        assert os.path.exists(costume_dict["costume_src_path"]), "Not existing: {}".format(costume_dict["costume_src_path"])
+        costume_dict = media_converter.get_info(costume_info["baseLayerMD5"])
+        assert os.path.exists(costume_dict["src_path"]), "Not existing: {}".format(costume_dict["src_path"])
         assert costume_dict["file_ext"] in {".png", ".svg", ".jpg", ".gif"}, \
-                    "Unsupported image file extension: %s" % costume_dict["costume_src_path"]
+            "Unsupported image file extension: %s" % costume_dict["src_path"]
         ispng = costume_dict["file_ext"] == ".png"
         is_unconverted = costume_dict["file_ext"] == ".svg"
-        media_converter.setup_resource_info_dict(costume_dict["costume_file_name"], costume_dict["costume_src_path"], is_unconverted, costume_info,
-                                              all_used_resources, unconverted_media_resources, converted_media_resources_paths,
-                                              progress_bar, threads, ispng, True)
+        media_converter.setup_resource_info_dict(costume_dict["file_name"], costume_dict["src_path"], is_unconverted, costume_info,
+                                                 progress_bar, threads, ispng, True)
         assert progress_bar is None
-        assert not converted_media_resources_paths
-        assert len(unconverted_media_resources) == 0
-        assert len(all_used_resources)
+        assert not media_converter.resources.converted_media_resources_paths
+        assert len(media_converter.resources.unconverted_media_resources) == 0
+        assert len(media_converter.resources.all_used_resources)
 
     def test_media_converter_setup_resource_info_dict_sound(self):
         progress_bar = None
-        all_used_resources = []
-        unconverted_media_resources = []
-        converted_media_resources_paths = set()
         media_converter = self._setup_media_converter()
         defined_scratch_object = media_converter.scratch_project.objects[0]
         sound_info = defined_scratch_object.get_sounds()[0]
         sound_dict = media_converter.get_info(sound_info["md5"])
-        assert os.path.exists(sound_dict["sound_src_path"]), "Not existing: {}".format(sound_dict["sound_src_path"])
-        assert sound_dict["file_ext"] in {".wav", ".mp3"}, "Unsupported sound file extension: %s" % sound_dict["sound_src_path"]
-        is_unconverted = sound_dict["file_ext"] == ".wav" and not wavconverter.is_android_compatible_wav(sound_dict["sound_src_path"])
-        media_converter.setup_resource_info_dict(sound_dict["sound_file_name"], sound_dict["sound_src_path"], is_unconverted, sound_info,
-                                      all_used_resources, unconverted_media_resources, converted_media_resources_paths,
-                                      progress_bar, [])
+        assert os.path.exists(sound_dict["src_path"]), "Not existing: {}".format(sound_dict["src_path"])
+        assert sound_dict["file_ext"] in {".wav", ".mp3"}, "Unsupported sound file extension: %s" % sound_dict["src_path"]
+        is_unconverted = sound_dict["file_ext"] == ".wav" and not wavconverter.is_android_compatible_wav(sound_dict["src_path"])
+        media_converter.setup_resource_info_dict(sound_dict["file_name"], sound_dict["src_path"], is_unconverted, sound_info,
+                                                 progress_bar, [])
         assert progress_bar is None
-        assert not converted_media_resources_paths
-        assert len(unconverted_media_resources) == 0
-        assert len(all_used_resources)
+        assert not media_converter.resources.converted_media_resources_paths
+        assert len(media_converter.resources.unconverted_media_resources) == 0
+        assert len(media_converter.resources.all_used_resources)
 
     def test_media_converter_get_info(self):
         media_converter = self._setup_media_converter()
         defined_scratch_object = media_converter.scratch_project.objects[0]
         costume_info = defined_scratch_object.get_costumes()[0]
-        costume_dict = media_converter.get_info(costume_info["baseLayerMD5"], True)
-        assert os.path.exists(costume_dict["costume_src_path"]), "Not existing: {}".format(costume_dict["costume_src_path"])
+        costume_dict = media_converter.get_info(costume_info["baseLayerMD5"])
+        assert os.path.exists(costume_dict["src_path"]), "Not existing: {}".format(costume_dict["src_path"])
         assert costume_dict["file_ext"] in {".png", ".svg", ".jpg", ".gif"}, \
-        "Unsupported image file extension: %s" % costume_dict["costume_src_path"]
+            "Unsupported image file extension: %s" % costume_dict["src_path"]
 
         sound_info = defined_scratch_object.get_sounds()[0]
         sound_dict = media_converter.get_info(sound_info["md5"])
-        assert os.path.exists(sound_dict["sound_src_path"]), "Not existing: {}".format(sound_dict["sound_src_path"])
-        assert sound_dict["file_ext"] in {".wav", ".mp3"}, "Unsupported sound file extension: %s" % sound_dict["sound_src_path"]
+        assert os.path.exists(sound_dict["src_path"]), "Not existing: {}".format(sound_dict["src_path"])
+        assert sound_dict["file_ext"] in {".wav", ".mp3"}, "Unsupported sound file extension: %s" % sound_dict["src_path"]
 
     def test_media_converter_conversion_svgtopng_wav(self):
         media_converter = self._setup_media_converter()
-        test_unconv_media_res = self._setup_media_converter_unconverted_media_resources(media_converter)
-        new_src_paths = media_converter.conversion_svgtopng_wav(test_unconv_media_res, None)
+        self._setup_media_converter_unconverted_media_resources(media_converter)
+        new_src_paths = media_converter.conversion_svgtopng_wav(None)
         assert len(new_src_paths) > 0
 
     def test_resource_info_setup(self):
         media_converter = self._setup_media_converter()
-        test_unconv_media_res = set()
         test_new_src_path = self._setup_media_converter_new_src_path(media_converter)
-        all_used_resources = self._setup_media_converter_all_used_resources(media_converter)
         duplicate_filename_set = set()
-        media_converter.resource_info_setup(all_used_resources, duplicate_filename_set, test_new_src_path, test_unconv_media_res)
-        assert len(test_unconv_media_res) > 0
+        media_converter.resource_info_setup(duplicate_filename_set, test_new_src_path)
+        assert len(media_converter.resources.converted_media_resources_paths) > 0
 
     def _test_mouse_pointer_tracking_workaround(self, catrobat_program):
         scene = catrobat_program.getDefaultScene()
@@ -3196,8 +3171,8 @@ class TestConvertProjects(common_testing.ProjectTestCase):
                 for script in scripts:
                     bricks = script.getBrickList()
                     found_show_var = any(filter(lambda brick: (isinstance(brick, catbricks.ShowTextBrick) \
-                                                    or isinstance(brick, catbricks.ShowTextColorSizeAlignmentBrick)) \
-                                                    and brick.getUserVariable().getName() == variable, bricks))
+                                                               or isinstance(brick, catbricks.ShowTextColorSizeAlignmentBrick)) \
+                                                              and brick.getUserVariable().getName() == variable, bricks))
                     if found_show_var: break
                 assert found_show_var
 

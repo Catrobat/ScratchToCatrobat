@@ -69,7 +69,15 @@ class _MediaResourceConverterThread(Thread):
         if progress_bar != None:
             progress_bar.update(ProgressType.CONVERT_MEDIA_FILE)
         assert os.path.exists(new_src_path), "Not existing: {}. Available files in directory: {}" \
-               .format(new_src_path, os.listdir(os.path.dirname(new_src_path)))
+            .format(new_src_path, os.listdir(os.path.dirname(new_src_path)))
+
+
+class ResourceCollection():
+
+    def __init__(self):
+        self.all_used_resources = []
+        self.unconverted_media_resources = []
+        self.converted_media_resources_paths = set()
 
 
 class MediaConverter(object):
@@ -80,11 +88,9 @@ class MediaConverter(object):
         self.images_path = images_path
         self.sounds_path = sounds_path
         self.file_rename_map = {}
+        self.resources = ResourceCollection()
 
-    def convert(self, progress_bar=None):
-        all_used_resources = []
-        unconverted_media_resources = []
-        converted_media_resources_paths = set()
+    def convert(self, progress_bar = None):
 
         # TODO: remove this block later {
         for scratch_md5_name, src_path in self.scratch_project.md5_to_resource_path_map.iteritems():
@@ -96,69 +102,56 @@ class MediaConverter(object):
         # }
 
         for scratch_object in self.scratch_project.objects:
-            self.setup_costume_info(scratch_object, all_used_resources, unconverted_media_resources,
-                                    converted_media_resources_paths, progress_bar)
-            self.setup_sound_info(scratch_object, all_used_resources, unconverted_media_resources,
-                                  converted_media_resources_paths, progress_bar)
+            self.setup_costume_info(scratch_object, progress_bar)
+            self.setup_sound_info(scratch_object, progress_bar)
 
-        new_src_paths = self.conversion_svgtopng_wav(unconverted_media_resources, progress_bar)
+        new_src_paths = self.conversion_svgtopng_wav(progress_bar)
         converted_media_files_to_be_removed = set()
         duplicate_filename_set = set()
-        self.resource_info_setup(all_used_resources, duplicate_filename_set, new_src_paths, converted_media_resources_paths)
+        self.resource_info_setup(duplicate_filename_set, new_src_paths)
         self.rename_media_files_and_copy()
 
         # delete converted png files -> only temporary saved
         for media_file_to_be_removed in converted_media_files_to_be_removed:
             os.remove(media_file_to_be_removed)
 
-    def setup_costume_info(self, defined_scratch_object, all_used_resources, unconverted_media_resources,
-                           converted_media_resources_paths, progress_bar):
+    def setup_costume_info(self, defined_scratch_object, progress_bar):
         threads = []
         for costume_info in defined_scratch_object.get_costumes():
-            costume_dict = self.get_info(costume_info[JsonKeys.COSTUME_MD5], True)
+            costume_dict = self.get_info(costume_info[JsonKeys.COSTUME_MD5])
 
-            assert os.path.exists(costume_dict["costume_src_path"]), "Not existing: {}".format(costume_dict["costume_src_path"])
+            assert os.path.exists(costume_dict["src_path"]), "Not existing: {}".format(costume_dict["src_path"])
             assert costume_dict["file_ext"] in {".png", ".svg", ".jpg", ".gif"}, \
                 "Unsupported image file extension: %s" % costume_dict["costume_src_path"]
             ispng = costume_dict["file_ext"] == ".png"
             is_unconverted = costume_dict["file_ext"] == ".svg"
-            self.setup_resource_info_dict(costume_dict["costume_file_name"], costume_dict["costume_src_path"], is_unconverted, costume_info,
-                                          all_used_resources, unconverted_media_resources, converted_media_resources_paths,
+            self.setup_resource_info_dict(costume_dict["file_name"], costume_dict["src_path"], is_unconverted, costume_info,
                                           progress_bar, threads, ispng, True)
         for thread in threads: thread.start()
         for thread in threads: thread.join()
 
-    def setup_sound_info(self, defined_scratch_object, all_used_resources, unconverted_media_resources, converted_media_resources_paths, progress_bar):
+    def setup_sound_info(self, defined_scratch_object, progress_bar):
         for sound_info in defined_scratch_object.get_sounds():
             sound_dict = self.get_info(sound_info[JsonKeys.SOUND_MD5])
-            assert os.path.exists(sound_dict["sound_src_path"]), "Not existing: {}".format(sound_dict["sound_src_path"])
-            assert sound_dict["file_ext"] in {".wav", ".mp3"}, "Unsupported sound file extension: %s" % sound_dict["sound_src_path"]
-            is_unconverted = sound_dict["file_ext"] == ".wav" and not wavconverter.is_android_compatible_wav(sound_dict["sound_src_path"])
+            assert os.path.exists(sound_dict["src_path"]), "Not existing: {}".format(sound_dict["src_path"])
+            assert sound_dict["file_ext"] in {".wav", ".mp3"}, "Unsupported sound file extension: %s" % sound_dict["src_path"]
+            is_unconverted = sound_dict["file_ext"] == ".wav" and not wavconverter.is_android_compatible_wav(sound_dict["src_path"])
 
-            self.setup_resource_info_dict(sound_dict["sound_file_name"], sound_dict["sound_src_path"], is_unconverted, sound_info,
-                                          all_used_resources, unconverted_media_resources, converted_media_resources_paths,
+            self.setup_resource_info_dict(sound_dict["file_name"], sound_dict["src_path"], is_unconverted, sound_info,
                                           progress_bar, [])
 
-    def get_info(self, file_name, is_costume=False):
-        if is_costume:
-            costume_info = {"costume_file_name": file_name,
-                            "costume_src_path": os.path.join(self.scratch_project.project_base_path, file_name),
-                            "file_ext": os.path.splitext(file_name)[1].lower()}
-            if not os.path.exists(costume_info["costume_src_path"]):
+    def get_info(self, file_name):
+        info = {"file_name": file_name,
+                "src_path": os.path.join(self.scratch_project.project_base_path, file_name),
+                "file_ext": os.path.splitext(file_name)[1].lower()}
+        if not os.path.exists(info["src_path"]):
             # media files of local projects are NOT named by their hash-value -> change name
-                costume_info["costume_src_path"] = self.scratch_project.md5_to_resource_path_map[file_name]
-            return costume_info
-        else:
-            sound_info = {"sound_file_name": file_name,
-                          "sound_src_path": os.path.join(self.scratch_project.project_base_path, file_name),
-                          "file_ext": os.path.splitext(file_name)[1].lower()}
-            if not os.path.exists(sound_info["sound_src_path"]):
-                sound_info["sound_src_path"] = self.scratch_project.md5_to_resource_path_map[file_name]
-            return sound_info
+            info["src_path"] = self.scratch_project.md5_to_resource_path_map[file_name]
+        return info
 
-    def setup_resource_info_dict(self, file_name, src_path, is_unconverted, info, all_used_resources,
-                                 unconverted_media_resources, converted_media_resources_paths, progress_bar,
-                                 threads, ispng=False, is_costume=False):
+
+    def setup_resource_info_dict(self, file_name, src_path, is_unconverted, info,
+                                 progress_bar, threads, ispng=False, is_costume=False):
         if is_costume:
             media_type = MediaType.UNCONVERTED_SVG if is_unconverted else MediaType.IMAGE
         else:
@@ -171,23 +164,23 @@ class MediaConverter(object):
             "media_type": media_type,
             "info": info
         }
-        all_used_resources.append(resource_info)
+        self.resources.all_used_resources.append(resource_info)
         if is_unconverted:
-            unconverted_media_resources.append(resource_info)
-        elif progress_bar is not None and src_path not in converted_media_resources_paths:
+            self.resources.unconverted_media_resources.append(resource_info)
+        elif progress_bar is not None and src_path not in self.resources.converted_media_resources_paths:
             # update progress bar for all those media files that don't have to be converted
             #TODO: background gets scaled too, shouldn't be the case
             if ispng:
-                 threads.append(Thread(target=self.multi_thread_convert, args=(info, src_path, converted_media_resources_paths, progress_bar)))
-                 return
-            converted_media_resources_paths.add(src_path)
+                threads.append(Thread(target=self.multi_thread_convert, args=(info, src_path, progress_bar)))
+                return
+            self.resources.converted_media_resources_paths.add(src_path)
             progress_bar.update(ProgressType.CONVERT_MEDIA_FILE)
 
-    def conversion_svgtopng_wav(self, unconverted_media_resources, progress_bar):
+    def conversion_svgtopng_wav(self, progress_bar):
         # schedule concurrent conversions (one conversion per thread)
         new_src_paths = {}
         resource_index = 0
-        num_total_resources = len(unconverted_media_resources)
+        num_total_resources = len(self.resources.unconverted_media_resources)
         reference_index = 0
         media_srces = []
         while resource_index < num_total_resources:
@@ -197,7 +190,7 @@ class MediaConverter(object):
             for index in range(resource_index, next_resources_end_index):
                 assert index == reference_index
                 reference_index += 1
-                data = unconverted_media_resources[index]
+                data = self.resources.unconverted_media_resources[index]
                 if data["src_path"] in media_srces:
                     continue
                 else:
@@ -214,8 +207,8 @@ class MediaConverter(object):
         assert reference_index == resource_index and reference_index == num_total_resources
         return new_src_paths
 
-    def resource_info_setup(self, all_used_resources, duplicate_filename_set, new_src_paths, converted_media_files_to_be_removed):
-        for resource_info in all_used_resources:
+    def resource_info_setup(self, duplicate_filename_set, new_src_paths):
+        for resource_info in self.resources.all_used_resources:
             # reconstruct the temporary catrobat filenames -> catrobat.media_objects_in(self.catrobat_file)
             current_filename = helpers.create_catrobat_md5_filename(resource_info["scratch_md5_name"], duplicate_filename_set)
             # check if path changed after conversion
@@ -233,42 +226,42 @@ class MediaConverter(object):
             self.file_rename_map[current_basename]["media_type"] = resource_info["media_type"]
 
             if resource_info["media_type"] in { MediaType.UNCONVERTED_SVG, MediaType.UNCONVERTED_WAV }:
-                converted_media_files_to_be_removed.add(src_path)
+                self.resources.converted_media_resources_paths.add(src_path)
 
     def font_setup(self, costume_info, src_path):
-            text = costume_info[JsonKeys.COSTUME_TEXT]
-            x, y, width, height = costume_info[JsonKeys.COSTUME_TEXT_RECT]
-            # TODO: extract RGBA
-            # text_color = costume_info[JsonKeys.COSTUME_TEXT_COLOR]
-            font_name = "NO FONT"
-            font_style = "regular"
-            font_scaling_factor = costume_info[JsonKeys.COSTUME_RESOLUTION] if JsonKeys.COSTUME_RESOLUTION in costume_info else 1
-            if len(costume_info[JsonKeys.COSTUME_FONT_NAME].split()) == 2:
-                [font_name, font_style] = costume_info[JsonKeys.COSTUME_FONT_NAME].split()
-            else:
-                log.warning("font JSON parameters wrong '{0}', replacing with known font '{1}'".format(costume_info[JsonKeys.COSTUME_FONT_NAME], image_processing._supported_fonts_path_mapping.keys()[0]))
-                font_scaling_factor = font_scaling_factor * 1.1 # the original font might be smaller, better scale it down than cut it off
-            if(font_name not in image_processing._supported_fonts_path_mapping):
-                log.warning("font name '{0}' unknown, replacing with known font '{1}'".format(font_name, image_processing._supported_fonts_path_mapping.keys()[0]))
-                font_name = image_processing._supported_fonts_path_mapping.keys()[0]
-                font_scaling_factor = font_scaling_factor * 1.1 # the original font might be smaller, better scale it down than cut it off
-            is_bold = font_style == "Bold"
-            is_italic = font_style == "Italic"
-            font_size = float(costume_info[JsonKeys.COSTUME_FONT_SIZE]) / float(font_scaling_factor)
-            image_file_path = src_path
-            font = image_processing.create_font(font_name, font_size, is_bold, is_italic)
-            assert font is not None
-            editable_image = image_processing.read_editable_image_from_disk(image_file_path)
-            fonty = float(y) + (height * float(font_scaling_factor) / 2.0) # I think this might not work if we rotate something outside of the picture
-            editable_image = image_processing.add_text_to_image(editable_image, text, font, Color.BLACK, float(x), float(fonty), float(width), float(height))
+        text = costume_info[JsonKeys.COSTUME_TEXT]
+        x, y, width, height = costume_info[JsonKeys.COSTUME_TEXT_RECT]
+        # TODO: extract RGBA
+        # text_color = costume_info[JsonKeys.COSTUME_TEXT_COLOR]
+        font_name = "NO FONT"
+        font_style = "regular"
+        font_scaling_factor = costume_info[JsonKeys.COSTUME_RESOLUTION] if JsonKeys.COSTUME_RESOLUTION in costume_info else 1
+        if len(costume_info[JsonKeys.COSTUME_FONT_NAME].split()) == 2:
+            [font_name, font_style] = costume_info[JsonKeys.COSTUME_FONT_NAME].split()
+        else:
+            log.warning("font JSON parameters wrong '{0}', replacing with known font '{1}'".format(costume_info[JsonKeys.COSTUME_FONT_NAME], image_processing._supported_fonts_path_mapping.keys()[0]))
+            font_scaling_factor = font_scaling_factor * 1.1 # the original font might be smaller, better scale it down than cut it off
+        if(font_name not in image_processing._supported_fonts_path_mapping):
+            log.warning("font name '{0}' unknown, replacing with known font '{1}'".format(font_name, image_processing._supported_fonts_path_mapping.keys()[0]))
+            font_name = image_processing._supported_fonts_path_mapping.keys()[0]
+            font_scaling_factor = font_scaling_factor * 1.1 # the original font might be smaller, better scale it down than cut it off
+        is_bold = font_style == "Bold"
+        is_italic = font_style == "Italic"
+        font_size = float(costume_info[JsonKeys.COSTUME_FONT_SIZE]) / float(font_scaling_factor)
+        image_file_path = src_path
+        font = image_processing.create_font(font_name, font_size, is_bold, is_italic)
+        assert font is not None
+        editable_image = image_processing.read_editable_image_from_disk(image_file_path)
+        fonty = float(y) + (height * float(font_scaling_factor) / 2.0) # I think this might not work if we rotate something outside of the picture
+        editable_image = image_processing.add_text_to_image(editable_image, text, font, Color.BLACK, float(x), float(fonty), float(width), float(height))
 
-            # TODO: create duplicate...
-            # TODO: move test_converter.py to converter-python-package...
-            image_processing.save_editable_image_as_png_to_disk(editable_image, image_file_path, overwrite=True)
+        # TODO: create duplicate...
+        # TODO: move test_converter.py to converter-python-package...
+        image_processing.save_editable_image_as_png_to_disk(editable_image, image_file_path, overwrite=True)
 
-    def multi_thread_convert(self, info, src_path, converted_media_resources_paths, progress_bar):
+    def multi_thread_convert(self, info, src_path, progress_bar):
         self.convertPNG(info, src_path, src_path)
-        converted_media_resources_paths.add(src_path)
+        self.resources.converted_media_resources_paths.add(src_path)
         progress_bar.update(ProgressType.CONVERT_MEDIA_FILE)
 
     # rename the media files and copy them to the catrobat project directory
@@ -290,9 +283,9 @@ class MediaConverter(object):
                 continue
 
             assert basename in self.file_rename_map and \
-                "src_path" in self.file_rename_map[basename] and \
-                "dst_path" in self.file_rename_map[basename] and \
-                "media_type" in self.file_rename_map[basename]
+                   "src_path" in self.file_rename_map[basename] and \
+                   "dst_path" in self.file_rename_map[basename] and \
+                   "media_type" in self.file_rename_map[basename]
 
 
             src_path = self.file_rename_map[basename]["src_path"]

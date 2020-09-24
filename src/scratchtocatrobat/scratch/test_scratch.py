@@ -750,15 +750,164 @@ class TestKeyPressedWorkaround(unittest.TestCase):
         "info": {}
     }
 
+    KEYPRESSED_POSSIBLE_BLOCKS_INPUT_TEMPLATE = {
+        "doIf": [['doIf', ['keyPressed:', None], None]],
+        "doIfElse": [['doIfElse', ['keyPressed:', None], None, None]],
+        "doUntil": [['doUntil', ['keyPressed:', None], None]],
+        "doWaitUntil": [['doWaitUntil', ['keyPressed:', None]]]
+    }
+
+    KEYPRESSED_POSSIBLE_OPERATOR_BLOCKS = {
+        "or": [['|', ['keyPressed:', None], ['keyPressed:', None]]],
+        "and": [['&', ['keyPressed:', None], ['keyPressed:', None]]],
+        "not": ['not', ['keyPressed:', None]]
+    }
+
     def setUp(self):
         unittest.TestCase.setUp(self)
         cls = self.__class__
         cls.KEYPRESSED_HELPER_OBJECTS_DATA_TEMPLATE["scripts"] = []
+        cls.KEYPRESSED_HELPER_OBJECTS_DATA_TEMPLATE["children"] = []
+
+    def _setup_objects(self, blocks, keys, backdrop_script = [], multiple_sprites = 1, operator = None):
+        cls = self.__class__
+        input_script = [0, 0, [["whenGreenFlag"]]]
+        expected_sprite_script = [0, 0, [["whenGreenFlag"]]]
+
+        if operator is not None:
+            assert len(keys) > 1
+
+        if backdrop_script:
+            cls.KEYPRESSED_HELPER_OBJECTS_DATA_TEMPLATE["scripts"] = [backdrop_script]
+
+        for block in set(blocks):
+            input_script[2].extend(cls.KEYPRESSED_POSSIBLE_BLOCKS_INPUT_TEMPLATE[block])
+            script_after = cls.KEYPRESSED_POSSIBLE_BLOCKS_INPUT_TEMPLATE[block]
+            script_after[0][1][0] = "readVariable"
+            script_after[0][1][1] = "S2CC:key_" + str(keys[0])
+            expected_sprite_script[2].extend(script_after)
+
+        if len(set(blocks)) > 1 and (operator == "or" or operator == "and"):
+            operator_brick = cls.KEYPRESSED_POSSIBLE_OPERATOR_BLOCKS.get(operator)
+            operator_brick[0][1][1] = str(keys[0])
+            operator_brick[0][2][1] = str(keys[1])
+            input_script[2].extend(operator_brick)
+            for x in [1,2]:
+                for y in [0,1]:
+                    operator_brick[0][x][y] = ("S2CC:key_" + str(keys[x-1])
+                                               if operator_brick[0][x][y] in keys
+                                               else "readVariable")
+            expected_sprite_script[2].extend(operator_brick)
+        elif operator == "not":
+            not_brick = cls.KEYPRESSED_POSSIBLE_OPERATOR_BLOCKS["not"]
+            not_brick[1][1] = keys[0]
+            input_script[2].extend(not_brick)
+            not_brick[1][0] = "readVariable"
+            not_brick[1][1] = "S2CC:key_" + str(keys[0])
+            expected_sprite_script[2].extend(not_brick)
+
+        for index in range(multiple_sprites):
+            cls.KEYPRESSED_HELPER_OBJECTS_DATA_TEMPLATE["children"].append({"objName": "Sprite" + str(index+1), "scripts": [input_script]})
+
+        expected_sprite_script = scratch.Script(expected_sprite_script)
+        raw_project = scratch.RawProject(cls.KEYPRESSED_HELPER_OBJECTS_DATA_TEMPLATE)
+        return {"converted": raw_project, "expected_sprite": [expected_sprite_script]}
+
+    def test_key_pressed_do_if_block_up_arrow_key(self):
+        test_data = self._setup_objects(["doIf"], ["up arrow"])
+
+        assert len(test_data["converted"].objects) == 2
+        assert len(test_data["converted"].objects[0].scripts) == 0
+        assert len(test_data["converted"].objects[1].scripts) == 1
+
+        assert test_data["converted"].objects[1].scripts[0].raw_script == test_data["expected_sprite"][0].raw_script
+
+    def test_key_pressed_do_if_else_block_space_key(self):
+        test_data = self._setup_objects(["doIfElse"], ["space"])
+
+        assert len(test_data["converted"].objects) == 2
+        assert len(test_data["converted"].objects[0].scripts) == 0
+        assert len(test_data["converted"].objects[1].scripts) == 1
+
+        assert test_data["converted"].objects[1].scripts[0].raw_script == test_data["expected_sprite"][0].raw_script
+
+    def test_key_pressed_do_until_block_down_arrow_key(self):
+        test_data = self._setup_objects(["doUntil"], ["down arrow"])
+
+        assert len(test_data["converted"].objects) == 2
+        assert len(test_data["converted"].objects[0].scripts) == 0
+        assert len(test_data["converted"].objects[1].scripts) == 1
+
+        assert test_data["converted"].objects[1].scripts[0].raw_script == test_data["expected_sprite"][0].raw_script
+
+    def test_key_pressed_do_wait_until_block_any_key(self):
+        test_data = self._setup_objects(["doWaitUntil"], ["any"])
+
+        assert len(test_data["converted"].objects) == 2
+        assert len(test_data["converted"].objects[0].scripts) == 0
+        assert len(test_data["converted"].objects[1].scripts) == 1
+
+        assert test_data["converted"].objects[1].scripts[0].raw_script == test_data["expected_sprite"][0].raw_script
+
+    def test_key_pressed_do_if_and_do_if_else_blocks_i_key_multiple_sprites(self):
+        test_data = self._setup_objects(["doIf", "doIfElse"], ["i"], [], 3)
+
+        assert len(test_data["converted"].objects) == 4
+        assert len(test_data["converted"].objects[0].scripts) == 0
+        assert len(test_data["converted"].objects[1].scripts) == 1
+
+        assert test_data["converted"].objects[1].scripts[0].raw_script == test_data["expected_sprite"][0].raw_script
+
+    def test_key_pressed_do_until_and_do_wait_until_blocks_n_key_multiple_sprites(self):
+        test_data = self._setup_objects(["doUntil", "doWaitUntil"], ["space"], [], 3)
+
+        assert len(test_data["converted"].objects) == 4
+        assert len(test_data["converted"].objects[0].scripts) == 0
+        assert len(test_data["converted"].objects[1].scripts) == 1
+
+        assert test_data["converted"].objects[1].scripts[0].raw_script == test_data["expected_sprite"][0].raw_script
+
+    def test_key_pressed_do_wait_until_block_any_key_backdrop_script_multiple_sprites(self):
+        test_data = self._setup_objects(["doWaitUntil"], ["any"], [0, 0, [['whenGreenFlag'], ["wait:elapsed:from:", 1]]], 3)
+
+        assert len(test_data["converted"].objects) == 4
+        assert len(test_data["converted"].objects[0].scripts) == 1
+        assert len(test_data["converted"].objects[1].scripts) == 1
+
+        assert test_data["converted"].objects[1].scripts[0].raw_script == test_data["expected_sprite"][0].raw_script
+
+    def test_key_pressed_do_until_and_do_wait_until_blocks_space_and_i_keys_multiple_sprites_and_and_block(self):
+        test_data = self._setup_objects(["doUntil", "doWaitUntil"], ["space", "i"], [], 3, "and")
+
+        assert len(test_data["converted"].objects) == 4
+        assert len(test_data["converted"].objects[0].scripts) == 0
+        assert len(test_data["converted"].objects[1].scripts) == 1
+
+        assert test_data["converted"].objects[1].scripts[0].raw_script == test_data["expected_sprite"][0].raw_script
+
+    def test_key_pressed_do_if_and_do_if_else_blocks_any_and_up_arrow_keys_multiple_sprites_and_or_block(self):
+        test_data = self._setup_objects(["doIf", "doIfElse"], ["any", "up arrow"], [], 3, "or")
+
+        assert len(test_data["converted"].objects) == 4
+        assert len(test_data["converted"].objects[0].scripts) == 0
+        assert len(test_data["converted"].objects[1].scripts) == 1
+
+        assert test_data["converted"].objects[1].scripts[0].raw_script == test_data["expected_sprite"][0].raw_script
+
+    def test_key_pressed_do_until_do_wait_until_do_if_and_do_if_else_blocks_right_arrow_and_y_keys_backdrop_script_multiple_sprites_and_not_block(self):
+        test_data = self._setup_objects(["doUntil", "doWaitUntil", "doIf", "doIfElse"], ["right arrow", "y"],
+                                        [0, 0, [['whenGreenFlag'], ["wait:elapsed:from:", 1]]], 3, "not")
+
+        assert len(test_data["converted"].objects) == 4
+        assert len(test_data["converted"].objects[0].scripts) == 1
+        assert len(test_data["converted"].objects[1].scripts) == 1
+
+        assert test_data["converted"].objects[1].scripts[0].raw_script == test_data["expected_sprite"][0].raw_script
 
     def test_key_pressed(self):
         cls = self.__class__
         script_data = [0,0,[["whenGreenFlag"],["doForever", [["doIf", ["keyPressed:", "w"],[["changeYposBy:", 1]]]]]]]
-        cls.KEYPRESSED_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        cls.KEYPRESSED_HELPER_OBJECTS_DATA_TEMPLATE["children"].append({"objName": "Sprite1", "scripts": [script_data]})
         raw_project = scratch.RawProject(cls.KEYPRESSED_HELPER_OBJECTS_DATA_TEMPLATE)
         key_pressed_var_name = scratch.S2CC_KEY_VARIABLE_NAME + "w"
         expected_first_object_script_data = [0,0,[["whenGreenFlag"],["doForever", [["doIf", ["readVariable", key_pressed_var_name],[["changeYposBy:", 1]]]]]]]
@@ -777,7 +926,7 @@ class TestKeyPressedWorkaround(unittest.TestCase):
     def test_key_pressed_with_formula(self):
         cls = self.__class__
         script_data = [0,0,[["whenGreenFlag"],["doForever", [["doIf", [u'keyPressed:', [u'+', 3.0, 2.0]],[["changeYposBy:", 1]]]]]]]
-        cls.KEYPRESSED_HELPER_OBJECTS_DATA_TEMPLATE["children"][0]["scripts"] = [script_data]
+        cls.KEYPRESSED_HELPER_OBJECTS_DATA_TEMPLATE["children"].append({"objName": "Sprite1", "scripts": [script_data]})
         raw_project = scratch.RawProject(cls.KEYPRESSED_HELPER_OBJECTS_DATA_TEMPLATE)
         expected_first_object_script_data = [0,0,[["whenGreenFlag"],["doForever",
                                                                     [["doIf", ["=", "space", ["()", ["+", 3.0, 2.0]]], [["doIf", ["readVariable", "S2CC:key_space"], [["changeYposBy:", 1]]]]],

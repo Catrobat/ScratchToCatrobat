@@ -80,7 +80,8 @@ S2CC_PEN_COLOR_VARIABLE_NAMES = {"h": "S2CC:pen_hue", "s": "S2CC:pen_saturation"
 S2CC_PEN_COLOR_DEFAULT_HSV_VALUE = {"h": 0.67, "s": 1.00, "v": 1.00}
 S2CC_PEN_COLOR_HELPER_VARIABLE_NAMES = {
     "h_i": "S2CC:_h_i", "f": "S2CC:_f", "p": "S2CC:_p", "q": "S2CC:_q",
-    "t": "S2CC:_t", "r": "S2CC:_red", "g": "S2CC:_green", "b": "S2CC:_blue"
+    "t": "S2CC:_t", "r": "S2CC:_red", "g": "S2CC:_green", "b": "S2CC:_blue",
+    "scratch2_shade": "STCC:_scratch2_shade", "shade_helper":"STCC:_shade_helper"
 }
 S2CC_PEN_SIZE_VARIABLE_NAME = "S2CC:pen_size"
 S2CC_PEN_SIZE_MULTIPLIER = 3.65
@@ -99,6 +100,7 @@ UPDATE_HELPER_VARIABLE_TIMEOUT = 0.04
 # TODO: extend whenever new bricks are added
 PEN_BRICK_LIST = ["clearPenTrails", "stampCostume", "putPenDown", "putPenUp", "penColor:", "changePenParamBy:",
                   "setPenParamTo:", "changePenSizeBy:", "penSize:", "penShade:", "changePenShadeBy:", "penHue:"]
+SCRATCH2_PEN_BRICKS = ["changePenHueBy:", "changePenShadeBy:", "setPenShadeTo:", "setPenHueTo:"]
 
 
 def verify_resources_of_scratch_object(scratch_object, md5_to_resource_path_map, project_base_path):
@@ -508,7 +510,8 @@ class Object(common.DictAccessWrapper):
         ############################################################################################
         def has_pen_brick(block_list):
             for block in block_list:
-                if isinstance(block, list) and (block[0] in PEN_BRICK_LIST or has_pen_brick(block)):
+                if isinstance(block, list) and \
+                        (block[0] in PEN_BRICK_LIST or block[0] in SCRATCH2_PEN_BRICKS or has_pen_brick(block)):
                     return True
             return False
 
@@ -517,6 +520,8 @@ class Object(common.DictAccessWrapper):
                 # TODO: remove transparency case as soon as catrobat supports pen transparency change
                 if isinstance(block, list) and ((block[0] == 'changePenParamBy:' or block[0] == 'setPenParamTo:')
                 and block[1] != 'transparency' or has_pen_color_param_block(block)):
+                    return True
+                if isinstance(block, list) and (block[0] in SCRATCH2_PEN_BRICKS):
                     return True
             return False
 

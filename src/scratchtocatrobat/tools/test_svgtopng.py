@@ -20,6 +20,7 @@
 #  along with this program.  If not, see http://www.gnu.org/licenses/.
 import imghdr
 import os
+import re
 import shutil
 import unittest
 from threading import Lock
@@ -27,6 +28,8 @@ from threading import Lock
 from scratchtocatrobat.tools import common_testing
 from scratchtocatrobat.tools import svgtopng
 from scratchtocatrobat.tools import helpers
+
+import xml.etree.cElementTree as ET
 
 ns_registry_lock = Lock()
 
@@ -243,6 +246,36 @@ class SvgToPngTest(common_testing.BaseTestCase):
                 exp_rgb_val = expected_image_matrix[i][j]
                 result_rgb_val = output_image_matrix[i][j]
                 assert exp_rgb_val == result_rgb_val
+
+    def test_can_rewrite_svg_matrix(self):
+        tree = ET.parse("test/res/scratch/Wizard_Spells/3.svg")
+        root = tree.getroot()
+        for child in root:
+            if re.search('.*}g', child.tag) != None:
+                if 'transform' in child.attrib:
+                    assert(child.attrib['transform'] == "matrix(1.5902323722839355, 0, 0, 1.5902323722839355, -0.5, 0.5)")
+        svgtopng._parse_and_rewrite_svg_file("test/res/scratch/Wizard_Spells/3.svg","test/res/scratch/Wizard_Spells/3_changed.svg", ns_registry_lock)
+        tree = ET.parse("test/res/scratch/Wizard_Spells/3_changed.svg")
+        root = tree.getroot()
+        for child in root:
+            if re.search('.*}g', child.tag) != None:
+                if 'transform' in child.attrib:
+                    assert(child.attrib['transform'] == "matrix(1, 0, 0, 1, -0.5, 0.5)")
+
+    def test_can_rewrite_svg_text_position(self):
+        tree = ET.parse("test/res/scratch/Wizard_Spells/6.svg")
+        root = tree.getroot()
+        for child in root:
+            if re.search('.*}text', child.tag) != None:
+                assert(child.attrib['x'] == '147.5')
+                assert(child.attrib['y'] == '146.1')
+        svgtopng._parse_and_rewrite_svg_file("test/res/scratch/Wizard_Spells/6.svg","test/res/scratch/Wizard_Spells/6_changed.svg", ns_registry_lock)
+        tree = ET.parse("test/res/scratch/Wizard_Spells/6_changed.svg")
+        root = tree.getroot()
+        for child in root:
+            if re.search('.*}text', child.tag) != None:
+                assert(child.attrib['x'] == '3')
+                assert(child.attrib['y'] == '24')
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']

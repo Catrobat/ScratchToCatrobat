@@ -3204,36 +3204,6 @@ class TestConvertProjects(common_testing.ProjectTestCase):
     def test_can_convert_project_with_unusued_files(self):
         self._test_project("simple")
 
-    def test_can_rewrite_svg_matrix(self):
-        tree = ET.parse("test/res/scratch/Wizard_Spells/3.svg")
-        root = tree.getroot()
-        for child in root:
-            if re.search('.*}g', child.tag) != None:
-                if 'transform' in child.attrib:
-                    assert(child.attrib['transform'] == "matrix(1.5902323722839355, 0, 0, 1.5902323722839355, -0.5, 0.5)")
-        svgtopng._parse_and_rewrite_svg_file("test/res/scratch/Wizard_Spells/3.svg","test/res/scratch/Wizard_Spells/3_changed.svg", ns_registry_lock)
-        tree = ET.parse("test/res/scratch/Wizard_Spells/3_changed.svg")
-        root = tree.getroot()
-        for child in root:
-            if re.search('.*}g', child.tag) != None:
-                if 'transform' in child.attrib:
-                    assert(child.attrib['transform'] == "matrix(1, 0, 0, 1, -0.5, 0.5)")
-
-    def test_can_rewrite_svg_text_position(self):
-        tree = ET.parse("test/res/scratch/Wizard_Spells/6.svg")
-        root = tree.getroot()
-        for child in root:
-            if re.search('.*}text', child.tag) != None:
-                assert(child.attrib['x'] == '147.5')
-                assert(child.attrib['y'] == '146.1')
-        svgtopng._parse_and_rewrite_svg_file("test/res/scratch/Wizard_Spells/6.svg","test/res/scratch/Wizard_Spells/6_changed.svg", ns_registry_lock)
-        tree = ET.parse("test/res/scratch/Wizard_Spells/6_changed.svg")
-        root = tree.getroot()
-        for child in root:
-            if re.search('.*}text', child.tag) != None:
-                assert(child.attrib['x'] == '3')
-                assert(child.attrib['y'] == '24')
-
 class TestShowVariablesWorkaround(unittest.TestCase):
     def setUp(self):
         self.scratch_project = scratch.Project(common_testing.get_test_project_path("show_variables"))

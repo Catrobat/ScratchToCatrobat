@@ -1485,10 +1485,16 @@ class Converter(object):
         when_tapped_script = Converter._create_when_toggle_tilt_key_tapped_script(tilt_state_user_variable)
         key_sprite.addScript(when_tapped_script)
 
-        listen_to_tilt_scripts = []
+        up_and_w_start_script = catbase.StartScript()
+        up_and_w_start_script.brickList.add(catbricks.ForeverBrick())
+        down_and_s_start_script = catbase.StartScript()
+        down_and_s_start_script.brickList.add(catbricks.ForeverBrick())
+        left_and_a_start_script = catbase.StartScript()
+        left_and_a_start_script.brickList.add(catbricks.ForeverBrick())
+        right_and_d_start_script = catbase.StartScript()
+        right_and_d_start_script.brickList.add(catbricks.ForeverBrick())
+
         for data in TILT_KEY_DATA:
-            when_start_script = catbase.StartScript()
-            do_forever = catbricks.ForeverBrick()
 
             arror_tilt_formula = catrobat.create_formula_for([catformula.Operators.EQUAL, 1, tilt_state_user_variable])
             wasd_tilt_formula = catrobat.create_formula_for([catformula.Operators.EQUAL, 2, tilt_state_user_variable])
@@ -1499,17 +1505,25 @@ class Converter(object):
             if data.key_name in tilt_key_names:
                 if_tilt_block = Converter._create_when_tilt_script(catrobat_scene, tilt_state_user_variable, data)
                 if data.key_name in KEY_NAMES_ROW_1:
-                    if_arrow_tilt_active.ifBranchBricks.add(if_tilt_block)
+                    if_arrow_tilt_active.ifBranchBricks.addAll([if_tilt_block, wait_brick])
+                    tilt_active_branch = if_arrow_tilt_active
                 else:
-                    if_wasd_tilt_active.ifBranchBricks.add(if_tilt_block)
+                    if_wasd_tilt_active.ifBranchBricks.addAll([if_tilt_block, wait_brick])
+                    tilt_active_branch = if_wasd_tilt_active
 
-            loop_bricks = [if_arrow_tilt_active, if_wasd_tilt_active, wait_brick]
-            do_forever.loopBricks.addAll(loop_bricks)
-            when_start_script.brickList.addAll([do_forever])
-            listen_to_tilt_scripts.append(when_start_script)
+                if data.key_name is KeyNames.UP_ARROW or "w" == data.key_name:
+                    up_and_w_start_script.brickList.get(0).loopBricks.add(tilt_active_branch)
+                elif data.key_name is KeyNames.DOWN_ARROW or "s" == data.key_name:
+                    down_and_s_start_script.brickList.get(0).loopBricks.add(tilt_active_branch)
+                elif data.key_name is KeyNames.LEFT_ARROW or "a" == data.key_name:
+                    left_and_a_start_script.brickList.get(0).loopBricks.add(tilt_active_branch)
+                elif data.key_name is KeyNames.RIGHT_ARROW or "d" == data.key_name:
+                    right_and_d_start_script.brickList.get(0).loopBricks.add(tilt_active_branch)
 
-        for script in listen_to_tilt_scripts:
-            key_sprite.addScript(script)
+        for start_script in [up_and_w_start_script, down_and_s_start_script, left_and_a_start_script, right_and_d_start_script]:
+            if len(start_script.brickList.get(0).loopBricks) is not 0:
+                if start_script.brickList.get(0).loopBricks.get(0) is not None:
+                    key_sprite.addScript(start_script)
 
     @staticmethod
     def _add_row_visibility_sprite_and_scripts(catrobat_scene, key_data):

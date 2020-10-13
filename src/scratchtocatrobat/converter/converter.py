@@ -1503,10 +1503,10 @@ class Converter(object):
                 else:
                     if_wasd_tilt_active.ifBranchBricks.add(if_tilt_block)
 
-                loop_bricks = [if_arrow_tilt_active, if_wasd_tilt_active, wait_brick]
-                do_forever.loopBricks.addAll(loop_bricks)
-                when_start_script.brickList.addAll([do_forever])
-                listen_to_tilt_scripts.append(when_start_script)
+            loop_bricks = [if_arrow_tilt_active, if_wasd_tilt_active, wait_brick]
+            do_forever.loopBricks.addAll(loop_bricks)
+            when_start_script.brickList.addAll([do_forever])
+            listen_to_tilt_scripts.append(when_start_script)
 
         for script in listen_to_tilt_scripts:
             key_sprite.addScript(script)

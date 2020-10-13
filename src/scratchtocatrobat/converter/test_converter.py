@@ -2837,7 +2837,7 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
         assert key_tilt.name == 'key_tilt_none'
 
         tilt_scripts = key_tilt.getScriptList()
-        assert len(tilt_scripts) == 10
+        assert len(tilt_scripts) == 3
         assert isinstance(tilt_scripts[1], catbase.WhenScript)
 
         key_row4_visibility = default_scene.spriteList[3]

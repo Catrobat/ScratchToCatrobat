@@ -1723,7 +1723,7 @@ class Converter(object):
         clones_max_needed = 0
         rows = [KEY_NAMES_ROW_1, KEY_NAMES_ROW_2, KEY_NAMES_ROW_3, KEY_NAMES_ROW_4, KEY_NAMES_ROW_5]
         for key in key_lists.listened_keys:
-            if KeyTypes.KEY_PRESSED_BRICK in key[1]:
+            if KeyTypes.KEY_PRESSED_BRICK in key[1] or KeyTypes.LISTENED_KEY in key[1]:
                 clones_max_needed += 1
         for row in rows:
             if Converter._get_key_list_for_row(key_lists, row):

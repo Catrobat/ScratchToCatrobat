@@ -1549,10 +1549,12 @@ class Converter(object):
 
             #----------------------------------------when_started_script------------------------------------------------
             clone_index_change_brick = _create_variable_brick(1, key_pressed_data.clone_index_user_variable, catbricks.ChangeVariableBrick)
+            wait_brick = catbricks.WaitBrick(50)
             create_clone_brick = catbricks.CloneBrick()
             repeat_times_brick = catbricks.RepeatBrick(catrobat.create_formula_for(Converter._calculate_needed_clones_number(key_lists)))
             repeat_times_brick.loopBricks.add(clone_index_change_brick)
             repeat_times_brick.loopBricks.add(create_clone_brick)
+            repeat_times_brick.loopBricks.add(wait_brick)
             hide_brick = catbricks.HideBrick()
             bricks = [repeat_times_brick, hide_brick]
             key_pressed_data.when_started_script.getBrickList().addAll(bricks)

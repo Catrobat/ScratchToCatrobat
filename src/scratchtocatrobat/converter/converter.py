@@ -126,6 +126,13 @@ class TiltKeyData(object):
         self.compare_value = value
         self.active_state = active_state
 
+class KeyPressedData(object):
+    def __init__(self, scene, user_variable, value):
+        self.clone_index_user_variable = Converter._create_or_get_user_variable(scene, user_variable, value)
+        self.when_started_as_clone_script = catbase.WhenClonedScript()
+        self.when_started_script = catbase.StartScript()
+        self.keys_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, KEY_SPRITE_NAME)
+
 TILT_KEY_DATA = [TiltKeyData(KeyNames.UP_ARROW, catformula.Sensors.Y_INCLINATION, catformula.Operators.SMALLER_THAN, -20, 1),
                  TiltKeyData(KeyNames.DOWN_ARROW, catformula.Sensors.Y_INCLINATION, catformula.Operators.GREATER_THAN, 20, 1),
                  TiltKeyData(KeyNames.RIGHT_ARROW, catformula.Sensors.X_INCLINATION, catformula.Operators.SMALLER_THAN, -20, 1),
@@ -140,6 +147,10 @@ KEY_NAMES_ROW_2 = ["z", "x", "c", "v", "b", "n", "m"]
 KEY_NAMES_ROW_3 = ["a", "s", "d", "f", "g", "h", "j", "k", "l"]
 KEY_NAMES_ROW_4 = ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"]
 KEY_NAMES_ROW_5 = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
+
+KEY_CLONE_INSTANCE = "clone_instance"
+KEY_SPRITE_NAME = "Keys"
+KEY_PREFIX = "key_"
 
 SLIDER_SPRITE_NAME = "_slider_"
 SLIDER_SPRITE_FILENAME = "slider.png"
@@ -1526,44 +1537,90 @@ class Converter(object):
                     key_sprite.addScript(start_script)
 
     @staticmethod
-    def _add_row_visibility_sprite_and_scripts(catrobat_scene, key_data):
-        key_sprite, add_sprite = Converter._create_key_sprite(catrobat_scene, key_data)
+    def _create_keys_sprite(catrobat_scene, key_data, key_pressed_data, row_visibility_user_variable, key_lists):
+        key_name = KEY_PREFIX + key_data.key_name
+        key_look_main = None
 
-        row_visibility_user_variable_name = scratch.S2CC_KEY_VARIABLE_NAME + key_data.key_name
-        row_visibility_user_variable = Converter._create_or_get_user_variable(catrobat_scene, row_visibility_user_variable_name, 1)
+        if not len(key_pressed_data.keys_sprite.getLookList()):
+            key_look_main = catcommon.LookData()
+            key_look_main.setName(key_name)
+            key_look_main.fileName = _key_image_path_for(key_data.key_name, True)
+            key_pressed_data.keys_sprite.getLookList().add(key_look_main)
 
-        when_tapped_script = catbase.WhenScript()
-        broadcast_brick = catbricks.BroadcastBrick(_key_to_broadcast_message(key_data.key_name))
-        wait_brick = catbricks.WaitBrick(250)
+            #----------------------------------------when_started_script------------------------------------------------
+            clone_index_change_brick = _create_variable_brick(1, key_pressed_data.clone_index_user_variable, catbricks.ChangeVariableBrick)
+            create_clone_brick = catbricks.CloneBrick()
+            repeat_times_brick = catbricks.RepeatBrick(catrobat.create_formula_for(Converter._calculate_needed_clones_number(key_lists)))
+            repeat_times_brick.loopBricks.add(clone_index_change_brick)
+            repeat_times_brick.loopBricks.add(create_clone_brick)
+            hide_brick = catbricks.HideBrick()
+            bricks = [repeat_times_brick, hide_brick]
+            key_pressed_data.when_started_script.getBrickList().addAll(bricks)
+            key_pressed_data.keys_sprite.addScript(key_pressed_data.when_started_script)
+            catrobat_scene.addSprite(key_pressed_data.keys_sprite)
+            #-----------------------------------------------------------------------------------------------------------
 
-        is_visible_formula = catrobat.create_formula_for([catformula.Operators.EQUAL, 1, row_visibility_user_variable])
-        if_begin_brick = catbricks.IfLogicBeginBrick(is_visible_formula)
-        set_visible = _create_variable_brick(1, row_visibility_user_variable, catbricks.SetVariableBrick)
-        set_invisible = _create_variable_brick(0, row_visibility_user_variable, catbricks.SetVariableBrick)
-        if_begin_brick.ifBranchBricks.add(set_invisible)
-        if_begin_brick.elseBranchBricks.add(set_visible)
+        clone_index_count = 1
+        clone_if_branch_script = Converter._create_key_pressed_clone_script(catrobat_scene, key_pressed_data.keys_sprite, key_data, row_visibility_user_variable, key_look_main)
+        for clone_if_brick in key_pressed_data.when_started_as_clone_script.getBrickList():
+            if isinstance(clone_if_brick, catbricks.IfThenLogicBeginBrick):
+                clone_index_count += 1
 
-        bricklist = [broadcast_brick, wait_brick, if_begin_brick]
-        when_tapped_script.brickList.addAll(bricklist)
-        key_sprite.addScript(when_tapped_script)
-
-        return row_visibility_user_variable, _key_to_broadcast_message(key_data.key_name)
+        clone_index_formula = catrobat.create_formula_for([catformula.Operators.EQUAL, clone_index_count, key_pressed_data.clone_index_user_variable])
+        if_then_brick_clone_begin = catbricks.IfThenLogicBeginBrick(clone_index_formula)
+        if_then_brick_clone_begin.ifBranchBricks.addAll(clone_if_branch_script)
+        key_pressed_data.when_started_as_clone_script.getBrickList().add(if_then_brick_clone_begin)
 
     @staticmethod
-    def _add_key_sprite_and_scripts(catrobat_scene, key_data, key_lists):
-        key_message = _key_to_broadcast_message(key_data.key_name)
-        key_sprite, add_sprite_to_scene = Converter._create_key_sprite(catrobat_scene, key_data)
+    def _create_key_pressed_clone_script(catrobat_scene, keys_sprite, key_data, row_visibility_user_variable, key_look):
+        if key_look is None:
+            key_look = catcommon.LookData()
+            key_look.setName(KEY_PREFIX + key_data.key_name)
+            key_look.fileName = _key_image_path_for(key_data.key_name, True)
+            keys_sprite.getLookList().add(key_look)
 
-        if key_data.key_type == KeyTypes.LISTENED_KEY:
-            Converter._create_when_key_tapped_script(key_sprite, key_message)
-        if key_lists.any_key_script_exists:
-            Converter._create_when_key_tapped_script(key_sprite, _key_to_broadcast_message(KeyNames.ANY))
-        if key_data.key_type == KeyTypes.KEY_PRESSED_BRICK:
-            Converter._create_when_key_pressed_script(catrobat_scene, key_sprite, key_data.key_name)
-        if key_lists.any_key_brick_exists:
-            Converter._create_when_key_pressed_script(catrobat_scene, key_sprite, KeyNames.ANY)
+        look_set_brick = catbricks.SetLookBrick()
+        look_set_brick.setLook(key_look)
+        place_at_brick = catbricks.PlaceAtBrick(key_data.x_pos, key_data.y_pos)
+        set_size_to_brick = catbricks.SetSizeToBrick(33.0)
+        touching_formula = catrobat.create_formula_for([catformula.Sensors.COLLIDES_WITH_FINGER])
+        not_touching_formula = catrobat.create_formula_for([catformula.Operators.LOGICAL_NOT, catformula.Sensors.COLLIDES_WITH_FINGER])
+        colliding_formula = catrobat.create_formula_for([catformula.Sensors.COLLIDES_WITH_FINGER])
+        not_colliding_formula = catrobat.create_formula_for([catformula.Operators.LOGICAL_NOT, catformula.Sensors.COLLIDES_WITH_FINGER])
+        forever_brick = catbricks.ForeverBrick()
 
-        return add_sprite_to_scene, key_sprite
+        #-----------------------------key_pressing_functionality--------------------------------------------------------
+        if "visibility" not in key_data.key_name:
+            visible_equal_formula = catrobat.create_formula_for([catformula.Operators.EQUAL, 1, row_visibility_user_variable])
+            wait_until_visible_brick = catbricks.WaitUntilBrick(visible_equal_formula)
+            show_brick = catbricks.ShowBrick()
+            visible_not_formula = catrobat.create_formula_for([catformula.Operators.LOGICAL_NOT, row_visibility_user_variable])
+            repeat_until_brick = catbricks.RepeatUntilBrick(visible_not_formula)
+            if_then_brick_begin = catbricks.IfThenLogicBeginBrick(touching_formula)
+            global_key_var_name = scratch.S2CC_KEY_VARIABLE_NAME + key_data.key_name
+            key_user_variable = Converter._create_or_get_user_variable(catrobat_scene, global_key_var_name, 0)
+            set_variable_brick_one = _create_variable_brick(1, key_user_variable, catbricks.SetVariableBrick)
+            wait_until_not_touching_brick = catbricks.WaitUntilBrick(not_touching_formula)
+            set_variable_brick_zero = catbricks.SetVariableBrick(catformula.Formula(0), key_user_variable)
+            bricklist = [set_variable_brick_one, wait_until_not_touching_brick, set_variable_brick_zero]
+            if_then_brick_begin.ifBranchBricks.addAll(bricklist)
+            repeat_until_brick.loopBricks.add(if_then_brick_begin)
+            hide_brick = catbricks.HideBrick()
+            forever_loop_bricks = [wait_until_visible_brick, show_brick, repeat_until_brick, hide_brick]
+            forever_brick.loopBricks.addAll(forever_loop_bricks)
+
+        #-----------------------------key_row_visibility_functionality--------------------------------------------------
+        else:
+            wait_until_touching_brick = catbricks.WaitUntilBrick(touching_formula)
+            wait_until_not_touching_brick = catbricks.WaitUntilBrick(not_touching_formula)
+            wait_until_collides_brick = catbricks.WaitUntilBrick(colliding_formula)
+            wait_until_not_collides_brick = catbricks.WaitUntilBrick(not_colliding_formula)
+            key_visible_set_zero_brick = _create_variable_brick(0, row_visibility_user_variable, catbricks.SetVariableBrick)
+            key_visible_set_one_brick = _create_variable_brick(1, row_visibility_user_variable, catbricks.SetVariableBrick)
+            forever_loop_bricks = [wait_until_collides_brick, wait_until_not_collides_brick, key_visible_set_zero_brick, wait_until_touching_brick, wait_until_not_touching_brick, key_visible_set_one_brick]
+            forever_brick.loopBricks.addAll(forever_loop_bricks)
+
+        return [place_at_brick, look_set_brick, set_size_to_brick, forever_brick]
 
     # helper functions -------------------------------------------------------------------------------------------------
     @staticmethod
@@ -1616,16 +1673,17 @@ class Converter(object):
         return row_keys
 
     @staticmethod
-    def _set_row_visibility_key(catrobat_scene, row_keys, key_lists, row_pos, row_name):
+    def _set_row_visibility_key(catrobat_scene, row_keys, key_lists, row_pos, row_name, key_pressed_data):
         key_data = KeyData(row_name, KeyTypes.FUNCTIONALITY_KEY, -225, row_pos)
-        row_visibility_user_variable = None
-        key_message = None
         if not row_keys:
             key_lists.missing_row_counter = key_lists.missing_row_counter + 1
+            return None, key_lists
         else:
-            row_visibility_user_variable, key_message = Converter._add_row_visibility_sprite_and_scripts(catrobat_scene, key_data)
+            row_visibility_user_variable_name = scratch.S2CC_KEY_VARIABLE_NAME + key_data.key_name
+            row_visibility_user_variable = Converter._create_or_get_user_variable(catrobat_scene, row_visibility_user_variable_name, 1)
+            Converter._create_keys_sprite(catrobat_scene, key_data, key_pressed_data, row_visibility_user_variable, key_lists)
             key_lists.listened_keys.append((row_name, KeyTypes.FUNCTIONALITY_KEY))
-        return key_lists, row_visibility_user_variable, key_message
+            return row_visibility_user_variable, key_lists
 
     @staticmethod
     def _get_key_position(stage_size, offset, row_or_col):
@@ -1633,11 +1691,11 @@ class Converter(object):
 
     # main key function ------------------------------------------------------------------------------------------------
     @staticmethod
-    def _process_first_row(catrobat_scene, key_lists):
+    def _process_first_row(catrobat_scene, key_lists, key_pressed_data):
         row_1_keys = Converter._get_key_list_for_row(key_lists, KEY_NAMES_ROW_1)
         height_pos = 1
         y_pos = Converter._get_key_position(scratch.STAGE_HEIGHT_IN_PIXELS, key_lists.y_offset, height_pos)
-        key_lists, row_visibility_user_variable, key_message = Converter._set_row_visibility_key(catrobat_scene, row_1_keys, key_lists, y_pos, KeyNames.VISIBILITY_ROW1)
+        row_visibility_user_variable, key_lists = Converter._set_row_visibility_key(catrobat_scene, row_1_keys, key_lists, y_pos, KeyNames.VISIBILITY_ROW1, key_pressed_data)
         # process row one different from others
         for key, key_type in row_1_keys:
             x_pos = 0 # if space key
@@ -1653,17 +1711,15 @@ class Converter(object):
                     y_pos = Converter._get_key_position(scratch.STAGE_HEIGHT_IN_PIXELS, key_lists.y_offset, 2)
                 x_pos = Converter._get_key_position(scratch.STAGE_WIDTH_IN_PIXELS, key_lists.x_offset, 10)
             key_data = KeyData(key, key_type, x_pos, y_pos)
-            add_sprite_to_scene, key_sprite = Converter._add_key_sprite_and_scripts(catrobat_scene, key_data, key_lists)
-            if add_sprite_to_scene:
-                Converter.visibility_workaround_for_key(key_sprite, row_visibility_user_variable, key_message)
+            Converter._create_keys_sprite(catrobat_scene, key_data, key_pressed_data, row_visibility_user_variable, key_lists)
         return key_lists
 
     @staticmethod
-    def _process_row(key_lists, catrobat_scene, row_key_names, height_pos, width_offset, visibility_key_name):
+    def _process_row(key_lists, catrobat_scene, row_key_names, height_pos, width_offset, visibility_key_name, key_pressed_data):
         row_keys = Converter._get_key_list_for_row(key_lists, row_key_names)
         height_pos = height_pos - key_lists.missing_row_counter
         y_pos = Converter._get_key_position(scratch.STAGE_HEIGHT_IN_PIXELS, key_lists.y_offset, height_pos)
-        key_lists, row_visibility_user_variable, key_message = Converter._set_row_visibility_key(catrobat_scene, row_keys, key_lists, y_pos, visibility_key_name)
+        row_visibility_user_variable, key_lists = Converter._set_row_visibility_key(catrobat_scene, row_keys, key_lists, y_pos, visibility_key_name, key_pressed_data)
         for key, key_type in row_keys:
             missing_columns_before_key = 0
             missing_columns = key_lists.missing_num_columns if row_key_names == KEY_NAMES_ROW_5 else key_lists.missing_literal_columns
@@ -1673,10 +1729,20 @@ class Converter(object):
             width_pos = row_key_names.index(key) + width_offset - missing_columns_before_key
             x_pos = Converter._get_key_position(scratch.STAGE_WIDTH_IN_PIXELS, key_lists.x_offset, width_pos)
             key_data = KeyData(key, key_type, x_pos, y_pos)
-            add_sprite_to_scene, key_sprite = Converter._add_key_sprite_and_scripts(catrobat_scene, key_data, key_lists)
-            if add_sprite_to_scene:
-                Converter.visibility_workaround_for_key(key_sprite, row_visibility_user_variable, key_message)
+            Converter._create_keys_sprite(catrobat_scene, key_data, key_pressed_data, row_visibility_user_variable, key_lists)
         return key_lists
+
+    @staticmethod
+    def _calculate_needed_clones_number(key_lists):
+        clones_max_needed = 0
+        rows = [KEY_NAMES_ROW_1, KEY_NAMES_ROW_2, KEY_NAMES_ROW_3, KEY_NAMES_ROW_4, KEY_NAMES_ROW_5]
+        for key in key_lists.listened_keys:
+            if KeyTypes.KEY_PRESSED_BRICK in key[1] or KeyTypes.LISTENED_KEY in key[1]:
+                clones_max_needed += 1
+        for row in rows:
+            if Converter._get_key_list_for_row(key_lists, row):
+                clones_max_needed += 1
+        return clones_max_needed
 
     @staticmethod
     def _add_key_sprites_to(catrobat_scene, listened_keys):
@@ -1686,13 +1752,17 @@ class Converter(object):
         key_lists = Converter._set_toggle_tilt_key(catrobat_scene, key_lists)
         key_lists = Converter._check_for_unused_keyboard_columns(key_lists)
 
-        key_lists = Converter._process_first_row(catrobat_scene, key_lists)
-        key_lists = Converter._process_row(key_lists, catrobat_scene, KEY_NAMES_ROW_2, 2, 3, KeyNames.VISIBILITY_ROW2)
-        key_lists = Converter._process_row(key_lists, catrobat_scene, KEY_NAMES_ROW_3, 3, 2.5, KeyNames.VISIBILITY_ROW3)
-        key_lists = Converter._process_row(key_lists, catrobat_scene, KEY_NAMES_ROW_4, 4, 2, KeyNames.VISIBILITY_ROW4)
-        key_lists = Converter._process_row(key_lists, catrobat_scene, KEY_NAMES_ROW_5, 5, 2, KeyNames.VISIBILITY_ROW5)
-        return key_lists.listened_keys
+        key_pressed_data = KeyPressedData(catrobat_scene, KEY_CLONE_INSTANCE, 0)
 
+        key_lists = Converter._process_first_row(catrobat_scene, key_lists, key_pressed_data)
+        key_lists = Converter._process_row(key_lists, catrobat_scene, KEY_NAMES_ROW_2, 2, 3, KeyNames.VISIBILITY_ROW2, key_pressed_data)
+        key_lists = Converter._process_row(key_lists, catrobat_scene, KEY_NAMES_ROW_3, 3, 2.5, KeyNames.VISIBILITY_ROW3, key_pressed_data)
+        key_lists = Converter._process_row(key_lists, catrobat_scene, KEY_NAMES_ROW_4, 4, 2, KeyNames.VISIBILITY_ROW4, key_pressed_data)
+        key_lists = Converter._process_row(key_lists, catrobat_scene, KEY_NAMES_ROW_5, 5, 2, KeyNames.VISIBILITY_ROW5, key_pressed_data)
+
+        key_pressed_data.keys_sprite.addScript(key_pressed_data.when_started_as_clone_script)
+
+        return key_lists.listened_keys
 
     @staticmethod
     def _update_xml_header(xml_header, scratch_project_id, program_name, scratch_project_instructions,

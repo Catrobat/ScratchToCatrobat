@@ -33,8 +33,7 @@ def visitSwitchbackdropto(blockcontext):
     return ["startScene", backdrop]
 
 def visitNextbackdrop(blockcontext):
-    log.warn("[Scratch3] block {} ({}) possibly not available in Scratch2".format(blockcontext.block.opcode, blockcontext.block.name))
-    return ["nextBackdropPlaceholder"] #TODO: not in scratch2
+    return ["nextCostume"]
 
 def visitChangesizeby(blockcontext):
     size = visitGeneric(blockcontext, "CHANGE")

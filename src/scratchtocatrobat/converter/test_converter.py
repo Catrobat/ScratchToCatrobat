@@ -2850,6 +2850,18 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
             assert len(default_scene.spriteList) == 4
             keys = default_scene.spriteList[3]
 
+        elif project_name == "key_pressed_visibilities_trigger":
+            assert len(default_scene.spriteList) == 4
+            keys = default_scene.spriteList[3]
+
+        elif project_name == 'key_pressed_visibilities_down_arrow':
+            assert len(default_scene.spriteList) == 4
+            keys = default_scene.spriteList[3]
+
+        elif project_name == 'key_pressed_visibilities_up_arrow':
+            assert len(default_scene.spriteList) == 4
+            keys = default_scene.spriteList[3]
+
         assert keys is not None
         assert keys.name == 'Keys'
 
@@ -3127,6 +3139,24 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
         project_name = 'key_pressed_script'
         key_row_visibility_user_variable_name = ["key_row1_visibility"]
         key_name = ["key_space"]
+        self.setup_key_pressed(project_name, key_row_visibility_user_variable_name, key_name)
+
+    def test_key_pressed_right_order_visibility(self):
+        project_name = 'key_pressed_visibilities_trigger'
+        key_row_visibility_user_variable_name = ["key_row1_visibility", "key_row2_visibility", "key_row3_visibility", "key_row4_visibility", "key_row5_visibility"]
+        key_name = ["key_space", "key_z", "key_a", "key_q", "key_1"]
+        self.setup_key_pressed(project_name, key_row_visibility_user_variable_name, key_name)
+
+    def test_key_pressed_arrows_visibility(self):
+        project_name = 'key_pressed_visibilities_down_arrow'
+        key_row_visibility_user_variable_name = ["key_row1_visibility", "key_row2_visibility", "key_row3_visibility", "key_row4_visibility", "key_row5_visibility"]
+        key_name = ["key_down arrow", "key_c", "key_d", "key_e", "key_3"]
+        self.setup_key_pressed(project_name, key_row_visibility_user_variable_name, key_name)
+
+    def test_key_pressed_arrows2_visibility(self):
+        project_name = 'key_pressed_visibilities_up_arrow'
+        key_row_visibility_user_variable_name = ["key_row1_visibility", "key_row2_visibility", "key_row3_visibility", "key_row4_visibility", "key_row5_visibility"]
+        key_name = ["key_up arrow", "key_b", "key_g", "key_t", "key_5"]
         self.setup_key_pressed(project_name, key_row_visibility_user_variable_name, key_name)
 
     def test_key_pressed_visibility(self):

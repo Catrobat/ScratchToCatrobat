@@ -44,7 +44,7 @@ ns_registry_lock = Lock()
 
 
 def create_catrobat_sprite_stub(name=None):
-    sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, "Dummy" if name is None else name)
+    sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_BASE, "Dummy" if name is None else name)
     looks = sprite.getLookList()
     for lookname in ["look1", "look2", "look3"]:
         looks.add(catrobat.create_lookdata(lookname, None))
@@ -232,7 +232,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def get_sprite_with_soundinfo(self, soundinfo_name):
         dummy_sound = catcommon.SoundInfo()
         dummy_sound.setName(soundinfo_name)
-        dummy_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, "TestDummy")
+        dummy_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_BASE, "TestDummy")
         dummy_sprite.getSoundList().add(dummy_sound)
         return dummy_sprite
 
@@ -1905,7 +1905,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     # createCloneOf
     def test_convert_create_clone_of_block_previous(self):
-        sprite_object = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, "Previous")
+        sprite_object = SpriteFactory().newInstance(SpriteFactory.SPRITE_BASE, "Previous")
         self.test_scene.spriteList.append(sprite_object)
 
         scratch_block = ["createCloneOf", "Previous"]
@@ -2030,9 +2030,9 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     @staticmethod
     def get_color_formulas(set_color_brick):
-        r = set_color_brick.getFormulaWithBrickField(catbricks.Brick.BrickField.PEN_COLOR_RED).getFormulaTree()
-        g = set_color_brick.getFormulaWithBrickField(catbricks.Brick.BrickField.PEN_COLOR_GREEN).getFormulaTree()
-        b = set_color_brick.getFormulaWithBrickField(catbricks.Brick.BrickField.PEN_COLOR_BLUE).getFormulaTree()
+        r = set_color_brick.getFormulaWithBrickField(catbricks.Brick.BrickField.PEN_COLOR_RED).getRoot()
+        g = set_color_brick.getFormulaWithBrickField(catbricks.Brick.BrickField.PEN_COLOR_GREEN).getRoot()
+        b = set_color_brick.getFormulaWithBrickField(catbricks.Brick.BrickField.PEN_COLOR_BLUE).getRoot()
         return (r, g, b)
 
     # penColor: with formula (without HSV conversion algorithm compiled into bricks)
@@ -2115,19 +2115,19 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert bricks[0].userVariable == var_obj('h_i')
         test_fe = catrobat.create_formula_element_for(
             [catformula.Functions.FLOOR, [catformula.Operators.MULT, var_id('h'), 6]])
-        assert TestConvertBlocks.is_same_formula(test_fe, bricks[0].getFormulas()[0].getFormulaTree())
+        assert TestConvertBlocks.is_same_formula(test_fe, bricks[0].getFormulas()[0].getRoot())
 
         assert isinstance(bricks[1], catbricks.SetVariableBrick)
         assert bricks[1].userVariable == var_obj('f')
         test_fe = catrobat.create_formula_element_for(
             [catformula.Operators.MINUS, [catformula.Operators.MULT, var_id('h'), 6], var_id('h_i')])
-        assert TestConvertBlocks.is_same_formula(test_fe, bricks[1].getFormulas()[0].getFormulaTree())
+        assert TestConvertBlocks.is_same_formula(test_fe, bricks[1].getFormulas()[0].getRoot())
 
         assert isinstance(bricks[2], catbricks.SetVariableBrick)
         assert bricks[2].userVariable == var_obj('p')
         test_fe = catrobat.create_formula_element_for(
             [catformula.Operators.MULT, var_id('v'), ["()", [catformula.Operators.MINUS, 1, var_id('s')]]])
-        assert TestConvertBlocks.is_same_formula(test_fe, bricks[2].getFormulas()[0].getFormulaTree())
+        assert TestConvertBlocks.is_same_formula(test_fe, bricks[2].getFormulas()[0].getRoot())
 
         assert isinstance(bricks[3], catbricks.SetVariableBrick)
         assert bricks[3].userVariable == var_obj('q')
@@ -2135,7 +2135,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
             [catformula.Operators.MULT,
              var_id('v'),
              ["()", [catformula.Operators.MINUS, 1, [catformula.Operators.MULT, var_id('s'), var_id('f')]]]])
-        assert TestConvertBlocks.is_same_formula(test_fe, bricks[3].getFormulas()[0].getFormulaTree())
+        assert TestConvertBlocks.is_same_formula(test_fe, bricks[3].getFormulas()[0].getRoot())
 
         assert isinstance(bricks[4], catbricks.SetVariableBrick)
         assert bricks[4].userVariable == var_obj('t')
@@ -2146,7 +2146,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
                      1,
                      [catformula.Operators.MULT,
                       var_id('s'), ["()", [catformula.Operators.MINUS, 1, var_id('f')]]]]]])
-        assert TestConvertBlocks.is_same_formula(test_fe, bricks[4].getFormulas()[0].getFormulaTree())
+        assert TestConvertBlocks.is_same_formula(test_fe, bricks[4].getFormulas()[0].getRoot())
 
         def test_inner_bricks(if_brick, r, g, b):
             for (i, (color, name)) in enumerate([(r, 'r'), (g, 'g'), (b, 'b')]):
@@ -2155,20 +2155,20 @@ class TestConvertBlocks(common_testing.BaseTestCase):
                 assert brick.userVariable == var_obj(name)
                 fe_test = catrobat.create_formula_element_for(
                     [catformula.Functions.ROUND, [catformula.Operators.MULT, var_id(color), 255]])
-                assert TestConvertBlocks.is_same_formula(brick.getFormulas()[0].getFormulaTree(), fe_test)
+                assert TestConvertBlocks.is_same_formula(brick.getFormulas()[0].getRoot(), fe_test)
 
         assert isinstance(bricks[5], catbricks.IfThenLogicBeginBrick)
         test_fe = catrobat.create_formula_element_for(
             [catformula.Operators.LOGICAL_OR,
              [catformula.Operators.EQUAL, var_id('h_i'), 0],
              [catformula.Operators.EQUAL, var_id('h_i'), 6]])
-        assert TestConvertBlocks.is_same_formula(test_fe, bricks[5].getFormulas()[0].getFormulaTree())
+        assert TestConvertBlocks.is_same_formula(test_fe, bricks[5].getFormulas()[0].getRoot())
         test_inner_bricks(bricks[5], 'v', 't', 'p')
 
         for i in range(1, 6):
             assert isinstance(bricks[5 + i], catbricks.IfThenLogicBeginBrick)
             fe_test = catrobat.create_formula_element_for([catformula.Operators.EQUAL, var_id('h_i'), i])
-            assert TestConvertBlocks.is_same_formula(fe_test, bricks[5 + i].getFormulas()[0].getFormulaTree())
+            assert TestConvertBlocks.is_same_formula(fe_test, bricks[5 + i].getFormulas()[0].getRoot())
 
         test_inner_bricks(bricks[6], 'q', 'v', 'p')
         test_inner_bricks(bricks[7], 'p', 'v', 't')
@@ -2209,7 +2209,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
                 assert isinstance(brick, catbricks.SetVariableBrick)
                 assert brick.userVariable == sprite.getUserVariable(scratch.S2CC_PEN_COLOR_VARIABLE_NAMES[variable_name])
                 test_fe = catrobat.create_formula_element_for(variable_formula)
-                assert self.is_same_formula(test_fe, brick.getFormulas()[0].getFormulaTree())
+                assert self.is_same_formula(test_fe, brick.getFormulas()[0].getRoot())
 
         # penColor: with string as argument
         # algorithm is 12 bricks long (excluding inner bricks from e.g. if statements)
@@ -2251,7 +2251,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
             assert isinstance(bricks[0], catbricks.SetVariableBrick)
             assert bricks[0].userVariable == \
                    sprite.getUserVariable(scratch.S2CC_PEN_COLOR_VARIABLE_NAMES[affected_variable_name])
-            assert self.is_same_formula(test_fe, bricks[0].getFormulas()[0].getFormulaTree())
+            assert self.is_same_formula(test_fe, bricks[0].getFormulas()[0].getRoot())
             self.assert_hsv_to_rgb_algorithm(sprite, bricks[1:])
 
         # setPenParamTo:, "color", int
@@ -2297,7 +2297,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
             assert isinstance(bricks[0], catbricks.SetVariableBrick)
             assert bricks[0].userVariable == \
                    sprite.getUserVariable(scratch.S2CC_PEN_COLOR_VARIABLE_NAMES[affected_variable_name])
-            assert self.is_same_formula(test_fe, bricks[0].getFormulas()[0].getFormulaTree())
+            assert self.is_same_formula(test_fe, bricks[0].getFormulas()[0].getRoot())
             self.assert_hsv_to_rgb_algorithm(sprite, bricks[1:])
 
         param_name_mapping = {"color": "h", "saturation": "s", "brightness": "v"}
@@ -2348,7 +2348,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         scratch_block = ["penSize:", test_val]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.SetPenSizeBrick)
-        assert self.is_same_formula(test_fe, catr_brick.getFormulas()[0].getFormulaTree())
+        assert self.is_same_formula(test_fe, catr_brick.getFormulas()[0].getRoot())
 
     # penSize: with formula argument (without introducing S2CC pen size variable)
     def test_can_convert_set_pen_size_block_with_formula(self):
@@ -2357,7 +2357,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         scratch_block = ["penSize:", test_val]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.SetPenSizeBrick)
-        assert self.is_same_formula(test_fe, catr_brick.getFormulas()[0].getFormulaTree())
+        assert self.is_same_formula(test_fe, catr_brick.getFormulas()[0].getRoot())
 
     # changePenSizeBy: and PenSize: (checking the S2CC pen size variable)
     def can_convert_pen_size_blocks(self, test_val1, test_val2):
@@ -2374,7 +2374,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert isinstance(change_var_brick, catbricks.ChangeVariableBrick)
         assert isinstance(size_brick, catbricks.SetPenSizeBrick)
         fe_test = self.get_pen_size_formula(test_val1)
-        assert self.is_same_formula(fe_test, change_var_brick.getFormulas()[0].getFormulaTree())
+        assert self.is_same_formula(fe_test, change_var_brick.getFormulas()[0].getRoot())
 
         # test "penSize:"
         set_var_brick = brick_list[-2]
@@ -2382,7 +2382,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert isinstance(set_var_brick, catbricks.SetVariableBrick)
         assert isinstance(size_brick, catbricks.SetPenSizeBrick)
         fe_test = self.get_pen_size_formula(test_val2)
-        assert self.is_same_formula(fe_test, set_var_brick.getFormulas()[0].getFormulaTree())
+        assert self.is_same_formula(fe_test, set_var_brick.getFormulas()[0].getRoot())
 
     # changePenSizeBy: and PenSize: with numbers (checking the S2CC pen size variable)
     def test_can_convert_pen_size_blocks_with_numbers(self):
@@ -2401,8 +2401,8 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         scratch_block = ["setVar:to:", "test_var", ["contentsOfList:", self._name_of_test_list]]
         catr_bricks = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_bricks[0], catbricks.SetVariableBrick)
-        assert catr_bricks[0].getFormulas()[0].getFormulaTree().getElementType() == catElementType.USER_LIST
-        assert catr_bricks[0].getFormulas()[0].getFormulaTree().getValue() == self._name_of_test_list
+        assert catr_bricks[0].getFormulas()[0].getRoot().getElementType() == catElementType.USER_LIST
+        assert catr_bricks[0].getFormulas()[0].getRoot().getValue() == self._name_of_test_list
 
     # TODO: uncomment these tests as soon as Catrobat supports user bricks again.
     # Note: these tests might have to be refactored together with the tested function.
@@ -2650,7 +2650,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def test_can_convert_go_to_sprite_block_with_sprite_previous(self):
         test_sprite_name = "Previous"
         scratch_block = ["gotoSpriteOrMouse:", test_sprite_name]
-        sprite_object = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, "Previous")
+        sprite_object = SpriteFactory().newInstance(SpriteFactory.SPRITE_BASE, "Previous")
         self.test_scene.spriteList.append(sprite_object)
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.GoToBrick)
@@ -2664,8 +2664,8 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.PlaceAtBrick)
         [x_formula, y_formula] = catr_brick.getFormulas()
-        assert(x_formula.getFormulaTree().value == str(catformula.Functions.RAND))
-        assert(y_formula.getFormulaTree().value == str(catformula.Functions.RAND))
+        assert(x_formula.getRoot().value == str(catformula.Functions.RAND))
+        assert(y_formula.getRoot().value == str(catformula.Functions.RAND))
 
     #pointTowards:
     def test_can_convert_point_towards_block_basic(self):
@@ -2700,7 +2700,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def test_can_convert_point_towards_block_existing_sprite(self):
         test_sprite_name = "test_sprite"
         scratch_block = ["pointTowards:", test_sprite_name]
-        sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, test_sprite_name)
+        sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_BASE, test_sprite_name)
         self.test_scene.addSprite(sprite)
 
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
@@ -2745,8 +2745,8 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         [setBrick] = self.block_converter._catrobat_bricks_from(scratch_block, sprite)
         assert setBrick.getUserVariable().getName() == "draggable"
         assert len(setBrick.getFormulas()) == 1
-        assert setBrick.getFormulas()[0].getFormulaTree().getValue() == "TRUE"
-        assert setBrick.getFormulas()[0].getFormulaTree().getElementType() == catElementType.FUNCTION
+        assert setBrick.getFormulas()[0].getRoot().getValue() == "TRUE"
+        assert setBrick.getFormulas()[0].getRoot().getElementType() == catElementType.FUNCTION
         assert isinstance(setBrick, catbricks.SetVariableBrick)
         assert len(sprite.getScriptList()) == num_scripts+1
 
@@ -2754,8 +2754,8 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         [setBrick] = self.block_converter._catrobat_bricks_from(scratch_block, sprite)
         assert(setBrick.getUserVariable().getName() == "draggable")
         assert(len(setBrick.getFormulas()) == 1)
-        assert(setBrick.getFormulas()[0].getFormulaTree().getValue() == "FALSE")
-        assert(setBrick.getFormulas()[0].getFormulaTree().getElementType() == catElementType.FUNCTION)
+        assert(setBrick.getFormulas()[0].getRoot().getValue() == "FALSE")
+        assert(setBrick.getFormulas()[0].getRoot().getElementType() == catElementType.FUNCTION)
         assert isinstance(setBrick, catbricks.SetVariableBrick)
         assert len(sprite.getScriptList()) == num_scripts+1
 

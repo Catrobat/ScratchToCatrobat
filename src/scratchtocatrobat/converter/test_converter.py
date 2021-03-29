@@ -2823,24 +2823,33 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
                                           project_id=common_testing.PROJECT_DUMMY_ID)
         return scratch_project
 
-    def test_key_pressed_block(self):
-        project_name = 'key_pressed_block'
+    def setup_key_pressed(self, project_name, key_row_visibility_user_variable_name, key_name):
         scratch_project = self._load_test_scratch_project(project_name)
         context = converter.Context()
         converted_project = converter.converted(scratch_project, None, context)
 
         default_scene = converted_project.catrobat_program.getDefaultScene()
-        assert len(default_scene.spriteList) == 4
 
-        key_tilt = default_scene.spriteList[2]
-        assert key_tilt is not None
-        assert key_tilt.name == 'key_tilt_none'
+        if project_name == "key_pressed_block":
+            assert len(default_scene.spriteList) == 4
 
-        tilt_scripts = key_tilt.getScriptList()
-        assert len(tilt_scripts) == 3
-        assert isinstance(tilt_scripts[1], catbase.WhenScript)
+            key_tilt = default_scene.spriteList[2]
+            assert key_tilt is not None
+            assert key_tilt.name == 'key_tilt_none'
 
-        keys = default_scene.spriteList[3]
+            tilt_scripts = key_tilt.getScriptList()
+            assert len(tilt_scripts) == 3
+            assert isinstance(tilt_scripts[1], catbase.WhenScript)
+            keys = default_scene.spriteList[3]
+
+        elif project_name == "key_pressed_script":
+            assert len(default_scene.spriteList) == 3
+            keys = default_scene.spriteList[2]
+
+        elif project_name == "key_pressed_visibility":
+            assert len(default_scene.spriteList) == 4
+            keys = default_scene.spriteList[3]
+
         assert keys is not None
         assert keys.name == 'Keys'
 
@@ -2858,7 +2867,6 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
             catbasebrick.BrickField.TIMES_TO_REPEAT).formulaTree.value
         repeat_brick_type = repeat_brick.getFormulaWithBrickField(
             catbasebrick.BrickField.TIMES_TO_REPEAT).formulaTree.type
-        assert repeat_brick_value == "2"
         assert repeat_brick_type == catElementType.NUMBER
 
         change_variable_brick = repeat_brick.loopBricks.get(0)
@@ -2878,66 +2886,42 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
         assert isinstance(hide_brick, catbricks.HideBrick)
 
         clone_script_bricks = keys_scripts[1].getBrickList()
-        assert len(clone_script_bricks) == 2
+        catrobat_zip_file_name = converted_project.save_as_catrobat_package_to(self._testresult_folder_path)
+        self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, project_name,
+                                                          unused_scratch_resources=scratch_project.unused_resource_names)
 
-        #--------------------------------clone_script_visibility--------------------------------------------------------
-        first_if_branch = clone_script_bricks[0]
+        index_vis, index_clone_script_brick = 0, 0
+        brick_steps = 2
+        for _ in range(len(key_row_visibility_user_variable_name)):
+            self.setup_check_if_branch_condition(clone_script_bricks[index_clone_script_brick])
+            self.setup_clone_script_visibility(key_row_visibility_user_variable_name[index_vis],
+                                               clone_script_bricks[index_clone_script_brick],
+                                               (clone_script_bricks[index_clone_script_brick].ifBranchBricks.get(3).loopBricks.get(0)))
+            self.setup_check_if_branch_condition(clone_script_bricks[index_clone_script_brick + 1])
+            self.setup_clone_script_key(clone_script_bricks[index_clone_script_brick + 1],
+                                        (clone_script_bricks[index_clone_script_brick+1].ifBranchBricks.get(3)).loopBricks.get(0), key_name[index_vis],
+                                        key_row_visibility_user_variable_name[index_vis])
+            index_vis += 1
+            index_clone_script_brick += brick_steps
+
+    def setup_check_if_branch_condition(self, clone_script_brick):
+        first_if_branch = clone_script_brick
         assert isinstance(first_if_branch, catbricks.IfThenLogicBeginBrick)
         first_if_branch_logic = first_if_branch.getFormulaWithBrickField(
             catbasebrick.BrickField.IF_CONDITION).formulaTree.value
-        first_if_branch_left = first_if_branch.getFormulaWithBrickField(
-            catbasebrick.BrickField.IF_CONDITION).formulaTree.leftChild.value
         first_if_branch_right = first_if_branch.getFormulaWithBrickField(
             catbasebrick.BrickField.IF_CONDITION).formulaTree.rightChild.value
         assert first_if_branch_logic == "EQUAL"
-        assert first_if_branch_left == "1"
         assert first_if_branch_right == "clone_instance"
 
-        second_if_branch = clone_script_bricks[1]
-        assert isinstance(second_if_branch, catbricks.IfThenLogicBeginBrick)
-        second_if_branch_logic = second_if_branch.getFormulaWithBrickField(
-            catbasebrick.BrickField.IF_CONDITION).formulaTree.value
-        second_if_branch_left = second_if_branch.getFormulaWithBrickField(
-            catbasebrick.BrickField.IF_CONDITION).formulaTree.leftChild.value
-        second_if_branch_right = second_if_branch.getFormulaWithBrickField(
-            catbasebrick.BrickField.IF_CONDITION).formulaTree.rightChild.value
-        assert second_if_branch_logic == "EQUAL"
-        assert second_if_branch_left == "2"
-        assert second_if_branch_right == "clone_instance"
-
+        #--------------------------------clone_script_visibility--------------------------------------------------------
+    def setup_clone_script_visibility(self, key_row_visibility_user_variable_name, first_if_branch, wait_until_touches_brick):
         place_at_brick = first_if_branch.ifBranchBricks.get(0)
         assert isinstance(place_at_brick, catbricks.PlaceAtBrick)
-
-        place_at_brick_y_value = place_at_brick.getFormulaWithBrickField(
-            catbasebrick.BrickField.Y_POSITION).formulaTree.value
-        place_at_brick_y_right_value = place_at_brick.getFormulaWithBrickField(
-            catbasebrick.BrickField.Y_POSITION).formulaTree.rightChild.value
-        place_at_brick_y_type = place_at_brick.getFormulaWithBrickField(
-            catbasebrick.BrickField.Y_POSITION).formulaTree.type
-        place_at_brick_y_right_type = place_at_brick.getFormulaWithBrickField(
-            catbasebrick.BrickField.Y_POSITION).formulaTree.rightChild.type
-        place_at_brick_x_value = place_at_brick.getFormulaWithBrickField(
-            catbasebrick.BrickField.X_POSITION).formulaTree.value
-        place_at_brick_x_right_value = place_at_brick.getFormulaWithBrickField(
-            catbasebrick.BrickField.X_POSITION).formulaTree.rightChild.value
-        place_at_brick_x_type = place_at_brick.getFormulaWithBrickField(
-            catbasebrick.BrickField.X_POSITION).formulaTree.type
-        place_at_brick_x_right_type = place_at_brick.getFormulaWithBrickField(
-            catbasebrick.BrickField.X_POSITION).formulaTree.rightChild.type
-
-        assert place_at_brick_y_value == "MINUS"
-        assert place_at_brick_y_right_value == "160"
-        assert place_at_brick_y_type == catElementType.OPERATOR
-        assert place_at_brick_y_right_type == catElementType.NUMBER
-        assert place_at_brick_x_value == "MINUS"
-        assert place_at_brick_x_right_value == "225"
-        assert place_at_brick_x_type == catElementType.OPERATOR
-        assert place_at_brick_x_right_type == catElementType.NUMBER
-
         switch_to_look_brick = first_if_branch.ifBranchBricks.get(1)
 
         assert isinstance(switch_to_look_brick, catbricks.SetLookBrick)
-        assert switch_to_look_brick.getLook().name == "key_row4_visibility"
+        assert switch_to_look_brick.getLook().name == key_row_visibility_user_variable_name
 
         set_size_to_brick = first_if_branch.ifBranchBricks.get(2)
         assert isinstance(set_size_to_brick, catbricks.SetSizeToBrick)
@@ -2986,16 +2970,13 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
         set_variable_zero_brick = forever_brick.loopBricks.get(2)
         assert isinstance(set_variable_zero_brick, catbricks.SetVariableBrick)
 
-        assert set_variable_zero_brick.getUserVariable().getName() == "S2CC:key_row4_visibility"
+        assert set_variable_zero_brick.getUserVariable().getName() == "S2CC:" + key_row_visibility_user_variable_name
         set_variable_zero_brick_value = set_variable_zero_brick.getFormulaWithBrickField(
             catbasebrick.BrickField.VARIABLE).formulaTree.value
         set_variable_zero_brick_type = set_variable_zero_brick.getFormulaWithBrickField(
             catbasebrick.BrickField.VARIABLE).formulaTree.type
         assert set_variable_zero_brick_value == "0"
         assert set_variable_zero_brick_type == catElementType.NUMBER
-
-
-        wait_until_touches_brick = forever_brick.loopBricks.get(3)
         assert isinstance(wait_until_touches_brick, catbricks.WaitUntilBrick)
 
         wait_until_touches_brick_value = wait_until_touches_brick.getFormulaWithBrickField(
@@ -3026,7 +3007,7 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
         set_variable_one_brick = forever_brick.loopBricks.get(5)
         assert isinstance(set_variable_one_brick, catbricks.SetVariableBrick)
 
-        assert set_variable_one_brick.getUserVariable().getName() == "S2CC:key_row4_visibility"
+        assert set_variable_one_brick.getUserVariable().getName() == "S2CC:" + key_row_visibility_user_variable_name
         set_variable_one_brick_value = set_variable_one_brick.getFormulaWithBrickField(
             catbasebrick.BrickField.VARIABLE).formulaTree.value
         set_variable_one_brick_type = set_variable_one_brick.getFormulaWithBrickField(
@@ -3034,39 +3015,14 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
         assert set_variable_one_brick_value == "1"
         assert set_variable_one_brick_type == catElementType.NUMBER
 
-        #--------------------------------clone_script_key---------------------------------------------------------------
-
+    #--------------------------------clone_script_key---------------------------------------------------------------
+    def setup_clone_script_key(self, second_if_branch, wait_until_touches_brick, key_name, key_row_visibility_user_variable_name):
         place_at_brick = second_if_branch.ifBranchBricks.get(0)
         assert isinstance(place_at_brick, catbricks.PlaceAtBrick)
-
-        place_at_brick_y_value = place_at_brick.getFormulaWithBrickField(
-            catbasebrick.BrickField.Y_POSITION).formulaTree.value
-        place_at_brick_y_right_value = place_at_brick.getFormulaWithBrickField(
-            catbasebrick.BrickField.Y_POSITION).formulaTree.rightChild.value
-        place_at_brick_y_type = place_at_brick.getFormulaWithBrickField(
-            catbasebrick.BrickField.Y_POSITION).formulaTree.type
-        place_at_brick_y_right_type = place_at_brick.getFormulaWithBrickField(
-            catbasebrick.BrickField.Y_POSITION).formulaTree.rightChild.type
-        place_at_brick_x_value = place_at_brick.getFormulaWithBrickField(
-            catbasebrick.BrickField.X_POSITION).formulaTree.value
-        place_at_brick_x_right_value = place_at_brick.getFormulaWithBrickField(
-            catbasebrick.BrickField.X_POSITION).formulaTree.rightChild.value
-        place_at_brick_x_type = place_at_brick.getFormulaWithBrickField(
-            catbasebrick.BrickField.X_POSITION).formulaTree.type
-        place_at_brick_x_right_type = place_at_brick.getFormulaWithBrickField(
-            catbasebrick.BrickField.X_POSITION).formulaTree.rightChild.type
-
-        assert place_at_brick_y_value == "MINUS"
-        assert place_at_brick_y_right_value == "160"
-        assert place_at_brick_y_type == catElementType.OPERATOR
-        assert place_at_brick_y_right_type == catElementType.NUMBER
-        assert place_at_brick_x_type == catElementType.OPERATOR
-        assert place_at_brick_x_right_type == catElementType.NUMBER
-
         switch_to_look_brick = second_if_branch.ifBranchBricks.get(1)
 
         assert isinstance(switch_to_look_brick, catbricks.SetLookBrick)
-        assert switch_to_look_brick.getLook().name == "key_w"
+        assert switch_to_look_brick.getLook().name == key_name
 
         set_size_to_brick = second_if_branch.ifBranchBricks.get(2)
         assert isinstance(set_size_to_brick, catbricks.SetSizeToBrick)
@@ -3086,15 +3042,6 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
 
         wait_until_visible = forever_brick.loopBricks.get(0)
         assert isinstance(wait_until_visible, catbricks.WaitUntilBrick)
-
-        wait_until_visible_value = wait_until_touches_brick.getFormulaWithBrickField(
-            catbasebrick.BrickField.IF_CONDITION).formulaTree.value
-        wait_until_visible_type = wait_until_touches_brick.getFormulaWithBrickField(
-            catbasebrick.BrickField.IF_CONDITION).formulaTree.type
-
-        assert wait_until_visible_value == "COLLIDES_WITH_FINGER" #!
-        assert wait_until_visible_type == catElementType.SENSOR #!
-
         show_brick = forever_brick.loopBricks.get(1)
         assert isinstance(show_brick, catbricks.ShowBrick)
 
@@ -3113,7 +3060,7 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
 
         assert wait_until_visible_value == "LOGICAL_NOT"
         assert wait_until_visible_type == catElementType.OPERATOR
-        assert wait_until_visible_right_value == "S2CC:key_row4_visibility"
+        assert wait_until_visible_right_value == "S2CC:" + key_row_visibility_user_variable_name
         assert wait_until_visible_right_type == catElementType.USER_VARIABLE
 
         if_touches_finger_branch = repeat_until_brick.loopBricks.get(0)
@@ -3130,7 +3077,7 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
         set_variable_one_brick = if_touches_finger_branch.ifBranchBricks.get(0)
         assert isinstance(set_variable_one_brick, catbricks.SetVariableBrick)
 
-        assert set_variable_one_brick.getUserVariable().getName() == "S2CC:key_w"
+        assert set_variable_one_brick.getUserVariable().getName() == "S2CC:" + key_name
         set_variable_one_brick_value = set_variable_one_brick.getFormulaWithBrickField(
             catbasebrick.BrickField.VARIABLE).formulaTree.value
         set_variable_one_brick_type = set_variable_one_brick.getFormulaWithBrickField(
@@ -3158,7 +3105,7 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
         set_variable_zero_brick = if_touches_finger_branch.ifBranchBricks.get(2)
         assert isinstance(set_variable_zero_brick, catbricks.SetVariableBrick)
 
-        assert set_variable_zero_brick.getUserVariable().getName() == "S2CC:key_w"
+        assert set_variable_zero_brick.getUserVariable().getName() == "S2CC:" + key_name
         set_variable_zero_brick_value = set_variable_zero_brick.getFormulaWithBrickField(
             catbasebrick.BrickField.VARIABLE).formulaTree.value
         set_variable_zero_brick_type = set_variable_zero_brick.getFormulaWithBrickField(
@@ -3169,9 +3116,25 @@ class TestConvertedProjectAppendedKeySpriteScripts(common_testing.ProjectTestCas
         hide_brick = forever_brick.loopBricks.get(3)
         assert isinstance(hide_brick, catbricks.HideBrick)
 
-        catrobat_zip_file_name = converted_project.save_as_catrobat_package_to(self._testresult_folder_path)
-        self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, project_name,
-                                                          unused_scratch_resources=scratch_project.unused_resource_names)
+
+    def test_key_pressed_block(self):
+        project_name = 'key_pressed_block'
+        key_row_visibility_user_variable_name = ["key_row4_visibility"]
+        key_name = ["key_w"]
+        self.setup_key_pressed(project_name, key_row_visibility_user_variable_name, key_name)
+
+    def test_key_pressed_script(self):
+        project_name = 'key_pressed_script'
+        key_row_visibility_user_variable_name = ["key_row1_visibility"]
+        key_name = ["key_space"]
+        self.setup_key_pressed(project_name, key_row_visibility_user_variable_name, key_name)
+
+    def test_key_pressed_visibility(self):
+        project_name = 'key_pressed_visibility'
+        key_row_visibility_user_variable_name = ["key_row1_visibility", "key_row2_visibility", "key_row3_visibility", "key_row4_visibility", "key_row5_visibility"]
+        key_name = ["key_up arrow", "key_x", "key_s", "key_w", "key_1"]
+        self.setup_key_pressed(project_name, key_row_visibility_user_variable_name, key_name)
+
 
 
 class TestConvertProjects(common_testing.ProjectTestCase):

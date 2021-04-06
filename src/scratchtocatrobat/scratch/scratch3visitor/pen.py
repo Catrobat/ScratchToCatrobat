@@ -42,10 +42,15 @@ def visitSetPenSizeTo(blockcontext):
     size = visitGeneric(blockcontext, "SIZE")
     return ["penSize:", size]
 
+# TODO: is this a valid scratch 3 block?
+# Seems like Set Pen Shade To () was replaced with
+# Set Pen () to (), which has no option penShade.
+# https://en.scratch-wiki.info/wiki/Set_Pen_Shade_to_()_(block)
 def visitSetPenShadeToNumber(blockcontext):
     size = visitGeneric(blockcontext, "SHADE")
     return ["penShade:", size]
 
+# TODO: Same as setPenShadeToNumber
 def visitChangePenShadeByNumber(blockcontext):
     size = visitGeneric(blockcontext, "SHADE")
     return ["changePenShadeBy:", size]

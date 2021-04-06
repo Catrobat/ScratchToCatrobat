@@ -23,6 +23,8 @@ def visitSeteffectto(blockcontext):
     return ["note:", "SetEffect block is not yet implemented in Catroid"] #TODO: doesnt exist in scratch2/catroid
 
 def visitCleareffects(blockcontext):
+    # TODO this block is not implemented in scratch 2
+    # TODO but the workaround could be: set pan and pitch effects to 0.
     log.warn("[Scratch3] block {} ({}) possibly not available in Scratch2".format(blockcontext.block.opcode, blockcontext.block.name))
     return ["clearSoundEffects"] #TODO: not in scratch2
 

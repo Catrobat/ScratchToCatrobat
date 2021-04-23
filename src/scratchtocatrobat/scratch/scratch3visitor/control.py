@@ -79,19 +79,25 @@ def visitProcedures_prototype(blockcontext):
     else:
         default_values = sanitizeListDefault(blockcontext.block.mutation["argumentdefaults"])
     return [["procDef", proc_name, arguments, default_values, False]] #TODO: what is the last parameter
-
+                                                                      # last parameter should be "warp" (redraw screen)
+                                                                      # as catrobat doesn't have this, we can just ignore it
+                                                                      # to counter check it, look here: https://en.scratch-wiki.info/wiki/JSON_Tutorial
 
 def visitArgumentIntOrString(blockcontext):
     param = blockcontext.block.fields["VALUE"][0]
     if param is None:
         param = 0
     return ["getParam", param, "r"] #TODO what is "r"
+                                    # "r" is for the block type, in that case: reporter
+                                    # https://scratch.mit.edu/discuss/topic/50410/?page=1#post-422033
 
 def visitArgumentBool(blockcontext):
     param =  blockcontext.block.fields["VALUE"][0]
     if param is None:
         param = False
     return ["getParam", param, "r"] #TODO what is "r"
+                                    # "r" is for the block type, in that case: reporter
+                                    # https://scratch.mit.edu/discuss/topic/50410/?page=1#post-422033
 
 
 

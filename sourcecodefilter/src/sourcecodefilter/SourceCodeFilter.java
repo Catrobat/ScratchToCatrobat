@@ -421,10 +421,11 @@ public class SourceCodeFilter {
 	        	System.exit(ExitCode.FAILURE);
 	        }
 	        File archiveFile = new File(downloadDir, catroidVersion + "." + archiveExtension);
-	        if (archiveFile.exists() == false) {
-	        	System.out.println("Downloading new release...");
-	        	Util.downloadFile(new URL(URLString), archiveFile);
-	        }
+            if (archiveFile.exists() == true) {
+                archiveFile.delete();
+            }
+            System.out.println("Downloading new release...");
+            Util.downloadFile(new URL(URLString), archiveFile);
 
 	        // extract ZIP archive
         	System.out.println("Extracting new release...");

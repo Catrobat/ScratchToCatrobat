@@ -37,6 +37,7 @@ import org.catrobat.catroid.content.bricks as catbricks
 import org.catrobat.catroid.formulaeditor as catformula
 import org.catrobat.catroid.formulaeditor.FormulaElement.ElementType as catElementType
 import org.catrobat.catroid.io as catio
+import org.catrobat.catroid.utils as catutils
 from scratchtocatrobat.tools import common
 from scratchtocatrobat.scratch import scratch
 from scratchtocatrobat.scratch.scratch3 import MONITOR_COLORS
@@ -751,7 +752,7 @@ def get_show_brick_from_monitor(monitor, sprite, variable=None, is_global=False,
             brick = catbricks.HideTextBrick()
         else:
             brick = catbricks.ShowTextColorSizeAlignmentBrick(absolute_to_catrobat_x(monitor["x"]), absolute_to_catrobat_y(monitor["y"]), VISIBLE_VAR_LARGE_FONTSIZE, monitor["hex_color"])
-            brick.alignmentSelection = catbricks.ShowTextColorSizeAlignmentBrick.ALIGNMENT_STYLE_LEFT
+            brick.alignmentSelection = catutils.ShowTextUtils.ALIGNMENT_STYLE_LEFT
         brick.setUserVariable(variable)
     else:
         #call to workaround script
@@ -1013,7 +1014,8 @@ class Converter(object):
     def _add_monitors_to(cls, sprite, sprite_context, catrobat_scene, catrobat_project, sprite_list):
         def add_generic_variable_bricks(show_script, hide_script, variable, x, y, color="#000000"):
             show_brick = catbricks.ShowTextColorSizeAlignmentBrick(x, y, VISIBLE_VAR_DEFAULT_FONTSIZE, color)
-            show_brick.alignmentSelection = catbricks.ShowTextColorSizeAlignmentBrick.ALIGNMENT_STYLE_LEFT
+
+            show_brick.alignmentSelection = catutils.ShowTextUtils.ALIGNMENT_STYLE_LEFT
             show_brick.setUserVariable(variable)
             show_script.brickList.add(show_brick)
             if hide_script:

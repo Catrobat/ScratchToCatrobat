@@ -106,7 +106,7 @@ else:
     print("Deleting all test generated files")
     for subdir, dirs, files in os.walk(test_folder_path):
         for file in files:
-                print("Checking " + subdir + "/" + file)
+            print("Checking " + subdir + "/" + file)
             if not files_in_test_folders.__contains__(file):
                 print("Deleting: " + subdir + "/" + file)
                 os.remove(subdir + "/" + file)

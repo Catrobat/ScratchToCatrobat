@@ -94,15 +94,21 @@ for module in modules_under_test:
     print()
 
 
-# Erase all generated files
-print("-"*80)
-print("Deleting all test generated files")
+pid = os.fork()
 
-for subdir, dirs, files in os.walk(test_folder_path):
-    for file in files:
-        if not files_in_test_folders.__contains__(file):
-            print("Deleting: " + subdir + "/" + file)
-            os.remove(subdir + "/" + file)
-
+if pid > 0:
+    print("This is written by the parent process {}".format(os.getpid()))
+else:
+    time.sleep(15)
+    print("This is written by the child process {}".format(os.getpid()))
+    # Erase all generated files
+    print("-"*80)
+    print("Deleting all test generated files")
+    for subdir, dirs, files in os.walk(test_folder_path):
+        for file in files:
+                print("Checking " + subdir + "/" + file)
+            if not files_in_test_folders.__contains__(file):
+                print("Deleting: " + subdir + "/" + file)
+                os.remove(subdir + "/" + file)
 
 sys.exit(helpers.ExitCode.SUCCESS)

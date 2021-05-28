@@ -65,7 +65,7 @@ for subdir, dirs, files in os.walk(helpers.SRC_PATH):
 files_in_test_folders = list()
 for subdir, dirs, files in os.walk(test_folder_path):
     for file in files:
-        files_in_test_folders.append(file)
+        files_in_test_folders.append(subdir + "/" + file)
 
 if len(sys.argv) >= 2 and sys.argv[1] != "all":
     if (isinstance(sys.argv[1], str) or isinstance(sys.argv[1], unicode)) and sys.argv[1].startswith("test_"):
@@ -106,9 +106,8 @@ else:
     print("Deleting all test generated files")
     for subdir, dirs, files in os.walk(test_folder_path):
         for file in files:
-            # print("Checking " + subdir + "/" + file)
-            if not files_in_test_folders.__contains__(file):
+            if not files_in_test_folders.__contains__(subdir + "/" + file):
                 print("Deleting: " + subdir + "/" + file)
-                print(os.remove(subdir + "/" + file))
+                os.remove(subdir + "/" + file)
 
 sys.exit(helpers.ExitCode.SUCCESS)

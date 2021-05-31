@@ -167,7 +167,7 @@ class Scratch3Parser(object):
             }
         else:
             #sb3 has same opcode for background # and name, sb2 has two different opcodes => decide opcode depending on param
-            if monitor["opcode"] == "looks_backdropnumbername":
+            if monitor["opcode"] == opcodes.LOOKS_BACK_DROP_NUMBER_NAME:
                 if monitor.get("params", {}).get("NUMBER_NAME") == "name":
                     monitor["opcode"] = "looks_backdropname"
                 else:

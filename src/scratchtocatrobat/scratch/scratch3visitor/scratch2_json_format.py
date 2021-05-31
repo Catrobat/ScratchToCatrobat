@@ -38,6 +38,7 @@ class Scratch3_2Opcodes(object):
     LOOKS_COSTUME = "looks_costume"
     LOOKS_BACKDROPS = "looks_backdrops"
     LOOKS_COSTUME_NUMBER_NAME = "looks_costumenumbername"
+    LOOKS_BACK_DROP_NUMBER_NAME = "looks_backdropnumbername"
 
     # sounds #
     SOUNDS_PLAY = "sound_play"

@@ -260,7 +260,7 @@ def add_new_block_to_context(context, opcode):
 
 
 def create_dummy_formula_block(context):
-    operator = createScratch3Block(context, "operator_add")
+    operator = createScratch3Block(context, opcodes.OPERATOR_ADD)
     addInputOfType(operator, "NUM1", LiteralType.INT)
     addInputOfType(operator, "NUM2", LiteralType.INT)
     context.spriteblocks[operator.name] = operator
@@ -444,7 +444,7 @@ class TestScratch3Blocks(unittest.TestCase):
         testblock = context.block
         addInputOfType(testblock, "BACKDROP", LiteralType.STRING)
 
-        block2 = add_new_block_to_context(context, "looks_backdrops")
+        block2 = add_new_block_to_context(context, opcodes.LOOKS_BACKDROPS)
         block2.fields["BACKDROP"] = ["test_costume"]
         addInputToBlock(testblock, "BACKDROP", block2.name, InputType.BLOCK_NO_SHADOW)
         testblock.inputs["BACKDROP"] = [1, block2.name]
@@ -1475,7 +1475,7 @@ class TestScratch3Blocks(unittest.TestCase):
 
         ## test menu and motion_goto block combination
         context = create_block_context(opcodes.MOTION_GOTO)
-        add_menu_block(context, "motion_goto_menu", MenuTypes.TO, Types.TEST_MOTION)
+        add_menu_block(context, opcodes.MOTION_GOTO, MenuTypes.TO, Types.TEST_MOTION)
         converted_block = visitBlock(context)
         assert converted_block[0] == opcodes.opcode_map[opcodes.MOTION_GOTO]
         assert converted_block[1] == Types.TEST_MOTION

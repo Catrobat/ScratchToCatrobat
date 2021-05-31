@@ -1,4 +1,7 @@
+
+
 from scratchtocatrobat.tools import logger, helpers
+from scratchtocatrobat.scratch.scratch3visitor.scratch2_json_format import Scratch3_2Opcodes as opcodes
 import os
 import json
 
@@ -175,7 +178,7 @@ class Scratch3Parser(object):
                 return None
             target = monitor.get("spriteName", None)
             param = (MONITOR_PARAM_MAPPING[monitor["opcode"]](monitor["params"]) if monitor["opcode"] in MONITOR_PARAM_MAPPING else None)
-            if monitor["opcode"] in ["data_variable", "sensing_current"]:
+            if monitor["opcode"] in ["data_variable", opcodes.SENSING_CURRENT]:
                 label = param
             else:
                 label = MONITOR_LABEL_MAPPING[monitor["opcode"]]

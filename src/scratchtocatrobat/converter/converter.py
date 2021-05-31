@@ -131,7 +131,7 @@ class KeyPressedData(object):
         self.clone_index_user_variable = Converter._create_or_get_user_variable(scene, user_variable, value)
         self.when_started_as_clone_script = catbase.WhenClonedScript()
         self.when_started_script = catbase.StartScript()
-        self.keys_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, KEY_SPRITE_NAME)
+        self.keys_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_BASE, KEY_SPRITE_NAME)
 
 TILT_KEY_DATA = [TiltKeyData(KeyNames.UP_ARROW, catformula.Sensors.Y_INCLINATION, catformula.Operators.SMALLER_THAN, -20, 1),
                  TiltKeyData(KeyNames.DOWN_ARROW, catformula.Sensors.Y_INCLINATION, catformula.Operators.GREATER_THAN, 20, 1),
@@ -350,13 +350,13 @@ class _ScratchToCatrobat(object):
         scratch.SCRIPT_SCENE_STARTS: lambda look_name: catbase.BroadcastScript(_background_look_to_broadcast_message(look_name)),
         scratch.SCRIPT_CLICKED: catbase.WhenScript,
         scratch.SCRIPT_CLONED: catbase.WhenClonedScript,
-        scratch.SCRIPT_PROC_DEF: catbricks.UserBrick,
+        scratch.SCRIPT_PROC_DEF: catbricks.UserDefinedBrick,
         scratch.SCRIPT_SENSOR_GREATER_THAN: None,
         scratch.SCRIPT_WHEN_BACKGROUND_SWITCHES_TO: None
     }
 
     complete_mapping = dict({
-        #
+        #<
         # Bricks
         #
         "broadcast:": None,
@@ -539,7 +539,7 @@ class _ScratchToCatrobat(object):
 
         # ["procDef", "Function1 %n string: %s", ["number1", "string1"], [1, ""], true]
         assert len(arguments) == 4
-        assert catrobat_script is catbricks.UserBrick
+        assert catrobat_script is catbricks.UserDefinedBrick
 
         scratch_function_header = arguments[0]
         param_labels = arguments[1]
@@ -550,7 +550,7 @@ class _ScratchToCatrobat(object):
 def _create_modified_formula_brick(sensor_type, unconverted_formula, catrobat_project, sprite):
 
     def _create_catrobat_sprite_stub(name=None):
-        sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, "WCTDummy" if name is None else name)
+        sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_BASE, "WCTDummy" if name is None else name)
         looks = sprite.getLookList()
         for lookname in ["look1", "look2", "look3"]:
             looks.add(catrobat.create_lookdata(lookname, None))
@@ -807,7 +807,7 @@ def get_show_brick(project, sprite, sprite_context, name, is_hide=False, is_list
     return get_show_brick_from_monitor(monitor, sprite, element, is_global, is_hide, is_list)
 
 def generate_sprite(name, filename):
-    sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, name)
+    sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_BASE, name)
     look = catcommon.LookData()
     look.setName(name)
     look.fileName = filename
@@ -921,7 +921,7 @@ class Converter(object):
         if MOUSE_SPRITE_NAME in upcoming_sprites:
             sprite = upcoming_sprites[MOUSE_SPRITE_NAME]
         else:
-            sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, MOUSE_SPRITE_NAME)
+            sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_BASE, MOUSE_SPRITE_NAME)
 
         look = catcommon.LookData()
         look.setName(MOUSE_SPRITE_NAME)
@@ -1461,7 +1461,7 @@ class Converter(object):
         if not key_sprite is None:
             return key_sprite, new_sprite
 
-        key_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, key_name)
+        key_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_BASE, key_name)
         key_look_main = catcommon.LookData()
         key_look_main.setName(key_name)
         key_look_main.fileName = _key_image_path_for(key_data.key_name, True)
@@ -1847,7 +1847,7 @@ class _ScratchObjectConverter(object):
         scratch_user_script_declared_labels_map = dict(map(lambda s: (s.arguments[0], s.arguments[1]), scratch_user_scripts))
         sprite_context = SpriteContext(sprite_name, scratch_user_script_declared_labels_map, scratch_object.monitors, scratch_object.list_monitors)
         catrobat_scene = self._catrobat_project.getDefaultScene()
-        sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, sprite_name)
+        sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_BASE, sprite_name)
         assert sprite_name == sprite.getName()
 
         if self._context is not None:
@@ -1903,11 +1903,11 @@ class _ScratchObjectConverter(object):
             # TODO: also check the other TODOs related to this issue (overall three different places in converter.py)
             if isinstance(cat_instance, catbricks.NoteBrick):
                 continue
-            if not isinstance(cat_instance, catbricks.UserBrick):
+            if not isinstance(cat_instance, catbricks.UserDefinedBrick):
                 assert isinstance(cat_instance, catbase.Script)
                 sprite.addScript(cat_instance)
             else:
-                sprite.addUserBrick(cat_instance)
+                sprite.addUserDefinedBrick(cat_instance)
 
             if self._progress_bar != None:
                 self._progress_bar.update(ProgressType.CONVERT_SCRIPT)
@@ -2102,7 +2102,7 @@ class _ScratchObjectConverter(object):
                 # TODO: also check the other TODOs related to this issue (overall three different places in converter.py)
                 if isinstance(cat_instance, catbricks.NoteBrick):
                     continue
-                elif not isinstance(cat_instance, catbricks.UserBrick):
+                elif not isinstance(cat_instance, catbricks.UserDefinedBrick):
                     assert isinstance(cat_instance, catbase.Script)
                     cat_instance.brickList.add(brick)
                 else:
@@ -3044,7 +3044,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             if base_sprite in self.script_context.sprite_context.context.upcoming_sprites:
                 new_sprite = self.script_context.sprite_context.context.upcoming_sprites[base_sprite]
             else:
-                new_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, base_sprite)
+                new_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_BASE, base_sprite)
                 self.script_context.sprite_context.context.upcoming_sprites[new_sprite.getName()] = new_sprite
 
             create_clone_of_brick = self.CatrobatClass()
@@ -3351,7 +3351,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         if sprite_name in self.script_context.sprite_context.context.upcoming_sprites:
             sprite = self.script_context.sprite_context.context.upcoming_sprites[sprite_name]
         else:
-            sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, sprite_name)
+            sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_BASE, sprite_name)
             self.script_context.sprite_context.context.upcoming_sprites[sprite_name] = sprite
         return self.CatrobatClass(sprite)
 
@@ -3383,7 +3383,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             if base_sprite in self.script_context.sprite_context.context.upcoming_sprites:
                 new_sprite = self.script_context.sprite_context.context.upcoming_sprites[base_sprite]
             else:
-                new_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_SINGLE, base_sprite)
+                new_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_BASE, base_sprite)
                 self.script_context.sprite_context.context.upcoming_sprites[new_sprite.getName()] = new_sprite
 
             go_to_brick = self.CatrobatClass(new_sprite)

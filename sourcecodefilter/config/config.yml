@@ -1,17 +1,17 @@
 #==================================================================================================
 # Define and update parameters here
 #==================================================================================================
-catroid_version: v0.9.34
+catroid_version: v0.9.75
 xstream_class_name: BackwardCompatibleCatrobatLanguageXStream
 archive_extension: "zip"
 #URL: "https://github.com/Catrobat/Catroid/archive/master.%{archive_extension}"
 #URL: "https://github.com/Catrobat/Catroid/archive/%{catroid_version}.%{archive_extension}"
 #URL: "https://github.com/Catrobat/Catroid/archive/release-0.9.34.%{archive_extension}"
 #URL: "https://github.com/Catrobat/Catroid/archive/v0.9.60.zip"
-URL: "https://github.com/Catrobat/Catroid/archive/v0.9.64.zip"
+URL: "https://github.com/Catrobat/Catroid/archive/%{catroid_version}.%{archive_extension}"
 xstream_version: "1.4.11.1"
 xstream_lib_extension: "jar"
-xstream_download_URL: "http://repo.maven.apache.org/maven2/com/thoughtworks/xstream/xstream/%{xstream_version}/xstream-%{xstream_version}.%{xstream_lib_extension}"
+xstream_download_URL: "https://repo.maven.apache.org/maven2/com/thoughtworks/xstream/xstream/%{xstream_version}/xstream-%{xstream_version}.%{xstream_lib_extension}"
 download_path: "./workspace/input"
 output_path: "./workspace/output"
 output_src_path: "%{output_path}/src"
@@ -26,12 +26,12 @@ remove_classes: [
     # legoNXT bricks
     LegoNXTSetting, LegoNxtMotorMoveBrick, LegoNxtMotorStopBrick,
     LegoNxtMotorTurnAngleBrick, LegoNxtPlayToneBrick, LegoEv3MotorMoveBrick, 
-    LegoEv3MotorStopBrick, LegoEv3PlayToneBrick, LegoEv3SetLedBrick,
+    LegoEv3MotorStopBrick, LegoEv3PlayToneBrick, LegoEv3SetLedBrick, LegoEv3MotorTurnAngleBrick,
 
     # Phiro bricks
     PhiroMotorMoveBackwardBrick,
     PhiroMotorMoveForwardBrick, PhiroMotorStopBrick, PhiroPlayToneBrick,
-    PhiroRGBLightBrick, PhiroIfLogicBeginBrick,
+    PhiroRGBLightBrick, PhiroIfLogfiicBeginBrick,
 
     # Arduino bricks
     ArduinoSendDigitalValueBrick, ArduinoSendPWMValueBrick,
@@ -48,14 +48,22 @@ remove_classes: [
 
     # Raspi bricks
     RaspiPwmBrick, RaspiSendDigitalValueBrick, RaspiInterruptScript, WhenRaspiPinChangedBrick,
+    RaspiIfLogicBeginBrick,
 
     # physics bricks
     CollisionScript, CollisionReceiverBrick, SetBounceBrick, SetFrictionBrick,
     SetGravityBrick, SetMassBrick, SetPhysicsObjectTypeBrick, SetVelocityBrick,
-    TurnLeftSpeedBrick, TurnRightSpeedBrick, WhenBounceOffScript, WhenBounceOffBrick,
+    TurnLeftSpeedBrick, TurnRightSpeedBrick, WhenBounceOffScript, WhenBounceOffBrick, SetInstrumentBrick,
+    
+    
+    # asserts 
+    AssertEqualsBrick, AssertUserListsBrick, 
 
     # Miscellaneous
-    WhenGamepadButtonBrick, WhenGamepadButtonScript, ThreadScheduler, DroneVideoLookData, NfcTagData
+    WhenGamepadButtonBrick, WhenGamepadButtonScript, ThreadScheduler, DroneVideoLookData, NfcTagData, 
+    FinishStageBrick, ExitStageBrick, FlashBrick, ForItemInUserListBrick, ForVariableFromToBrick, PauseForBeatsBrick, 
+    ReadListFromDeviceBrick, RunningStitchBrick, StopRunningStitchBrick, StoreCSVIntoUserListBrick,
+    TripleStitchBrick,WaitTillIdleBrick,WriteListOnDeviceBrick, WriteVariableOnDeviceBrick, ZigZagStitchBrick
 ]
 
 remove_method_invocations:
@@ -132,6 +140,43 @@ remove_method_invocations_with_parameter_mapping:
         - xstream.omitField(SetNfcTagBrick.class,"nfcTagNdefDefaultType")
         - xstream.alias("script",WhenBounceOffScript.class)
         - xstream.alias("brick",WhenBounceOffBrick.class)
+        - xstream.omitField(CameraBrick.class,"spinnerValues")
+        - xstream.omitField(ChooseCameraBrick.class,"spinnerValues")
+        - xstream.omitField(FlashBrick.class,"spinnerValues")
+        - xstream.alias("brick",FlashBrick.class)
+        - xstream.alias("brick",LookRequestBrick.class)
+        - xstream.alias("brick",BackgroundRequestBrick.class)
+        - xstream.alias("brick",PauseForBeatsBrick.class)
+        - xstream.alias("brick",ForVariableFromToBrick.class)
+        - xstream.alias("brick",ForItemInUserListBrick.class)
+        - xstream.alias("brick",SetBackgroundByIndexBrick.class)
+        - xstream.alias("brick",SetBackgroundByIndexAndWaitBrick.class)
+        - xstream.alias("brick",SetInstrumentBrick.class)
+        - xstream.alias("brick",SetRotationStyleBrick.class)
+        - xstream.alias("brick",StartListeningBrick.class)
+        - xstream.alias("brick",StopSoundBrick.class)
+        - xstream.alias("brick",SetListeningLanguageBrick.class)
+        - xstream.alias("brick",WriteVariableOnDeviceBrick.class)
+        - xstream.alias("brick",ReadVariableFromFileBrick.class)
+        - xstream.alias("brick",WriteListOnDeviceBrick.class)
+        - xstream.alias("brick",WriteVariableToFileBrick.class)
+        - xstream.alias("brick",ReadListFromDeviceBrick.class)
+        - xstream.alias("brick",WebRequestBrick.class)
+        - xstream.alias("brick",StoreCSVIntoUserListBrick.class)
+        - xstream.alias("brick",AssertEqualsBrick.class)
+        - xstream.alias("brick",FinishStageBrick.class)
+        - xstream.alias("brick",AssertUserListsBrick.class)
+        - xstream.alias("brick",ExitStageBrick.class)
+        - xstream.alias("brick",ParameterizedBrick.class)
+        - xstream.alias("brick",ParameterizedEndBrick.class)
+        - xstream.alias("brick",TapForBrick.class)
+        - xstream.alias("brick",LegoEv3MotorTurnAngleBrick.class)
+        - xstream.alias("brick",RunningStitchBrick.class)
+        - xstream.alias("brick",StopRunningStitchBrick.class)
+        - xstream.alias("brick",ZigZagStitchBrick.class)
+        - xstream.alias("brick",TripleStitchBrick.class)
+        - xstream.alias("brick",WriteEmbroideryToFileBrick.class)
+        - xstream.alias("brick",WaitTillIdleBrick.class)
 
     org.catrobat.catroid.io.BackwardCompatibleCatrobatLanguageXStream:
         - brickInfo.addBrickFieldToMap("speed",BrickField.LEGO_NXT_SPEED)
@@ -262,6 +307,11 @@ remove_assignments_mapping:
         - brickInfo=new BrickInfo(SetNfcTagBrick.class.getSimpleName())
         - brickInfo=new BrickInfo(WhenGamepadButtonBrick.class.getSimpleName())
         - brickInfo=new BrickInfo(WhenBounceOffBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(StartListeningBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(SetListeningLanguageBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(FlashBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(RaspiIfLogicBeginBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(SetRotationStyleBrick.class.getSimpleName())
     org.catrobat.catroid.common.LookData:
         - this.file=file
     org.catrobat.catroid.common.SoundInfo:
@@ -334,6 +384,7 @@ additional_serialization_classes:
     - ProjectManager
     - UserListBrick
     - UserVariableBrick
+    - UserDefinedBrick
     - IfThenLogicEndBrick
     - WhenTouchDownBrick
     - AskSpeechBrick
@@ -349,14 +400,34 @@ additional_serialization_classes:
     - UserVariableBrickInterface
     - Nameable
     - UserData
+    - UserDataHashMap
+    - UserVariableBrickWithFormula
     - R
-
-
-
+    - VisualPlacementBrick
+    - FunctionProvider
+    - MathFunctionProvider
+    - FormulaFunction
+    - TouchFunctionProvider
+    - UnaryFunction
+    - UnaryFunctionAction
+    - BinaryFunctionAction
+    - BinaryFunction
+    - TouchUtil
+    - EnumUtils
+    - InputFormulaField
+    - XStreamUserDataHashMapConverter
+    - EventId
+    - BroadcastEventId
+    - SetLookEventId
+    - WhenConditionEventId
+    - SetRotationStyleBrick
+    
+    
 preserved_interfaces:
     [Brick, BroadcastMessage, Converter, LoopBeginBrick, MindstormsSensor,
     MindstormsCommand, ScriptBrick, UserVariableBrickInterface, Nameable, UserData,
-    Serializable]
+    Serializable, FunctionProvider, FormulaFunction, UnaryFunctionAction, BinaryFunctionAction, 
+    FormulaField, EventId, Brick.FormulaField, Formula]
 
 additional_helper_classes:
     - BroadcastMessage
@@ -370,6 +441,7 @@ additional_helper_classes:
     - XStreamScriptConverter
     - XStreamSettingConverter
     - XStreamFieldKeyOrder
+    - XStreamUserDataHashMapConverter
     - LOOKUP
     - "%{xstream_class_name}"
     - XStreamUserVariableConverter
@@ -391,7 +463,10 @@ additional_helper_classes:
     - ProjectVariableBehaviour
     - ProjectListBehaviour
     - Nameable
+    - TouchUtil
     - R
+    - FormulaField
+    
 
 class_to_preserved_fields_mapping:
     GoToBrick:
@@ -402,6 +477,7 @@ class_to_preserved_fields_mapping:
         - broadcastMessage
     FormulaElement:
         - parent
+        - formulaFunctions
     PlaySoundBrick:
         - oldSelectedSound
     PointToBrick:
@@ -452,6 +528,25 @@ class_to_preserved_fields_mapping:
         - parent
     SetVariableBrick:
         - defaultPrototypeToken
+    MathFunctionProvider:
+        - parent    
+    TouchFunctionProvider:
+        - parent
+    UnaryFunction: 
+        - parent
+    BinaryFunction: 
+        - parent
+    TouchUtil: 
+        - isTouching 
+    UserDefinedScript: 
+        - userDefinedBrickID
+    BroadcastEventId: 
+        - message
+    SetLookEventId: 
+        - sprite
+        - lookData   
+    UserDefinedBrickInput: 
+        - value
 
 class_to_preserved_methods_mapping:
     ThinkForBubbleBrick:
@@ -474,6 +569,7 @@ class_to_preserved_methods_mapping:
         - initializeBrickFields
     Scene:
         - addSprite
+        - getBackgroundSprite
     Brick:
         - getRequiredResources
         - isCommentedOut
@@ -484,6 +580,7 @@ class_to_preserved_methods_mapping:
         - setBroadcastMessage
         - getBroadcastMessage
         - getScriptBrick
+        - createEventId
     Script:
         - updateUserBricksIfNecessary
         - getRequiredResources
@@ -491,15 +588,19 @@ class_to_preserved_methods_mapping:
         - setIfThenBrickReferences
         - setLoopBrickReferences
         - getScriptBrick
+        - createEventId
     ScriptBrick:
         - getScript
     StartScript:
         - getScriptBrick
+        - createEventId
     WhenScript:
         - getScriptBrick
+        - createEventId
     WhenTouchDownScript:
         - getScriptBrick
         - getRequiredResources
+        - createEventId
     Project:
         - ifLandscapeSwitchWidthAndHeight
         - ifPortraitSwitchWidthAndHeight
@@ -516,6 +617,8 @@ class_to_preserved_methods_mapping:
         - getTitle
     Look:
         - getDirectionInUserInterfaceDimensionUnit
+        - getX
+        - getY
     LookData:
         - setLookFilename
     FormulaElement:
@@ -523,9 +626,15 @@ class_to_preserved_methods_mapping:
         - replaceElement
         - replaceWithSubElement
         - clone
+        - initFunctionMap
+        - interpretFunctionRand
+        - isNumberWithDecimalPoint
+        - tryCloneElement
     Formula:
         - getRoot
         - clone
+        - initInverted
+        - init
     PlaySoundBrick:
         - setSoundInfo
     PlaySoundAndWaitBrick:
@@ -676,10 +785,14 @@ class_to_preserved_methods_mapping:
         - compareTo
     WhenBackgroundChangesScript:
         - getScriptBrick
+        - createEventId
     WhenClonedScript:
         - getScriptBrick
+        - createEventId
     WhenConditionScript:
         - getScriptBrick
+        - createEventId
+        - getConditionFormula
     UserVariableBrickInterface:
         - getUserVariable
         - setUserVariable
@@ -688,6 +801,10 @@ class_to_preserved_methods_mapping:
         - getBroadcastMessage
         - setBroadcastMessage
     BroadcastMessageBrick:
+        - getBroadcastMessage
+        - setBroadcastMessage
+    BroadcastBrick:
+        - getScript
         - getBroadcastMessage
         - setBroadcastMessage
     XStreamConcurrentFormulaHashMapConverter:
@@ -729,6 +846,111 @@ class_to_preserved_methods_mapping:
         - doUnmarshal
     CloneBrick:
         - CloneBrick
+    ClearUserListBrick:
+        - initializeBrickFields
+    SceneStartBrick: 
+        - initializeBrickFields
+    SceneTransitionBrick:
+        - initializeBrickFields
+    SetBackgroundAndWaitBrick:
+        - initializeBrickFields
+    SetBackgroundBrick:
+        - initializeBrickFields
+    SetTempoBrick: 
+        - initializeBrickFields
+    StopScriptBrick: 
+        - initializeBrickFields
+    StopAllSounds:
+        - initializeBrickFields
+    TapAtBrick:
+        - initializeBrickFields
+    WaitUntilBrick:
+        - initializeBrickFields
+    WhenTouchDownBrick: 
+        - initializeBrickFields
+    FunctionProvider:
+        - addFunctionsToMap
+    FormulaFunction:
+        - execute
+    MathFunctionProvider:
+        - addFunctionsToMap 
+        - interpretFunctionArcTan2
+        - interpretFunctionMod   
+    TouchFunctionProvider:
+        - addFunctionsToMap
+        - interpretFunctionFingerTouched
+        - interpretFunctionMultiFingerX
+        - interpretFunctionMultiFingerY
+        - booleanToDouble
+    UnaryFunctionAction: 
+        - execute
+    UnaryFunction: 
+        - execute
+    BinaryFunctionAction: 
+        - execute
+    BinaryFunction: 
+        - execute
+    TouchUtil: 
+        - getY
+        - getX 
+        - isFingerTouching
+    EnumUtils:
+        - isValidEnum
+        - getEnum
+    UserData: 
+        - getValue 
+        - setValue
+        - reset
+        - getDeviceKey
+    UserList: 
+        - getValue 
+        - setValue
+        - reset
+        - getDeviceKey
+        - getName 
+        - setName
+    UserVariable: 
+        - getValue 
+        - setValue
+        - reset
+        - getDeviceKey
+        - getName 
+        - setName
+    XStreamUserDataHashMapConverter: 
+        - marshal
+        - canConvert
+        - unmarshal
+    UserDefinedBrick: 
+        - copyUserDefinedDataList
+        - clone
+        - copyFormulaOfInput
+    UserDefinedReceiverBrick:
+        - initializeBrickFields
+        - getScript
+    UserDefinedScript: 
+        - getScriptBrick
+        - createEventId
+        - getUserDefinedBrickID
+    UserDefinedBrickData:
+        - getType
+        - getName
+    UserDefinedBrickInput: 
+        - getName
+        - setName
+        - getType
+        - getInputFormulaField 
+        - getDeviceKey
+        - reset
+    BroadcastEventId: 
+        - hashCode
+    SetLookEventId: 
+        - hashCode
+    WhenConditionEventId: 
+        - hashCode
+    WhenConditionBrick: 
+        - getConditionFormula
+    UserDefinedBrickLabel: 
+        - getName
         
 remove_fields_mapping:
     Brick:
@@ -741,7 +963,8 @@ remove_fields_mapping:
         MAIN_URL_HTTPS, SHARE_PROGRAM_URL, CATROBAT_TERMS_OF_USE_URL, CATROBAT_HELP_URL, 
         CATROBAT_TOKEN_LOGIN_URL, CATROBAT_DELETE_ACCOUNT_URL, CACHE_DIR, EXTERNAL_STORAGE_ROOT_EXPORT_DIRECTORY, 
         BACKPACK_DIRECTORY, POCKET_PAINT_CACHE_DIR, CAMERA_CACHE_DIR, SOUND_RECORDER_CACHE_DIR, MEDIA_LIBRARY_CACHE_DIR, 
-        BACKPACK_FILE, BACKPACK_SCENE_DIRECTORY, BACKPACK_SOUND_DIRECTORY, BACKPACK_IMAGE_DIRECTORY, LegoSensorType, LegoPort
+        BACKPACK_FILE, BACKPACK_SCENE_DIRECTORY, BACKPACK_SOUND_DIRECTORY, BACKPACK_IMAGE_DIRECTORY, LegoSensorType, LegoPort, 
+        WEB_TEST_URL, BASE_APP_URL_HTTPS, MAIN_URL_HTTPS, TRUSTED_USER_DOMAINS_FILE, SHARE_PROJECT_URL
         ]
     Look:
         [actionsToRestart, pixmap, whenParallelAction, shader, RotationStyle, scheduler]
@@ -762,6 +985,13 @@ remove_fields_mapping:
         - brickController
     Sprite:
         - nfcTagList
+    UserDefinedReceiverBrick: 
+        - userBrickSpace
+    TouchUtil: 
+        - touches
+        - currentlyTouchingPointersToTouchIndex
+    
+
 
 remove_methods_mapping:
     GoToBrick:
@@ -774,6 +1004,7 @@ remove_methods_mapping:
         - cloneUserBricks
         - cloneLook
         - getNfcTagList
+        - addClonesOfUserDefinedBrickList
     Script:
         - setIfBrickReferences
         - setIfThenBrickReferences
@@ -787,7 +1018,7 @@ remove_methods_mapping:
     XmlHeader:
         - setTags
     Look:
-        [copyLookForSprite, createBrightnessContrastShader, checkImageChanged, setWhenParallelAction]
+        [copyLookForSprite, createBrightnessContrastShader, checkImageChanged, setWhenParallelAction, adjustSimultaneousMovementXY]
     NXTSensor:
         [resetScaledValue, getSensorReadings, getUpdateInterval,
         updateLastSensorValue, getLastSensorValue]
@@ -807,7 +1038,10 @@ remove_methods_mapping:
     WhenConditionBrick:
         - getPositionInScript
     WhenBackgroundChangesBrick:
-        - getPositionInScript    
+        - getPositionInScript  
+
+  
+
 
 remove_packages_mapping:
     - android

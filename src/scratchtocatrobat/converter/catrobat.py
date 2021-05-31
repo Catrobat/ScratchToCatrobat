@@ -34,7 +34,7 @@ import org.catrobat.catroid.formulaeditor.FormulaElement.ElementType as catEleme
 _BACKGROUND_SPRITE_NAME = "Hintergrund"
 
 ANDROID_IGNORE_MEDIA_MARKER_FILE_NAME = ".nomedia"
-CATROBAT_LANGUAGE_VERSION = float("{0:.5f}".format(catcommon.Constants.CURRENT_CATROBAT_LANGUAGE_VERSION))
+CATROBAT_LANGUAGE_VERSION = catcommon.Constants.CURRENT_CATROBAT_LANGUAGE_VERSION
 PACKAGED_PROGRAM_FILE_EXTENSION = catcommon.Constants.CATROBAT_EXTENSION
 PROGRAM_SOURCE_FILE_NAME = catcommon.Constants.CODE_XML_FILE_NAME
 

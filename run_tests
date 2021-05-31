@@ -26,11 +26,8 @@ from __future__ import print_function
 
 import atexit
 import os
-import platform
 import subprocess
 import sys
-import threading
-import time
 
 sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), "src"))
 from scratchtocatrobat.tools import helpers

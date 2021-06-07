@@ -2025,12 +2025,12 @@ class _ScratchObjectConverter(object):
         rotation_style = scratch_object.get_rotationStyle()
         if rotation_style is not None:
             traverser = _BlocksConversionTraverser(sprite, catrobat_project)
-            if rotation_style == "leftRight":
-                set_rotation_style_brick = traverser._converted_helper_brick_or_formula_element(["left-right"], "setRotationStyle")
+            if rotation_style == "left-right":
+                set_rotation_style_brick = traverser._converted_helper_brick_or_formula_element([rotation_style], "setRotationStyle")
                 assert set_rotation_style_brick is not None
                 implicit_bricks_to_add += [set_rotation_style_brick]
-            elif rotation_style == "none":
-                set_rotation_style_brick = traverser._converted_helper_brick_or_formula_element(["don't rotate"], "setRotationStyle")
+            elif rotation_style == "don't rotate":
+                set_rotation_style_brick = traverser._converted_helper_brick_or_formula_element([rotation_style], "setRotationStyle")
                 assert set_rotation_style_brick is not None
                 implicit_bricks_to_add += [set_rotation_style_brick]
 

@@ -2,7 +2,11 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER">
+		<attributes>
+			<attribute name="module" value="true"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="lib" path="lib/commons-io-2.3.jar"/>
 	<classpathentry kind="lib" path="lib/guava-15.0.jar"/>
 	<classpathentry kind="lib" path="lib/org.eclipse.core.contenttype_3.5.0.v20150421-2214.jar"/>
@@ -17,5 +21,9 @@
 	<classpathentry kind="lib" path="lib/org.eclipse.osgi_3.10.100.v20150529-1857.jar"/>
 	<classpathentry kind="lib" path="lib/org.eclipse.text_3.5.400.v20150505-1044.jar"/>
 	<classpathentry kind="lib" path="lib/snakeyaml-1.16.jar"/>
+	<classpathentry kind="lib" path="/home/lukas/IdeaProjects/ScratchToCatrobat/sourcecodefilter/lib/ini4j-0.5.4.jar"/>
+	<classpathentry kind="lib" path="/home/lukas/IdeaProjects/ScratchToCatrobat/sourcecodefilter/lib/ini4j-0.5.4-javadoc.jar"/>
+	<classpathentry kind="lib" path="/home/lukas/IdeaProjects/ScratchToCatrobat/sourcecodefilter/lib/ini4j-0.5.4-jdk14.jar"/>
+	<classpathentry kind="lib" path="/home/lukas/IdeaProjects/ScratchToCatrobat/sourcecodefilter/lib/ini4j-0.5.4-sources.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

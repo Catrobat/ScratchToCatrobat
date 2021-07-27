@@ -1,13 +1,9 @@
 #==================================================================================================
 # Define and update parameters here
 #==================================================================================================
-catroid_version: v0.9.75
+catroid_version: v1.0.3
 xstream_class_name: BackwardCompatibleCatrobatLanguageXStream
 archive_extension: "zip"
-#URL: "https://github.com/Catrobat/Catroid/archive/master.%{archive_extension}"
-#URL: "https://github.com/Catrobat/Catroid/archive/%{catroid_version}.%{archive_extension}"
-#URL: "https://github.com/Catrobat/Catroid/archive/release-0.9.34.%{archive_extension}"
-#URL: "https://github.com/Catrobat/Catroid/archive/v0.9.60.zip"
 URL: "https://github.com/Catrobat/Catroid/archive/%{catroid_version}.%{archive_extension}"
 xstream_version: "1.4.11.1"
 xstream_lib_extension: "jar"
@@ -17,6 +13,8 @@ output_path: "./workspace/output"
 output_src_path: "%{output_path}/src"
 output_lib_path: "%{output_path}/lib"
 relative_code_source_path: "catroid/src/main/java"
+config_ini_path: "/config/default.ini" 
+current_catrobat_language_constant: "CURRENT_CATROBAT_LANGUAGE_VERSION" # name of the LANGUAGE VERSION Constant in org.catrobat.catroid.common.Constants.java
 
 
 #==================================================================================================
@@ -177,6 +175,14 @@ remove_method_invocations_with_parameter_mapping:
         - xstream.alias("brick",TripleStitchBrick.class)
         - xstream.alias("brick",WriteEmbroideryToFileBrick.class)
         - xstream.alias("brick",WaitTillIdleBrick.class)
+        - xstream.alias("brick",EditLookBrick.class)
+        - xstream.alias("brick",DeleteLookBrick.class)
+        - xstream.alias("brick",CopyLookBrick.class)
+        - xstream.alias("brick",MoveNStepsBrick.class)
+        - xstream.alias("brick",OpenUrlBrick.class)
+        - xstream.alias("brick",TouchAndSlideBrick.class)
+        - xstream.alias("brick",PaintNewLookBrick.class)
+
 
     org.catrobat.catroid.io.BackwardCompatibleCatrobatLanguageXStream:
         - brickInfo.addBrickFieldToMap("speed",BrickField.LEGO_NXT_SPEED)
@@ -258,6 +264,7 @@ remove_method_invocations_with_parameter_mapping:
         - brickInfoMap.put("whenGamepadButtonBrick",brickInfo)
         - scriptInfoMap.put("whenGamepadButtonScript",WhenGamepadButtonScript.class.getSimpleName())
         - scriptInfoMap.put("collisionScript",WhenBounceOffScript.class.getSimpleName())
+        - brickInfoMap.put("OpenUrlBrick",brickInfo)
     org.catrobat.catroid.content.bricks.FormulaBrick:
         - brickFieldToTextViewIdMap.put(brickField,textViewResourceId)
 remove_assignments_mapping:
@@ -312,6 +319,7 @@ remove_assignments_mapping:
         - brickInfo=new BrickInfo(FlashBrick.class.getSimpleName())
         - brickInfo=new BrickInfo(RaspiIfLogicBeginBrick.class.getSimpleName())
         - brickInfo=new BrickInfo(SetRotationStyleBrick.class.getSimpleName())
+        - brickInfo=new BrickInfo(OpenUrlBrick.class.getSimpleName())
     org.catrobat.catroid.common.LookData:
         - this.file=file
     org.catrobat.catroid.common.SoundInfo:
@@ -421,13 +429,24 @@ additional_serialization_classes:
     - SetLookEventId
     - WhenConditionEventId
     - SetRotationStyleBrick
-    
+    - UserVariableBrickWithVisualPlacement
+    - BrickSpinner
+    - UserDefinedBrickEventId
+    - PickableDrum
+    - ShowNotePickerFormulaEditorStrategy
+    - ShowFormulaEditorStrategy
+    - Callback
+    - ShowColorPickerFormulaEditorStrategy
+    - TernaryFunction
+    - TernaryFunctionAction
+    - ShowTextUtils
     
 preserved_interfaces:
     [Brick, BroadcastMessage, Converter, LoopBeginBrick, MindstormsSensor,
     MindstormsCommand, ScriptBrick, UserVariableBrickInterface, Nameable, UserData,
     Serializable, FunctionProvider, FormulaFunction, UnaryFunctionAction, BinaryFunctionAction, 
-    FormulaField, EventId, Brick.FormulaField, Formula]
+    FormulaField, EventId, Brick.FormulaField, Formula, UserVariableBrickWithVisualPlacement, 
+    ShowFormulaEditorStrategy, Callback, TernaryFunctionAction]
 
 additional_helper_classes:
     - BroadcastMessage
@@ -466,6 +485,7 @@ additional_helper_classes:
     - TouchUtil
     - R
     - FormulaField
+    - ShowNotePickerFormulaEditorStrategy
     
 
 class_to_preserved_fields_mapping:
@@ -547,6 +567,15 @@ class_to_preserved_fields_mapping:
         - lookData   
     UserDefinedBrickInput: 
         - value
+    UserVariableBrickWithVisualPlacement: 
+        - spinner
+        - userVariable
+    PlayNoteForBeatsBrick: 
+        - showFormulaEditorStrategy
+    SetThreadColorBrick: 
+        - showFormulaEditorStrategy
+    ShowTextUtils: 
+        - ALIGNMENT_STYLE_CENTERED
 
 class_to_preserved_methods_mapping:
     ThinkForBubbleBrick:
@@ -630,6 +659,8 @@ class_to_preserved_methods_mapping:
         - interpretFunctionRand
         - isNumberWithDecimalPoint
         - tryCloneElement
+        - addAdditionalChild
+        - interpretFunctionIfThenElse
     Formula:
         - getRoot
         - clone
@@ -882,6 +913,7 @@ class_to_preserved_methods_mapping:
         - interpretFunctionMultiFingerX
         - interpretFunctionMultiFingerY
         - booleanToDouble
+        - interpretFunctionIndexCurrentTouch
     UnaryFunctionAction: 
         - execute
     UnaryFunction: 
@@ -894,6 +926,7 @@ class_to_preserved_methods_mapping:
         - getY
         - getX 
         - isFingerTouching
+        - getIndexOfCurrentTouch
     EnumUtils:
         - isValidEnum
         - getEnum
@@ -951,6 +984,49 @@ class_to_preserved_methods_mapping:
         - getConditionFormula
     UserDefinedBrickLabel: 
         - getName
+    EmptyScript: 
+        - getScriptBrick
+        - createEventId
+    UserDefinedBrickEventId: 
+        - equals
+    UserVariableBrickWithVisualPlacement: 
+        - clone
+        - getUserVariable 
+        - setUserVariable
+    BrickSpinner: 
+        - initializeBrickFields
+    UserDefinedBrickEventId: 
+        - initializeBrickFields
+        - equals
+    PickableDrum: 
+        - initializeBrickFields
+    ShowNotePickerFormulaEditorStrategy: 
+        - initializeBrickFields
+        - showFormulaEditorToEditFormula
+        - isViewInScriptFragment
+        - showSelectEditDialog
+    ShowFormulaEditorStrategy: 
+        - initializeBrickFields
+        - showFormulaEditorToEditFormula
+        - Callback
+    ShowColorPickerFormulaEditorStrategy: 
+        - initializeBrickFields
+        - showFormulaEditorToEditFormula
+        - isViewInScriptFragment
+        - showSelectEditDialog
+        - isInCorrectFragment
+    TernaryFunction: 
+        - initializeBrickFields
+        - execute 
+    TernaryFunctionAction: 
+        - initializeBrickFields
+        - execute
+    ShowTextUtils: 
+        - convertColorToString
+        - isValidColorString
+        - getStringAsInteger
+        - isNumberAndInteger
+        - convertToEnglishDigits
         
 remove_fields_mapping:
     Brick:
@@ -964,8 +1040,8 @@ remove_fields_mapping:
         CATROBAT_TOKEN_LOGIN_URL, CATROBAT_DELETE_ACCOUNT_URL, CACHE_DIR, EXTERNAL_STORAGE_ROOT_EXPORT_DIRECTORY, 
         BACKPACK_DIRECTORY, POCKET_PAINT_CACHE_DIR, CAMERA_CACHE_DIR, SOUND_RECORDER_CACHE_DIR, MEDIA_LIBRARY_CACHE_DIR, 
         BACKPACK_FILE, BACKPACK_SCENE_DIRECTORY, BACKPACK_SOUND_DIRECTORY, BACKPACK_IMAGE_DIRECTORY, LegoSensorType, LegoPort, 
-        WEB_TEST_URL, BASE_APP_URL_HTTPS, MAIN_URL_HTTPS, TRUSTED_USER_DOMAINS_FILE, SHARE_PROJECT_URL
-        ]
+        WEB_TEST_URL, BASE_APP_URL_HTTPS, MAIN_URL_HTTPS, TRUSTED_USER_DOMAINS_FILE, SHARE_PROJECT_URL, 
+        TEMP_LOOK_FILE, EXIFTAGS_FOR_EXIFREMOVER]
     Look:
         [actionsToRestart, pixmap, whenParallelAction, shader, RotationStyle, scheduler]
     NXTSensor:
@@ -990,9 +1066,10 @@ remove_fields_mapping:
     TouchUtil: 
         - touches
         - currentlyTouchingPointersToTouchIndex
+    BrickSpinner: 
+        - adapter
+        - onItemSelectedListener
     
-
-
 remove_methods_mapping:
     GoToBrick:
         - setSpinnerSelection
@@ -1014,7 +1091,8 @@ remove_methods_mapping:
         [uploadProject, loadProject, cancelLoadProject, canLoadProject, saveProject,
         initializeDefaultProject, initializeDroneProject, initializeNewProject,
         deleteCurrentProject, checkCurrentSprite, checkCurrentScript, deleteProject, renameProject,
-        addScript, createAndShowUploadDialog, loadLegoNXTSettingsFromProject, loadLegoEV3SettingsFromProject, createNewEmptyProject, createNewExampleProject]
+        addScript, createAndShowUploadDialog, loadLegoNXTSettingsFromProject, loadLegoEV3SettingsFromProject, createNewEmptyProject, createNewExampleProject,
+        loadDownloadedProjects, saveDownloadedProjects]
     XmlHeader:
         - setTags
     Look:
@@ -1039,9 +1117,9 @@ remove_methods_mapping:
         - getPositionInScript
     WhenBackgroundChangesBrick:
         - getPositionInScript  
-
-  
-
+    BrickSpinner:
+        - add
+        - setOnItemSelectedListener
 
 remove_packages_mapping:
     - android
@@ -1049,13 +1127,21 @@ remove_packages_mapping:
     - org.catrobat.catroid.R
     - org.catrobat.catroid.common.Constants.DEFAULT_ROOT
     - org.catrobat.catroid.pocketmusic
+    - org.jetbrains.annotations.NotNull
     
 remove_annotations:
     - VisibleForTesting
     - Look.RotationStyle
+    - NonNull
+    
 remove_superclass:
     - Image
+    
 remove_method_parameter_at_position:
-    addAllowedBrickField:
+    addAllowedBrickField: 
         - 1
+
+remove_method_parameter_at_position_declaration: 
+    FormulaBrick: 
+       - addAllowedBrickField: 1
     

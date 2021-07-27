@@ -107,7 +107,7 @@ java -version
 ```
 * If no java version is installed make sure to install at least java 1.8 (in this guide we will install java 1.11)
 ```sh
-sudo apt-get install openjdk-11-jre-headless
+sudo apt-get install openjdk-11-jre
 ```
 * Now, download jython e.g. by using wget (at least version 2.7):
 ```sh

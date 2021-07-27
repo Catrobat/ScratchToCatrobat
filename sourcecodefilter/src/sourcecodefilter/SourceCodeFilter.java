@@ -30,10 +30,12 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -54,10 +56,14 @@ import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.ParameterizedType;
 import org.eclipse.jdt.core.dom.SimpleType;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.ini4j.Ini;
+import org.ini4j.Wini;
 import org.yaml.snakeyaml.Yaml;
 
 import sourcecodefilter.ConverterRelevantCatroidSource.FilteringProject;
@@ -97,7 +103,11 @@ public class SourceCodeFilter {
     public static Set<String> REMOVE_ANNOTATIONS = null;
     public static Set<String> REMOVE_SUPERCLASS = null;
     public static Map<String, Set<String>> removeMethodParameterAtPosition = null;
-
+    public static Map<String, Set<String>> removeMethodParameterAtPositionDeclaration = null; 
+    public static String configIniPath = ""; 
+    public static String catrobatLanguageVersionConstant = ""; 
+    public static float catrobatLanguageVersion = 0.0f; 
+    
     @SuppressWarnings("deprecation")
 	private static ASTParser astParser = ASTParser.newParser(AST.JLS4);
     static { astParser.setKind(ASTParser.K_COMPILATION_UNIT); }
@@ -238,16 +248,61 @@ public class SourceCodeFilter {
     	return false;
     }
 
+    private static void removeUnneededParametersAndAnnotations(List<ASTNode> parameters, String methodName, String sourceFile)
+    {
+    	for (int i = parameters.size()-1; i >= 0; i--)
+    	{
+    		ASTNode parameter = parameters.get(i); 
+    		if(parameter.getNodeType() == ASTNode.SINGLE_VARIABLE_DECLARATION)
+    		{
+    			SingleVariableDeclaration param = ((SingleVariableDeclaration)parameter);
+    			removeUnneededAnnotations(param.modifiers());
+    			// TODO do this when getMap(); 
+    			// remove parameters from declaration
+    			for(Map.Entry<String, Set<String>> f : removeMethodParameterAtPositionDeclaration.entrySet())
+    			{
+    				if(!sourceFile.endsWith(f.getKey()))
+    					continue; 
+    				
+    				Map<String, int[]> function_param_mapping = new HashMap<>(); //f.getValue(); 
+    				for(String function_with_param_index : f.getValue())
+    				{
+    					String[] from_cfg = function_with_param_index.split("=", 2); 
+    					String key = from_cfg[0].substring(1);
+    					 
+    					String value = from_cfg[1].substring(0, from_cfg[1].length()-1);
+    					int[] value_array = Arrays.stream(value.split(",")).mapToInt(Integer::parseInt).toArray();
+    					function_param_mapping.put(key,  value_array); 
+					}
+					for(Map.Entry<String, int[]> mapping : function_param_mapping.entrySet())
+					{
+						if(!mapping.getKey().equals(methodName))
+							continue; 
+						for(int j: mapping.getValue())
+						{
+							if(parameters.indexOf(param) == j)
+								param.delete();
+						}
+					}
+					if(parameters.isEmpty())
+						return; 
+    			}
+    		}
+    	}
+    }
+    
     
     private static void removeUnneededAnnotations(List<ASTNode> modifiers)
     {
     	for (ASTNode modifier : modifiers)
         {
-        	if (modifier.getNodeType() == ASTNode.MARKER_ANNOTATION || modifier.getNodeType() == ASTNode.NORMAL_ANNOTATION)
+    		if (modifier.getNodeType() == ASTNode.MARKER_ANNOTATION || modifier.getNodeType() == ASTNode.NORMAL_ANNOTATION)
         	{
         		if (REMOVE_ANNOTATIONS.contains(((Annotation)modifier).getTypeName().toString()))
         		{
         			modifier.delete();
+        			if(modifiers.isEmpty())
+        				return; 
         		}
         	}
         }
@@ -262,11 +317,19 @@ public class SourceCodeFilter {
             Set<FieldDeclaration> nonTransientFields = new HashSet<FieldDeclaration>();
             // using AbstractTypeDeclaration to cover regular Types and Enums
             for (BodyDeclaration bodyDecl : new ArrayList<BodyDeclaration>(abstractTypeDecl.bodyDeclarations())) {
-                if (bodyDecl.getNodeType() == ASTNode.FIELD_DECLARATION) {
+            	if (bodyDecl.getNodeType() == ASTNode.FIELD_DECLARATION) {
                     FieldDeclaration fieldDecl = (FieldDeclaration) bodyDecl;
+                    
+                    VariableDeclarationFragment variableDeclaration = (VariableDeclarationFragment)fieldDecl.fragments().get(0);
+                    if(variableDeclaration.toString().contains(SourceCodeFilter.catrobatLanguageVersionConstant)) {
+                    	String version = variableDeclaration.toString().split("=")[1]; 
+                    	SourceCodeFilter.catrobatLanguageVersion = Float.parseFloat(version); 
+                    }
+                    
                     assert fieldDecl.fragments().size() == 1 : String.format("Unsupported multi field declaration: '%s'",
                         fieldDecl.toString());
                     String fieldName = ((VariableDeclarationFragment) fieldDecl.fragments().get(0)).getName().getIdentifier();
+                    
                     removeUnneededAnnotations(fieldDecl.modifiers());
                     if (source.isRemovedField(fieldName)) {
                         fieldDecl.delete();
@@ -286,28 +349,30 @@ public class SourceCodeFilter {
                 	}
                 }
             }
+            
             for (BodyDeclaration bodyDecl : new ArrayList<BodyDeclaration>(abstractTypeDecl.bodyDeclarations())) {
                 if (bodyDecl.getNodeType() == ASTNode.METHOD_DECLARATION) {
                     MethodDeclaration methodDeclaration = (MethodDeclaration) bodyDecl;
-                    if (! methodDeclaration.isConstructor()) {
-                        //                            removeOverrideAnnotation(methodDeclaration);
-                    	
-                        final String methodName = methodDeclaration.getName().getIdentifier();
-                        removeUnneededAnnotations(methodDeclaration.modifiers());
-                        
-                        if (methodName.equals("init")) {
-                            Block body = methodDeclaration.getBody();
-                            for (Iterator<Statement> iterator2 = body.statements().iterator(); iterator2.hasNext();) {
-                                iterator2.next();
-                                iterator2.remove();
-                            }
+                    
+                    removeUnneededAnnotations(methodDeclaration.modifiers());
+                    final String methodName = methodDeclaration.getName().getIdentifier();
+                    removeUnneededParametersAndAnnotations(methodDeclaration.parameters(), methodName, source.getQualifiedClassName());
+
+                    if(methodDeclaration.isConstructor())
+                    	continue; 
+                    
+                    if (methodName.equals("init")) {
+                        Block body = methodDeclaration.getBody();
+                        for (Iterator<Statement> iterator2 = body.statements().iterator(); iterator2.hasNext();) {
+                            iterator2.next();
+                            iterator2.remove();
                         }
-                        else if (source.isRemovedMethod(methodName)) {
+                    }
+                    else if (source.isRemovedMethod(methodName)) {
+                        methodDeclaration.delete();
+                    } else if (!(source.isPreservedMethod(methodName))) {
+                        if (!(isRelatedToNonTransientFields(methodName, nonTransientFields)) /*|| isOverriding(methodDeclaration)*/ ) {
                             methodDeclaration.delete();
-                        } else if (!(source.isPreservedMethod(methodName))) {
-                            if (!(isRelatedToNonTransientFields(methodName, nonTransientFields)) /*|| isOverriding(methodDeclaration)*/ ) {
-                                methodDeclaration.delete();
-                            }
                         }
                     }
                 }
@@ -374,13 +439,15 @@ public class SourceCodeFilter {
     }
 
 	public static void main(String[] args) {
+		
     	InputStream input = null;
 		try {
 			input = new FileInputStream(new File("config", "config.yml"));
 	        Yaml yaml = new Yaml();
 			@SuppressWarnings("unchecked")
 			Config config = new Config((Map<String, Object>)yaml.load(input));
-
+			
+			//System.exit(-1); 
 			// get parameters from config
 	        final String catroidVersion = config.getString("catroid_version");
 	        final String archiveExtension = config.getString("archive_extension");
@@ -413,6 +480,11 @@ public class SourceCodeFilter {
 	        REMOVE_ANNOTATIONS = config.getSet("remove_annotations");
 	        REMOVE_SUPERCLASS = config.getSet("remove_superclass");
 	        removeMethodParameterAtPosition = config.getMap("remove_method_parameter_at_position");
+	        configIniPath = config.getString("config_ini_path");
+	        removeMethodParameterAtPositionDeclaration = config.getMap("remove_method_parameter_at_position_declaration");
+	        catrobatLanguageVersionConstant = config.getString("current_catrobat_language_constant"); 
+	        
+	        
 	        // download Catroid code project from Github
 	        File downloadDir = new File(downloadPath);
 	        downloadDir.mkdirs(); // create intermediate recursive directories if needed...
@@ -466,12 +538,30 @@ public class SourceCodeFilter {
 	    	// preprocess & filter
 	        writePreprocessedCatrobatSource(inputDir, outputSrcDir);
 
+	        File test = new File(System.getProperty("user.dir") + "/.." + config.getString("config_ini_path"));
+			try{
+				
+				Wini iniFile = new Wini(test);
+				Ini.Section catroid = iniFile.get("CATROID"); 
+				catroid.put("tag_name_of_used_hierarchy", catroidVersion);
+				Ini.Section catrobat = iniFile.get("CATROBAT"); 
+				catrobat.put("catrobat_language_version", catrobatLanguageVersion);
+				iniFile.store(); 
+			}
+			catch (Exception e) {
+				System.out.println("Updating of config.ini failed. Needs to be done manually.");
+				System.out.println("tag_name_of_used_hierarchy: " + catroidVersion);
+				System.out.println("catrobat_language_version: " + catrobatLanguageVersion);
+			}
 		} catch (IOException exception) {
 			exception.printStackTrace();
 			System.exit(ExitCode.FAILURE);
 		} finally {
 			Util.close(input);
 		}
+		
+		
+		
 		System.exit(ExitCode.SUCCESS);
     }
 }

@@ -1,4 +1,5 @@
 import looks, motion, event, sensing, sound, operator, control, data, pen
+from scratchtocatrobat.scratch.scratch3visitor.scratch2_json_format import Scratch3_2Opcodes as opcodes
 visitormap = {
     ### event blocks ####
     "event_whenflagclicked" : event.visitWhenflagclicked, #tested
@@ -136,6 +137,7 @@ visitormap = {
     ### data blocks ####
     "data_addtolist" : data.visitAddtolist,#tested
     "data_deleteoflist" : data.visitDeleteoflist,#tested
+    opcodes.DATA_DELETE_ALL_OF_LIST: data.visitDeletealloflist,#tested
     "data_insertatlist" : data.visitInsertatlist,#tested
     "data_replaceitemoflist" : data.visitReplaceitemoflist,#tested
     "data_itemoflist" : data.visitItemoflist,#tested

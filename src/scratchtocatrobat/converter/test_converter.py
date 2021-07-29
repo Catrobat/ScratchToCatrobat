@@ -1444,33 +1444,12 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert formula_element_left_child.leftChild == None
         assert formula_element_left_child.rightChild == None
 
-    # deleteLine:ofList:
+    # data_deletealloflist
     def test_can_convert_delete_all_lines_from_list_block(self):
-        scratch_block = ["deleteLine:ofList:", "all", self._name_of_test_list]
-        catr_brick_list = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        scratch_block = ["data_deletealloflist", self._name_of_test_list]
+        [catr_brick_list] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
 
-        assert len(catr_brick_list) == 1
-        assert isinstance(catr_brick_list[0], catbricks.RepeatBrick)
-        assert len(catr_brick_list[0].loopBricks) == 1
-        assert isinstance(catr_brick_list[0].loopBricks[0], catbricks.DeleteItemOfUserListBrick)
-
-        formula_tree_times_to_repeat = catr_brick_list[0].getFormulaWithBrickField(catbasebrick.BrickField.TIMES_TO_REPEAT).formulaTree # @UndefinedVariable
-        assert formula_tree_times_to_repeat.type == catformula.FormulaElement.ElementType.FUNCTION
-        assert formula_tree_times_to_repeat.value == "NUMBER_OF_ITEMS"
-        assert formula_tree_times_to_repeat.leftChild
-        assert formula_tree_times_to_repeat.rightChild == None
-        formula_element_left_child = formula_tree_times_to_repeat.leftChild
-        assert formula_element_left_child.type == catformula.FormulaElement.ElementType.USER_LIST
-        assert formula_element_left_child.value == self._name_of_test_list
-        assert formula_element_left_child.leftChild == None
-        assert formula_element_left_child.rightChild == None
-
-        formula_tree_list_delete_item = catr_brick_list[0].loopBricks[0].getFormulaWithBrickField(catbasebrick.BrickField.LIST_DELETE_ITEM).formulaTree # @UndefinedVariable
-        assert formula_tree_list_delete_item.type == catformula.FormulaElement.ElementType.NUMBER
-        assert formula_tree_list_delete_item.value == "1"
-        assert formula_tree_list_delete_item.leftChild == None
-        assert formula_tree_list_delete_item.rightChild == None
-
+        assert isinstance(catr_brick_list, catbricks.ClearUserListBrick)
 
     # setLine:ofList:to:
     def test_can_convert_set_line_via_str_index_of_list_to_block(self):

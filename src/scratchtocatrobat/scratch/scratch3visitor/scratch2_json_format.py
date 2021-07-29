@@ -81,6 +81,7 @@ class Scratch3_2Opcodes(object):
     DATA_HIDE_VARIABLE = "data_hidevariable"
     DATA_ADD_TO_LIST = "data_addtolist"
     DATA_DELETE_OF_LIST = "data_deleteoflist"
+    DATA_DELETE_ALL_OF_LIST = "data_deletealloflist"
     DATA_INSERT_AT_LIST = "data_insertatlist"
     DATA_REPLACE_ITEM_OF_LIST = "data_replaceitemoflist"
     DATA_ITEM_OF_LIST = "data_itemoflist"

@@ -21,6 +21,12 @@ def visitNoteMenu(blockcontext):
     block = blockcontext.block
     return block.fields["NOTE"][0]
 
+def visitChangeTempoBy(blockcontext):
+    tempo = visitGeneric(blockcontext, 'TEMPO')
+    return ['changeTempoBy:', tempo]
+
+
+
 
 
 

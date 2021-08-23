@@ -174,6 +174,7 @@ class Scratch3_2Opcodes(object):
     MUSIC_MENU_DRUM = "music_menu_DRUM"
     MUSIC_PLAY_NOTE_FOR_BEATS = "music_playNoteForBeats"
     NOTE = "note"
+    MUSIC_CHANGE_TEMPO = "music_changeTempo"
 
     # not supported block #
     NOT_SUPPORTED = "not_supported_block"
@@ -333,6 +334,7 @@ class Scratch3_2Opcodes(object):
         # music #
         MUSIC_PLAY_DRUM_FOR_BEATS: "drum:duration:elapsed:from:",
         MUSIC_PLAY_NOTE_FOR_BEATS: "noteOn:duration:elapsed:from:",
+        MUSIC_CHANGE_TEMPO: "changeTempoBy:",
 
 
         ### not suported block ###
@@ -369,7 +371,6 @@ class MenuTypes(object):
     CURRENT_MENU = "CURRENTMENU"
     TOUCHING_OBJECT = "TOUCHINGOBJECTMENU"
     OBJECT = "OBJECT"
-    COLOR_PARAM = "colorParam"
     COLOR_PARAM = "colorParam"
 
 

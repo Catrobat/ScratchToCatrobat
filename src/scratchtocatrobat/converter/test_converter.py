@@ -1447,6 +1447,16 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert formula_tree_list_delete_item.type == catformula.FormulaElement.ElementType.NUMBER
         assert formula_tree_list_delete_item.value == str(beats)
 
+    # changeTempoBy:
+    def test_can_convert_change_tempo_by_block(self):
+        tempo = 20.0
+        scratch_block = ["changeTempoBy:", tempo]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.ChangeTempoByNBrick)
+
+        formula_tree_list_delete_item = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.TEMPO_CHANGE).formulaTree # @UndefinedVariable
+        assert formula_tree_list_delete_item.type == catformula.FormulaElement.ElementType.NUMBER
+        assert formula_tree_list_delete_item.value == str(tempo)
 
     # deleteLine:ofList:
     def test_can_convert_delete_line_from_list_by_index_block(self):

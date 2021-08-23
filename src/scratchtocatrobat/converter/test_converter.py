@@ -1425,10 +1425,28 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         scratch_block = ["drum:duration:elapsed:from:", drum, beats]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.PlayDrumForBeatsBrick)
+
         formula_tree_list_delete_item = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.PLAY_DRUM).formulaTree # @UndefinedVariable
         assert formula_tree_list_delete_item.type == catformula.FormulaElement.ElementType.NUMBER
         assert formula_tree_list_delete_item.value == str(beats)
         assert catr_brick.drumSelection.value == 35
+
+    # noteOn:duration:elapsed:from:
+    def test_can_convert_play_note_for_beats_block(self):
+        note = 60.0
+        beats = 1.0
+        scratch_block = ["noteOn:duration:elapsed:from:", note, beats]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.PlayNoteForBeatsBrick)
+
+        formula_tree_list_delete_item = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.NOTE_TO_PLAY).formulaTree # @UndefinedVariable
+        assert formula_tree_list_delete_item.type == catformula.FormulaElement.ElementType.NUMBER
+        assert formula_tree_list_delete_item.value == str(note)
+
+        formula_tree_list_delete_item = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.BEATS_TO_PLAY_NOTE).formulaTree # @UndefinedVariable
+        assert formula_tree_list_delete_item.type == catformula.FormulaElement.ElementType.NUMBER
+        assert formula_tree_list_delete_item.value == str(beats)
+
 
     # deleteLine:ofList:
     def test_can_convert_delete_line_from_list_by_index_block(self):

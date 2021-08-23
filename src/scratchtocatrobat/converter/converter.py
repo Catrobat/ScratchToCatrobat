@@ -441,6 +441,7 @@ class _ScratchToCatrobat(object):
 
         # music
         "drum:duration:elapsed:from:": catbricks.PlayDrumForBeatsBrick,
+        "noteOn:duration:elapsed:from:": catbricks.PlayNoteForBeatsBrick,
 
         # bubble bricks
         "say:duration:elapsed:from:": catbricks.SayForBubbleBrick,
@@ -3459,3 +3460,10 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         play_drum_brick.drumSelection = drum_selection
 
         return play_drum_brick
+
+    @_register_handler(_block_name_to_handler_map, "noteOn:duration:elapsed:from:")
+    def _convert_play_note_for_beats_block(self):
+        [note, duration] = self.arguments
+
+        play_note_brick = self.CatrobatClass(catformula.Formula(note), catformula.Formula(duration))
+        return play_note_brick

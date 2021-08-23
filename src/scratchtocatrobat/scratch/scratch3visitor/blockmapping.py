@@ -172,5 +172,7 @@ visitormap = {
 
     opcodes.MUSIC_PLAY_DRUM_FOR_BEATS: music.visitPlayDrumForBeats,
     opcodes.MUSIC_MENU_DRUM: music.visitDrumMenu,
+    opcodes.MUSIC_PLAY_NOTE_FOR_BEATS: music.visitPlayNoteForBeats,
+    opcodes.NOTE: music.visitNoteMenu,
 }
 

@@ -127,7 +127,7 @@ visitormap = {
     "operator_equals" : operator.visitEquals,#tested
     "operator_mathop" : operator.visitMathop,#tested
     "operator_and" : operator.visitAnd,#tested
-    "operator_round" : operator.visitRound,#testedUSIC_PLAY_DRUM_FOR_BEATS
+    "operator_round" : operator.visitRound,#tested
     "operator_multiply" : operator.visitMultiply,#tested
     "operator_random" : operator.visitRandom,#tested
     "operator_divide" : operator.visitDivide,#tested

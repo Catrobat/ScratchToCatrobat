@@ -367,7 +367,6 @@ class MenuTypes(object):
     TOUCHING_OBJECT = "TOUCHINGOBJECTMENU"
     OBJECT = "OBJECT"
     COLOR_PARAM = "colorParam"
-    COLOR_PARAM = "colorParam"
 
 
 class InputTypes(object):

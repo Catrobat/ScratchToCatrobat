@@ -175,6 +175,6 @@ visitormap = {
     opcodes.MUSIC_PLAY_NOTE_FOR_BEATS: music.visitPlayNoteForBeats,
     opcodes.NOTE: music.visitNoteMenu,
     opcodes.MUSIC_CHANGE_TEMPO: music.visitChangeTempoBy,
-
+    opcodes.MUSIC_SET_TEMPO: music.visitSetTempoTo,
 }
 

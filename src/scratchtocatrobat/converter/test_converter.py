@@ -1458,6 +1458,17 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert formula_tree_list_delete_item.type == catformula.FormulaElement.ElementType.NUMBER
         assert formula_tree_list_delete_item.value == str(tempo)
 
+    # setTempoTo:
+    def test_can_convert_set_tempo_to_block(self):
+        tempo = 20.0
+        scratch_block = ["setTempoTo:", tempo]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.SetTempoBrick)
+
+        formula_tree_list_delete_item = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.TEMPO).formulaTree # @UndefinedVariable
+        assert formula_tree_list_delete_item.type == catformula.FormulaElement.ElementType.NUMBER
+        assert formula_tree_list_delete_item.value == str(tempo)
+
     # deleteLine:ofList:
     def test_can_convert_delete_line_from_list_by_index_block(self):
         index = 2
@@ -1467,7 +1478,6 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         formula_tree_list_delete_item = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.LIST_DELETE_ITEM).formulaTree # @UndefinedVariable
         assert formula_tree_list_delete_item.type == catformula.FormulaElement.ElementType.NUMBER
         assert formula_tree_list_delete_item.value == str(index)
-
 
     # deleteLine:ofList:
     def test_can_convert_delete_last_line_from_list_block(self):
@@ -1512,7 +1522,6 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert formula_tree_list_delete_item.value == "1"
         assert formula_tree_list_delete_item.leftChild == None
         assert formula_tree_list_delete_item.rightChild == None
-
 
     # setLine:ofList:to:
     def test_can_convert_set_line_via_str_index_of_list_to_block(self):

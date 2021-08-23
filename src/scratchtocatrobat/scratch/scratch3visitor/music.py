@@ -25,6 +25,9 @@ def visitChangeTempoBy(blockcontext):
     tempo = visitGeneric(blockcontext, 'TEMPO')
     return ['changeTempoBy:', tempo]
 
+def visitSetTempoTo(blockcontext):
+    tempo = visitGeneric(blockcontext, 'TEMPO')
+    return ['setTempoTo:', tempo]
 
 
 

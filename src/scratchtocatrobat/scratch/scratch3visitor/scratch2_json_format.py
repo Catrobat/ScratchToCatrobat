@@ -175,6 +175,7 @@ class Scratch3_2Opcodes(object):
     MUSIC_PLAY_NOTE_FOR_BEATS = "music_playNoteForBeats"
     NOTE = "note"
     MUSIC_CHANGE_TEMPO = "music_changeTempo"
+    MUSIC_SET_TEMPO = "music_setTempo"
 
     # not supported block #
     NOT_SUPPORTED = "not_supported_block"
@@ -335,6 +336,7 @@ class Scratch3_2Opcodes(object):
         MUSIC_PLAY_DRUM_FOR_BEATS: "drum:duration:elapsed:from:",
         MUSIC_PLAY_NOTE_FOR_BEATS: "noteOn:duration:elapsed:from:",
         MUSIC_CHANGE_TEMPO: "changeTempoBy:",
+        MUSIC_SET_TEMPO: "setTempoTo:",
 
 
         ### not suported block ###

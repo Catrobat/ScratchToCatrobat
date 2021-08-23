@@ -169,6 +169,10 @@ class Scratch3_2Opcodes(object):
     OPERATOR_OR = "operator_or"
     OPERATOR_LENGTH = "operator_length"
 
+    # music #
+    MUSIC_PLAY_DRUM_FOR_BEATS = "music_playDrumForBeats"
+    MUSIC_MENU_DRUM = "music_menu_DRUM"
+
     # not supported block #
     NOT_SUPPORTED = "not_supported_block"
 
@@ -324,6 +328,10 @@ class Scratch3_2Opcodes(object):
         OPERATOR_OR: "|",
         OPERATOR_LENGTH: "stringLength:",
 
+        # music #
+        MUSIC_PLAY_DRUM_FOR_BEATS: "drum:duration:elapsed:from:",
+
+
         ### not suported block ###
         NOT_SUPPORTED: "note:",
     }
@@ -358,6 +366,7 @@ class MenuTypes(object):
     CURRENT_MENU = "CURRENTMENU"
     TOUCHING_OBJECT = "TOUCHINGOBJECTMENU"
     OBJECT = "OBJECT"
+    COLOR_PARAM = "colorParam"
     COLOR_PARAM = "colorParam"
 
 

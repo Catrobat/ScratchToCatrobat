@@ -50,5 +50,3 @@ def visitSounds_menu(blockcontext):
     block = blockcontext.block
     return block.fields["SOUND_MENU"][0]
 
-
-#TODO: replace music extension bricks with default ones?

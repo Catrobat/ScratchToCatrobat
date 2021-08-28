@@ -640,6 +640,8 @@ class_to_preserved_methods_mapping:
         - getDefaultScene
         - getUserVariable
         - getUserList
+        - getNotesAndCredits
+        - setNotesAndCredits
     SoundInfo:
         - compareTo
         - setTitle

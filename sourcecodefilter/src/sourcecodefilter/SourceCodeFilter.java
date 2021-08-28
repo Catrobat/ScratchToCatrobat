@@ -35,10 +35,10 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
@@ -51,7 +51,6 @@ import org.eclipse.jdt.core.dom.EnumDeclaration;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IExtendedModifier;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
-import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.ParameterizedType;
@@ -60,22 +59,21 @@ import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
-import org.eclipse.jdt.core.dom.VariableDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.ini4j.Ini;
 import org.ini4j.Wini;
 import org.yaml.snakeyaml.Yaml;
 
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
+
 import sourcecodefilter.ConverterRelevantCatroidSource.FilteringProject;
 import sourcecodefilter.filter.AssignmentFilter;
 import sourcecodefilter.filter.IfElseFilter;
 import sourcecodefilter.filter.MethodInvocationFilter;
-import sourcecodefilter.filter.VariableDeclarationFilter;
 import sourcecodefilter.filter.TryCatchFilter;
+import sourcecodefilter.filter.VariableDeclarationFilter;
 import sourcecodefilter.inject.InlineClassInjector;
-
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
 
 class ExitCode {
 	public static final int FAILURE = 1;

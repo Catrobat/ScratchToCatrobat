@@ -1806,20 +1806,21 @@ class Converter(object):
         xml_header.setRemixParentsUrlString(helpers.config.get("SCRATCH_API", "project_base_url") + scratch_project_id)
 
         sep_line = "\n" + "-" * 40 + "\n"
-        description = sep_line
+        description = ""
+
         try:
             if scratch_project_instructions is not None:
-                description += "Instructions:\n" + scratch_project_instructions + sep_line
+                description += scratch_project_instructions + sep_line
         except:
             # TODO: FIX ASCII issue!!
             pass
 
         try:
             if scratch_project_notes_and_credits is not None:
-                description += "Description:\n" + scratch_project_notes_and_credits + sep_line
+                xml_header.setNotesAndCredits(scratch_project_notes_and_credits)
         except:
-            # TODO: FIX ASCII issue!!
             pass
+            # TODO: FIX ASCII issue!!
 
         description += "\nMade with {} version {}.\nOriginal Scratch project => {}".format( \
                          helpers.application_info("name"), \

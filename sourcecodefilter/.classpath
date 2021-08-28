@@ -21,9 +21,9 @@
 	<classpathentry kind="lib" path="lib/org.eclipse.osgi_3.10.100.v20150529-1857.jar"/>
 	<classpathentry kind="lib" path="lib/org.eclipse.text_3.5.400.v20150505-1044.jar"/>
 	<classpathentry kind="lib" path="lib/snakeyaml-1.16.jar"/>
-	<classpathentry kind="lib" path="/home/lukas/IdeaProjects/ScratchToCatrobat/sourcecodefilter/lib/ini4j-0.5.4.jar"/>
-	<classpathentry kind="lib" path="/home/lukas/IdeaProjects/ScratchToCatrobat/sourcecodefilter/lib/ini4j-0.5.4-javadoc.jar"/>
-	<classpathentry kind="lib" path="/home/lukas/IdeaProjects/ScratchToCatrobat/sourcecodefilter/lib/ini4j-0.5.4-jdk14.jar"/>
-	<classpathentry kind="lib" path="/home/lukas/IdeaProjects/ScratchToCatrobat/sourcecodefilter/lib/ini4j-0.5.4-sources.jar"/>
+	<classpathentry kind="lib" path="/home/martin/Dokumente/ScratchToCatrobat/ScratchToCatrobat/sourcecodefilter/lib/ini4j-0.5.4.jar"/>
+	<classpathentry kind="lib" path="/home/martin/Dokumente/ScratchToCatrobat/ScratchToCatrobat/sourcecodefilter/lib/ini4j-0.5.4-javadoc.jar"/>
+	<classpathentry kind="lib" path="/home/martin/Dokumente/ScratchToCatrobat/ScratchToCatrobat/sourcecodefilter/lib/ini4j-0.5.4-jdk14.jar"/>
+	<classpathentry kind="lib" path="/home/martin/Dokumente/ScratchToCatrobat/ScratchToCatrobat/sourcecodefilter/lib/ini4j-0.5.4-sources.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

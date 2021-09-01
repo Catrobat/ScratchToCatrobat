@@ -309,16 +309,16 @@ class TCPConnectionHandler(object):
 class JobMonitorTCPServer(TCPServer):
     def __init__(self, settings, io_loop=None, ssl_options=None):
         _logger.debug('Job Monitor Server started')
+        max_stream_buffer_size = int(settings["max_stream_buffer_size"]) if "max_stream_buffer_size" in settings else None
+        read_chunk_size = int(settings["read_chunk_size"]) if "read_chunk_size" in settings else None
+        super(JobMonitorTCPServer, self).__init__(ssl_options, max_stream_buffer_size, read_chunk_size)
         if not io_loop:
             io_loop = tornado.ioloop.IOLoop.instance()
         self.settings = settings
         self.io_loop = io_loop
         self.streams = {}
         check_zombie_interval = int(settings["check_zombie_interval"])
-        self.io_loop.add_timeout(datetime.timedelta(seconds=check_zombie_interval), self.close_streams_after_timeout)
-        max_stream_buffer_size = int(settings["max_stream_buffer_size"]) if "max_stream_buffer_size" in settings else None
-        read_chunk_size = int(settings["read_chunk_size"]) if "read_chunk_size" in settings else None
-        super(JobMonitorTCPServer, self).__init__(io_loop, ssl_options, max_stream_buffer_size, read_chunk_size)
+        self.io_loop.add_timeout(datetime.timedelta(seconds=check_zombie_interval), self.close_streams_after_timeout)        
 
     def stop(self):
         super(JobMonitorTCPServer, self).stop()

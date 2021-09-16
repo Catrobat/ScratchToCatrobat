@@ -307,21 +307,13 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         }
 
         raw_project = scratch.RawProject(raw_json)
-        workaround_info = raw_project.objects[1].preprocess_object([raw_project.objects[0].name, raw_project.objects[1].name])
-        assert workaround_info[scratch.ADD_TIMER_SCRIPT_KEY] == True
-        timer_background_workaround = [['whenGreenFlag'], ['doForever', \
-                                                           [['changeVar:by:', scratch.S2CC_TIMER_VARIABLE_NAME, scratch.UPDATE_HELPER_VARIABLE_TIMEOUT],
-                                                            ['wait:elapsed:from:', scratch.UPDATE_HELPER_VARIABLE_TIMEOUT]]]]
-        assert raw_project.objects[0].scripts[0].raw_script == timer_background_workaround
-
         catr_script = self.block_converter._catrobat_script_from(raw_project.objects[1].scripts[0], DUMMY_CATR_SPRITE, self.test_project)
 
         assert isinstance(catr_script, catbase.WhenConditionScript)
         formula = catr_script.formulaMap[catbricks.Brick.BrickField.IF_CONDITION] #@UndefinedVariable
         assert isinstance(formula, catformula.Formula)
-
         assert formula.formulaTree.value == str(catformula.Operators.GREATER_THAN)
-        assert formula.formulaTree.leftChild.value == scratch.S2CC_TIMER_VARIABLE_NAME
+        assert formula.formulaTree.leftChild.value == str(catformula.Sensors.TIMER)
         assert formula.formulaTree.rightChild.value == str(catformula.Operators.PLUS)
         assert formula.formulaTree.rightChild.leftChild.value == "2"
         assert formula.formulaTree.rightChild.rightChild.value == "1"

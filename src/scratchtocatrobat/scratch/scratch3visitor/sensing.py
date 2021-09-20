@@ -58,8 +58,7 @@ def visitTouchingobject(blockcontext):
 
 def visitCurrent(blockcontext):
     block = blockcontext.block
-    time = visitGeneric(blockcontext, "CURRENTMENU")
-    return ["timeAndDate", time]
+    return ["timeAndDate", block.fields["CURRENTMENU"][0]]
 
 def visitCurrent_menu(blockcontext):
     block = blockcontext.block

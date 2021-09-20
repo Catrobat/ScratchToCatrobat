@@ -696,12 +696,8 @@ class TestScratch3Blocks(unittest.TestCase):
 
     def test_visitCurrent(self):
         context = create_block_context(opcodes.SENSING_CURRENT)
-
-        menublock = createScratch3Block(context, opcodes.SENSING_CURRENT_MENU)
-        addFieldOfType(menublock, MenuTypes.CURRENT_MENU, AbstractType.YEAR)
-        addInputOfType(context.block, MenuTypes.CURRENT_MENU, LiteralType.SHADOW_BLOCK, menublock.name)
+        addFieldOfType(context.block, MenuTypes.CURRENT_MENU, AbstractType.YEAR)
         converted_block = visitBlock(context)
-
         assert converted_block[0] == opcodes.opcode_map[opcodes.SENSING_CURRENT]
         assert converted_block[1] == AbstractInput.YEAR
 

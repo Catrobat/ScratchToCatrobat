@@ -1945,28 +1945,28 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     # timeAndDate
     def test_can_convert_time_and_date_block_second(self):
-        scratch_block = ["timeAndDate", "second"]
+        scratch_block = ["timeAndDate", "SECOND"]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catformula.FormulaElement)
         assert catr_brick.getValue() == str(catformula.Sensors.TIME_SECOND)
 
     # timeAndDate
     def test_can_convert_time_and_date_block_minute(self):
-        scratch_block = ["timeAndDate", "minute"]
+        scratch_block = ["timeAndDate", "MINUTE"]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catformula.FormulaElement)
         assert catr_brick.getValue() == str(catformula.Sensors.TIME_MINUTE)
 
     # timeAndDate
     def test_can_convert_time_and_date_block_hour(self):
-        scratch_block = ["timeAndDate", "hour"]
+        scratch_block = ["timeAndDate", "HOUR"]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catformula.FormulaElement)
         assert catr_brick.getValue() == str(catformula.Sensors.TIME_HOUR)
 
     # timeAndDate
     def test_can_convert_time_and_date_block_weekday(self):
-        scratch_block = ["timeAndDate", "day of week"]
+        scratch_block = ["timeAndDate", "DAYOFWEEK"]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catformula.FormulaElement)
         assert catr_brick.getValue() == str(catformula.Operators.PLUS)
@@ -1975,21 +1975,21 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     # timeAndDate
     def test_can_convert_time_and_date_block_date(self):
-        scratch_block = ["timeAndDate", "date"]
+        scratch_block = ["timeAndDate", "DATE"]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catformula.FormulaElement)
         assert catr_brick.getValue() == str(catformula.Sensors.DATE_DAY)
 
     # timeAndDate
     def test_can_convert_time_and_date_block_month(self):
-        scratch_block = ["timeAndDate", "month"]
+        scratch_block = ["timeAndDate", "MONTH"]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catformula.FormulaElement)
         assert catr_brick.getValue() == str(catformula.Sensors.DATE_MONTH)
 
     # timeAndDate
     def test_can_convert_time_and_date_block_year(self):
-        scratch_block = ["timeAndDate", "year"]
+        scratch_block = ["timeAndDate", "YEAR"]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catformula.FormulaElement)
         assert catr_brick.getValue() == str(catformula.Sensors.DATE_YEAR)

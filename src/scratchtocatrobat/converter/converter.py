@@ -3057,20 +3057,20 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     def _convert_time_and_date_block(self):
         [time_or_date] = self.arguments
         switcher = {
-            "second": str(catformula.Sensors.TIME_SECOND),
-            "minute": str(catformula.Sensors.TIME_MINUTE),
-            "hour": str(catformula.Sensors.TIME_HOUR),
-            "day of week": str(catformula.Sensors.DATE_WEEKDAY),
-            "date": str(catformula.Sensors.DATE_DAY),
-            "month": str(catformula.Sensors.DATE_MONTH),
-            "year": str(catformula.Sensors.DATE_YEAR)
+            "SECOND": str(catformula.Sensors.TIME_SECOND),
+            "MINUTE": str(catformula.Sensors.TIME_MINUTE),
+            "HOUR": str(catformula.Sensors.TIME_HOUR),
+            "DAYOFWEEK": str(catformula.Sensors.DATE_WEEKDAY),
+            "DATE": str(catformula.Sensors.DATE_DAY),
+            "MONTH": str(catformula.Sensors.DATE_MONTH),
+            "YEAR": str(catformula.Sensors.DATE_YEAR)
         }
         converted_time_or_date = switcher.get(time_or_date, "ERROR")
         if converted_time_or_date == "ERROR":
             return catbricks.NoteBrick("Can't convert Time-And-Date Block.")
         time_formula = catformula.FormulaElement(catformula.FormulaElement.ElementType.SENSOR,
                                                  converted_time_or_date, None)
-        if time_or_date == "day of week":
+        if time_or_date == "DAYOFWEEK":
             time_formula = self._converted_helper_brick_or_formula_element([time_formula, 1], "+")
         return time_formula
 

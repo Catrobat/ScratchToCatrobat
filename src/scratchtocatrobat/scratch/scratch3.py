@@ -130,7 +130,7 @@ class Scratch3Parser(object):
             "motion_xposition": "x position",
             "motion_yposition": "y position"
         }
-        MONITOR_CURRENT_MAPPING = {
+        MONITOR_LABEL_CURRENT_MAPPING = {
             "YEAR": "year",
             "MONTH": "month",
             "DATE": "date",
@@ -141,7 +141,7 @@ class Scratch3Parser(object):
         }
         MONITOR_PARAM_MAPPING = {
             "data_variable": lambda param: param["VARIABLE"],
-            "sensing_current": lambda param: MONITOR_CURRENT_MAPPING[param["CURRENTMENU"]]
+            "sensing_current": lambda param: param["CURRENTMENU"]
         }
         if not monitor["mode"] in MONITOR_MODE_MAPPING:
             log.warn("Monitor with unknown mode will not be created.")
@@ -175,7 +175,9 @@ class Scratch3Parser(object):
                 return None
             target = monitor.get("spriteName", None)
             param = (MONITOR_PARAM_MAPPING[monitor["opcode"]](monitor["params"]) if monitor["opcode"] in MONITOR_PARAM_MAPPING else None)
-            if monitor["opcode"] in ["data_variable", "sensing_current"]:
+            if monitor["opcode"] == "sensing_current":
+                label = MONITOR_LABEL_CURRENT_MAPPING[param]
+            elif monitor["opcode"] == "data_variable":
                 label = param
             else:
                 label = MONITOR_LABEL_MAPPING[monitor["opcode"]]

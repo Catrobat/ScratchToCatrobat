@@ -307,6 +307,7 @@ class _ScratchToCatrobat(object):
         "10 ^": lambda value: catrobat.create_formula_element_for([catformula.Functions.POWER, 10, value]),
         "floor": catformula.Functions.FLOOR,
         "ceiling": catformula.Functions.CEIL,
+        "e ^": catformula.Functions.EXP
     }
 
     math_unary_operators_mapping = {

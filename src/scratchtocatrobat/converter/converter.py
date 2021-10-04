@@ -460,6 +460,9 @@ class _ScratchToCatrobat(object):
         "touching:": None,
         "dragMode": None,
 
+        "timer": catrobat.formula_element_for(catformula.Sensors.TIMER),
+        "timerReset": catbricks.ResetTimerBrick,
+
         # clone
         "createCloneOf": catbricks.CloneBrick,
         "deleteClone": catbricks.DeleteThisCloneBrick,
@@ -561,8 +564,8 @@ def _create_modified_formula_brick(sensor_type, unconverted_formula, catrobat_pr
     formula_right_child = None
 
     if sensor_type == 'timer':
-        formula_left_child = catformula.FormulaElement(catElementType.USER_VARIABLE, None, None)
-        formula_left_child.value = scratch.S2CC_TIMER_VARIABLE_NAME
+        formula_left_child = catformula.FormulaElement(catElementType.SENSOR, None, None)
+        formula_left_child.value = str(catformula.Sensors.TIMER)
 
     elif sensor_type == 'loudness':
         formula_left_child = catformula.FormulaElement(catElementType.SENSOR, None, None)

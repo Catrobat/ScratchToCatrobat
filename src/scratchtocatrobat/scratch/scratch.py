@@ -70,8 +70,6 @@ STAGE_OBJECT_NAME = "Stage"
 STAGE_WIDTH_IN_PIXELS = 480
 STAGE_HEIGHT_IN_PIXELS = 360
 S2CC_KEY_VARIABLE_NAME = "S2CC:key_"
-S2CC_TIMER_VARIABLE_NAME = "S2CC:timer"
-S2CC_TIMER_RESET_BROADCAST_MESSAGE = "S2CC:timer:reset"
 S2CC_POSITION_X_VARIABLE_NAME_PREFIX = "S2CC:pos_x_"
 S2CC_POSITION_Y_VARIABLE_NAME_PREFIX = "S2CC:pos_y_"
 S2CC_SENSOR_PREFIX = "S2CC:sensor_"
@@ -85,8 +83,6 @@ S2CC_PEN_COLOR_HELPER_VARIABLE_NAMES = {
 S2CC_PEN_SIZE_VARIABLE_NAME = "S2CC:pen_size"
 S2CC_PEN_SIZE_MULTIPLIER = 3.65
 S2CC_PEN_SIZE_DEFAULT_VALUE = (1 * S2CC_PEN_SIZE_MULTIPLIER)
-ADD_TIMER_SCRIPT_KEY = "add_timer_script_key"
-ADD_TIMER_RESET_SCRIPT_KEY = "add_timer_reset_script_key"
 ADD_POSITION_SCRIPT_TO_OBJECTS_KEY = "add_position_script_to_objects_key"
 ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY = "add_update_attribute_script_to_objects_key"
 ADD_KEY_PRESSED_SCRIPT_KEY = "add_key_pressed_script_key"
@@ -179,8 +175,6 @@ class Object(common.DictAccessWrapper):
 
     def preprocess_object(self, all_sprite_names):
         workaround_info = {
-            ADD_TIMER_SCRIPT_KEY: False,
-            ADD_TIMER_RESET_SCRIPT_KEY: False,
             ADD_KEY_PRESSED_SCRIPT_KEY: set(),
             ADD_POSITION_SCRIPT_TO_OBJECTS_KEY: set(),
             ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY: {},
@@ -248,44 +242,6 @@ class Object(common.DictAccessWrapper):
                     elif self.is_stage() and blocks[1] == 'random backdrop':
                         blocks[1] = ['randomFrom:to:', 1.0, float(len(self._dict_object[JsonKeys.COSTUMES]))]
             script.script_element = script.script_element.from_raw_block(script.blocks)
-
-        ############################################################################################
-        # timer and timerReset workaround
-        ############################################################################################
-        def has_timer_block(block_list):
-            for block in block_list:
-                if isinstance(block, list) and (block[0] == 'timer' or has_timer_block(block)):
-                    return True
-            return False
-
-        def has_timer_reset_block(block_list):
-            for block in block_list:
-                if isinstance(block, list) and (block[0] == 'timerReset' or has_timer_reset_block(block)):
-                    return True
-            return False
-
-        def replace_timer_blocks(block_list):
-            new_block_list = []
-            for block in block_list:
-                if isinstance(block, list):
-                    if block[0] == 'timer':
-                        new_block_list += [["readVariable", S2CC_TIMER_VARIABLE_NAME]]
-                    elif block[0] == 'timerReset':
-                        new_block_list += [["doBroadcastAndWait", S2CC_TIMER_RESET_BROADCAST_MESSAGE]]
-                    else:
-                        new_block_list += [replace_timer_blocks(block)]
-                else:
-                    new_block_list += [block]
-            return new_block_list
-
-        for script in self.scripts:
-            if has_timer_reset_block(script.blocks): workaround_info[ADD_TIMER_RESET_SCRIPT_KEY] = True
-            if has_timer_block(script.blocks) or 'timer' in script.arguments: workaround_info[ADD_TIMER_SCRIPT_KEY] = True
-
-            script.blocks = replace_timer_blocks(script.blocks)
-
-            # rebuild ScriptElement tree
-            script.script_element = ScriptElement.from_raw_block(script.blocks)
 
         ############################################################################################
         # key pressed workaround
@@ -607,8 +563,6 @@ class RawProject(Object):
 
         self.resource_names = [self._resource_name_from(raw_resource) for raw_resource in self._raw_resources()]
         self.unique_resource_names = list(set(self.resource_names))
-        is_add_timer_script = False
-        is_add_timer_reset_script = False
         sprite_name_sprite_mapping = dict(map(lambda obj: (obj.get_objName(), obj), self.objects))
         all_sprite_names = sprite_name_sprite_mapping.keys()
         position_script_to_be_added = set()
@@ -619,8 +573,6 @@ class RawProject(Object):
         workaround_applied = set()
         for scratch_object in self.objects:
             workaround_info = scratch_object.preprocess_object(all_sprite_names)
-            if workaround_info[ADD_TIMER_SCRIPT_KEY]: is_add_timer_script = True
-            if workaround_info[ADD_TIMER_RESET_SCRIPT_KEY]: is_add_timer_reset_script = True
             if workaround_info[ADD_PEN_DEFAULT_BEHAVIOR]:
                 self._add_pen_default_behavior_to_object(scratch_object)
             if workaround_info[ADD_PEN_COLOR_VARIABLES]:
@@ -640,8 +592,6 @@ class RawProject(Object):
             for sprite_name, sensor_names_set in workaround_info[ADD_UPDATE_ATTRIBUTE_SCRIPT_TO_OBJECTS_KEY].iteritems():
                 if sprite_name not in update_attribute_script_to_be_added: update_attribute_script_to_be_added[sprite_name] = set()
                 update_attribute_script_to_be_added[sprite_name] |= sensor_names_set
-        if is_add_timer_script or is_add_timer_reset_script: self._add_timer_script_to_stage_object()
-        if is_add_timer_reset_script: self._add_timer_reset_script_to_stage_object()
 
         for destination_sprite_name in position_script_to_be_added:
             if destination_sprite_name == "_mouse_": continue
@@ -651,7 +601,7 @@ class RawProject(Object):
         for sprite_name, sensors_info in sprite_sensors_map.iteritems():
             sprite_object = sprite_name_sprite_mapping[sprite_name]
             assert sprite_object is not None
-            self._add_sensor_variables_and_update_script_to_object(sprite_object, sensors_info, is_add_timer_script)
+            self._add_sensor_variables_and_update_script_to_object(sprite_object, sensors_info)
 
         for sprite_name, sensor_names in update_attribute_script_to_be_added.iteritems():
             sprite_object = sprite_name_sprite_mapping[sprite_name]
@@ -701,30 +651,7 @@ class RawProject(Object):
         forever_loop_body_blocks += [["wait:elapsed:from:", UPDATE_HELPER_VARIABLE_TIMEOUT]]
         sprite_object.scripts += [Script([0, 0, [[SCRIPT_GREEN_FLAG], ["doForever", forever_loop_body_blocks]]])]
 
-    def _add_timer_script_to_stage_object(self):
-        assert len(self.objects) > 0
-        # add timer variable to stage object (in Scratch this acts as a global variable)
-        self.objects[0]._dict_object["variables"].append({
-            "name": S2CC_TIMER_VARIABLE_NAME,
-            "value": 0,
-            "isPersistent": False
-        })
-        # timer counter script
-        script_blocks = [
-            ["doForever", [
-                ["changeVar:by:", S2CC_TIMER_VARIABLE_NAME, UPDATE_HELPER_VARIABLE_TIMEOUT],
-                ["wait:elapsed:from:", UPDATE_HELPER_VARIABLE_TIMEOUT]
-            ]]
-        ]
-        self.objects[0].scripts += [Script([0, 0, [[SCRIPT_GREEN_FLAG]] + script_blocks])]
-
-    def _add_timer_reset_script_to_stage_object(self):
-        assert len(self.objects) > 0
-        # timer reset script
-        script_blocks = [["setVar:to:", S2CC_TIMER_VARIABLE_NAME, 0]]
-        self.objects[0].scripts += [Script([0, 0, [[SCRIPT_RECEIVE, S2CC_TIMER_RESET_BROADCAST_MESSAGE]] + script_blocks])]
-
-    def _add_sensor_variables_and_update_script_to_object(self, sprite_object, sensors_info, is_add_timer_script):
+    def _add_sensor_variables_and_update_script_to_object(self, sprite_object, sensors_info):
         from scratchtocatrobat.converter import converter
         forever_loop_body_blocks = []
         sprite_name = sprite_object.get_objName()
@@ -735,11 +662,7 @@ class RawProject(Object):
                 continue
 
             stage_object = self.objects[0]
-            if command == "timer":
-                variable_name = S2CC_TIMER_VARIABLE_NAME
-                if not is_add_timer_script:
-                    self._add_timer_script_to_stage_object()
-            elif command == "answer":
+            if command == "answer":
                 variable_name = converter._SHARED_GLOBAL_ANSWER_VARIABLE_NAME
                 stage_object._dict_object["variables"].append({ "name": variable_name, "value": "", "isPersistent": False })
             else:

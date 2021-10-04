@@ -516,6 +516,22 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         self.assertIsNone(exponent_fe.leftChild)
         self.assertIsNone(exponent_fe.rightChild)
 
+    # e ^
+    def test_can_convert_exponent_block(self):
+        exponent = 6
+        scratch_block = ["e ^", exponent]
+        [formula_element] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        self.assertIsInstance(formula_element, catformula.FormulaElement)
+        self.assertEqual(formula_element.type, catformula.FormulaElement.ElementType.FUNCTION)
+        self.assertEqual(formula_element.value, catformula.Functions.EXP.toString())
+
+        exponent_fe = formula_element.leftChild
+        self.assertIsInstance(exponent_fe, catformula.FormulaElement)
+        self.assertEqual(exponent_fe.type, catformula.FormulaElement.ElementType.NUMBER)
+        self.assertEqual(exponent_fe.value, "6")
+        self.assertIsNone(exponent_fe.leftChild)
+        self.assertIsNone(exponent_fe.rightChild)
+
     # lineCountOfList:
     def test_can_convert_line_count_of_list_block(self):
         scratch_block = ["lineCountOfList:", self._name_of_test_list]

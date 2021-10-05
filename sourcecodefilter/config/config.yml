@@ -51,7 +51,7 @@ remove_classes: [
     # physics bricks
     CollisionScript, CollisionReceiverBrick, SetBounceBrick, SetFrictionBrick,
     SetGravityBrick, SetMassBrick, SetPhysicsObjectTypeBrick, SetVelocityBrick,
-    TurnLeftSpeedBrick, TurnRightSpeedBrick, WhenBounceOffScript, WhenBounceOffBrick, SetInstrumentBrick,
+    TurnLeftSpeedBrick, TurnRightSpeedBrick, WhenBounceOffScript, WhenBounceOffBrick, 
     
     
     # asserts 
@@ -59,7 +59,7 @@ remove_classes: [
 
     # Miscellaneous
     WhenGamepadButtonBrick, WhenGamepadButtonScript, ThreadScheduler, DroneVideoLookData, NfcTagData, 
-    FinishStageBrick, ExitStageBrick, FlashBrick, ForItemInUserListBrick, ForVariableFromToBrick, PauseForBeatsBrick, 
+    FinishStageBrick, ExitStageBrick, FlashBrick, ForItemInUserListBrick, ForVariableFromToBrick, 
     ReadListFromDeviceBrick, RunningStitchBrick, StopRunningStitchBrick, StoreCSVIntoUserListBrick,
     TripleStitchBrick,WaitTillIdleBrick,WriteListOnDeviceBrick, WriteVariableOnDeviceBrick, ZigZagStitchBrick
 ]
@@ -144,12 +144,10 @@ remove_method_invocations_with_parameter_mapping:
         - xstream.alias("brick",FlashBrick.class)
         - xstream.alias("brick",LookRequestBrick.class)
         - xstream.alias("brick",BackgroundRequestBrick.class)
-        - xstream.alias("brick",PauseForBeatsBrick.class)
         - xstream.alias("brick",ForVariableFromToBrick.class)
         - xstream.alias("brick",ForItemInUserListBrick.class)
         - xstream.alias("brick",SetBackgroundByIndexBrick.class)
         - xstream.alias("brick",SetBackgroundByIndexAndWaitBrick.class)
-        - xstream.alias("brick",SetInstrumentBrick.class)
         - xstream.alias("brick",SetRotationStyleBrick.class)
         - xstream.alias("brick",StartListeningBrick.class)
         - xstream.alias("brick",StopSoundBrick.class)
@@ -433,6 +431,7 @@ additional_serialization_classes:
     - BrickSpinner
     - UserDefinedBrickEventId
     - PickableDrum
+    - PickableMusicalInstrument
     - ShowNotePickerFormulaEditorStrategy
     - ShowFormulaEditorStrategy
     - Callback
@@ -440,6 +439,7 @@ additional_serialization_classes:
     - TernaryFunction
     - TernaryFunctionAction
     - ShowTextUtils
+    - FileMetaDataExtractor
     
 preserved_interfaces:
     [Brick, BroadcastMessage, Converter, LoopBeginBrick, MindstormsSensor,
@@ -640,6 +640,8 @@ class_to_preserved_methods_mapping:
         - getDefaultScene
         - getUserVariable
         - getUserList
+        - getNotesAndCredits
+        - setNotesAndCredits
     SoundInfo:
         - compareTo
         - setTitle
@@ -682,11 +684,12 @@ class_to_preserved_methods_mapping:
         - getScript
         - getScriptIndex
         - getNumberOfScripts
-        - getUserBrickList
+        - addUserDefinedBrick
+        - addUserVariable
+        - addUserList
         - addScript
         - updateUserVariableReferencesInUserVariableBricks
         - getListWithAllBricks
-        - addUserBrick
         - getUserVariable
         - getUserList
     UserVariablesContainer:
@@ -887,6 +890,10 @@ class_to_preserved_methods_mapping:
         - initializeBrickFields
     SetBackgroundBrick:
         - initializeBrickFields
+    SetInstrumentBrick:
+        - initializeBrickFields
+    PauseForBeatsBrick:
+        - initializeBrickFields
     SetTempoBrick: 
         - initializeBrickFields
     StopScriptBrick: 
@@ -974,6 +981,8 @@ class_to_preserved_methods_mapping:
         - getInputFormulaField 
         - getDeviceKey
         - reset
+    InputFormulaField:
+        - toString
     BroadcastEventId: 
         - hashCode
     SetLookEventId: 
@@ -999,6 +1008,8 @@ class_to_preserved_methods_mapping:
         - initializeBrickFields
         - equals
     PickableDrum: 
+        - initializeBrickFields
+    PickableMusicalInstrument:
         - initializeBrickFields
     ShowNotePickerFormulaEditorStrategy: 
         - initializeBrickFields
@@ -1027,6 +1038,9 @@ class_to_preserved_methods_mapping:
         - getStringAsInteger
         - isNumberAndInteger
         - convertToEnglishDigits
+    FileMetaDataExtractor:
+        - encodeSpecialCharsForFileSystem
+        - decodeSpecialCharsForFileSystem
         
 remove_fields_mapping:
     Brick:

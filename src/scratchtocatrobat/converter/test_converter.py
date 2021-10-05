@@ -785,6 +785,20 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert str(catr_formula_element.getElementType()) == 'COLLISION_FORMULA'
         assert catr_formula_element.getValue() == '_some_object_'
 
+    def test_can_convert_color_touching_color_block(self):
+        scratch_block = ['color:sees:', '#3f43fc', '#d808dc']
+        [catr_formula_element] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_formula_element, catformula.FormulaElement)
+        assert str(catr_formula_element.getElementType()) == 'FUNCTION'
+        assert str(catr_formula_element.getValue()) == 'COLOR_TOUCHES_COLOR'
+
+    def test_can_convert_touching_color_block(self):
+        scratch_block = ['touchingColor:', '#3f43fc']
+        [catr_formula_element] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_formula_element, catformula.FormulaElement)
+        assert str(catr_formula_element.getElementType()) == 'FUNCTION'
+        assert str(catr_formula_element.getValue()) == 'COLLIDES_WITH_COLOR'
+
     ###############################################################################################################
     #
     # Brick block tests

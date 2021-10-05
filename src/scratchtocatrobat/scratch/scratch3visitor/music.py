@@ -29,6 +29,9 @@ def visitSetTempoTo(blockcontext):
     tempo = visitGeneric(blockcontext, 'TEMPO')
     return ['setTempoTo:', tempo]
 
+def visitRestForBeats(blockcontext):
+    beats = visitGeneric(blockcontext, "BEATS")
+    return ['rest:elapsed:from:', beats]
 
 
 

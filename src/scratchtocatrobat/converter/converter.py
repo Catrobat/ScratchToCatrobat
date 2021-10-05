@@ -444,6 +444,7 @@ class _ScratchToCatrobat(object):
         "noteOn:duration:elapsed:from:": catbricks.PlayNoteForBeatsBrick,
         "changeTempoBy:": catbricks.ChangeTempoByNBrick,
         "setTempoTo:": catbricks.SetTempoBrick,
+        "rest:elapsed:from:": catbricks.PauseForBeatsBrick,
 
         # bubble bricks
         "say:duration:elapsed:from:": catbricks.SayForBubbleBrick,
@@ -3484,5 +3485,11 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         set_tempo_brick = self.CatrobatClass(catformula.Formula(tempo))
         return set_tempo_brick
 
+    @_register_handler(_block_name_to_handler_map, "rest:elapsed:from:")
+    def _convert_rest_for_beats_block(self):
+        [beats] = self.arguments
+
+        rest_for_beats = self.CatrobatClass(catformula.Formula(beats))
+        return rest_for_beats
 
 

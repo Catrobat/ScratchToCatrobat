@@ -3408,6 +3408,21 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             formula_element.value = arguments[0]
         return formula_element
 
+    @_register_handler(_block_name_to_handler_map, "color:sees:")
+    def _convert_color_touching_color(self):
+        colors = self.arguments
+        color1 = catformula.FormulaElement(catElementType.STRING, colors[0], None)
+        color2 = catformula.FormulaElement(catElementType.STRING, colors[1], None)
+        formula_element = catformula.FormulaElement(catElementType.FUNCTION, str(catformula.Functions.COLOR_TOUCHES_COLOR), None, color1, color2)
+        return formula_element
+
+    @_register_handler(_block_name_to_handler_map, "touchingColor:")
+    def _convert_color_is_touching(self):
+        color = self.arguments
+        color_formula = catformula.FormulaElement(catElementType.STRING, color[0], None)
+        formula_element = catformula.FormulaElement(catElementType.FUNCTION, str(catformula.Functions.COLLIDES_WITH_COLOR), None, color_formula, None)
+        return formula_element
+
     @_register_handler(_block_name_to_handler_map, "broadcast:")
     def _convert_broadcast(self):
         message = self.arguments[0]

@@ -43,7 +43,7 @@ def visitDistanceto_menu(blockcontext):
 def visitColoristouchingcolor(blockcontext):
     color = visitGeneric(blockcontext, "COLOR")
     color2 = visitGeneric(blockcontext, "COLOR2")
-    return ["touchingColor:", color, color2]
+    return ["color:sees:", color, color2]
 
 def visitOf(blockcontext):
     block = blockcontext.block

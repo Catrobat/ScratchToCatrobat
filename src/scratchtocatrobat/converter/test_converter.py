@@ -31,6 +31,7 @@ import org.catrobat.catroid.content.bricks as catbricks
 import org.catrobat.catroid.content.bricks.Brick as catbasebrick
 import org.catrobat.catroid.formulaeditor as catformula
 import org.catrobat.catroid.formulaeditor.FormulaElement.ElementType as catElementType
+from org.catrobat.catroid.content.bricks.brickspinner import PickableMusicalInstrument
 from scratchtocatrobat.scratch.scratch3visitor.scratch2_json_format import Scratch3_2Opcodes as opcodes
 import xml.etree.cElementTree as ET
 
@@ -1469,6 +1470,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert formula_tree_list_delete_item.type == catformula.FormulaElement.ElementType.NUMBER
         assert formula_tree_list_delete_item.value == str(tempo)
 
+    # rest:elapsed:from:
     def test_can_convert_rest_for_beats_block(self):
         beats = 0.25
         scratch_block = ["rest:elapsed:from:", beats]
@@ -1478,6 +1480,15 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         formula_tree_list_delete_item = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.BEATS_TO_PAUSE).formulaTree # @UndefinedVariable
         assert formula_tree_list_delete_item.type == catformula.FormulaElement.ElementType.NUMBER
         assert formula_tree_list_delete_item.value == str(beats)
+
+    # instrument:
+    def test_can_convert_set_instrument_block(self):
+        instrument = 1
+        scratch_block = ["instrument:", instrument]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+
+        assert isinstance(catr_brick, catbricks.SetInstrumentBrick)
+        assert catr_brick.instrumentSelection == PickableMusicalInstrument.values()[0]
 
     # deleteLine:ofList:
     def test_can_convert_delete_line_from_list_by_index_block(self):

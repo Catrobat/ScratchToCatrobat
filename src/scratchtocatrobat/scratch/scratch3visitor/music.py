@@ -33,6 +33,14 @@ def visitRestForBeats(blockcontext):
     beats = visitGeneric(blockcontext, "BEATS")
     return ['rest:elapsed:from:', beats]
 
+def visitSetInstrumentTo(blockcontext):
+    instrument = visitGeneric(blockcontext, "INSTRUMENT")
+    return ['instrument:', instrument]
+
+def visitInstrumentMenu(blockcontext):
+    block = blockcontext.block
+    return block.fields["INSTRUMENT"][0]
+
 
 
 

@@ -32,6 +32,8 @@ from codecs import open
 from org.catrobat.catroid import ProjectManager
 import org.catrobat.catroid.common as catcommon
 import org.catrobat.catroid.content as catbase
+from org.catrobat.catroid.content.bricks.brickspinner import PickableDrum
+from org.catrobat.catroid.content.bricks.brickspinner import PickableMusicalInstrument
 from org.catrobat.catroid.ui.fragment import SpriteFactory
 import org.catrobat.catroid.content.bricks as catbricks
 import org.catrobat.catroid.formulaeditor as catformula
@@ -51,7 +53,8 @@ from java.awt import Color
 import catrobat
 import mediaconverter
 
-_DEFAULT_FORMULA_ELEMENT = catformula.FormulaElement(catElementType.NUMBER, str(00001), None)  # @UndefinedVariable (valueOf)
+_DEFAULT_FORMULA_ELEMENT = catformula.FormulaElement(catElementType.NUMBER, str(00001),
+                                                     None)  # @UndefinedVariable (valueOf)
 
 _GENERATED_VARIABLE_PREFIX = helpers.application_info("short_name") + ":"
 _SOUND_LENGTH_VARIABLE_NAME_FORMAT = "length_of_{}_in_secs"
@@ -70,6 +73,7 @@ BACKGROUND_ORIGINAL_NAME = "Stage"
 MOUSE_SPRITE_NAME = "_mouse_"
 MOUSE_SPRITE_FILENAME = "mouse_cursor_dummy.png"
 
+
 class KeyNames(object):
     ANY = "any"
     SPACE = "space"
@@ -86,10 +90,12 @@ class KeyNames(object):
     TOGGLE_TILT_ARROWS = "tilt_arrows"
     TOGGLE_TILT_WASD = "tilt_wasd"
 
+
 class KeyTypes(object):
     LISTENED_KEY = "listenedKeys"
     KEY_PRESSED_BRICK = "keyPressedBrick"
     FUNCTIONALITY_KEY = "functionalityKey"
+
 
 class KeyListsAndSettings(object):
     listened_keys = []
@@ -100,6 +106,7 @@ class KeyListsAndSettings(object):
     missing_row_counter = 0
     missing_literal_columns = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     missing_num_columns = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
 
 class KeyData(object):
     key_name = ""
@@ -112,6 +119,7 @@ class KeyData(object):
         self.key_type = type
         self.x_pos = x_pos
         self.y_pos = y_pos
+
 
 class TiltKeyData(object):
     key_name = ""
@@ -127,6 +135,7 @@ class TiltKeyData(object):
         self.compare_value = value
         self.active_state = active_state
 
+
 class KeyPressedData(object):
     def __init__(self, scene, user_variable, value):
         self.clone_index_user_variable = Converter._create_or_get_user_variable(scene, user_variable, value)
@@ -134,14 +143,16 @@ class KeyPressedData(object):
         self.when_started_script = catbase.StartScript()
         self.keys_sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_BASE, KEY_SPRITE_NAME)
 
-TILT_KEY_DATA = [TiltKeyData(KeyNames.UP_ARROW, catformula.Sensors.Y_INCLINATION, catformula.Operators.SMALLER_THAN, -20, 1),
-                 TiltKeyData(KeyNames.DOWN_ARROW, catformula.Sensors.Y_INCLINATION, catformula.Operators.GREATER_THAN, 20, 1),
-                 TiltKeyData(KeyNames.RIGHT_ARROW, catformula.Sensors.X_INCLINATION, catformula.Operators.SMALLER_THAN, -20, 1),
-                 TiltKeyData(KeyNames.LEFT_ARROW, catformula.Sensors.X_INCLINATION, catformula.Operators.GREATER_THAN, 20, 1),
-                 TiltKeyData("w", catformula.Sensors.Y_INCLINATION, catformula.Operators.SMALLER_THAN, -20, 2),
-                 TiltKeyData("s", catformula.Sensors.Y_INCLINATION, catformula.Operators.GREATER_THAN, 20, 2),
-                 TiltKeyData("d", catformula.Sensors.X_INCLINATION, catformula.Operators.SMALLER_THAN, -20, 2),
-                 TiltKeyData("a", catformula.Sensors.X_INCLINATION, catformula.Operators.GREATER_THAN, 20, 2)]
+
+TILT_KEY_DATA = [
+    TiltKeyData(KeyNames.UP_ARROW, catformula.Sensors.Y_INCLINATION, catformula.Operators.SMALLER_THAN, -20, 1),
+    TiltKeyData(KeyNames.DOWN_ARROW, catformula.Sensors.Y_INCLINATION, catformula.Operators.GREATER_THAN, 20, 1),
+    TiltKeyData(KeyNames.RIGHT_ARROW, catformula.Sensors.X_INCLINATION, catformula.Operators.SMALLER_THAN, -20, 1),
+    TiltKeyData(KeyNames.LEFT_ARROW, catformula.Sensors.X_INCLINATION, catformula.Operators.GREATER_THAN, 20, 1),
+    TiltKeyData("w", catformula.Sensors.Y_INCLINATION, catformula.Operators.SMALLER_THAN, -20, 2),
+    TiltKeyData("s", catformula.Sensors.Y_INCLINATION, catformula.Operators.GREATER_THAN, 20, 2),
+    TiltKeyData("d", catformula.Sensors.X_INCLINATION, catformula.Operators.SMALLER_THAN, -20, 2),
+    TiltKeyData("a", catformula.Sensors.X_INCLINATION, catformula.Operators.GREATER_THAN, 20, 2)]
 
 KEY_NAMES_ROW_1 = [KeyNames.SPACE, KeyNames.LEFT_ARROW, KeyNames.DOWN_ARROW, KeyNames.RIGHT_ARROW, KeyNames.UP_ARROW]
 KEY_NAMES_ROW_2 = ["z", "x", "c", "v", "b", "n", "m"]
@@ -186,8 +197,10 @@ VISIBLE_LIST_HANDLE_NAME = _GENERATED_VARIABLE_PREFIX + "handle_variable_{}"
 VISIBLE_LIST_LABEL_NAME = _GENERATED_VARIABLE_PREFIX + "label"
 VISIBLE_LIST_LENGTH_LABEL_NAME = _GENERATED_VARIABLE_PREFIX + "length"
 
+
 class ConversionError(common.ScratchtobatError):
     pass
+
 
 class UnmappedBlock(object):
 
@@ -200,24 +213,31 @@ class UnmappedBlock(object):
 
     def to_placeholder_brick(self, held_by_block_name=None):
         return [_placeholder_for_unmapped_blocks_to(*self.block_and_args)] if held_by_block_name is None \
-               else [_placeholder_for_unmapped_formula_blocks_to(held_by_block_name, *self.block_and_args)]
+            else [_placeholder_for_unmapped_formula_blocks_to(held_by_block_name, *self.block_and_args)]
+
 
 def _with_unmapped_blocks_replaced_as_default_formula_value(arguments):
     return [_DEFAULT_FORMULA_ELEMENT if isinstance(argument, UnmappedBlock) else argument for argument in arguments]
 
+
 def _arguments_string(args):
     return ", ".join(map(catrobat.simple_name_for, args))
 
+
 def _placeholder_for_unmapped_formula_blocks_to(held_by_block_name, *args):
     held_by_block_name = [held_by_block_name][0]
-    return catbricks.NoteBrick(UNSUPPORTED_SCRATCH_FORMULA_BLOCK_NOTE_MESSAGE_PREFIX.format(held_by_block_name, _arguments_string(args)))
+    return catbricks.NoteBrick(
+        UNSUPPORTED_SCRATCH_FORMULA_BLOCK_NOTE_MESSAGE_PREFIX.format(held_by_block_name, _arguments_string(args)))
+
 
 def _placeholder_for_unmapped_blocks_to(*args):
     return catbricks.NoteBrick(UNSUPPORTED_SCRATCH_BLOCK_NOTE_MESSAGE_PREFIX_TEMPLATE.format(_arguments_string(args)))
 
+
 def _key_to_broadcast_message(key_name):
     message = "key_" + key_name + "_pressed"
     return message.lower()
+
 
 def _get_existing_sprite_with_name(sprite_list, name):
     for sprite in sprite_list:
@@ -225,69 +245,79 @@ def _get_existing_sprite_with_name(sprite_list, name):
             return sprite
     return None
 
+
 def _background_look_to_broadcast_message(look_name):
     return "start background scene: " + look_name
+
 
 def _next_background_look_broadcast_message():
     return "set background to next look"
 
+
 def _sec_to_msec(duration):
     return duration * 1000
+
 
 def is_math_function_or_operator(key):
     cls = _ScratchToCatrobat
     all_keys = cls.math_function_block_parameters_mapping.keys() \
-             + cls.math_unary_operators_mapping.keys() + cls.math_binary_operators_mapping.keys()
+               + cls.math_unary_operators_mapping.keys() + cls.math_binary_operators_mapping.keys()
     return key in all_keys
+
 
 def is_math_operator(key):
     cls = _ScratchToCatrobat
     all_keys = cls.math_unary_operators_mapping.keys() + cls.math_binary_operators_mapping.keys()
     return key in all_keys
 
+
 def is_supported_block(key):
     cls = _ScratchToCatrobat
     all_keys = cls.complete_mapping.keys()
     return key in all_keys
 
+
 def absolute_to_catrobat_x(x):
     return x - 240
+
 
 def absolute_to_catrobat_y(y):
     return 180 - y
 
+
 def _apply_bounds(value, lower_bound, upper_bound):
     return catrobat.create_formula_element_for(
         [catformula.Functions.MIN,
-            upper_bound,
-            [catformula.Functions.MAX, lower_bound, value]
-        ]
+         upper_bound,
+         [catformula.Functions.MAX, lower_bound, value]
+         ]
     )
+
 
 def _get_diff_fe(a, b):
     if isinstance(a, (int, long)) and isinstance(b, (int, long)):
-        return catrobat.create_formula_element_for(a-b)
+        return catrobat.create_formula_element_for(a - b)
     return catrobat.create_formula_element_for([catformula.Operators.MINUS, a, b])
 
-#linearly scales the value from the priori into the posteriour domain.
-#If it's below or above the bounds it becomes the value of the bound.
-#Formula: min(posteriour_max, max(posteriour_min, posteriour_min + (value_fe-priori_min)/(priori_max-priori_min) * (posteriour_max-posteriour_min)))
+
+# linearly scales the value from the priori into the posteriour domain.
+# If it's below or above the bounds it becomes the value of the bound.
+# Formula: min(posteriour_max, max(posteriour_min, posteriour_min + (value_fe-priori_min)/(priori_max-priori_min) * (posteriour_max-posteriour_min)))
 def _get_scaling_fe(value, priori_min, priori_max, posteriour_min, posteriour_max):
     return _apply_bounds([catformula.Operators.PLUS,
-                            posteriour_min,
-                            [catformula.Operators.MULT,
-                                [catformula.Operators.DIVIDE,
-                                    [catformula.Operators.MINUS, value, priori_min],
-                                    _get_diff_fe(priori_max, priori_min)
-                                ],
-                                _get_diff_fe(posteriour_max, posteriour_min)
-                            ]
-                        ], posteriour_min, posteriour_max)
+                          posteriour_min,
+                          [catformula.Operators.MULT,
+                           [catformula.Operators.DIVIDE,
+                            [catformula.Operators.MINUS, value, priori_min],
+                            _get_diff_fe(priori_max, priori_min)
+                            ],
+                           _get_diff_fe(posteriour_max, posteriour_min)
+                           ]
+                          ], posteriour_min, posteriour_max)
 
 
 # note: for Scratch blocks without mapping placeholder Catrobat bricks will be added
 class _ScratchToCatrobat(object):
-
     math_function_block_parameters_mapping = {
         # math functions
         "abs": catformula.Functions.ABS,
@@ -310,7 +340,7 @@ class _ScratchToCatrobat(object):
     }
 
     math_unary_operators_mapping = {
-        "()": None, # this operator is only used internally and not part of Scratch
+        "()": None,  # this operator is only used internally and not part of Scratch
         "not": catformula.Operators.LOGICAL_NOT,
     }
 
@@ -346,9 +376,11 @@ class _ScratchToCatrobat(object):
         # Scripts
         #
         scratch.SCRIPT_GREEN_FLAG: catbase.StartScript,
-        scratch.SCRIPT_RECEIVE: lambda message: catbase.BroadcastScript(message.lower()), # lower case to prevent case-sensitivity issues in Catrobat...
+        scratch.SCRIPT_RECEIVE: lambda message: catbase.BroadcastScript(message.lower()),
+        # lower case to prevent case-sensitivity issues in Catrobat...
         scratch.SCRIPT_KEY_PRESSED: lambda key: catbase.BroadcastScript(_key_to_broadcast_message(key)),
-        scratch.SCRIPT_SCENE_STARTS: lambda look_name: catbase.BroadcastScript(_background_look_to_broadcast_message(look_name)),
+        scratch.SCRIPT_SCENE_STARTS: lambda look_name: catbase.BroadcastScript(
+            _background_look_to_broadcast_message(look_name)),
         scratch.SCRIPT_CLICKED: catbase.WhenScript,
         scratch.SCRIPT_CLONED: catbase.WhenClonedScript,
         scratch.SCRIPT_PROC_DEF: catbricks.UserDefinedBrick,
@@ -357,142 +389,162 @@ class _ScratchToCatrobat(object):
     }
 
     complete_mapping = dict({
-        #<
-        # Bricks
-        #
-        "broadcast:": None,
-        "doBroadcastAndWait": None,
-        "wait:elapsed:from:": lambda duration: catbricks.WaitBrick(catrobat.create_formula_with_value(duration)),
+                                # <
+                                # Bricks
+                                #
+                                "broadcast:": None,
+                                "doBroadcastAndWait": None,
+                                "wait:elapsed:from:": lambda duration: catbricks.WaitBrick(
+                                    catrobat.create_formula_with_value(duration)),
 
-        # control
-        "doForever": catbricks.ForeverBrick,
-        "doIf": None,
-        "doIfElse": None,
-        "doRepeat": catbricks.RepeatBrick,
-        "doUntil": catbricks.RepeatUntilBrick,
-        "doWaitUntil": lambda condition: catbricks.WaitUntilBrick(catrobat.create_formula_with_value(condition)),
-        "stopScripts": lambda subject: catbricks.StopScriptBrick(["this script", "all", "other scripts in sprite"].index(subject) if subject != "other scripts in stage" else 2),
+                                # control
+                                "doForever": catbricks.ForeverBrick,
+                                "doIf": None,
+                                "doIfElse": None,
+                                "doRepeat": catbricks.RepeatBrick,
+                                "doUntil": catbricks.RepeatUntilBrick,
+                                "doWaitUntil": lambda condition: catbricks.WaitUntilBrick(
+                                    catrobat.create_formula_with_value(condition)),
+                                "stopScripts": lambda subject: catbricks.StopScriptBrick(
+                                    ["this script", "all", "other scripts in sprite"].index(
+                                        subject) if subject != "other scripts in stage" else 2),
 
-        # motion
-        "turnRight:": catbricks.TurnRightBrick,
-        "turnLeft:": catbricks.TurnLeftBrick,
-        "heading:": catbricks.PointInDirectionBrick,
-        "forward:": catbricks.MoveNStepsBrick,
-        "pointTowards:": catbricks.PointToBrick,
-        "gotoX:y:": catbricks.PlaceAtBrick,
-        "gotoSpriteOrMouse:": catbricks.GoToBrick,
-        "glideSecs:toX:y:elapsed:from:": lambda duration, x_pos, y_pos: catbricks.GlideToBrick(x_pos, y_pos, _sec_to_msec(duration) if isinstance(duration, numbers.Number) else duration),
-        "xpos:": catbricks.SetXBrick,
-        "ypos:": catbricks.SetYBrick,
-        "bounceOffEdge": catbricks.IfOnEdgeBounceBrick,
-        "changeXposBy:": catbricks.ChangeXByNBrick,
-        "changeYposBy:": catbricks.ChangeYByNBrick,
-        "setRotationStyle": catbricks.SetRotationStyleBrick,
+                                # motion
+                                "turnRight:": catbricks.TurnRightBrick,
+                                "turnLeft:": catbricks.TurnLeftBrick,
+                                "heading:": catbricks.PointInDirectionBrick,
+                                "forward:": catbricks.MoveNStepsBrick,
+                                "pointTowards:": catbricks.PointToBrick,
+                                "gotoX:y:": catbricks.PlaceAtBrick,
+                                "gotoSpriteOrMouse:": catbricks.GoToBrick,
+                                "glideSecs:toX:y:elapsed:from:": lambda duration, x_pos, y_pos: catbricks.GlideToBrick(
+                                    x_pos, y_pos,
+                                    _sec_to_msec(duration) if isinstance(duration, numbers.Number) else duration),
+                                "xpos:": catbricks.SetXBrick,
+                                "ypos:": catbricks.SetYBrick,
+                                "bounceOffEdge": catbricks.IfOnEdgeBounceBrick,
+                                "changeXposBy:": catbricks.ChangeXByNBrick,
+                                "changeYposBy:": catbricks.ChangeYByNBrick,
+                                "setRotationStyle": catbricks.SetRotationStyleBrick,
 
-        # variables
-        "setVar:to:": lambda *args: _create_variable_brick(*itertools.chain(args, [catbricks.SetVariableBrick])),
-        "changeVar:by:": lambda *args: _create_variable_brick(*itertools.chain(args, [catbricks.ChangeVariableBrick])),
-        "readVariable": lambda variable_name: _variable_for(variable_name),
-        "showVariable:": None,
-        "hideVariable:": None,
+                                # variables
+                                "setVar:to:": lambda *args: _create_variable_brick(
+                                    *itertools.chain(args, [catbricks.SetVariableBrick])),
+                                "changeVar:by:": lambda *args: _create_variable_brick(
+                                    *itertools.chain(args, [catbricks.ChangeVariableBrick])),
+                                "readVariable": lambda variable_name: _variable_for(variable_name),
+                                "showVariable:": None,
+                                "hideVariable:": None,
 
-        # formula lists
-        "append:toList:": catbricks.AddItemToUserListBrick,
-        "insert:at:ofList:": catbricks.InsertItemIntoUserListBrick,
-        "deleteLine:ofList:": catbricks.DeleteItemOfUserListBrick,
-        "setLine:ofList:to:": catbricks.ReplaceItemInUserListBrick,
-        "contentsOfList:": None,
-        "showList:": None,
-        "hideList:": None,
+                                # formula lists
+                                "append:toList:": catbricks.AddItemToUserListBrick,
+                                "insert:at:ofList:": catbricks.InsertItemIntoUserListBrick,
+                                "deleteLine:ofList:": catbricks.DeleteItemOfUserListBrick,
+                                "setLine:ofList:to:": catbricks.ReplaceItemInUserListBrick,
+                                "contentsOfList:": None,
+                                "showList:": None,
+                                "hideList:": None,
 
-        # looks
-        "lookLike:": catbricks.SetLookBrick,
-        "nextCostume": catbricks.NextLookBrick,
-        "startScene": catbricks.SetBackgroundBrick,
-        "startSceneAndWait": catbricks.SetBackgroundAndWaitBrick,
-        "nextScene": catbricks.NextLookBrick,  # only allowed in scene object so same as nextLook
+                                # looks
+                                "lookLike:": catbricks.SetLookBrick,
+                                "nextCostume": catbricks.NextLookBrick,
+                                "startScene": catbricks.SetBackgroundBrick,
+                                "startSceneAndWait": catbricks.SetBackgroundAndWaitBrick,
+                                "nextScene": catbricks.NextLookBrick,
+                                # only allowed in scene object so same as nextLook
 
-        # video
-        "setVideoState": lambda status: [
-            catbricks.ChooseCameraBrick(1),                       # use front camera by default!
-            catbricks.CameraBrick(int(status.lower() != 'off'))
-        ],
+                                # video
+                                "setVideoState": lambda status: [
+                                    catbricks.ChooseCameraBrick(1),  # use front camera by default!
+                                    catbricks.CameraBrick(int(status.lower() != 'off'))
+                                ],
 
-        "changeGraphicEffect:by:": None,
-        "setGraphicEffect:to:": lambda effect_type, value:
-            catbricks.SetBrightnessBrick(value) if effect_type == 'brightness' else
-            catbricks.SetTransparencyBrick(value) if effect_type == 'ghost' else
-            _placeholder_for_unmapped_blocks_to("setGraphicEffect:to:", effect_type, value),
-        "filterReset": catbricks.ClearGraphicEffectBrick,
-        "changeSizeBy:": catbricks.ChangeSizeByNBrick,
-        "setSizeTo:": catbricks.SetSizeToBrick,
-        "show": catbricks.ShowBrick,
-        "hide": catbricks.HideBrick,
-        "comeToFront": catbricks.ComeToFrontBrick,
-        "goBackByLayers:": catbricks.GoNStepsBackBrick,
+                                "changeGraphicEffect:by:": None,
+                                "setGraphicEffect:to:": lambda effect_type, value:
+                                catbricks.SetBrightnessBrick(value) if effect_type == 'brightness' else
+                                catbricks.SetTransparencyBrick(value) if effect_type == 'ghost' else
+                                _placeholder_for_unmapped_blocks_to("setGraphicEffect:to:", effect_type, value),
+                                "filterReset": catbricks.ClearGraphicEffectBrick,
+                                "changeSizeBy:": catbricks.ChangeSizeByNBrick,
+                                "setSizeTo:": catbricks.SetSizeToBrick,
+                                "show": catbricks.ShowBrick,
+                                "hide": catbricks.HideBrick,
+                                "comeToFront": catbricks.ComeToFrontBrick,
+                                "goBackByLayers:": catbricks.GoNStepsBackBrick,
 
-        # sound
-        "playSound:": catbricks.PlaySoundBrick,
-        "doPlaySoundAndWait": catbricks.PlaySoundAndWaitBrick,
-        "stopAllSounds": catbricks.StopAllSoundsBrick,
-        "changeVolumeBy:": catbricks.ChangeVolumeByNBrick,
-        "setVolumeTo:": catbricks.SetVolumeToBrick,
+                                # sound
+                                "playSound:": catbricks.PlaySoundBrick,
+                                "doPlaySoundAndWait": catbricks.PlaySoundAndWaitBrick,
+                                "stopAllSounds": catbricks.StopAllSoundsBrick,
+                                "changeVolumeBy:": catbricks.ChangeVolumeByNBrick,
+                                "setVolumeTo:": catbricks.SetVolumeToBrick,
 
-        # bubble bricks
-        "say:duration:elapsed:from:": catbricks.SayForBubbleBrick,
-        "say:": catbricks.SayBubbleBrick,
-        "think:duration:elapsed:from:": catbricks.ThinkForBubbleBrick,
-        "think:": catbricks.ThinkBubbleBrick,
-        "doAsk": catbricks.AskBrick,
-        "answer": None,
+                                # music
+                                "drum:duration:elapsed:from:": catbricks.PlayDrumForBeatsBrick,
+                                "noteOn:duration:elapsed:from:": catbricks.PlayNoteForBeatsBrick,
+                                "changeTempoBy:": catbricks.ChangeTempoByNBrick,
+                                "setTempoTo:": catbricks.SetTempoBrick,
+                                "rest:elapsed:from:": catbricks.PauseForBeatsBrick,
+                                "instrument:": catbricks.SetInstrumentBrick,
 
-        # sprite values
-        "xpos": catformula.Sensors.OBJECT_X,
-        "ypos": catformula.Sensors.OBJECT_Y,
-        "heading": catformula.Sensors.OBJECT_ROTATION,
-        "scale": catformula.Sensors.OBJECT_SIZE,
+                                # bubble bricks
+                                "say:duration:elapsed:from:": catbricks.SayForBubbleBrick,
+                                "say:": catbricks.SayBubbleBrick,
+                                "think:duration:elapsed:from:": catbricks.ThinkForBubbleBrick,
+                                "think:": catbricks.ThinkBubbleBrick,
+                                "doAsk": catbricks.AskBrick,
+                                "answer": None,
 
-        # sensors
-        "mousePressed": catformula.Sensors.FINGER_TOUCHED,
-        "mouseX": catformula.Sensors.FINGER_X,
-        "mouseY": catformula.Sensors.FINGER_Y,
-        "timeAndDate": None,
-        "touching:": None,
-        "dragMode": None,
+                                # sprite values
+                                "xpos": catformula.Sensors.OBJECT_X,
+                                "ypos": catformula.Sensors.OBJECT_Y,
+                                "heading": catformula.Sensors.OBJECT_ROTATION,
+                                "scale": catformula.Sensors.OBJECT_SIZE,
 
-        # clone
-        "createCloneOf": catbricks.CloneBrick,
-        "deleteClone": catbricks.DeleteThisCloneBrick,
+                                # sensors
+                                "mousePressed": catformula.Sensors.FINGER_TOUCHED,
+                                "mouseX": catformula.Sensors.FINGER_X,
+                                "mouseY": catformula.Sensors.FINGER_Y,
+                                "timeAndDate": None,
+                                "touching:": None,
+                                "dragMode": None,
 
-        # custom block (user-defined)
-        "call": None,
-        "getParam": lambda variable_name, _: _variable_for(variable_name),
+                                # clone
+                                "createCloneOf": catbricks.CloneBrick,
+                                "deleteClone": catbricks.DeleteThisCloneBrick,
 
-        # pen bricks
-        "putPenDown": catbricks.PenDownBrick,
-        "putPenUp": catbricks.PenUpBrick,
-        "stampCostume": catbricks.StampBrick,
-        "clearPenTrails": catbricks.ClearBackgroundBrick,
-        "penColor:": None,
-        "penSize:": None,
-        "setPenParamTo:": None,
-        "changePenSizeBy:": None,
-        "changePenParamBy:": None,
+                                # custom block (user-defined)
+                                "call": None,
+                                "getParam": lambda variable_name, _: _variable_for(variable_name),
 
-        #name and number
-        "sceneName": catformula.Sensors.OBJECT_BACKGROUND_NAME,
-        "costumeName": catformula.Sensors.OBJECT_LOOK_NAME,
-        "backgroundIndex": catformula.Sensors.OBJECT_BACKGROUND_NUMBER,
-        "costumeIndex": catformula.Sensors.OBJECT_LOOK_NUMBER,
+                                # pen bricks
+                                "putPenDown": catbricks.PenDownBrick,
+                                "putPenUp": catbricks.PenUpBrick,
+                                "stampCostume": catbricks.StampBrick,
+                                "clearPenTrails": catbricks.ClearBackgroundBrick,
+                                "penColor:": None,
+                                "penSize:": None,
+                                "setPenParamTo:": None,
+                                "changePenSizeBy:": None,
+                                "changePenParamBy:": None,
 
-        # WORKAROUND: using ROUND for Catrobat float => Scratch int
-        "soundLevel": lambda *_args: catrobat.formula_element_for(catformula.Functions.ROUND,
-                                       arguments=[catrobat.formula_element_for(catformula.Sensors.LOUDNESS)]),  # @UndefinedVariable
-        "note:": catbricks.NoteBrick,
-    }.items() + math_function_block_parameters_mapping.items() \
-              + math_unary_operators_mapping.items() + math_binary_operators_mapping.items() \
-              + user_list_block_parameters_mapping.items() \
-              + string_function_block_parameters_mapping.items())
+                                # name and number
+                                "sceneName": catformula.Sensors.OBJECT_BACKGROUND_NAME,
+                                "costumeName": catformula.Sensors.OBJECT_LOOK_NAME,
+                                "backgroundIndex": catformula.Sensors.OBJECT_BACKGROUND_NUMBER,
+                                "costumeIndex": catformula.Sensors.OBJECT_LOOK_NUMBER,
+
+                                # WORKAROUND: using ROUND for Catrobat float => Scratch int
+                                "soundLevel": lambda *_args: catrobat.formula_element_for(catformula.Functions.ROUND,
+                                                                                          arguments=[
+                                                                                              catrobat.formula_element_for(
+                                                                                                  catformula.Sensors.LOUDNESS)]),
+                                # @UndefinedVariable
+                                "note:": catbricks.NoteBrick,
+                            }.items() + math_function_block_parameters_mapping.items() \
+                            + math_unary_operators_mapping.items() + math_binary_operators_mapping.items() \
+                            + user_list_block_parameters_mapping.items() \
+                            + string_function_block_parameters_mapping.items())
 
     @classmethod
     def catrobat_script_class_for(cls, scratch_block_name):
@@ -517,8 +569,9 @@ class _ScratchToCatrobat(object):
         if scratch_script_name == scratch.SCRIPT_SENSOR_GREATER_THAN:
             formula = _create_modified_formula_brick(arguments[0], arguments[1], catrobat_project, sprite)
             when_cond_brick = catbricks.WhenConditionBrick()
-            when_cond_brick.addAllowedBrickField(catbricks.Brick.BrickField.IF_CONDITION) #@UndefinedVariable
-            when_cond_brick.setFormulaWithBrickField(catbricks.Brick.BrickField.IF_CONDITION, formula) #@UndefinedVariable
+            when_cond_brick.addAllowedBrickField(catbricks.Brick.BrickField.IF_CONDITION)  # @UndefinedVariable
+            when_cond_brick.setFormulaWithBrickField(catbricks.Brick.BrickField.IF_CONDITION,
+                                                     formula)  # @UndefinedVariable
             my_script = catbase.WhenConditionScript()
             when_cond_brick.script = my_script
             my_script.scriptBrick = when_cond_brick
@@ -548,8 +601,8 @@ class _ScratchToCatrobat(object):
         assert param_labels == context.user_script_declared_labels_map[scratch_function_header]
         return _create_user_brick(context, scratch_function_header, param_values, declare=True)
 
-def _create_modified_formula_brick(sensor_type, unconverted_formula, catrobat_project, sprite):
 
+def _create_modified_formula_brick(sensor_type, unconverted_formula, catrobat_project, sprite):
     def _create_catrobat_sprite_stub(name=None):
         sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_BASE, "WCTDummy" if name is None else name)
         looks = sprite.getLookList()
@@ -569,7 +622,7 @@ def _create_modified_formula_brick(sensor_type, unconverted_formula, catrobat_pr
         formula_left_child.value = str(catformula.Sensors.LOUDNESS)
 
     else:
-        #TODO: Implement if ready. Other sensor types (up to now only video motion) not supported.
+        # TODO: Implement if ready. Other sensor types (up to now only video motion) not supported.
         raise common.ScratchtobatError("Unsupported sensor type '{}'".format(sensor_type))
 
     if isinstance(unconverted_formula, int) or isinstance(unconverted_formula, float):
@@ -586,7 +639,9 @@ def _create_modified_formula_brick(sensor_type, unconverted_formula, catrobat_pr
         assert isinstance(formula_right_child, catformula.FormulaElement)
 
     traverser = _BlocksConversionTraverser(sprite, catrobat_project)
-    return catformula.Formula(traverser._converted_helper_brick_or_formula_element([formula_left_child, formula_right_child], ">"))
+    return catformula.Formula(
+        traverser._converted_helper_brick_or_formula_element([formula_left_child, formula_right_child], ">"))
+
 
 def _create_user_brick(context, scratch_function_header, param_values, declare=False):
     # TODO: remove the next line of code as soon as user bricks are supported by Catrobat
@@ -684,28 +739,33 @@ def _create_user_brick(context, scratch_function_header, param_values, declare=F
 
     return user_brick
 
+
 def _create_variable_brick(value, user_variable, Class):
     assert Class in set([catbricks.SetVariableBrick, catbricks.ChangeVariableBrick])
     assert isinstance(user_variable, catformula.UserVariable)
     return Class(catrobat.create_formula_with_value(value), user_variable)
 
+
 def _variable_for(variable_name):
     return catformula.FormulaElement(catElementType.USER_VARIABLE, variable_name, None)  # @UndefinedVariable
+
 
 def _list_for(list_name):
     return catformula.FormulaElement(catElementType.USER_LIST, list_name, None)  # @UndefinedVariable
 
+
 def _get_or_create_shared_global_answer_variable(project):
     shared_global_answer_user_variable = project.getUserVariable(_SHARED_GLOBAL_ANSWER_VARIABLE_NAME)
     if shared_global_answer_user_variable is None:
-        assert(_is_generated(_SHARED_GLOBAL_ANSWER_VARIABLE_NAME))
+        assert (_is_generated(_SHARED_GLOBAL_ANSWER_VARIABLE_NAME))
         catrobat.add_user_variable(project, _SHARED_GLOBAL_ANSWER_VARIABLE_NAME, None, None)
         shared_global_answer_user_variable = project.getUserVariable(_SHARED_GLOBAL_ANSWER_VARIABLE_NAME)
 
     assert shared_global_answer_user_variable is not None \
-    and shared_global_answer_user_variable.getName() == _SHARED_GLOBAL_ANSWER_VARIABLE_NAME, \
-    "variable: %s" % (_SHARED_GLOBAL_ANSWER_VARIABLE_NAME)
+           and shared_global_answer_user_variable.getName() == _SHARED_GLOBAL_ANSWER_VARIABLE_NAME, \
+        "variable: %s" % (_SHARED_GLOBAL_ANSWER_VARIABLE_NAME)
     return shared_global_answer_user_variable
+
 
 def _key_image_path_for(key, file_name):
     key_images_path = os.path.join(common.get_project_base_path(), 'resources', 'images', 'keys')
@@ -718,55 +778,72 @@ def _key_image_path_for(key, file_name):
     log.warning("Key '%s' not found in %s" % (key, os.listdir(key_images_path)))
     raise Exception("Key '%s' not found in %s" % (key, os.listdir(key_images_path)))
 
+
 def _mouse_image_path():
     return os.path.join(common.get_project_base_path(), 'resources', 'images', 'keys', MOUSE_SPRITE_FILENAME)
+
 
 def _slider_image_path():
     return os.path.join(common.get_project_base_path(), 'resources', 'images', SLIDER_SPRITE_FILENAME)
 
+
 def _show_list_image_path(num_lines):
-    return os.path.join(common.get_project_base_path(), 'resources', 'images', 'show_list', SHOW_LIST_SPRITE_FILENAME.format(num_lines))
+    return os.path.join(common.get_project_base_path(), 'resources', 'images', 'show_list',
+                        SHOW_LIST_SPRITE_FILENAME.format(num_lines))
+
 
 def _get_mouse_filename():
     return MOUSE_SPRITE_FILENAME
 
+
 def _get_slider_filename():
     return SLIDER_SPRITE_FILENAME
+
 
 def _get_show_list_filename(num_lines):
     return SHOW_LIST_SPRITE_FILENAME.format(num_lines)
 
+
 def generated_variable_name(variable_name):
     return _GENERATED_VARIABLE_PREFIX + variable_name
 
+
 def get_broadcast_show_msg(sprite_name, variable_name, is_global=False, is_hide=False, is_list=False):
-    return "S2CC:{}_{}_{}_{}".format("hide" if is_hide else "show", ("list" if is_list else "variable"), catrobat._BACKGROUND_SPRITE_NAME if is_global else sprite_name, variable_name).lower()
+    return "S2CC:{}_{}_{}_{}".format("hide" if is_hide else "show", ("list" if is_list else "variable"),
+                                     catrobat._BACKGROUND_SPRITE_NAME if is_global else sprite_name,
+                                     variable_name).lower()
+
 
 def get_show_brick_from_monitor(monitor, sprite, variable=None, is_global=False, is_hide=False, is_list=False):
     monitor["has_{}_call".format(("hide" if is_hide else "show"))] = True
     if is_list:
-        brick = catbricks.BroadcastBrick(get_broadcast_show_msg(sprite.getName(), monitor["listName"], is_global, is_hide, is_list=True))
+        brick = catbricks.BroadcastBrick(
+            get_broadcast_show_msg(sprite.getName(), monitor["listName"], is_global, is_hide, is_list=True))
     elif monitor["mode"] == 2:
-        #large mode needs no workaround
+        # large mode needs no workaround
         if is_hide:
             brick = catbricks.HideTextBrick()
         else:
-            brick = catbricks.ShowTextColorSizeAlignmentBrick(absolute_to_catrobat_x(monitor["x"]), absolute_to_catrobat_y(monitor["y"]), VISIBLE_VAR_LARGE_FONTSIZE, monitor["hex_color"])
+            brick = catbricks.ShowTextColorSizeAlignmentBrick(absolute_to_catrobat_x(monitor["x"]),
+                                                              absolute_to_catrobat_y(monitor["y"]),
+                                                              VISIBLE_VAR_LARGE_FONTSIZE, monitor["hex_color"])
             brick.alignmentSelection = catutils.ShowTextUtils.ALIGNMENT_STYLE_LEFT
         brick.setUserVariable(variable)
     else:
-        #call to workaround script
-        brick = catbricks.BroadcastBrick(get_broadcast_show_msg(sprite.getName(), variable.getName(), is_global, is_hide))
+        # call to workaround script
+        brick = catbricks.BroadcastBrick(
+            get_broadcast_show_msg(sprite.getName(), variable.getName(), is_global, is_hide))
     return brick
+
 
 def get_default_monitor(context, sprite_name, variable_name, is_list=False):
     if is_list:
         monitor = {
-            "mode": 4, #list
+            "mode": 4,  # list
             "color": MONITOR_COLORS["data"],
             "hex_color": hex(MONITOR_COLORS["data"]).lstrip("0x"),
             "listName": variable_name,
-            "label": (sprite_name+": " if sprite_name else "")+variable_name,
+            "label": (sprite_name + ": " if sprite_name else "") + variable_name,
             "target": sprite_name,
             "visible": False,
             "x": context.visible_var_X,
@@ -778,12 +855,12 @@ def get_default_monitor(context, sprite_name, variable_name, is_list=False):
     else:
         monitor = {
             "cmd": "getVar:",
-            "mode": 1, #default
+            "mode": 1,  # default
             "color": MONITOR_COLORS["data"],
             "hex_color": hex(MONITOR_COLORS["data"]).lstrip("0x"),
             "isDiscrete": True,
             "param": variable_name,
-            "label": (sprite_name+": " if sprite_name else "")+variable_name,
+            "label": (sprite_name + ": " if sprite_name else "") + variable_name,
             "sliderMax": 100,
             "sliderMin": 0,
             "target": sprite_name,
@@ -797,6 +874,7 @@ def get_default_monitor(context, sprite_name, variable_name, is_list=False):
         context.visible_var_X += VISIBLE_VAR_POSITION_STEP_X
     return monitor
 
+
 def get_show_brick(project, sprite, sprite_context, name, is_hide=False, is_list=False):
     element = (project.getUserList(name) if is_list else project.getUserVariable(name))
     is_global = True
@@ -807,6 +885,7 @@ def get_show_brick(project, sprite, sprite_context, name, is_hide=False, is_list
     monitor = sprite_context.getMonitor(name, is_global=is_global, is_list=is_list)
     return get_show_brick_from_monitor(monitor, sprite, element, is_global, is_hide, is_list)
 
+
 def generate_sprite(name, filename):
     sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_BASE, name)
     look = catcommon.LookData()
@@ -815,12 +894,14 @@ def generate_sprite(name, filename):
     sprite.getLookList().add(look)
     return sprite
 
+
 def _sound_length_variable_name_for(resource_name):
     return generated_variable_name(_SOUND_LENGTH_VARIABLE_NAME_FORMAT.format(resource_name))
 
 
 def _is_generated(variable_name):
     return variable_name.startswith(_GENERATED_VARIABLE_PREFIX)
+
 
 class Context(object):
     def __init__(self, monitors={}, list_monitors={}):
@@ -839,6 +920,7 @@ class Context(object):
     def sprite_contexts(self):
         return self._sprite_contexts
 
+
 class SpriteContext(object):
     def __init__(self, name=None, user_script_declared_labels_map={}, monitors={}, list_monitors={}):
         self.name = name
@@ -849,6 +931,7 @@ class SpriteContext(object):
         self.context = None
         self.monitors = monitors
         self.list_monitors = list_monitors
+
     def getMonitor(self, name, is_global=False, is_list=False):
         assert self.context
         context = (self.context if is_global else self)
@@ -857,9 +940,11 @@ class SpriteContext(object):
             monitors[name] = get_default_monitor(context, self.name, name, is_list=is_list)
         return monitors[name]
 
+
 class ScriptContext(object):
     def __init__(self, sprite_context=None):
         self.sprite_context = sprite_context if sprite_context is not None else SpriteContext()
+
 
 def converted(scratch_project, progress_bar=None, context=None):
     return Converter.converted_project_for(scratch_project, progress_bar, context)
@@ -880,12 +965,13 @@ class Converter(object):
     def _converted_catrobat_program(self, progress_bar=None, context=None):
         scratch_project = self.scratch_project
         _catr_project = catbase.Project(None, scratch_project.name)
-        _catr_scene = catbase.Scene( CATROBAT_DEFAULT_SCENE_NAME, _catr_project)
+        _catr_scene = catbase.Scene(CATROBAT_DEFAULT_SCENE_NAME, _catr_project)
         _catr_project.sceneList.add(_catr_scene)
         _catr_scene = _catr_project.getDefaultScene()
         ProjectManager.getInstance().setCurrentProject(_catr_project)
         if not context:
-            context = Context(monitors=scratch_project.objects[0].monitors, list_monitors=scratch_project.objects[0].list_monitors)
+            context = Context(monitors=scratch_project.objects[0].monitors,
+                              list_monitors=scratch_project.objects[0].list_monitors)
 
         self._scratch_object_converter = _ScratchObjectConverter(_catr_project, scratch_project,
                                                                  progress_bar, context)
@@ -982,9 +1068,10 @@ class Converter(object):
         # workaround for touching a converted keyboard key with the converted mouse
         if len(self.scratch_project.listened_keys) > 0:
             listened_keys_names = [key_tuple[0] for key_tuple in self.scratch_project.listened_keys]
-            or_formula_element = catformula.FormulaElement(catElementType.OPERATOR, str(catformula.Operators.LOGICAL_OR), None)
+            or_formula_element = catformula.FormulaElement(catElementType.OPERATOR,
+                                                           str(catformula.Operators.LOGICAL_OR), None)
             colide_with_all_keys = or_formula_element.clone()
-            root =  catformula.FormulaElement(catElementType.OPERATOR, str(catformula.Operators.LOGICAL_NOT), None)
+            root = catformula.FormulaElement(catElementType.OPERATOR, str(catformula.Operators.LOGICAL_NOT), None)
             root.setRightChild(colide_with_all_keys)
             for key in listened_keys_names:
                 left = catformula.FormulaElement(catElementType.COLLISION_FORMULA, _key_to_broadcast_message(key), None)
@@ -993,7 +1080,7 @@ class Converter(object):
                 colide_with_all_keys.rightChild.parent = colide_with_all_keys
                 colide_with_all_keys.leftChild.parent = colide_with_all_keys
                 colide_with_all_keys = colide_with_all_keys.rightChild
-            #the lowest layer is an or now where the left child is set but no right child. therefore we move that left child up by 1 layer
+            # the lowest layer is an or now where the left child is set but no right child. therefore we move that left child up by 1 layer
             colide_with_all_keys.parent.leftChild.parent = colide_with_all_keys.parent
             colide_with_all_keys.parent.parent.setRightChild(colide_with_all_keys.parent.leftChild)
 
@@ -1025,9 +1112,11 @@ class Converter(object):
 
         def add_label_bricks(show_script, hide_script, sprite, variable, is_global, label_text, x, y, color):
             if is_global:
-                label_variable = catrobat.add_user_variable(catrobat_project, VISIBLE_VAR_LABEL_NAME.format(variable.getName()))
+                label_variable = catrobat.add_user_variable(catrobat_project,
+                                                            VISIBLE_VAR_LABEL_NAME.format(variable.getName()))
             else:
-                label_variable = catrobat.add_user_variable(catrobat_project, VISIBLE_VAR_LABEL_NAME.format(variable.getName()), sprite)
+                label_variable = catrobat.add_user_variable(catrobat_project,
+                                                            VISIBLE_VAR_LABEL_NAME.format(variable.getName()), sprite)
             show_script.brickList.add(_create_variable_brick(label_text, label_variable, catbricks.SetVariableBrick))
             if hide_script:
                 hide_script.brickList.add(_create_variable_brick("", label_variable, catbricks.SetVariableBrick))
@@ -1046,28 +1135,35 @@ class Converter(object):
             list_show_script = catbase.BroadcastScript(show_msg)
             list_hide_script = catbase.BroadcastScript(hide_msg)
 
-            #If it's a global variable do everything in the list_sprite, else some things have to be in the sprite itself
+            # If it's a global variable do everything in the list_sprite, else some things have to be in the sprite itself
             if is_global:
                 primary_sprite = list_sprite
                 primary_show_script = list_show_script
                 primary_hide_script = list_hide_script
-                offset_variable = catrobat.add_user_variable(catrobat_project, VISIBLE_LIST_OFFSET_NAME.format(name), list_sprite)
-                length_variable = catrobat.add_user_variable(catrobat_project, VISIBLE_LIST_LENGTH_NAME.format(name), list_sprite)
+                offset_variable = catrobat.add_user_variable(catrobat_project, VISIBLE_LIST_OFFSET_NAME.format(name),
+                                                             list_sprite)
+                length_variable = catrobat.add_user_variable(catrobat_project, VISIBLE_LIST_LENGTH_NAME.format(name),
+                                                             list_sprite)
             else:
                 primary_sprite = sprite
                 primary_show_script = show_script
                 primary_hide_script = hide_script
-                #offset and length have to be global, because they need to be accessed from the sprite and from the list_sprite
+                # offset and length have to be global, because they need to be accessed from the sprite and from the list_sprite
                 offset_variable = catrobat.add_user_variable(catrobat_project, VISIBLE_LIST_OFFSET_NAME.format(name))
                 length_variable = catrobat.add_user_variable(catrobat_project, VISIBLE_LIST_LENGTH_NAME.format(name))
 
-            display_lines = [catrobat.add_user_variable(catrobat_project, VISIBLE_LIST_DISPLAY_NAME.format(i, name), primary_sprite) for i in range(num_lines)]
-            handle_variable = catrobat.add_user_variable(catrobat_project, VISIBLE_LIST_HANDLE_NAME.format(name), primary_sprite)
+            display_lines = [
+                catrobat.add_user_variable(catrobat_project, VISIBLE_LIST_DISPLAY_NAME.format(i, name), primary_sprite)
+                for i in range(num_lines)]
+            handle_variable = catrobat.add_user_variable(catrobat_project, VISIBLE_LIST_HANDLE_NAME.format(name),
+                                                         primary_sprite)
 
             label_variable = catrobat.add_user_variable(catrobat_project, VISIBLE_LIST_LABEL_NAME, list_sprite)
-            length_label_variable = catrobat.add_user_variable(catrobat_project, VISIBLE_LIST_LENGTH_LABEL_NAME, list_sprite)
+            length_label_variable = catrobat.add_user_variable(catrobat_project, VISIBLE_LIST_LENGTH_LABEL_NAME,
+                                                               list_sprite)
 
-            primary_show_script.brickList.add(_create_variable_brick(VISIBLE_VAR_HANDLE_CHAR, handle_variable, catbricks.SetVariableBrick))
+            primary_show_script.brickList.add(
+                _create_variable_brick(VISIBLE_VAR_HANDLE_CHAR, handle_variable, catbricks.SetVariableBrick))
             primary_hide_script.brickList.add(_create_variable_brick("", handle_variable, catbricks.SetVariableBrick))
 
             copy_loop = catbricks.ForeverBrick()
@@ -1081,57 +1177,73 @@ class Converter(object):
 
             max_offset_fe = catrobat.create_formula_element_for(
                 [catformula.Functions.MAX,
-                    [catformula.Operators.MINUS, _variable_for(length_variable.getName()), num_lines],
-                    0
-                ]
+                 [catformula.Operators.MINUS, _variable_for(length_variable.getName()), num_lines],
+                 0
+                 ]
             )
 
-            #Display the name of the variable
+            # Display the name of the variable
             list_start.brickList.add(_create_variable_brick(label, label_variable, catbricks.SetVariableBrick))
-            add_generic_variable_bricks(list_show_script, list_hide_script, label_variable, x + VISIBLE_LIST_LEFT_OFFSET, y)
+            add_generic_variable_bricks(list_show_script, list_hide_script, label_variable,
+                                        x + VISIBLE_LIST_LEFT_OFFSET, y)
 
-            #Display the length of the variable
-            add_generic_variable_bricks(primary_show_script, primary_hide_script, length_variable, x + VISIBLE_LIST_LEFT_OFFSET + 50, y - (VISIBLE_LIST_HANDLE_WIDTH + num_lines * VISIBLE_LIST_LINE_HEIGHT))
-            list_show_script.brickList.add(_create_variable_brick(catrobat.create_formula_element_with_value("length"), length_label_variable, catbricks.SetVariableBrick))
-            add_generic_variable_bricks(list_show_script, list_hide_script, length_label_variable , x + VISIBLE_LIST_LEFT_OFFSET, y - (VISIBLE_LIST_HANDLE_WIDTH + num_lines * VISIBLE_LIST_LINE_HEIGHT))
+            # Display the length of the variable
+            add_generic_variable_bricks(primary_show_script, primary_hide_script, length_variable,
+                                        x + VISIBLE_LIST_LEFT_OFFSET + 50,
+                                        y - (VISIBLE_LIST_HANDLE_WIDTH + num_lines * VISIBLE_LIST_LINE_HEIGHT))
+            list_show_script.brickList.add(
+                _create_variable_brick(catrobat.create_formula_element_with_value("length"), length_label_variable,
+                                       catbricks.SetVariableBrick))
+            add_generic_variable_bricks(list_show_script, list_hide_script, length_label_variable,
+                                        x + VISIBLE_LIST_LEFT_OFFSET,
+                                        y - (VISIBLE_LIST_HANDLE_WIDTH + num_lines * VISIBLE_LIST_LINE_HEIGHT))
 
-            #set offset to 0/length if < 0 or >= length
+            # set offset to 0/length if < 0 or >= length
             fixed_offset_fe = catrobat.create_formula_element_for(
                 [catformula.Functions.ROUND, _apply_bounds(_variable_for(offset_variable.getName()), 0, max_offset_fe)]
             )
-            copy_loop.loopBricks.add(_create_variable_brick(fixed_offset_fe, offset_variable, catbricks.SetVariableBrick))
+            copy_loop.loopBricks.add(
+                _create_variable_brick(fixed_offset_fe, offset_variable, catbricks.SetVariableBrick))
 
-            #show handle
+            # show handle
             new_handle_y_fe = catrobat.create_formula_element_for(
                 [catformula.Operators.MINUS,
-                    y - VISIBLE_LIST_HANDLE_WIDTH,
-                    _get_scaling_fe(_variable_for(offset_variable.getName()), 0, max_offset_fe, 0, height - 2 * VISIBLE_LIST_HANDLE_WIDTH - VISIBLE_VAR_HANDLE_SIZE / 2)]
+                 y - VISIBLE_LIST_HANDLE_WIDTH,
+                 _get_scaling_fe(_variable_for(offset_variable.getName()), 0, max_offset_fe, 0,
+                                 height - 2 * VISIBLE_LIST_HANDLE_WIDTH - VISIBLE_VAR_HANDLE_SIZE / 2)]
             )
-            show_handle_brick = catbricks.ShowTextColorSizeAlignmentBrick(catformula.Formula(x + VISIBLE_LIST_HANDLE_WIDTH / 2 + 2), catformula.Formula(new_handle_y_fe), catformula.Formula(VISIBLE_VAR_HANDLE_SIZE), catformula.Formula("#000000"))
+            show_handle_brick = catbricks.ShowTextColorSizeAlignmentBrick(
+                catformula.Formula(x + VISIBLE_LIST_HANDLE_WIDTH / 2 + 2), catformula.Formula(new_handle_y_fe),
+                catformula.Formula(VISIBLE_VAR_HANDLE_SIZE), catformula.Formula("#000000"))
             show_handle_brick.setUserVariable(handle_variable)
             copy_loop.loopBricks.add(show_handle_brick)
 
             length_fe = catrobat.create_formula_element_for([catformula.Functions.NUMBER_OF_ITEMS, _list_for(name)])
-            #display lines
+            # display lines
             for i, display_var in enumerate(display_lines):
-                add_generic_variable_bricks(primary_show_script, primary_hide_script, display_var, x + VISIBLE_LIST_LEFT_OFFSET, y - (VISIBLE_LIST_HANDLE_WIDTH + i * VISIBLE_LIST_LINE_HEIGHT))
+                add_generic_variable_bricks(primary_show_script, primary_hide_script, display_var,
+                                            x + VISIBLE_LIST_LEFT_OFFSET,
+                                            y - (VISIBLE_LIST_HANDLE_WIDTH + i * VISIBLE_LIST_LINE_HEIGHT))
                 item_offset_fe = catrobat.create_formula_element_for(
-                    [catformula.Operators.PLUS, _variable_for(offset_variable.getName()), i+1]
+                    [catformula.Operators.PLUS, _variable_for(offset_variable.getName()), i + 1]
                 )
-                #Displays: "i: list[i]", e.g.: "4: 52"'"
+                # Displays: "i: list[i]", e.g.: "4: 52"'"
                 variable_value_fe = catrobat.create_formula_element_for(
                     [catformula.Functions.JOIN,
-                        [catformula.Functions.JOIN, item_offset_fe, ": "],
-                        [catformula.Functions.LIST_ITEM, item_offset_fe, _list_for(name)]
-                    ]
+                     [catformula.Functions.JOIN, item_offset_fe, ": "],
+                     [catformula.Functions.LIST_ITEM, item_offset_fe, _list_for(name)]
+                     ]
                 )
-                #Check if the line should display something. If not then the line will become "".
+                # Check if the line should display something. If not then the line will become "".
                 index_smaller_length = catrobat.create_formula_for(
                     [catformula.Operators.SMALLER_OR_EQUAL, item_offset_fe, length_fe]
                 )
                 check_offset_brick = catbricks.IfLogicBeginBrick(index_smaller_length)
-                check_offset_brick.ifBranchBricks.add(_create_variable_brick(variable_value_fe, display_var, catbricks.SetVariableBrick))
-                check_offset_brick.elseBranchBricks.add(_create_variable_brick(catrobat.create_formula_element_with_value(""), display_var, catbricks.SetVariableBrick))
+                check_offset_brick.ifBranchBricks.add(
+                    _create_variable_brick(variable_value_fe, display_var, catbricks.SetVariableBrick))
+                check_offset_brick.elseBranchBricks.add(
+                    _create_variable_brick(catrobat.create_formula_element_with_value(""), display_var,
+                                           catbricks.SetVariableBrick))
                 copy_loop.loopBricks.add(check_offset_brick)
 
             copy_loop.loopBricks.add(_create_variable_brick(length_fe, length_variable, catbricks.SetVariableBrick))
@@ -1140,7 +1252,7 @@ class Converter(object):
             copy_script.brickList.add(copy_loop)
             primary_sprite.addScript(copy_script)
 
-            #When list_sprite is clicked check if clicked on uparrow, downarrow, or handle
+            # When list_sprite is clicked check if clicked on uparrow, downarrow, or handle
             onclick_script = catbase.WhenScript()
             is_down_arrow_fe = catrobat.create_formula_element_for(
                 [catformula.Operators.GREATER_THAN, catformula.Sensors.FINGER_Y, y - VISIBLE_LIST_HANDLE_WIDTH]
@@ -1148,26 +1260,31 @@ class Converter(object):
             is_up_arrow_fe = catrobat.create_formula_element_for(
                 [catformula.Operators.SMALLER_THAN, catformula.Sensors.FINGER_Y, y - height + VISIBLE_LIST_HANDLE_WIDTH]
             )
-            not_touching = catrobat.create_formula_for([catformula.Operators.LOGICAL_NOT, catformula.Sensors.COLLIDES_WITH_FINGER])
+            not_touching = catrobat.create_formula_for(
+                [catformula.Operators.LOGICAL_NOT, catformula.Sensors.COLLIDES_WITH_FINGER])
 
             if_up_arrow_brick = catbricks.IfLogicBeginBrick(catformula.Formula(is_up_arrow_fe))
             if_down_arrow_brick = catbricks.IfLogicBeginBrick(catformula.Formula(is_down_arrow_fe))
             while_handle_pressed = catbricks.RepeatUntilBrick(not_touching)
 
-            #if uparrow: offset += 1
-            if_up_arrow_brick.ifBranchBricks.add(_create_variable_brick(1, offset_variable, catbricks.ChangeVariableBrick))
+            # if uparrow: offset += 1
+            if_up_arrow_brick.ifBranchBricks.add(
+                _create_variable_brick(1, offset_variable, catbricks.ChangeVariableBrick))
             if_up_arrow_brick.elseBranchBricks.add(if_down_arrow_brick)
 
-            #elif downarrow: offset -= 1
-            if_down_arrow_brick.ifBranchBricks.add(_create_variable_brick(-1, offset_variable, catbricks.ChangeVariableBrick))
+            # elif downarrow: offset -= 1
+            if_down_arrow_brick.ifBranchBricks.add(
+                _create_variable_brick(-1, offset_variable, catbricks.ChangeVariableBrick))
             if_down_arrow_brick.elseBranchBricks.add(while_handle_pressed)
 
-            #else: while-handle-pressed: set offset to calculated offset
+            # else: while-handle-pressed: set offset to calculated offset
             y_touch_position_fe = catrobat.create_formula_element_for(catformula.Sensors.FINGER_Y)
             new_offset_fe = catrobat.create_formula_element_for(
-                [catformula.Functions.ROUND, _get_scaling_fe(y_touch_position_fe, y - VISIBLE_LIST_HANDLE_WIDTH, y - height + VISIBLE_LIST_HANDLE_WIDTH, 0, max_offset_fe)]
+                [catformula.Functions.ROUND, _get_scaling_fe(y_touch_position_fe, y - VISIBLE_LIST_HANDLE_WIDTH,
+                                                             y - height + VISIBLE_LIST_HANDLE_WIDTH, 0, max_offset_fe)]
             )
-            while_handle_pressed.loopBricks.add(_create_variable_brick(new_offset_fe, offset_variable, catbricks.SetVariableBrick))
+            while_handle_pressed.loopBricks.add(
+                _create_variable_brick(new_offset_fe, offset_variable, catbricks.SetVariableBrick))
             while_handle_pressed.loopBricks.add(catbricks.WaitBrick(50))
             onclick_script.brickList.add(if_up_arrow_brick)
 
@@ -1182,7 +1299,8 @@ class Converter(object):
 
             scene.addSprite(list_sprite)
 
-        def add_slider(show_script, hide_script, scene, sprite, variable, is_global, base_x, base_y, color, label_text, slider_min, slider_max, startbricks):
+        def add_slider(show_script, hide_script, scene, sprite, variable, is_global, base_x, base_y, color, label_text,
+                       slider_min, slider_max, startbricks):
             slider_sprite_name = SLIDER_SPRITE_NAME + sprite.getName() + "_" + variable.getName()
             slider_sprite = generate_sprite(slider_sprite_name, _get_slider_filename())
             show_msg = show_script.getBroadcastMessage()
@@ -1194,7 +1312,7 @@ class Converter(object):
                 slider_hide_script = catbase.BroadcastScript(hide_msg)
             slider_touched_script = catbase.WhenScript()
 
-            #If it's a global variable do everything in the slider_sprite, else some things have to be in the sprite itself
+            # If it's a global variable do everything in the slider_sprite, else some things have to be in the sprite itself
             if is_global:
                 primary_sprite = slider_sprite
                 primary_show_script = slider_show_script
@@ -1204,58 +1322,71 @@ class Converter(object):
                 primary_show_script = show_script
                 primary_hide_script = hide_script
 
-            slider_handle = catrobat.add_user_variable(catrobat_project, VISIBLE_VAR_SLIDER_HANDLE_NAME.format(variable.getName()), primary_sprite)
-            old_val = catrobat.add_user_variable(catrobat_project, VISIBLE_VAR_SLIDER_OLD_NAME.format(variable.getName()), primary_sprite)
+            slider_handle = catrobat.add_user_variable(catrobat_project,
+                                                       VISIBLE_VAR_SLIDER_HANDLE_NAME.format(variable.getName()),
+                                                       primary_sprite)
+            old_val = catrobat.add_user_variable(catrobat_project,
+                                                 VISIBLE_VAR_SLIDER_OLD_NAME.format(variable.getName()), primary_sprite)
 
-            label_variable = add_label_bricks(slider_show_script, slider_hide_script, slider_sprite, variable, is_global, label_text, base_x, base_y, color)
-            add_generic_variable_bricks(primary_show_script, primary_hide_script, variable, base_x+(len(label_text)+2)*7, base_y, color)
+            label_variable = add_label_bricks(slider_show_script, slider_hide_script, slider_sprite, variable,
+                                              is_global, label_text, base_x, base_y, color)
+            add_generic_variable_bricks(primary_show_script, primary_hide_script, variable,
+                                        base_x + (len(label_text) + 2) * 7, base_y, color)
 
             x_min = base_x
             x_max = x_min + VISIBLE_VAR_SLIDER_WIDTH
             handle_x_min = x_min + 7
             handle_x_max = x_max - 4
-            y = base_y-15
+            y = base_y - 15
 
             primary_startbricks = []
             slider_startbricks = startbricks
             primary_startbricks.append(_create_variable_brick(0, old_val, catbricks.SetVariableBrick))
-            slider_startbricks.append(catbricks.PlaceAtBrick(x_min + VISIBLE_VAR_SLIDER_WIDTH / 2, y - VISIBLE_VAR_SLIDER_HEIGHT / 2))
+            slider_startbricks.append(
+                catbricks.PlaceAtBrick(x_min + VISIBLE_VAR_SLIDER_WIDTH / 2, y - VISIBLE_VAR_SLIDER_HEIGHT / 2))
 
-            #set handle position if variable value changed and the variable is visible (slider_handle is "" if the variable is hidden)
+            # set handle position if variable value changed and the variable is visible (slider_handle is "" if the variable is hidden)
             changed_condition = catrobat.create_formula_element_for(
                 [catformula.Operators.LOGICAL_AND,
-                    [catformula.Operators.NOT_EQUAL, _variable_for(variable.getName()), _variable_for(old_val.getName())],
-                    [catformula.Operators.EQUAL, _variable_for(slider_handle.getName()), VISIBLE_VAR_HANDLE_CHAR]
-                ]
+                 [catformula.Operators.NOT_EQUAL, _variable_for(variable.getName()), _variable_for(old_val.getName())],
+                 [catformula.Operators.EQUAL, _variable_for(slider_handle.getName()), VISIBLE_VAR_HANDLE_CHAR]
+                 ]
             )
 
             changed_script = catbase.WhenConditionScript(catformula.Formula(changed_condition))
-            new_x_fe = _get_scaling_fe(_variable_for(variable.getName()), slider_min, slider_max, handle_x_min, handle_x_max)
-            show_handle = catbricks.ShowTextColorSizeAlignmentBrick(catformula.Formula(new_x_fe), catformula.Formula(y+1), catformula.Formula(VISIBLE_VAR_HANDLE_SIZE), catformula.Formula(color))
+            new_x_fe = _get_scaling_fe(_variable_for(variable.getName()), slider_min, slider_max, handle_x_min,
+                                       handle_x_max)
+            show_handle = catbricks.ShowTextColorSizeAlignmentBrick(catformula.Formula(new_x_fe),
+                                                                    catformula.Formula(y + 1),
+                                                                    catformula.Formula(VISIBLE_VAR_HANDLE_SIZE),
+                                                                    catformula.Formula(color))
             show_handle.setUserVariable(slider_handle)
             changed_script.brickList.add(show_handle)
-            changed_script.brickList.add(_create_variable_brick(_variable_for(variable.getName()), old_val, catbricks.SetVariableBrick))
+            changed_script.brickList.add(
+                _create_variable_brick(_variable_for(variable.getName()), old_val, catbricks.SetVariableBrick))
 
-            #set variable value if slider touched
+            # set variable value if slider touched
             stage_not_touched = catrobat.create_formula_for(
                 [catformula.Operators.LOGICAL_NOT, [], catformula.Sensors.FINGER_TOUCHED]
             )
             while_touched_brick = catbricks.RepeatUntilBrick(stage_not_touched)
             new_val_fe = catrobat.create_formula_element_for(
                 [catformula.Functions.ROUND,
-                    _get_scaling_fe(catformula.Sensors.FINGER_X, handle_x_min, handle_x_max, slider_min, slider_max)
-                ]
+                 _get_scaling_fe(catformula.Sensors.FINGER_X, handle_x_min, handle_x_max, slider_min, slider_max)
+                 ]
             )
             while_touched_brick.loopBricks.add(_create_variable_brick(new_val_fe, variable, catbricks.SetVariableBrick))
 
             slider_show_script.brickList.add(catbricks.ShowBrick())
-            primary_show_script.brickList.add(_create_variable_brick(VISIBLE_VAR_HANDLE_CHAR, slider_handle, catbricks.SetVariableBrick))
-            primary_show_script.brickList.add(_create_variable_brick(123, old_val, catbricks.ChangeVariableBrick)) #trigger change script
+            primary_show_script.brickList.add(
+                _create_variable_brick(VISIBLE_VAR_HANDLE_CHAR, slider_handle, catbricks.SetVariableBrick))
+            primary_show_script.brickList.add(
+                _create_variable_brick(123, old_val, catbricks.ChangeVariableBrick))  # trigger change script
 
             if is_global:
                 slider_touched_script.brickList.add(while_touched_brick)
             else:
-                #The slider_sprite doesn't have access to the variable => send a Broadcast to the sprite which updates the variable
+                # The slider_sprite doesn't have access to the variable => send a Broadcast to the sprite which updates the variable
                 touched_bc_message = "S2CC:slider_{}_{}".format(sprite.getName(), variable.getName()).lower()
                 slider_touched_script.brickList.add(catbricks.BroadcastWaitBrick(touched_bc_message))
                 touched_logic_script = catbase.BroadcastScript(touched_bc_message)
@@ -1272,7 +1403,7 @@ class Converter(object):
                 hide_handle_brick = catbricks.HideTextBrick()
                 hide_handle_brick.setUserVariable(slider_handle)
                 primary_hide_script.brickList.add(hide_handle_brick)
-                #set the handle character to "" so that it can be easily checked if the variable is visible or not
+                # set the handle character to "" so that it can be easily checked if the variable is visible or not
                 primary_hide_script.brickList.add(_create_variable_brick("", slider_handle, catbricks.SetVariableBrick))
                 slider_sprite.addScript(slider_hide_script)
             scene.addSprite(slider_sprite)
@@ -1291,9 +1422,10 @@ class Converter(object):
                 if not variable:
                     log.warning("Variable for monitor should exist at this time. Monitor might not work as expected.")
                     continue
-                #Bricks that show/hide the variable. Added to workaround sprite if there's one, else to the sprite itself.
-                startbricks = [get_show_brick_from_monitor(monitor, sprite, variable, is_hide=not monitor.get("visible"))]
-                #Ignore Large Mode(2) which doesn't need a workaround
+                # Bricks that show/hide the variable. Added to workaround sprite if there's one, else to the sprite itself.
+                startbricks = [
+                    get_show_brick_from_monitor(monitor, sprite, variable, is_hide=not monitor.get("visible"))]
+                # Ignore Large Mode(2) which doesn't need a workaround
                 if monitor.get("mode", 1) in [1, 3] and monitor.get("has_show_call"):
                     base_x = int(round(absolute_to_catrobat_x(monitor["x"]) + 5))
                     base_y = int(round(absolute_to_catrobat_y(monitor["y"]) - 2))
@@ -1302,13 +1434,18 @@ class Converter(object):
                     show_script = catbase.BroadcastScript(get_broadcast_show_msg(sprite.getName(), name))
                     hide_script = None
                     if monitor.get("has_hide_call"):
-                        hide_script = catbase.BroadcastScript(get_broadcast_show_msg(sprite.getName(), name, is_hide=True))
-                    if monitor.get("mode", 1) == 1: #default mode
-                        add_label_bricks(show_script, hide_script, sprite, variable, is_global, label_text, base_x, base_y, monitor["hex_color"])
-                        add_generic_variable_bricks(show_script, hide_script, variable, base_x+(len(label_text)+2)*7, base_y, monitor["hex_color"])
+                        hide_script = catbase.BroadcastScript(
+                            get_broadcast_show_msg(sprite.getName(), name, is_hide=True))
+                    if monitor.get("mode", 1) == 1:  # default mode
+                        add_label_bricks(show_script, hide_script, sprite, variable, is_global, label_text, base_x,
+                                         base_y, monitor["hex_color"])
+                        add_generic_variable_bricks(show_script, hide_script, variable,
+                                                    base_x + (len(label_text) + 2) * 7, base_y, monitor["hex_color"])
                         show_visible_list.extend(startbricks)
-                    else: #slider mode
-                        add_slider(show_script, hide_script, catrobat_scene, sprite, variable, is_global, base_x, base_y, monitor["hex_color"], label_text, monitor["sliderMin"], monitor["sliderMax"], startbricks)
+                    else:  # slider mode
+                        add_slider(show_script, hide_script, catrobat_scene, sprite, variable, is_global, base_x,
+                                   base_y, monitor["hex_color"], label_text, monitor["sliderMin"], monitor["sliderMax"],
+                                   startbricks)
                     if show_script.brickList:
                         sprite.addScript(show_script)
                     if hide_script and hide_script.brickList:
@@ -1316,9 +1453,10 @@ class Converter(object):
             catrobat.add_to_start_script(show_visible_list, sprite)
 
         def add_lists():
-            #Add display of lists
+            # Add display of lists
             for name, monitor in sprite_context.list_monitors.iteritems():
-                startbricks = [get_show_brick_from_monitor(monitor, sprite, is_list=True, is_hide=not monitor.get("visible"))]
+                startbricks = [
+                    get_show_brick_from_monitor(monitor, sprite, is_list=True, is_hide=not monitor.get("visible"))]
                 if monitor.get("has_show_call"):
                     num_lines = max(1, (monitor["height"] - 2 * VISIBLE_LIST_HANDLE_WIDTH) // VISIBLE_LIST_LINE_HEIGHT)
                     shown_list = sprite.getUserList(name)
@@ -1329,7 +1467,9 @@ class Converter(object):
                     if not shown_list:
                         log.warning("List for monitor should exist at this time. Monitor might not work as expected.")
                         continue
-                    add_list(catrobat_scene, sprite, name, monitor["label"], is_global, absolute_to_catrobat_x(monitor["x"]), absolute_to_catrobat_y(monitor["y"]), num_lines, monitor.get("has_hide_call"), startbricks)
+                    add_list(catrobat_scene, sprite, name, monitor["label"], is_global,
+                             absolute_to_catrobat_x(monitor["x"]), absolute_to_catrobat_y(monitor["y"]), num_lines,
+                             monitor.get("has_hide_call"), startbricks)
 
         add_variables()
         add_lists()
@@ -1337,9 +1477,9 @@ class Converter(object):
     @classmethod
     def _add_all_monitors(cls, catrobat_scene, catrobat_project, context):
         for sprite, sprite_context in zip(catrobat_scene.getSpriteList(), context.sprite_contexts):
-            cls._add_monitors_to(sprite, sprite_context, catrobat_scene, catrobat_project, catrobat_scene.getSpriteList())
-            
-    
+            cls._add_monitors_to(sprite, sprite_context, catrobat_scene, catrobat_project,
+                                 catrobat_scene.getSpriteList())
+
     @staticmethod
     def _create_or_get_user_variable(catrobat_scene, name, value):
         user_variable = catrobat_scene.project.getUserVariable(name)
@@ -1349,7 +1489,7 @@ class Converter(object):
             catrobat_scene.getProject().userVariables.add(user_variable)
         return user_variable
 
-    #toggle key visibility scripts
+    # toggle key visibility scripts
     @staticmethod
     def visibility_workaround_for_key(key_sprite, visibility_user_variable, key_message):
         when_tapped_script = catbase.BroadcastScript(key_message)
@@ -1363,7 +1503,7 @@ class Converter(object):
         when_tapped_script.getBrickList().addAll(bricklist)
         key_sprite.addScript(when_tapped_script)
 
-    #tilt sensor scripts
+    # tilt sensor scripts
     @staticmethod
     def _create_when_toggle_tilt_key_tapped_script(tilt_state_variable):
         when_tapped_script = catbase.WhenScript()
@@ -1390,13 +1530,15 @@ class Converter(object):
         if tilt_key_data.operator is catformula.Operators.GREATER_THAN:
             stop_operator = catformula.Operators.SMALLER_THAN
 
-        stop_tilt_expression = [catformula.Operators.LOGICAL_OR, [stop_operator, tilt_key_data.inclination, tilt_key_data.compare_value],
-                                                                 [catformula.Operators.NOT_EQUAL, tilt_key_data.active_state, tilt_state_user_variable]]
+        stop_tilt_expression = [catformula.Operators.LOGICAL_OR,
+                                [stop_operator, tilt_key_data.inclination, tilt_key_data.compare_value],
+                                [catformula.Operators.NOT_EQUAL, tilt_key_data.active_state, tilt_state_user_variable]]
         return catrobat.create_formula_for(stop_tilt_expression)
 
     @staticmethod
     def _create_when_tilt_script(catrobat_scene, tilt_state_user_variable, tilt_key_data):
-        if_tilt_formula = catrobat.create_formula_for([tilt_key_data.operator, tilt_key_data.inclination, tilt_key_data.compare_value])
+        if_tilt_formula = catrobat.create_formula_for(
+            [tilt_key_data.operator, tilt_key_data.inclination, tilt_key_data.compare_value])
         if_tilt = catbricks.IfThenLogicBeginBrick(if_tilt_formula)
 
         global_key_var_name = scratch.S2CC_KEY_VARIABLE_NAME + tilt_key_data.key_name
@@ -1419,14 +1561,15 @@ class Converter(object):
         if_tilt.ifBranchBricks.addAll(bricklist)
         return if_tilt
 
-    #keyboard key scripts
+    # keyboard key scripts
     @staticmethod
     def _create_when_key_tapped_script(key_sprite, key_message):
         when_tapped_script = catbase.WhenScript()
         broadcast_brick1 = catbricks.BroadcastBrick(key_message)
         wait_brick1 = catbricks.WaitBrick(250)
 
-        not_touching_formula = catrobat.create_formula_for([catformula.Operators.LOGICAL_NOT, catformula.Sensors.COLLIDES_WITH_FINGER])
+        not_touching_formula = catrobat.create_formula_for(
+            [catformula.Operators.LOGICAL_NOT, catformula.Sensors.COLLIDES_WITH_FINGER])
         repeat_until_brick = catbricks.RepeatUntilBrick(not_touching_formula)
         broadcast_brick2 = catbricks.BroadcastBrick(key_message)
         wait_brick2 = catbricks.WaitBrick(50)
@@ -1445,7 +1588,8 @@ class Converter(object):
         key_user_variable = Converter._create_or_get_user_variable(catrobat_scene, global_key_var_name, 0)
 
         set_variable_brick1 = _create_variable_brick(1, key_user_variable, catbricks.SetVariableBrick)
-        not_touching_formula = catrobat.create_formula_for([catformula.Operators.LOGICAL_NOT, catformula.Sensors.COLLIDES_WITH_FINGER])
+        not_touching_formula = catrobat.create_formula_for(
+            [catformula.Operators.LOGICAL_NOT, catformula.Sensors.COLLIDES_WITH_FINGER])
         wait_until_brick = catbricks.WaitUntilBrick(not_touching_formula)
         set_variable_brick2 = catbricks.SetVariableBrick(catformula.Formula(0), key_user_variable)
 
@@ -1453,10 +1597,9 @@ class Converter(object):
         when_tapped_script.getBrickList().addAll(bricklist)
         key_sprite.addScript(when_tapped_script)
 
-
     # key sprite creating functions ------------------------------------------------------------------------------------
     @staticmethod
-    def _create_key_sprite(catrobat_scene, key_data, additional_looks = []):
+    def _create_key_sprite(catrobat_scene, key_data, additional_looks=[]):
         key_name = "key_" + key_data.key_name
         new_sprite = False
         key_sprite = _get_existing_sprite_with_name(catrobat_scene.getSpriteList(), key_name)
@@ -1475,7 +1618,7 @@ class Converter(object):
             key_look.fileName = _key_image_path_for(look_name, True)
             key_sprite.getLookList().add(key_look)
 
-        #set looks and position via started script
+        # set looks and position via started script
         when_started_script = catbase.StartScript()
         set_look_brick = catbricks.SetLookBrick()
         set_look_brick.setLook(key_look_main)
@@ -1490,10 +1633,12 @@ class Converter(object):
 
     @staticmethod
     def _add_toggle_tilt_key_sprite_and_scripts(catrobat_scene, key_data, tilt_key_names):
-        key_sprite, add_sprite = Converter._create_key_sprite(catrobat_scene, key_data, [KeyNames.TOGGLE_TILT_ARROWS, KeyNames.TOGGLE_TILT_WASD])
+        key_sprite, add_sprite = Converter._create_key_sprite(catrobat_scene, key_data,
+                                                              [KeyNames.TOGGLE_TILT_ARROWS, KeyNames.TOGGLE_TILT_WASD])
 
         tilt_state_user_variable_name = scratch.S2CC_KEY_VARIABLE_NAME + key_data.key_name
-        tilt_state_user_variable = Converter._create_or_get_user_variable(catrobat_scene, tilt_state_user_variable_name, 0)
+        tilt_state_user_variable = Converter._create_or_get_user_variable(catrobat_scene, tilt_state_user_variable_name,
+                                                                          0)
 
         when_tapped_script = Converter._create_when_toggle_tilt_key_tapped_script(tilt_state_user_variable)
         key_sprite.addScript(when_tapped_script)
@@ -1533,7 +1678,8 @@ class Converter(object):
                 elif data.key_name is KeyNames.RIGHT_ARROW or "d" == data.key_name:
                     right_and_d_start_script.brickList.get(0).loopBricks.add(tilt_active_branch)
 
-        for start_script in [up_and_w_start_script, down_and_s_start_script, left_and_a_start_script, right_and_d_start_script]:
+        for start_script in [up_and_w_start_script, down_and_s_start_script, left_and_a_start_script,
+                             right_and_d_start_script]:
             if len(start_script.brickList.get(0).loopBricks) is not 0:
                 if start_script.brickList.get(0).loopBricks.get(0) is not None:
                     key_sprite.addScript(start_script)
@@ -1549,11 +1695,13 @@ class Converter(object):
             key_look_main.fileName = _key_image_path_for(key_data.key_name, True)
             key_pressed_data.keys_sprite.getLookList().add(key_look_main)
 
-            #----------------------------------------when_started_script------------------------------------------------
-            clone_index_change_brick = _create_variable_brick(1, key_pressed_data.clone_index_user_variable, catbricks.ChangeVariableBrick)
+            # ----------------------------------------when_started_script------------------------------------------------
+            clone_index_change_brick = _create_variable_brick(1, key_pressed_data.clone_index_user_variable,
+                                                              catbricks.ChangeVariableBrick)
             wait_brick = catbricks.WaitBrick(50)
             create_clone_brick = catbricks.CloneBrick()
-            repeat_times_brick = catbricks.RepeatBrick(catrobat.create_formula_for(Converter._calculate_needed_clones_number(key_lists)))
+            repeat_times_brick = catbricks.RepeatBrick(
+                catrobat.create_formula_for(Converter._calculate_needed_clones_number(key_lists)))
             repeat_times_brick.loopBricks.add(clone_index_change_brick)
             repeat_times_brick.loopBricks.add(create_clone_brick)
             repeat_times_brick.loopBricks.add(wait_brick)
@@ -1562,15 +1710,18 @@ class Converter(object):
             key_pressed_data.when_started_script.getBrickList().addAll(bricks)
             key_pressed_data.keys_sprite.addScript(key_pressed_data.when_started_script)
             catrobat_scene.addSprite(key_pressed_data.keys_sprite)
-            #-----------------------------------------------------------------------------------------------------------
+            # -----------------------------------------------------------------------------------------------------------
 
         clone_index_count = 1
-        clone_if_branch_script = Converter._create_key_pressed_clone_script(catrobat_scene, key_pressed_data.keys_sprite, key_data, row_visibility_user_variable, key_look_main)
+        clone_if_branch_script = Converter._create_key_pressed_clone_script(catrobat_scene,
+                                                                            key_pressed_data.keys_sprite, key_data,
+                                                                            row_visibility_user_variable, key_look_main)
         for clone_if_brick in key_pressed_data.when_started_as_clone_script.getBrickList():
             if isinstance(clone_if_brick, catbricks.IfThenLogicBeginBrick):
                 clone_index_count += 1
 
-        clone_index_formula = catrobat.create_formula_for([catformula.Operators.EQUAL, clone_index_count, key_pressed_data.clone_index_user_variable])
+        clone_index_formula = catrobat.create_formula_for(
+            [catformula.Operators.EQUAL, clone_index_count, key_pressed_data.clone_index_user_variable])
         if_then_brick_clone_begin = catbricks.IfThenLogicBeginBrick(clone_index_formula)
         if_then_brick_clone_begin.ifBranchBricks.addAll(clone_if_branch_script)
         key_pressed_data.when_started_as_clone_script.getBrickList().add(if_then_brick_clone_begin)
@@ -1588,17 +1739,21 @@ class Converter(object):
         place_at_brick = catbricks.PlaceAtBrick(key_data.x_pos, key_data.y_pos)
         set_size_to_brick = catbricks.SetSizeToBrick(33.0)
         touching_formula = catrobat.create_formula_for([catformula.Sensors.COLLIDES_WITH_FINGER])
-        not_touching_formula = catrobat.create_formula_for([catformula.Operators.LOGICAL_NOT, catformula.Sensors.COLLIDES_WITH_FINGER])
+        not_touching_formula = catrobat.create_formula_for(
+            [catformula.Operators.LOGICAL_NOT, catformula.Sensors.COLLIDES_WITH_FINGER])
         colliding_formula = catrobat.create_formula_for([catformula.Sensors.COLLIDES_WITH_FINGER])
-        not_colliding_formula = catrobat.create_formula_for([catformula.Operators.LOGICAL_NOT, catformula.Sensors.COLLIDES_WITH_FINGER])
+        not_colliding_formula = catrobat.create_formula_for(
+            [catformula.Operators.LOGICAL_NOT, catformula.Sensors.COLLIDES_WITH_FINGER])
         forever_brick = catbricks.ForeverBrick()
 
-        #-----------------------------key_pressing_functionality--------------------------------------------------------
+        # -----------------------------key_pressing_functionality--------------------------------------------------------
         if "visibility" not in key_data.key_name:
-            visible_equal_formula = catrobat.create_formula_for([catformula.Operators.EQUAL, 1, row_visibility_user_variable])
+            visible_equal_formula = catrobat.create_formula_for(
+                [catformula.Operators.EQUAL, 1, row_visibility_user_variable])
             wait_until_visible_brick = catbricks.WaitUntilBrick(visible_equal_formula)
             show_brick = catbricks.ShowBrick()
-            visible_not_formula = catrobat.create_formula_for([catformula.Operators.LOGICAL_NOT, row_visibility_user_variable])
+            visible_not_formula = catrobat.create_formula_for(
+                [catformula.Operators.LOGICAL_NOT, row_visibility_user_variable])
             repeat_until_brick = catbricks.RepeatUntilBrick(visible_not_formula)
             if_then_brick_begin = catbricks.IfThenLogicBeginBrick(touching_formula)
             global_key_var_name = scratch.S2CC_KEY_VARIABLE_NAME + key_data.key_name
@@ -1613,15 +1768,18 @@ class Converter(object):
             forever_loop_bricks = [wait_until_visible_brick, show_brick, repeat_until_brick, hide_brick]
             forever_brick.loopBricks.addAll(forever_loop_bricks)
 
-        #-----------------------------key_row_visibility_functionality--------------------------------------------------
+        # -----------------------------key_row_visibility_functionality--------------------------------------------------
         else:
             wait_until_touching_brick = catbricks.WaitUntilBrick(touching_formula)
             wait_until_not_touching_brick = catbricks.WaitUntilBrick(not_touching_formula)
             wait_until_collides_brick = catbricks.WaitUntilBrick(colliding_formula)
             wait_until_not_collides_brick = catbricks.WaitUntilBrick(not_colliding_formula)
-            key_visible_set_zero_brick = _create_variable_brick(0, row_visibility_user_variable, catbricks.SetVariableBrick)
-            key_visible_set_one_brick = _create_variable_brick(1, row_visibility_user_variable, catbricks.SetVariableBrick)
-            forever_loop_bricks = [wait_until_collides_brick, wait_until_not_collides_brick, key_visible_set_zero_brick, wait_until_touching_brick, wait_until_not_touching_brick, key_visible_set_one_brick]
+            key_visible_set_zero_brick = _create_variable_brick(0, row_visibility_user_variable,
+                                                                catbricks.SetVariableBrick)
+            key_visible_set_one_brick = _create_variable_brick(1, row_visibility_user_variable,
+                                                               catbricks.SetVariableBrick)
+            forever_loop_bricks = [wait_until_collides_brick, wait_until_not_collides_brick, key_visible_set_zero_brick,
+                                   wait_until_touching_brick, wait_until_not_touching_brick, key_visible_set_one_brick]
             forever_brick.loopBricks.addAll(forever_loop_bricks)
 
         return [place_at_brick, look_set_brick, set_size_to_brick, forever_brick]
@@ -1632,7 +1790,8 @@ class Converter(object):
         any_key_variants = [key_tuple[1] for key_tuple in key_lists.listened_keys if key_tuple[0] == KeyNames.ANY]
         key_lists.any_key_script_exists = KeyTypes.LISTENED_KEY in any_key_variants
         key_lists.any_key_brick_exists = KeyTypes.KEY_PRESSED_BRICK in any_key_variants
-        key_lists.listened_keys = [key_tuple for key_tuple in key_lists.listened_keys if not key_tuple[0] == KeyNames.ANY]
+        key_lists.listened_keys = [key_tuple for key_tuple in key_lists.listened_keys if
+                                   not key_tuple[0] == KeyNames.ANY]
         if len(any_key_variants) > 0 and len(key_lists.listened_keys) == 0:
             key_lists.listened_keys = [("a", KeyNames.ANY)]
         return key_lists
@@ -1684,8 +1843,10 @@ class Converter(object):
             return None, key_lists
         else:
             row_visibility_user_variable_name = scratch.S2CC_KEY_VARIABLE_NAME + key_data.key_name
-            row_visibility_user_variable = Converter._create_or_get_user_variable(catrobat_scene, row_visibility_user_variable_name, 1)
-            Converter._create_keys_sprite(catrobat_scene, key_data, key_pressed_data, row_visibility_user_variable, key_lists)
+            row_visibility_user_variable = Converter._create_or_get_user_variable(catrobat_scene,
+                                                                                  row_visibility_user_variable_name, 1)
+            Converter._create_keys_sprite(catrobat_scene, key_data, key_pressed_data, row_visibility_user_variable,
+                                          key_lists)
             key_lists.listened_keys.append((row_name, KeyTypes.FUNCTIONALITY_KEY))
             return row_visibility_user_variable, key_lists
 
@@ -1699,10 +1860,13 @@ class Converter(object):
         row_1_keys = Converter._get_key_list_for_row(key_lists, KEY_NAMES_ROW_1)
         height_pos = 1
         y_pos = Converter._get_key_position(scratch.STAGE_HEIGHT_IN_PIXELS, key_lists.y_offset, height_pos)
-        row_visibility_user_variable, key_lists = Converter._set_row_visibility_key(catrobat_scene, row_1_keys, key_lists, y_pos, KeyNames.VISIBILITY_ROW1, key_pressed_data)
+        row_visibility_user_variable, key_lists = Converter._set_row_visibility_key(catrobat_scene, row_1_keys,
+                                                                                    key_lists, y_pos,
+                                                                                    KeyNames.VISIBILITY_ROW1,
+                                                                                    key_pressed_data)
         # process row one different from others
         for key, key_type in row_1_keys:
-            x_pos = 0 # if space key
+            x_pos = 0  # if space key
             y_pos = Converter._get_key_position(scratch.STAGE_HEIGHT_IN_PIXELS, key_lists.y_offset, height_pos)
             if key == KeyNames.LEFT_ARROW:
                 x_pos = Converter._get_key_position(scratch.STAGE_WIDTH_IN_PIXELS, key_lists.x_offset, 9)
@@ -1715,15 +1879,19 @@ class Converter(object):
                     y_pos = Converter._get_key_position(scratch.STAGE_HEIGHT_IN_PIXELS, key_lists.y_offset, 2)
                 x_pos = Converter._get_key_position(scratch.STAGE_WIDTH_IN_PIXELS, key_lists.x_offset, 10)
             key_data = KeyData(key, key_type, x_pos, y_pos)
-            Converter._create_keys_sprite(catrobat_scene, key_data, key_pressed_data, row_visibility_user_variable, key_lists)
+            Converter._create_keys_sprite(catrobat_scene, key_data, key_pressed_data, row_visibility_user_variable,
+                                          key_lists)
         return key_lists
 
     @staticmethod
-    def _process_row(key_lists, catrobat_scene, row_key_names, height_pos, width_offset, visibility_key_name, key_pressed_data):
+    def _process_row(key_lists, catrobat_scene, row_key_names, height_pos, width_offset, visibility_key_name,
+                     key_pressed_data):
         row_keys = Converter._get_key_list_for_row(key_lists, row_key_names)
         height_pos = height_pos - key_lists.missing_row_counter
         y_pos = Converter._get_key_position(scratch.STAGE_HEIGHT_IN_PIXELS, key_lists.y_offset, height_pos)
-        row_visibility_user_variable, key_lists = Converter._set_row_visibility_key(catrobat_scene, row_keys, key_lists, y_pos, visibility_key_name, key_pressed_data)
+        row_visibility_user_variable, key_lists = Converter._set_row_visibility_key(catrobat_scene, row_keys, key_lists,
+                                                                                    y_pos, visibility_key_name,
+                                                                                    key_pressed_data)
         for key, key_type in row_keys:
             missing_columns_before_key = 0
             missing_columns = key_lists.missing_num_columns if row_key_names == KEY_NAMES_ROW_5 else key_lists.missing_literal_columns
@@ -1733,7 +1901,8 @@ class Converter(object):
             width_pos = row_key_names.index(key) + width_offset - missing_columns_before_key
             x_pos = Converter._get_key_position(scratch.STAGE_WIDTH_IN_PIXELS, key_lists.x_offset, width_pos)
             key_data = KeyData(key, key_type, x_pos, y_pos)
-            Converter._create_keys_sprite(catrobat_scene, key_data, key_pressed_data, row_visibility_user_variable, key_lists)
+            Converter._create_keys_sprite(catrobat_scene, key_data, key_pressed_data, row_visibility_user_variable,
+                                          key_lists)
         return key_lists
 
     @staticmethod
@@ -1759,10 +1928,14 @@ class Converter(object):
         key_pressed_data = KeyPressedData(catrobat_scene, KEY_CLONE_INSTANCE, 0)
 
         key_lists = Converter._process_first_row(catrobat_scene, key_lists, key_pressed_data)
-        key_lists = Converter._process_row(key_lists, catrobat_scene, KEY_NAMES_ROW_2, 2, 3, KeyNames.VISIBILITY_ROW2, key_pressed_data)
-        key_lists = Converter._process_row(key_lists, catrobat_scene, KEY_NAMES_ROW_3, 3, 2.5, KeyNames.VISIBILITY_ROW3, key_pressed_data)
-        key_lists = Converter._process_row(key_lists, catrobat_scene, KEY_NAMES_ROW_4, 4, 2, KeyNames.VISIBILITY_ROW4, key_pressed_data)
-        key_lists = Converter._process_row(key_lists, catrobat_scene, KEY_NAMES_ROW_5, 5, 2, KeyNames.VISIBILITY_ROW5, key_pressed_data)
+        key_lists = Converter._process_row(key_lists, catrobat_scene, KEY_NAMES_ROW_2, 2, 3, KeyNames.VISIBILITY_ROW2,
+                                           key_pressed_data)
+        key_lists = Converter._process_row(key_lists, catrobat_scene, KEY_NAMES_ROW_3, 3, 2.5, KeyNames.VISIBILITY_ROW3,
+                                           key_pressed_data)
+        key_lists = Converter._process_row(key_lists, catrobat_scene, KEY_NAMES_ROW_4, 4, 2, KeyNames.VISIBILITY_ROW4,
+                                           key_pressed_data)
+        key_lists = Converter._process_row(key_lists, catrobat_scene, KEY_NAMES_ROW_5, 5, 2, KeyNames.VISIBILITY_ROW5,
+                                           key_pressed_data)
 
         key_pressed_data.keys_sprite.addScript(key_pressed_data.when_started_as_clone_script)
 
@@ -1779,7 +1952,7 @@ class Converter(object):
         xml_header.setApplicationBuildNumber(build_number)
         xml_header.setApplicationName(helpers.application_info("name"))
         xml_header.setApplicationVersion(helpers.application_info("version"))
-        xml_header.setProjectName('%s' % program_name) # NOTE: needed to workaround unicode issue!
+        xml_header.setProjectName('%s' % program_name)  # NOTE: needed to workaround unicode issue!
         xml_header.setCatrobatLanguageVersion(catrobat.CATROBAT_LANGUAGE_VERSION)
         xml_header.setDeviceName(helpers.scratch_info("device_name"))
         xml_header.setPlatform(helpers.scratch_info("platform"))
@@ -1790,9 +1963,9 @@ class Converter(object):
         xml_header.applicationBuildType = helpers.application_info("build_type")
         assert scratch_project_id is not None
 
-        #-------------------------------------------------------------------------------------------
+        # -------------------------------------------------------------------------------------------
         # ATTENTION: *** CATROBAT REMIX SPECIFICATION REQUIREMENT ***
-        #-------------------------------------------------------------------------------------------
+        # -------------------------------------------------------------------------------------------
         #       Keep in mind that the remixOf-field is used by Catroweb's web application only!!!
         #       Once new Catrobat programs get uploaded, Catroweb automatically updates
         #       the remixOf-field and sets the program as being remixed!
@@ -1802,7 +1975,7 @@ class Converter(object):
         #       With that said, the only correct way to set a remix-URL *before* uploading a
         #       Catrobat program is to insert it into the url-field!
         #       That's why the url of the Scratch program is assigned to the url-field here.
-        #-------------------------------------------------------------------------------------------
+        # -------------------------------------------------------------------------------------------
         xml_header.setRemixParentsUrlString(helpers.config.get("SCRATCH_API", "project_base_url") + scratch_project_id)
 
         sep_line = "\n" + "-" * 40 + "\n"
@@ -1822,10 +1995,11 @@ class Converter(object):
             pass
 
         description += "\nMade with {} version {}.\nOriginal Scratch project => {}".format( \
-                         helpers.application_info("name"), \
-                         helpers.application_info("version"), \
-                         xml_header.getRemixParentsUrlString())
+            helpers.application_info("name"), \
+            helpers.application_info("version"), \
+            xml_header.getRemixParentsUrlString())
         xml_header.setDescription(description)
+
 
 class _ScratchObjectConverter(object):
     _catrobat_project = None
@@ -1843,11 +2017,14 @@ class _ScratchObjectConverter(object):
 
     def _catrobat_sprite_from(self, scratch_object, duplicate_filename_set):
         if not isinstance(scratch_object, scratch.Object):
-            raise common.ScratchtobatError("Input must be of type={}, but is={}".format(scratch.Object, type(scratch_object)))
+            raise common.ScratchtobatError(
+                "Input must be of type={}, but is={}".format(scratch.Object, type(scratch_object)))
         sprite_name = scratch_object.name
         scratch_user_scripts = filter(lambda s: s.type == scratch.SCRIPT_PROC_DEF, scratch_object.scripts)
-        scratch_user_script_declared_labels_map = dict(map(lambda s: (s.arguments[0], s.arguments[1]), scratch_user_scripts))
-        sprite_context = SpriteContext(sprite_name, scratch_user_script_declared_labels_map, scratch_object.monitors, scratch_object.list_monitors)
+        scratch_user_script_declared_labels_map = dict(
+            map(lambda s: (s.arguments[0], s.arguments[1]), scratch_user_scripts))
+        sprite_context = SpriteContext(sprite_name, scratch_user_script_declared_labels_map, scratch_object.monitors,
+                                       scratch_object.list_monitors)
         catrobat_scene = self._catrobat_project.getDefaultScene()
         sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_BASE, sprite_name)
         assert sprite_name == sprite.getName()
@@ -1857,9 +2034,9 @@ class _ScratchObjectConverter(object):
             if sprite_name in self._context.upcoming_sprites:
                 sprite = self._context.upcoming_sprites[sprite_name]
 
-        log.info('-'*80)
+        log.info('-' * 80)
         log.info("Converting Sprite: '%s'", sprite_name)
-        log.info('-'*80)
+        log.info('-' * 80)
 
         # rename if sprite is background
         if scratch_object.is_stage():
@@ -1889,12 +2066,13 @@ class _ScratchObjectConverter(object):
         for scratch_variable in scratch_object.get_variables():
             variable_name = scratch_variable["name"]
             user_variable = catrobat.add_user_variable(
-                    self._catrobat_project,
-                    variable_name,
-                    sprite=sprite if not scratch_object.is_stage() else None
+                self._catrobat_project,
+                variable_name,
+                sprite=sprite if not scratch_object.is_stage() else None
             )
             assert user_variable is not None
-            user_variable = self._catrobat_project.getUserVariable(variable_name) if scratch_object.is_stage() else sprite.getUserVariable(variable_name)
+            user_variable = self._catrobat_project.getUserVariable(
+                variable_name) if scratch_object.is_stage() else sprite.getUserVariable(variable_name)
 
             assert user_variable is not None
 
@@ -1930,7 +2108,8 @@ class _ScratchObjectConverter(object):
 
     @staticmethod
     def _catrobat_look_from(scratch_costume, duplicate_filename_set):
-        if not scratch_costume or not (isinstance(scratch_costume, dict) and all(_ in scratch_costume for _ in (scratchkeys.COSTUME_MD5, scratchkeys.COSTUME_NAME))):
+        if not scratch_costume or not (isinstance(scratch_costume, dict) and all(
+                _ in scratch_costume for _ in (scratchkeys.COSTUME_MD5, scratchkeys.COSTUME_NAME))):
             raise common.ScratchtobatError("Wrong input, must be costume dict: {}".format(scratch_costume))
         look = catcommon.LookData()
 
@@ -2015,7 +2194,7 @@ class _ScratchObjectConverter(object):
                 implicit_bricks_to_add += [catbricks.SetSizeToBrick(object_scale)]
 
         object_rotation_in_degrees = float(scratch_object.get_direction() or 90.0)
-        number_of_full_object_rotations = int(round(object_rotation_in_degrees/360.0))
+        number_of_full_object_rotations = int(round(object_rotation_in_degrees / 360.0))
         effective_object_rotation_in_degrees = object_rotation_in_degrees - 360.0 * number_of_full_object_rotations
         if effective_object_rotation_in_degrees != 90.0:
             implicit_bricks_to_add += [catbricks.PointInDirectionBrick(effective_object_rotation_in_degrees)]
@@ -2028,11 +2207,13 @@ class _ScratchObjectConverter(object):
         if rotation_style is not None:
             traverser = _BlocksConversionTraverser(sprite, catrobat_project)
             if rotation_style == "leftRight":
-                set_rotation_style_brick = traverser._converted_helper_brick_or_formula_element(["left-right"], "setRotationStyle")
+                set_rotation_style_brick = traverser._converted_helper_brick_or_formula_element(["left-right"],
+                                                                                                "setRotationStyle")
                 assert set_rotation_style_brick is not None
                 implicit_bricks_to_add += [set_rotation_style_brick]
             elif rotation_style == "none":
-                set_rotation_style_brick = traverser._converted_helper_brick_or_formula_element(["don't rotate"], "setRotationStyle")
+                set_rotation_style_brick = traverser._converted_helper_brick_or_formula_element(["don't rotate"],
+                                                                                                "setRotationStyle")
                 assert set_rotation_style_brick is not None
                 implicit_bricks_to_add += [set_rotation_style_brick]
 
@@ -2054,17 +2235,20 @@ class _ScratchObjectConverter(object):
         shared_global_answer_user_variable = catrobat_scene.project.getUserVariable(_SHARED_GLOBAL_ANSWER_VARIABLE_NAME)
         if shared_global_answer_user_variable is not None and scratch_object.is_stage():
             try:
-                _assign_initialization_value_to_user_variable(catrobat_scene, _SHARED_GLOBAL_ANSWER_VARIABLE_NAME, "", sprite)
+                _assign_initialization_value_to_user_variable(catrobat_scene, _SHARED_GLOBAL_ANSWER_VARIABLE_NAME, "",
+                                                              sprite)
             except:
                 log.error("Cannot assign initialization value {} to shared global answer user variable"
                           .format(_SHARED_GLOBAL_ANSWER_VARIABLE_NAME))
 
         # Display visible variables at start
         for (variable_name, monitor) in sprite_context.monitors.iteritems():
-            #for the other modes it's added in the workaround
+            # for the other modes it's added in the workaround
             if monitor["mode"] == 2:
-                variable = (catrobat_project if catrobat.is_background_sprite(sprite) else sprite).getUserVariable(variable_name)
-                show_variable_brick = get_show_brick_from_monitor(monitor, sprite, variable, is_hide=not monitor["visible"])
+                variable = (catrobat_project if catrobat.is_background_sprite(sprite) else sprite).getUserVariable(
+                    variable_name)
+                show_variable_brick = get_show_brick_from_monitor(monitor, sprite, variable,
+                                                                  is_hide=not monitor["visible"])
                 implicit_bricks_to_add.append(show_variable_brick)
 
         if implicit_bricks_to_add:
@@ -2073,7 +2257,8 @@ class _ScratchObjectConverter(object):
     @classmethod
     def _catrobat_script_from(cls, scratch_script, sprite, catrobat_project, context=None):
         if not isinstance(scratch_script, scratch.Script):
-            raise common.ScratchtobatError("Arg1 must be of type={}, but is={}".format(scratch.Script, type(scratch_script)))
+            raise common.ScratchtobatError(
+                "Arg1 must be of type={}, but is={}".format(scratch.Script, type(scratch_script)))
         if sprite and not isinstance(sprite, catbase.Sprite):
             raise common.ScratchtobatError("Arg2 must be of type={}, but is={}".format(catbase.Sprite, type(sprite)))
 
@@ -2137,7 +2322,8 @@ class ConvertedProject(object):
 
     @staticmethod
     def _converted_output_path(output_dir, project_name):
-        return os.path.join(output_dir, catrobat.encoded_project_name(project_name) + catrobat.PACKAGED_PROGRAM_FILE_EXTENSION)
+        return os.path.join(output_dir,
+                            catrobat.encoded_project_name(project_name) + catrobat.PACKAGED_PROGRAM_FILE_EXTENSION)
 
     def save_as_catrobat_package_to(self, output_dir, archive_name=None, progress_bar=None):
 
@@ -2145,6 +2331,7 @@ class ConvertedProject(object):
             for root, _, files in os.walk(path):
                 for file_ in files:
                     yield os.path.join(root, file_)
+
         log.info("convert Scratch project to '%s'", output_dir)
 
         with common.TemporaryDirectory() as catrobat_program_dir:
@@ -2202,7 +2389,8 @@ class ConvertedProject(object):
                 except:
                     continue
 
-                shutil.copyfile(key_image_path, os.path.join(images_path, _key_image_path_for(listened_key_tuple[0], True)))
+                shutil.copyfile(key_image_path,
+                                os.path.join(images_path, _key_image_path_for(listened_key_tuple[0], True)))
             for sprite in catrobat_program.getDefaultScene().spriteList:
                 if sprite.name == MOUSE_SPRITE_NAME:
                     mouse_img_path = _mouse_image_path()
@@ -2213,7 +2401,8 @@ class ConvertedProject(object):
             for sprite in catrobat_program.getDefaultScene().spriteList:
                 if sprite.name.startswith(SHOW_LIST_SPRITE_NAME):
                     num_lines = int(sprite.name[len(SHOW_LIST_SPRITE_NAME):].split("_")[0])
-                    shutil.copyfile(_show_list_image_path(num_lines), os.path.join(images_path, _get_show_list_filename(num_lines)))
+                    shutil.copyfile(_show_list_image_path(num_lines),
+                                    os.path.join(images_path, _get_show_list_filename(num_lines)))
 
         def download_automatic_screenshot_if_available(output_dir, scratch_project):
             if scratch_project.automatic_screenshot_image_url is None:
@@ -2236,9 +2425,11 @@ class ConvertedProject(object):
         log.info("  Saving project XML file")
         write_program_source(self.catrobat_program)
         log.info("  Downloading and adding automatic screenshot")
-        download_automatic_screenshot_if_available(os.path.join(temp_path, CATROBAT_DEFAULT_SCENE_NAME), self.scratch_project)
+        download_automatic_screenshot_if_available(os.path.join(temp_path, CATROBAT_DEFAULT_SCENE_NAME),
+                                                   self.scratch_project)
         if progress_bar != None:
             progress_bar.update(ProgressType.SAVE_XML, progress_bar.saving_xml_progress_weight)
+
 
 # TODO: could be done with just user_variables instead of project object
 def _add_new_user_variable_with_initialization_value(project, variable_name, variable_value, sprite):
@@ -2247,12 +2438,16 @@ def _add_new_user_variable_with_initialization_value(project, variable_name, var
     variable_initialization_brick = _create_variable_brick(variable_value, user_variable, catbricks.SetVariableBrick)
     catrobat.add_to_start_script([variable_initialization_brick], sprite)
 
+
 def _assign_initialization_value_to_user_variable(scene, variable_name, variable_value, sprite):
-    user_variable = sprite.getUserVariable(variable_name) if sprite.name != BACKGROUND_LOCALIZED_GERMAN_NAME else scene.project.getUserVariable(variable_name)
+    user_variable = sprite.getUserVariable(
+        variable_name) if sprite.name != BACKGROUND_LOCALIZED_GERMAN_NAME else scene.project.getUserVariable(
+        variable_name)
     assert user_variable is not None and user_variable.getName() == variable_name, \
-           "variable: %s, sprite_name: %s" % (variable_name, sprite.getName())
+        "variable: %s, sprite_name: %s" % (variable_name, sprite.getName())
     variable_initialization_brick = _create_variable_brick(variable_value, user_variable, catbricks.SetVariableBrick)
     catrobat.add_to_start_script([variable_initialization_brick], sprite, position=0)
+
 
 # based on: http://stackoverflow.com/a/4274204
 def _register_handler(dict_, *names):
@@ -2261,10 +2456,11 @@ def _register_handler(dict_, *names):
         for name in names:
             dict_[name] = m_name
         return f
+
     return dec
 
-class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
+class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     _block_name_to_handler_map = {}
 
     def __init__(self, catrobat_sprite, catrobat_project, script_context=None):
@@ -2339,8 +2535,11 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
                       block_name, catrobat.simple_name_for(self.arguments))
 
             unmapped_block_arguments = filter(lambda arg: isinstance(arg, UnmappedBlock), self.arguments)
-            unsupported_blocks = map(lambda unmapped_block: unmapped_block.to_placeholder_brick(self.block_name)[0], unmapped_block_arguments)
-            self.arguments = map(lambda arg: catrobat.create_formula_element_with_value(0) if isinstance(arg, UnmappedBlock) else arg, self.arguments)
+            unsupported_blocks = map(lambda unmapped_block: unmapped_block.to_placeholder_brick(self.block_name)[0],
+                                     unmapped_block_arguments)
+            self.arguments = map(
+                lambda arg: catrobat.create_formula_element_with_value(0) if isinstance(arg, UnmappedBlock) else arg,
+                self.arguments)
             self.CatrobatClass = _ScratchToCatrobat.catrobat_brick_class_for(block_name)
             handler_method_name = self._block_name_to_handler_map.get(block_name)
             try:
@@ -2382,7 +2581,8 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
                 try:
                     # TODO: simplify
                     if try_number == 0:
-                        converted_args = [(common.int_or_float(arg) or arg if isinstance(arg, (str, unicode)) else arg) for arg in self.arguments]
+                        converted_args = [(common.int_or_float(arg) or arg if isinstance(arg, (str, unicode)) else arg)
+                                          for arg in self.arguments]
                     elif try_number == 1:
                         def handleBoolean(arg):
                             if isinstance(arg, bool):
@@ -2390,15 +2590,18 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
                             else:
                                 return arg
 
-                        converted_args = [catformula.FormulaElement(catElementType.NUMBER, str(handleBoolean(arg)), None) if isinstance(arg, numbers.Number) else arg for arg in converted_args]  # @UndefinedVariable
+                        converted_args = [catformula.FormulaElement(catElementType.NUMBER, str(handleBoolean(arg)),
+                                                                    None) if isinstance(arg, numbers.Number) else arg
+                                          for arg in converted_args]  # @UndefinedVariable
                     elif try_number == 4:
                         converted_args = self.arguments
                     elif try_number == 2:
                         args = [arg if arg != None else "" for arg in self.arguments]
                         converted_args = [catrobat.create_formula_with_value(arg) for arg in args]
                     elif try_number == 3:
-                        if len(self.arguments) == 2 and self.arguments[0] in { "brightness", "color", "ghost" }:
-                            converted_args = [self.arguments[0]] + [catrobat.create_formula_with_value(arg) for arg in self.arguments[1:]]
+                        if len(self.arguments) == 2 and self.arguments[0] in {"brightness", "color", "ghost"}:
+                            converted_args = [self.arguments[0]] + [catrobat.create_formula_with_value(arg) for arg in
+                                                                    self.arguments[1:]]
 
                     if not is_catrobat_enum:
                         converted_value = CatrobatClass(*converted_args)
@@ -2475,9 +2678,10 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         if position == "last":
             index_formula_element = self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:")
         elif position == "random":
-            start_formula_element = catformula.FormulaElement(catElementType.NUMBER, "1", None) # first index of list
+            start_formula_element = catformula.FormulaElement(catElementType.NUMBER, "1", None)  # first index of list
             end_formula_element = self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:")
-            index_formula_element = self._converted_helper_brick_or_formula_element([start_formula_element, end_formula_element], "randomFrom:to:")
+            index_formula_element = self._converted_helper_brick_or_formula_element(
+                [start_formula_element, end_formula_element], "randomFrom:to:")
         else:
             index_formula_element = catrobat.create_formula_element_with_value(position)
         right_formula_elem = catformula.FormulaElement(catElementType.USER_LIST, list_name, None)
@@ -2532,7 +2736,8 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         case_insensitivity_string = catrobat.create_formula_element_with_value("(?ui)")
         empty_string = catrobat.create_formula_element_with_value("")
 
-        inequality_formula = catformula.FormulaElement(catElementType.OPERATOR, catformula.Operators.NOT_EQUAL.toString(), None)
+        inequality_formula = catformula.FormulaElement(catElementType.OPERATOR,
+                                                       catformula.Operators.NOT_EQUAL.toString(), None)
         regex_formula = catformula.FormulaElement(catElementType.FUNCTION, catformula.Functions.REGEX.toString(), None)
         join_formula = catformula.FormulaElement(catElementType.FUNCTION, catformula.Functions.JOIN.toString(), None)
         join_formula.setLeftChild(case_insensitivity_string)
@@ -2586,20 +2791,22 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
         if isinstance(argument, (catformula.FormulaElement, int, float)):
             value = argument if not isinstance(argument, float) else int(argument)
-            #=========================================================================
+            # =========================================================================
             # wrap around overflow correction term:
-            #=========================================================================
+            # =========================================================================
             # 1st step: compute (value - 1) -> result may be out of bounds!
             index_formula_elem = self._converted_helper_brick_or_formula_element([value, 1], "-")
             # 2nd step: consider overflow, i.e. ((value - 1) % number_of_looks)
             #           -> now, the result cannot be out of bounds any more!
             number_of_looks = len(background_sprite.getLookList())
             assert number_of_looks > 0
-            index_formula_elem = self._converted_helper_brick_or_formula_element([index_formula_elem, number_of_looks], "%")
+            index_formula_elem = self._converted_helper_brick_or_formula_element([index_formula_elem, number_of_looks],
+                                                                                 "%")
             # 3rd step: determine look number, i.e. (((value - 1) % number_of_looks) + 1)
             index_formula_elem = self._converted_helper_brick_or_formula_element([index_formula_elem, 1], "+")
             index_formula_elem = index_formula_elem if number_of_looks != 1 else 1
-            set_background_by_index_brick = catbricks.SetBackgroundByIndexBrick(catrobat.create_formula_with_value(index_formula_elem))
+            set_background_by_index_brick = catbricks.SetBackgroundByIndexBrick(
+                catrobat.create_formula_with_value(index_formula_elem))
             return set_background_by_index_brick
 
         look_name = argument
@@ -2613,7 +2820,8 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
                 if catrobat.is_background_sprite(self.sprite):
                     return catbricks.PreviousLookBrick()
                 index_formula_elem = self._converted_helper_brick_or_formula_element([index_formula_elem, 1], "-")
-            set_background_by_index_brick = catbricks.SetBackgroundByIndexBrick(catrobat.create_formula_with_value(index_formula_elem))
+            set_background_by_index_brick = catbricks.SetBackgroundByIndexBrick(
+                catrobat.create_formula_with_value(index_formula_elem))
             return set_background_by_index_brick
 
         matching_looks = [_ for _ in background_sprite.getLookList() if _.getName() == look_name]
@@ -2636,9 +2844,9 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
         if isinstance(argument, (catformula.FormulaElement, int, float)):
             value = argument if not isinstance(argument, float) else int(argument)
-            #=========================================================================
+            # =========================================================================
             # wrap around overflow correction term:
-            #=========================================================================
+            # =========================================================================
             # 1st step: compute (value - 1) -> result may be out of bounds!
             index_formula_elem = self._converted_helper_brick_or_formula_element([value, 1], "-")
             # 2nd step: consider overflow, i.e. ((value - 1) % number_of_looks)
@@ -2649,7 +2857,8 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             # 3rd step: determine look number, i.e. (((value - 1) % number_of_looks) + 1)
             index_formula_elem = self._converted_helper_brick_or_formula_element([index_formula_elem, 1], "+")
             index_formula_elem = index_formula_elem if number_of_looks != 1 else 1
-            set_background_by_index_and_wait_brick = catbricks.SetBackgroundByIndexAndWaitBrick(catrobat.create_formula_with_value(index_formula_elem))
+            set_background_by_index_and_wait_brick = catbricks.SetBackgroundByIndexAndWaitBrick(
+                catrobat.create_formula_with_value(index_formula_elem))
             return set_background_by_index_and_wait_brick
 
         look_name = argument
@@ -2670,8 +2879,8 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         switch_background_brick.setLook(matching_looks[0])
         return switch_background_brick
 
-    #returns workaround script for sprites that are draggable at some point. Add workaround only once per sprite.
-    def  _drag_mode_workaround(self, draggable_var):
+    # returns workaround script for sprites that are draggable at some point. Add workaround only once per sprite.
+    def _drag_mode_workaround(self, draggable_var):
         DRAG_NAME_PREFIX = "drag"
         first_set_bricks = []
         loop_start_set_bricks = []
@@ -2681,15 +2890,20 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         for coord in ['x', 'y']:
             drag_stage = catrobat.add_user_variable(self.project, DRAG_NAME_PREFIX + '_stage_' + coord, self.sprite)
             drag_stage_fe = _variable_for(drag_stage.name)
-            drag_stage_new = catrobat.add_user_variable(self.project, DRAG_NAME_PREFIX + '_stage_new_' + coord, self.sprite)
+            drag_stage_new = catrobat.add_user_variable(self.project, DRAG_NAME_PREFIX + '_stage_new_' + coord,
+                                                        self.sprite)
             drag_stage_new_fe = _variable_for(drag_stage_new.name)
             drag_pos = catrobat.add_user_variable(self.project, DRAG_NAME_PREFIX + '_pos_' + coord, self.sprite)
             drag_pos_fe = _variable_for(drag_pos.name)
             drag_pos_new = catrobat.add_user_variable(self.project, DRAG_NAME_PREFIX + '_pos_new_' + coord, self.sprite)
             drag_pos_new_fe = _variable_for(drag_pos_new.name)
 
-            finger_fe = catformula.FormulaElement(catElementType.SENSOR, str(catformula.Sensors.FINGER_X if coord == 'x' else catformula.Sensors.FINGER_Y), None)
-            object_fe = catformula.FormulaElement(catElementType.SENSOR, str(catformula.Sensors.OBJECT_X if coord == 'x' else catformula.Sensors.OBJECT_Y), None)
+            finger_fe = catformula.FormulaElement(catElementType.SENSOR,
+                                                  str(catformula.Sensors.FINGER_X if coord == 'x' else catformula.Sensors.FINGER_Y),
+                                                  None)
+            object_fe = catformula.FormulaElement(catElementType.SENSOR,
+                                                  str(catformula.Sensors.OBJECT_X if coord == 'x' else catformula.Sensors.OBJECT_Y),
+                                                  None)
 
             first_set_bricks.append(_create_variable_brick(finger_fe, drag_stage, catbricks.SetVariableBrick))
             first_set_bricks.append(_create_variable_brick(object_fe, drag_pos, catbricks.SetVariableBrick))
@@ -2705,16 +2919,19 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             move_stage_diff.setLeftChild(drag_stage_new_fe)
             move_stage_diff.setRightChild(drag_stage_fe)
             move_fe.setRightChild(move_stage_diff)
-            change_bricks.append((catbricks.ChangeXByNBrick if coord == 'x' else catbricks.ChangeYByNBrick)(catformula.Formula(move_fe)))
+            change_bricks.append(
+                (catbricks.ChangeXByNBrick if coord == 'x' else catbricks.ChangeYByNBrick)(catformula.Formula(move_fe)))
 
-            loop_end_set_bricks.append(_create_variable_brick(drag_stage_new_fe, drag_stage, catbricks.SetVariableBrick))
+            loop_end_set_bricks.append(
+                _create_variable_brick(drag_stage_new_fe, drag_stage, catbricks.SetVariableBrick))
             loop_end_set_bricks.append(_create_variable_brick(object_fe, drag_pos, catbricks.SetVariableBrick))
 
         when_tapped_script = catbase.WhenScript()
         draggable_var_fe = catformula.FormulaElement(catElementType.USER_VARIABLE, draggable_var.name, None)
         if_draggable_brick = catbricks.IfThenLogicBeginBrick(catformula.Formula(draggable_var_fe))
 
-        not_touching_fe = catformula.FormulaElement(catElementType.OPERATOR, str(catformula.Operators.LOGICAL_NOT), None)
+        not_touching_fe = catformula.FormulaElement(catElementType.OPERATOR, str(catformula.Operators.LOGICAL_NOT),
+                                                    None)
         touching_fe = catformula.FormulaElement(catElementType.SENSOR, str(catformula.Sensors.FINGER_TOUCHED), None)
         not_touching_fe.setRightChild(touching_fe)
         repeat_until_brick = catbricks.RepeatUntilBrick(catformula.Formula(not_touching_fe))
@@ -2731,7 +2948,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         when_tapped_script.brickList.add(if_draggable_brick)
         return when_tapped_script
 
-    #replaces set_drag_mode blocks with set user variable "draggable" blocks. Injects workaround script for current sprite if not already added.
+    # replaces set_drag_mode blocks with set user variable "draggable" blocks. Injects workaround script for current sprite if not already added.
     @_register_handler(_block_name_to_handler_map, "dragMode")
     def _convert_drag_mode(self):
         assert len(self.arguments) == 1
@@ -2741,7 +2958,10 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         if not draggable_var:
             draggable_var = catrobat.add_user_variable(self.project, draggable_var_name, self.sprite)
             self.sprite.addScript(self._drag_mode_workaround(draggable_var))
-        draggable_fe = catformula.FormulaElement(catElementType.FUNCTION, str(catformula.Functions.TRUE if self.arguments[0] == "draggable" else catformula.Functions.FALSE), None)
+        draggable_fe = catformula.FormulaElement(catElementType.FUNCTION,
+                                                 str(catformula.Functions.TRUE if self.arguments[
+                                                                                      0] == "draggable" else catformula.Functions.FALSE),
+                                                 None)
         set_brick = _create_variable_brick(draggable_fe, draggable_var, catbricks.SetVariableBrick)
         return [set_brick]
 
@@ -2776,16 +2996,17 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
         if isinstance(argument, (catformula.FormulaElement, int, float)):
             value = argument if not isinstance(argument, float) else int(argument)
-            #=========================================================================
+            # =========================================================================
             # wrap around overflow correction term:
-            #=========================================================================
+            # =========================================================================
             # 1st step: compute (value - 1) -> result may be out of bounds!
             index_formula_elem = self._converted_helper_brick_or_formula_element([value, 1], "-")
             # 2nd step: consider overflow, i.e. ((value - 1) % number_of_looks)
             #           -> now, the result cannot be out of bounds any more!
             number_of_looks = len(self.sprite.getLookList())
             assert number_of_looks > 0
-            index_formula_elem = self._converted_helper_brick_or_formula_element([index_formula_elem, number_of_looks], "%")
+            index_formula_elem = self._converted_helper_brick_or_formula_element([index_formula_elem, number_of_looks],
+                                                                                 "%")
             # 3rd step: determine look number, i.e. (((value - 1) % number_of_looks) + 1)
             index_formula_elem = self._converted_helper_brick_or_formula_element([index_formula_elem, 1], "+")
             index_formula_elem = index_formula_elem if number_of_looks != 1 else 1
@@ -2795,7 +3016,8 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         assert isinstance(look_name, (str, unicode)), type(look_name)
         look = next((look for look in self.sprite.getLookList() if look.getName() == look_name), None)
         if look is None:
-            errormessage = "Look name: '%s' not found in sprite '%s'. Available looks: %s replacing Brick with NoteBrick" % (look_name, self.sprite.getName(), ", ".join([look.getName() for look in self.sprite.getLookList()]))
+            errormessage = "Look name: '%s' not found in sprite '%s'. Available looks: %s replacing Brick with NoteBrick" % (
+            look_name, self.sprite.getName(), ", ".join([look.getName() for look in self.sprite.getLookList()]))
             log.warning(errormessage)
             set_look_brick = catbricks.NoteBrick(errormessage)
             return set_look_brick
@@ -2812,7 +3034,8 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "hideVariable:")
     def _convert_hide_variable_block(self):
         assert len(self.arguments) == 1
-        hide_variable_brick = get_show_brick(self.project, self.sprite, self.sprite_context, self.arguments[0], is_hide=True)
+        hide_variable_brick = get_show_brick(self.project, self.sprite, self.sprite_context, self.arguments[0],
+                                             is_hide=True)
         return [hide_variable_brick]
 
     @_register_handler(_block_name_to_handler_map, "append:toList:")
@@ -2831,9 +3054,10 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         if position == "last":
             return self._converted_helper_brick_or_formula_element([value, list_name], "append:toList:")
         elif position == "random":
-            start_formula_element = catformula.FormulaElement(catElementType.NUMBER, "1", None) # first index of list
+            start_formula_element = catformula.FormulaElement(catElementType.NUMBER, "1", None)  # first index of list
             end_formula_element = self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:")
-            formula_element = self._converted_helper_brick_or_formula_element([start_formula_element, end_formula_element], "randomFrom:to:")
+            formula_element = self._converted_helper_brick_or_formula_element(
+                [start_formula_element, end_formula_element], "randomFrom:to:")
             index_formula = catrobat.create_formula_with_value(formula_element)
         else:
             index_formula = catrobat.create_formula_with_value(position)
@@ -2853,16 +3077,19 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         deleteItemBrick.userList = user_list
 
         if position == "last":
-            index_formula = catrobat.create_formula_with_value(self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:"))
+            index_formula = catrobat.create_formula_with_value(
+                self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:"))
             assert index_formula is not None
             deleteItemBrick.setFormulaWithBrickField(catbricks.Brick.BrickField.LIST_DELETE_ITEM, index_formula)
 
             return deleteItemBrick
+
         if position == "all":
-            loop_condition_formula = catrobat.create_formula_with_value(self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:"))
+            loop_condition_formula = catrobat.create_formula_with_value(
+                self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:"))
             catr_loop_start_brick = catbricks.RepeatBrick(loop_condition_formula)
 
-            index_formula = catrobat.create_formula_with_value("1") # first item to be deleted for n-times!
+            index_formula = catrobat.create_formula_with_value("1")  # first item to be deleted for n-times!
             assert index_formula is not None
             deleteItemBrick.setFormulaWithBrickField(catbricks.Brick.BrickField.LIST_DELETE_ITEM, index_formula)
             catr_loop_start_brick.loopBricks.add(deleteItemBrick)
@@ -2879,11 +3106,13 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     def _convert_set_line_of_list_to_block(self):
         [position, list_name, value] = self.arguments
         if position == "last":
-            index_formula = catrobat.create_formula_with_value(self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:"))
+            index_formula = catrobat.create_formula_with_value(
+                self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:"))
         elif position == "random":
-            start_formula_element = catformula.FormulaElement(catElementType.NUMBER, "1", None) # first index of list
+            start_formula_element = catformula.FormulaElement(catElementType.NUMBER, "1", None)  # first index of list
             end_formula_element = self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:")
-            index_formula_element = self._converted_helper_brick_or_formula_element([start_formula_element, end_formula_element], "randomFrom:to:")
+            index_formula_element = self._converted_helper_brick_or_formula_element(
+                [start_formula_element, end_formula_element], "randomFrom:to:")
             index_formula = catrobat.create_formula_with_value(index_formula_element)
         else:
             index_formula = catrobat.create_formula_with_value(position)
@@ -2897,13 +3126,15 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "showList:")
     def _convert_show_list_block(self):
         assert len(self.arguments) == 1
-        show_list_brick = get_show_brick(self.project, self.sprite, self.sprite_context, self.arguments[0], is_list=True)
+        show_list_brick = get_show_brick(self.project, self.sprite, self.sprite_context, self.arguments[0],
+                                         is_list=True)
         return [show_list_brick]
 
     @_register_handler(_block_name_to_handler_map, "hideList:")
     def _convert_hide_list_block(self):
         assert len(self.arguments) == 1
-        hide_list_brick = get_show_brick(self.project, self.sprite, self.sprite_context, self.arguments[0], is_list=True, is_hide=True)
+        hide_list_brick = get_show_brick(self.project, self.sprite, self.sprite_context, self.arguments[0],
+                                         is_list=True, is_hide=True)
         return [hide_list_brick]
 
     @_register_handler(_block_name_to_handler_map, "playSound:", "doPlaySoundAndWait")
@@ -2918,7 +3149,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         if len(sound_list) == 0:
             log.warning("The sound list is empty! No sound will be played with this brick!")
         elif isinstance(sound_parameter, catformula.FormulaElement):
-            log.warning("Pocket code does not support formulas or variables as input for the \"play sound\"-bricks. "\
+            log.warning("Pocket code does not support formulas or variables as input for the \"play sound\"-bricks. " \
                         "Using the first sound in the sound list instead!")
             sound_data = sound_list[0]
         elif isinstance(sound_parameter, unicode) and not sound_data:
@@ -2978,7 +3209,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             user_variable = self.project.getUserVariable(variable_name)
 
         assert user_variable is not None and user_variable.getName() == variable_name, \
-               "variable: %s, sprite_name: %s" % (variable_name, self.sprite.getName())
+            "variable: %s, sprite_name: %s" % (variable_name, self.sprite.getName())
         return [self.CatrobatClass(value, user_variable)]
 
     @_register_handler(_block_name_to_handler_map, "say:duration:elapsed:from:")
@@ -2986,7 +3217,8 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         [msg, duration] = self.arguments
         say_for_bubble_brick = self.CatrobatClass()
         say_for_bubble_brick.setFormulaWithBrickField(catbricks.Brick.BrickField.STRING, catformula.Formula(msg))
-        say_for_bubble_brick.setFormulaWithBrickField(catbricks.Brick.BrickField.DURATION_IN_SECONDS, catformula.Formula(duration))
+        say_for_bubble_brick.setFormulaWithBrickField(catbricks.Brick.BrickField.DURATION_IN_SECONDS,
+                                                      catformula.Formula(duration))
         return say_for_bubble_brick
 
     @_register_handler(_block_name_to_handler_map, "say:")
@@ -3096,7 +3328,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         set_h_i_brick = catbricks.SetVariableBrick(formula, var_obj('h_i'))
 
         formula = catrobat.create_formula_for(
-                [catformula.Operators.MINUS, [catformula.Operators.MULT, var_id('h'), 6], var_id('h_i')])
+            [catformula.Operators.MINUS, [catformula.Operators.MULT, var_id('h'), 6], var_id('h_i')])
         set_f_brick = catbricks.SetVariableBrick(formula, var_obj('f'))
 
         formula = catrobat.create_formula_for(
@@ -3105,23 +3337,23 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
         formula = catrobat.create_formula_for(
             [catformula.Operators.MULT,
-                var_id('v'),
-                ["()", [catformula.Operators.MINUS, 1, [catformula.Operators.MULT, var_id('s'), var_id('f')]]]])
+             var_id('v'),
+             ["()", [catformula.Operators.MINUS, 1, [catformula.Operators.MULT, var_id('s'), var_id('f')]]]])
         set_q_brick = catbricks.SetVariableBrick(formula, var_obj('q'))
 
         formula = catrobat.create_formula_for(
             [catformula.Operators.MULT,
-                var_id('v'),
-                ["()", [catformula.Operators.MINUS,
-                        1,
-                        [catformula.Operators.MULT,
-                         var_id('s'), ["()", [catformula.Operators.MINUS, 1, var_id('f')]]]]]])
+             var_id('v'),
+             ["()", [catformula.Operators.MINUS,
+                     1,
+                     [catformula.Operators.MULT,
+                      var_id('s'), ["()", [catformula.Operators.MINUS, 1, var_id('f')]]]]]])
         set_t_brick = catbricks.SetVariableBrick(formula, var_obj('t'))
 
         formula = catrobat.create_formula_for(
-                [catformula.Operators.LOGICAL_OR,
-                 [catformula.Operators.EQUAL, var_id('h_i'), 0],
-                 [catformula.Operators.EQUAL, var_id('h_i'), 6]])
+            [catformula.Operators.LOGICAL_OR,
+             [catformula.Operators.EQUAL, var_id('h_i'), 0],
+             [catformula.Operators.EQUAL, var_id('h_i'), 6]])
         if_h_i_0_or_6_brick = catbricks.IfThenLogicBeginBrick(formula)
 
         if_h_i_is_value_bricks = {}
@@ -3153,7 +3385,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         )
 
         return [set_h_i_brick, set_f_brick, set_p_brick, set_q_brick, set_t_brick, if_h_i_0_or_6_brick] + \
-            if_h_i_is_value_bricks.values() + [set_pen_color_brick]
+               if_h_i_is_value_bricks.values() + [set_pen_color_brick]
 
     def get_hsv_pen_color_variables(self):
         return (self.sprite.getUserVariable(scratch.S2CC_PEN_COLOR_VARIABLE_NAMES[variable_name]) for
@@ -3167,7 +3399,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
         is_add_color_variable_bricks = False
         if (isinstance(h_variable, catformula.UserVariable) and isinstance(s_variable, catformula.UserVariable)
-            and isinstance(v_variable, catformula.UserVariable)):
+                and isinstance(v_variable, catformula.UserVariable)):
             is_add_color_variable_bricks = True
 
         def add_color_variable_bricks(h, s, v):
@@ -3186,7 +3418,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
         if isinstance(argument_color, basestring):
             colors_hex = argument_color[1:]
-            (r, g, b) = tuple(int(colors_hex[i:i+2], 16) for i in (0, 2, 4))
+            (r, g, b) = tuple(int(colors_hex[i:i + 2], 16) for i in (0, 2, 4))
 
             if not is_add_color_variable_bricks:
                 return catbricks.SetPenColorBrick(r, g, b)
@@ -3230,8 +3462,8 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         assert colorparam in ["color", "saturation", "brightness"]
 
         (h_variable, s_variable, v_variable) = self.get_hsv_pen_color_variables()
-        assert(isinstance(h_variable, catformula.UserVariable) and isinstance(s_variable, catformula.UserVariable)
-               and isinstance(v_variable, catformula.UserVariable))
+        assert (isinstance(h_variable, catformula.UserVariable) and isinstance(s_variable, catformula.UserVariable)
+                and isinstance(v_variable, catformula.UserVariable))
 
         if colorparam == "color":
             formula = catrobat.create_formula_for(
@@ -3239,10 +3471,10 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         else:
             formula = catrobat.create_formula_for(
                 [catformula.Functions.MAX,
-                    [catformula.Functions.MIN,
-                     [catformula.Operators.DIVIDE, ["()", value], 100],
-                     1],
-                    0])
+                 [catformula.Functions.MIN,
+                  [catformula.Operators.DIVIDE, ["()", value], 100],
+                  1],
+                 0])
 
         param_variable_mapping = {"color": h_variable, "saturation": s_variable, "brightness": v_variable}
         set_variable_brick = catbricks.SetVariableBrick(formula, param_variable_mapping[colorparam])
@@ -3259,16 +3491,16 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         assert colorparam in ["color", "saturation", "brightness"]
 
         (h_variable, s_variable, v_variable) = self.get_hsv_pen_color_variables()
-        assert(isinstance(h_variable, catformula.UserVariable) and isinstance(s_variable, catformula.UserVariable)
-               and isinstance(v_variable, catformula.UserVariable))
+        assert (isinstance(h_variable, catformula.UserVariable) and isinstance(s_variable, catformula.UserVariable)
+                and isinstance(v_variable, catformula.UserVariable))
 
         param_name_mapping = {"color": "h", "saturation": "s", "brightness": "v"}
         var_id = catrobat.build_var_id(scratch.S2CC_PEN_COLOR_VARIABLE_NAMES[param_name_mapping[colorparam]])
         if colorparam == "color":
             formula = catrobat.create_formula_for(
                 [catformula.Functions.MOD,
-                    [catformula.Operators.PLUS, var_id, [catformula.Operators.DIVIDE, ["()", value], 100]],
-                    1])
+                 [catformula.Operators.PLUS, var_id, [catformula.Operators.DIVIDE, ["()", value], 100]],
+                 1])
         else:
             formula = catrobat.create_formula_for(
                 [catformula.Functions.MAX,
@@ -3414,7 +3646,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         if isinstance(message, catformula.FormulaElement):
             log.error("Replacing {0} with NoteBrick".format(self.block_name))
             return catbricks.NoteBrick("Catroid doesn't support formula elements for broadcasting")
-        elif isinstance(message ,int):
+        elif isinstance(message, int):
             message = str(message)
         return catbricks.BroadcastBrick(message.lower())
 
@@ -3424,11 +3656,11 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         if isinstance(message, catformula.FormulaElement):
             log.error("Replacing {0} with NoteBrick".format(self.block_name))
             return catbricks.NoteBrick("Catroid doesn't support formula elements for broadcasting")
-        elif isinstance(message ,int):
+        elif isinstance(message, int):
             message = str(message)
         return catbricks.BroadcastWaitBrick(message.lower())
 
-    #Note: NoteBricks are not implemented in scratch. We insert one in the Scratch3 parser if there is a problem(e.g.
+    # Note: NoteBricks are not implemented in scratch. We insert one in the Scratch3 parser if there is a problem(e.g.
     # a block that is not implemented in Catroid) when parsing a block.
     @_register_handler(_block_name_to_handler_map, "note:")
     def _convert_note_block(self):
@@ -3436,3 +3668,88 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         if isinstance(arg, (str, unicode)) or isinstance(arg, catformula.Formula):
             return self.CatrobatClass(arg)
         log.warn("Invalid argument for NoteBrick: " + arg)
+
+    @_register_handler(_block_name_to_handler_map, "drum:duration:elapsed:from:")
+    def _convert_play_drum_for_beats_block(self):
+        [drum, duration] = self.arguments
+
+        try:
+            drum_int = int(drum)
+        except ValueError:
+            log.debug("There is no integer in DRUM")
+            return
+
+        drum_selection = PickableDrum.values()[drum_int - 1]
+        assert drum_selection is not None
+
+        play_drum_brick = self.CatrobatClass(catformula.Formula(duration))
+        play_drum_brick.drumSelection = drum_selection
+
+        return play_drum_brick
+
+    @_register_handler(_block_name_to_handler_map, "noteOn:duration:elapsed:from:")
+    def _convert_play_note_for_beats_block(self):
+        [note, duration] = self.arguments
+
+        play_note_brick = self.CatrobatClass(catformula.Formula(note), catformula.Formula(duration))
+        return play_note_brick
+
+    @_register_handler(_block_name_to_handler_map, "changeTempoBy:")
+    def _convert_change_tempo_by_block(self):
+        [tempo] = self.arguments
+
+        change_tempo_brick = self.CatrobatClass(catformula.Formula(tempo))
+        return change_tempo_brick
+
+    @_register_handler(_block_name_to_handler_map, "setTempoTo:")
+    def _convert_set_tempo_to_block(self):
+        [tempo] = self.arguments
+
+        set_tempo_brick = self.CatrobatClass(catformula.Formula(tempo))
+        return set_tempo_brick
+
+    @_register_handler(_block_name_to_handler_map, "rest:elapsed:from:")
+    def _convert_rest_for_beats_block(self):
+        [beats] = self.arguments
+
+        rest_for_beats = self.CatrobatClass(catformula.Formula(beats))
+        return rest_for_beats
+
+    @_register_handler(_block_name_to_handler_map, "instrument:")
+    def _convert_set_instrument_block(self):
+        [instrument] = self.arguments
+        instrument_int = int(instrument)
+        instruments = PickableMusicalInstrument.values()
+
+        # instruments in catrobat have a different order
+        instrument_catrobat = {
+            1: instruments[0],
+            2: instruments[1],
+            3: instruments[5],
+            4: instruments[6],
+            5: instruments[7],
+            6: instruments[8],
+            7: instruments[9],
+            8: instruments[2],
+            9: instruments[14],
+            10: instruments[17],
+            11: instruments[15],
+            12: instruments[3],
+            13: instruments[13],
+            14: instruments[16],
+            15: instruments[11],
+            16: instruments[4],
+            17: instruments[18],
+            18: instruments[19],
+            19: instruments[20],
+            20: instruments[12],
+            21: instruments[10],
+        }
+
+        instrument_selection = instrument_catrobat.get(instrument_int, 1)
+        assert instrument_selection is not None
+
+        set_instrument = self.CatrobatClass()
+        set_instrument.instrumentSelection = instrument_selection
+
+        return set_instrument

@@ -34,9 +34,11 @@ import org.catrobat.catroid.common as catcommon
 import org.catrobat.catroid.content as catbase
 from org.catrobat.catroid.ui.fragment import SpriteFactory
 import org.catrobat.catroid.content.bricks as catbricks
+import org.catrobat.catroid.userbrick as userbricks
 import org.catrobat.catroid.formulaeditor as catformula
 import org.catrobat.catroid.formulaeditor.FormulaElement.ElementType as catElementType
 import org.catrobat.catroid.io as catio
+import java.util.ArrayList as ArrayList
 import org.catrobat.catroid.utils as catutils
 from scratchtocatrobat.tools import common
 from scratchtocatrobat.scratch import scratch
@@ -466,7 +468,7 @@ class _ScratchToCatrobat(object):
 
         # custom block (user-defined)
         "call": None,
-        "getParam": lambda variable_name, _: _variable_for(variable_name),
+        "getParam": lambda variable_name, _: _user_variable_for(variable_name),
 
         # pen bricks
         "putPenDown": catbricks.PenDownBrick,
@@ -513,6 +515,7 @@ class _ScratchToCatrobat(object):
         if scratch_script_name not in scratch.SCRIPTS:
             assert False, "Missing script mapping for: " + scratch_script_name
         catrobat_script = cls.catrobat_script_class_for(scratch_script_name)
+
         # TODO: register handler!! -> _ScriptBlocksConversionTraverser
         if scratch_script_name == scratch.SCRIPT_SENSOR_GREATER_THAN:
             formula = _create_modified_formula_brick(arguments[0], arguments[1], catrobat_project, sprite)
@@ -541,6 +544,8 @@ class _ScratchToCatrobat(object):
         # ["procDef", "Function1 %n string: %s", ["number1", "string1"], [1, ""], true]
         assert len(arguments) == 4
         assert catrobat_script is catbricks.UserDefinedBrick
+
+
 
         scratch_function_header = arguments[0]
         param_labels = arguments[1]
@@ -588,11 +593,37 @@ def _create_modified_formula_brick(sensor_type, unconverted_formula, catrobat_pr
     traverser = _BlocksConversionTraverser(sprite, catrobat_project)
     return catformula.Formula(traverser._converted_helper_brick_or_formula_element([formula_left_child, formula_right_child], ">"))
 
+
+def _filter_user_brick_function_header(filtered_scratch_function_header, num_of_params):
+    function_header_part = ""
+    function_header_parts = []
+    param_started = False
+
+    if num_of_params != 0:
+        for char in filtered_scratch_function_header:
+            if char == "%":
+                function_header_part = function_header_part.rstrip()
+                function_header_parts.append(function_header_part)
+                param_started = True
+                function_header_part = ""
+
+            function_header_part += char
+
+            if char == " " and param_started:
+                function_header_part = function_header_part.rstrip()
+                function_header_parts.append(function_header_part)
+                param_started = False
+                function_header_part = ""
+
+        function_header_parts.append(function_header_part)
+    else:
+        print("Now:", filtered_scratch_function_header)
+        function_header_parts.append(filtered_scratch_function_header)
+
+    return function_header_parts
+
+
 def _create_user_brick(context, scratch_function_header, param_values, declare=False):
-    # TODO: remove the next line of code as soon as user bricks are supported by Catrobat
-    # TODO: also check the other TODOs related to this issue (overall three different places in converter.py)
-    # TODO: refactor this function; maybe split the function into definition of user brick script and usage of the brick
-    return catbricks.NoteBrick("Sorry, we currently do not support user bricks in Catrobat!")
     param_labels = context.user_script_declared_labels_map[scratch_function_header]
     assert context is not None and isinstance(context, SpriteContext)
     assert not param_labels or len(param_labels) == len(param_values)
@@ -605,26 +636,29 @@ def _create_user_brick(context, scratch_function_header, param_values, declare=F
 
         context.user_script_declared_map.add(scratch_function_header)
 
-    # filter all % characters
+        return catbase.UserDefinedScript()
+
+    # split function header
     filtered_scratch_function_header = scratch_function_header.replace("\\%", "")
     num_of_params = filtered_scratch_function_header.count("%")
-    function_header_parts = filtered_scratch_function_header.split()
+    function_header_parts = _filter_user_brick_function_header(filtered_scratch_function_header, num_of_params)
     num_function_header_parts = len(function_header_parts)
     expected_param_types = [None] * num_of_params
 
     if not is_user_script_defined:
-        user_script_definition_brick = context.user_script_definition_brick_map[scratch_function_header]
+        user_brick = catbricks.UserDefinedBrick()
+        user_brick.userDefinedBrickDataList = context.user_script_definition_brick_map[scratch_function_header].getUserDefinedBrickDataList()
+        user_brick.userDefinedBrickID = context.user_script_definition_brick_map[scratch_function_header].userDefinedBrickID
+        user_brick.isCallingBrick = True
         expected_param_types = context.user_script_params_map[scratch_function_header]
     else:
-        user_script_definition_brick = catbricks.UserScriptDefinitionBrick()
+        user_brick = catbricks.UserDefinedBrick()
 
     assert len(param_values) == num_of_params
     assert len(expected_param_types) == num_of_params
-    assert isinstance(user_script_definition_brick, catbricks.UserScriptDefinitionBrick)
+    assert isinstance(user_brick, catbricks.UserDefinedBrick)
 
-    user_brick = catbricks.UserBrick(user_script_definition_brick)
-    user_script_definition_brick_elements_list = user_script_definition_brick.getUserScriptDefinitionBrickElements()
-    user_brick_parameters_list = user_brick.getUserBrickParameters()
+    user_script_definition_brick_elements_list = user_brick.getUserDefinedBrickDataList()
 
     assert is_user_script_defined \
            or len(user_script_definition_brick_elements_list) == num_function_header_parts
@@ -638,11 +672,7 @@ def _create_user_brick(context, scratch_function_header, param_values, declare=F
         if not function_header_part.startswith('%'):
             if not is_user_script_defined:
                 continue
-
-            # TODO: decide when line-breaks are useful...
-            user_script_definition_brick_element = catbricks.UserScriptDefinitionBrickElement()
-            user_script_definition_brick_element.setIsText()
-            user_script_definition_brick_element.setText(function_header_part)
+            user_script_definition_brick_element = userbricks.UserDefinedBrickLabel(function_header_part)
             user_script_definition_brick_elements_list.add(user_script_definition_brick_element)
             continue
 
@@ -650,13 +680,11 @@ def _create_user_brick(context, scratch_function_header, param_values, declare=F
         assert not expected_param_types[param_index] or expected_param_types[param_index] == function_header_part
 
         if is_user_script_defined:
-            user_script_definition_brick_element = catbricks.UserScriptDefinitionBrickElement()
-            user_script_definition_brick_element.setIsVariable()
+            user_script_definition_brick_element = userbricks.UserDefinedBrickInput(param_labels[param_index])
             user_script_definition_brick_elements_list.add(user_script_definition_brick_element)
         else:
-            user_script_definition_brick_element = user_script_definition_brick_elements_list.get(element_index)
+            user_script_definition_brick_element = userbricks.UserDefinedBrickInput(param_labels[param_index])
 
-        user_script_definition_brick_element.setText(param_labels[param_index])
         param_types += [function_header_part]
         param_value = param_values[param_index]
         if not isinstance(param_value, catformula.FormulaElement):
@@ -670,16 +698,19 @@ def _create_user_brick(context, scratch_function_header, param_values, declare=F
                     param_value = ""
                 else:
                     param_value = str(param_value)
-        param_value_formula = catrobat.create_formula_with_value(param_value)
 
-        user_brick_parameter = catbricks.UserBrickParameter(param_value_formula)
-        user_brick_parameter.setParent(user_brick)
-        user_brick_parameter.setElement(user_script_definition_brick_element)
-        user_brick_parameters_list.add(user_brick_parameter)
+        param_value_formula = catrobat.create_formula_with_value(param_value)
+        input_formula_field = userbricks.InputFormulaField(param_labels[param_index])
+
+        # TODO sollten im SCF brickfield INPUT_FORMULA_FIELD anlegen, sonst kann man das formula field nicht testen
+        if not is_user_script_defined:
+            user_brick.addAllowedBrickField(input_formula_field)
+            user_brick.setFormulaWithBrickField(input_formula_field, param_value_formula)
+
         param_index += 1
 
     if is_user_script_defined:
-        context.user_script_definition_brick_map[scratch_function_header] = user_script_definition_brick
+        context.user_script_definition_brick_map[scratch_function_header] = user_brick
         context.user_script_params_map[scratch_function_header] = param_types
 
     return user_brick
@@ -690,7 +721,10 @@ def _create_variable_brick(value, user_variable, Class):
     return Class(catrobat.create_formula_with_value(value), user_variable)
 
 def _variable_for(variable_name):
-    return catformula.FormulaElement(catElementType.USER_VARIABLE, variable_name, None)  # @UndefinedVariable
+    return catformula.FormulaElement(catElementType.USER_VARIABLE, variable_name, None)
+
+def _user_variable_for(variable_name):
+    return catformula.FormulaElement(catElementType.USER_DEFINED_BRICK_INPUT, variable_name, None)  # @UndefinedVariable
 
 def _list_for(list_name):
     return catformula.FormulaElement(catElementType.USER_LIST, list_name, None)  # @UndefinedVariable
@@ -1846,12 +1880,14 @@ class _ScratchObjectConverter(object):
             raise common.ScratchtobatError("Input must be of type={}, but is={}".format(scratch.Object, type(scratch_object)))
         sprite_name = scratch_object.name
         scratch_user_scripts = filter(lambda s: s.type == scratch.SCRIPT_PROC_DEF, scratch_object.scripts)
+        scratch_remaining_scripts = filter(lambda s: s.type != scratch.SCRIPT_PROC_DEF, scratch_object.scripts)
         scratch_user_script_declared_labels_map = dict(map(lambda s: (s.arguments[0], s.arguments[1]), scratch_user_scripts))
         sprite_context = SpriteContext(sprite_name, scratch_user_script_declared_labels_map, scratch_object.monitors, scratch_object.list_monitors)
         catrobat_scene = self._catrobat_project.getDefaultScene()
         sprite = SpriteFactory().newInstance(SpriteFactory.SPRITE_BASE, sprite_name)
         assert sprite_name == sprite.getName()
 
+        print("UScripts: ", scratch_user_scripts)
         if self._context is not None:
             sprite_context.context = self._context
             if sprite_name in self._context.upcoming_sprites:
@@ -1898,20 +1934,22 @@ class _ScratchObjectConverter(object):
 
             assert user_variable is not None
 
-        for scratch_script in scratch_object.scripts:
-            cat_instance = self._catrobat_script_from(scratch_script, sprite, self._catrobat_project,
-                                                      sprite_context)
-            # TODO: remove this if and replace "elif" with "if" as soon as user bricks are supported by Catrobat
-            # TODO: also check the other TODOs related to this issue (overall three different places in converter.py)
-            if isinstance(cat_instance, catbricks.NoteBrick):
-                continue
-            if not isinstance(cat_instance, catbricks.UserDefinedBrick):
-                assert isinstance(cat_instance, catbase.Script)
-                sprite.addScript(cat_instance)
-            else:
-                sprite.addUserDefinedBrick(cat_instance)
+        for scratch_script in scratch_user_scripts:
+            cat_instance = self._catrobat_script_from(scratch_script, sprite, self._catrobat_project, sprite_context)
 
-            if self._progress_bar != None:
+            assert isinstance(cat_instance, catbase.Script)
+            sprite.addScript(cat_instance)
+
+            if self._progress_bar is not None:
+                self._progress_bar.update(ProgressType.CONVERT_SCRIPT)
+
+        for scratch_script in scratch_remaining_scripts:
+            cat_instance = self._catrobat_script_from(scratch_script, sprite, self._catrobat_project, sprite_context)
+
+            assert isinstance(cat_instance, catbase.Script)
+            sprite.addScript(cat_instance)
+
+            if self._progress_bar is not None:
                 self._progress_bar.update(ProgressType.CONVERT_SCRIPT)
 
         if self._context is not None:
@@ -2089,8 +2127,27 @@ class _ScratchObjectConverter(object):
         script_context = ScriptContext(context)
         converted_bricks = cls._catrobat_bricks_from(scratch_script.script_element, sprite, script_context)
 
+        if isinstance(cat_instance, catbase.UserDefinedScript):
+            scratch_function_header = scratch_script.arguments[0]
+            param_labels = scratch_script.arguments[1]
+            param_values = scratch_script.arguments[2]
+            assert param_labels == context.user_script_declared_labels_map[scratch_function_header]
+            user_brick = _create_user_brick(context, scratch_function_header, param_values, declare=False)
+            sprite.userDefinedBrickList.add(user_brick)
+            cat_instance.userDefinedBrickID = user_brick.userDefinedBrickID
+
+            # TODO getUserDefinedBrickInputs is expecting a list, therfore the ArrayList(), maybe there
+            #  is another way
+            arr = ArrayList()
+
+            for label in param_labels:
+                arr.add(catformula.UserVariable(label))
+
+            cat_instance.setUserDefinedBrickInputs(arr)
+
         assert isinstance(converted_bricks, list) and len(converted_bricks) == 1
         [converted_bricks] = converted_bricks
+
 
         log.debug("   --> converted: <%s>", ", ".join(map(catrobat.simple_name_for, converted_bricks)))
         ignored_blocks = 0
@@ -2100,15 +2157,9 @@ class _ScratchObjectConverter(object):
                 ignored_blocks += 1
                 continue
             try:
-                # TODO: remove this if and replace "elif" with "if" as soon as user bricks are supported by Catrobat
-                # TODO: also check the other TODOs related to this issue (overall three different places in converter.py)
-                if isinstance(cat_instance, catbricks.NoteBrick):
-                    continue
-                elif not isinstance(cat_instance, catbricks.UserDefinedBrick):
-                    assert isinstance(cat_instance, catbase.Script)
-                    cat_instance.brickList.add(brick)
-                else:
-                    cat_instance.appendBrickToScript(brick)
+                assert isinstance(cat_instance, catbase.Script)
+                cat_instance.brickList.add(brick)
+
             except TypeError as ex:
                 if isinstance(brick, (str, unicode)):
                     log.error("string brick: %s", brick)
@@ -2993,6 +3044,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     def _convert_say_block(self):
         [msg] = self.arguments
         say_bubble_brick = self.CatrobatClass()
+
         say_bubble_brick.setFormulaWithBrickField(catbricks.Brick.BrickField.STRING, catformula.Formula(msg))
 
         return say_bubble_brick

@@ -136,6 +136,9 @@ def visitSubstack(blockcontext, substackkey):
 def visitMutation(blockcontext):
     return blockcontext.block.mutation["proccode"]
 
+def visitMutationArgumentName(blockcontext):
+    return blockcontext.block.mutation["argumentids"]
+
 def visitParams(blockcontext):
     paramids = blockcontext.block.mutation["argumentids"].strip("[]").split("\",\"")
     sanitized = []

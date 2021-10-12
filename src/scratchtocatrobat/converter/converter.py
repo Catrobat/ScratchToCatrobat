@@ -513,7 +513,7 @@ class _ScratchToCatrobat(object):
         if scratch_script_name not in scratch.SCRIPTS:
             assert False, "Missing script mapping for: " + scratch_script_name
         catrobat_script = cls.catrobat_script_class_for(scratch_script_name)
-        # TODO: register handler!! -> _ScriptBlocksConversionTraverser
+
         if scratch_script_name == scratch.SCRIPT_SENSOR_GREATER_THAN:
             formula = _create_modified_formula_brick(arguments[0], arguments[1], catrobat_project, sprite)
             when_cond_brick = catbricks.WhenConditionBrick()
@@ -1832,7 +1832,6 @@ class _ScratchObjectConverter(object):
     _scratch_project = None
 
     def __init__(self, catrobat_project, scratch_project, progress_bar=None, context=None):
-        # TODO: refactor static
         _ScratchObjectConverter._catrobat_project = catrobat_project
         _ScratchObjectConverter._scratch_project = scratch_project
         self._progress_bar = progress_bar

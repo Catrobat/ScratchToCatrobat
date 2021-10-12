@@ -2806,14 +2806,36 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "showVariable:")
     def _convert_show_variable_block(self):
         assert len(self.arguments) == 1
-        show_variable_brick = get_show_brick(self.project, self.sprite, self.sprite_context, self.arguments[0])
-        return [show_variable_brick]
+
+        variable_name = self.arguments[0]
+        is_global = True
+        variable = self.project.getUserVariable(variable_name)
+        if not variable:
+            is_global = False
+            variable = self.sprite.getUserVariable(variable_name)
+
+        monitor = self.sprite_context.getMonitor(variable_name, is_global=is_global, is_list=False)
+        base_x = int(round(absolute_to_catrobat_x(monitor["x"])))
+        base_y = int(round(absolute_to_catrobat_y(monitor["y"])))
+
+        show_variable_brick = catbricks.ShowTextBrick(base_x, base_y)
+        show_variable_brick.userVariable = variable
+
+        return show_variable_brick
 
     @_register_handler(_block_name_to_handler_map, "hideVariable:")
     def _convert_hide_variable_block(self):
         assert len(self.arguments) == 1
-        hide_variable_brick = get_show_brick(self.project, self.sprite, self.sprite_context, self.arguments[0], is_hide=True)
-        return [hide_variable_brick]
+
+        variable_name = self.arguments[0]
+        variable = self.project.getUserVariable(variable_name)
+        if not variable:
+            variable = self.sprite.getUserVariable(variable_name)
+
+        hide_variable_brick = catbricks.HideTextBrick()
+        hide_variable_brick.userVariable = variable
+
+        return hide_variable_brick
 
     @_register_handler(_block_name_to_handler_map, "append:toList:")
     def _convert_append_to_list_block(self):

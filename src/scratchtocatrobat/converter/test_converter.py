@@ -3466,7 +3466,17 @@ class TestShowVariablesWorkaround(unittest.TestCase):
 
     def test_sprite2_correct_events_added(self):
         #Sprite2
-        self.assertEqual(8, self.sprite2.getNumberOfScripts())
+        self.assertEqual(6, self.sprite2.getNumberOfScripts())
+        bricks = self.sprite2.getScript(1).getBrickList()[0].ifBranchBricks
+        self.assertIsInstance(bricks[0], catbricks.HideTextBrick)
+        self.assertIsInstance(bricks[1], catbricks.HideTextBrick)
+        self.assertIsInstance(bricks[2], catbricks.HideTextBrick)
+        self.assertIsInstance(bricks[3], catbricks.SetVariableBrick)
+        bricks = self.sprite2.getScript(1).getBrickList()[0].elseBranchBricks
+        self.assertIsInstance(bricks[0], catbricks.ShowTextBrick)
+        self.assertIsInstance(bricks[1], catbricks.ShowTextBrick)
+        self.assertIsInstance(bricks[2], catbricks.ShowTextBrick)
+        self.assertIsInstance(bricks[3], catbricks.SetVariableBrick)
         self.assertIsInstance(self.sprite2.getScript(0), catbase.StartScript)
         self.assertIsInstance(self.sprite2.getScript(1), catbase.WhenScript)
         self.assertIsInstance(self.sprite2.getScript(2), catbase.BroadcastScript)
@@ -3477,25 +3487,18 @@ class TestShowVariablesWorkaround(unittest.TestCase):
         self.assertEqual(converter.get_broadcast_show_msg(self.sprite2.getName(), "toggle_slider"),
                          self.sprite2.getScript(4).getBroadcastMessage())
         self.assertIsInstance(self.sprite2.getScript(5), catbase.BroadcastScript)
-        self.assertEqual(converter.get_broadcast_show_msg(self.sprite2.getName(), "toggle_slider", is_hide=True),
-                         self.sprite2.getScript(5).getBroadcastMessage())
-        self.assertIsInstance(self.sprite2.getScript(6), catbase.BroadcastScript)
         self.assertEqual(converter.get_broadcast_show_msg(self.sprite2.getName(), "toggle_default"),
-                         self.sprite2.getScript(6).getBroadcastMessage())
-        self.assertIsInstance(self.sprite2.getScript(7), catbase.BroadcastScript)
-        self.assertEqual(converter.get_broadcast_show_msg(self.sprite2.getName(), "toggle_default", is_hide=True),
-                         self.sprite2.getScript(7).getBroadcastMessage())
+                         self.sprite2.getScript(5).getBroadcastMessage())
+
         #toggle slider sprite
         assert self.toggle_slider_sprite.getName().startswith(converter.SLIDER_SPRITE_NAME + self.sprite2.getName())
-        self.assertEqual(4, self.toggle_slider_sprite.getNumberOfScripts())
+        self.assertEqual(3, self.toggle_slider_sprite.getNumberOfScripts())
         self.assertIsInstance(self.toggle_slider_sprite.getScript(0), catbase.StartScript)
         self.assertIsInstance(self.toggle_slider_sprite.getScript(1), catbase.WhenScript)
         self.assertIsInstance(self.toggle_slider_sprite.getScript(2), catbase.BroadcastScript)
         self.assertEqual(converter.get_broadcast_show_msg(self.sprite2.getName(), "toggle_slider", False),
                          self.toggle_slider_sprite.getScript(2).getBroadcastMessage())
-        self.assertIsInstance(self.toggle_slider_sprite.getScript(3), catbase.BroadcastScript)
-        self.assertEqual(converter.get_broadcast_show_msg(self.sprite2.getName(), "toggle_slider", False, True),
-                         self.toggle_slider_sprite.getScript(3).getBroadcastMessage())
+
 
     def test_stage_correct_events_added(self):
         assert self.global_slider_sprite.getName().startswith(converter.SLIDER_SPRITE_NAME + self.stage_sprite.getName())

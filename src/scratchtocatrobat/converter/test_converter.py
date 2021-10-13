@@ -32,6 +32,7 @@ import org.catrobat.catroid.content.bricks.Brick as catbasebrick
 import org.catrobat.catroid.formulaeditor as catformula
 import org.catrobat.catroid.formulaeditor.FormulaElement.ElementType as catElementType
 import xml.etree.cElementTree as ET
+from scratchtocatrobat.tools import helpers
 
 from scratchtocatrobat.converter import catrobat, converter, mediaconverter
 from scratchtocatrobat.converter.converter import Converter
@@ -62,156 +63,186 @@ TEST_PROJECT_PATH = common_testing.get_test_project_path("dancing_castle")
 def _dummy_project():
     return scratch.Project(TEST_PROJECT_PATH, name="dummy")
 
-# TODO: fix / reorganize test
-#
-# class TestConvertExampleProject(common_testing.ProjectTestCase):
-#
-#     expected_sprite_names = ["Sprite1, Cassy Dance"]
-#     expected_script_classes = [[catbase.StartScript, ], []]
-#     expected_brick_classes = [[catbricks.WaitBrick, catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.LoopEndBrick], []]
-#
-#     def __init__(self, *args, **kwargs):
-#         super(TestConvertExampleProject, self).__init__(*args, **kwargs)
-#
-#     def setUp(self):
-#         super(TestConvertExampleProject, self).setUp()
-#         self.project = scratch.Project(TEST_PROJECT_PATH, name="dummy")
-#
-#     def test_can_convert_to_catrobat_structure_including_svg_to_png(self):
-#         count_svg_and_png_files = 0
-#         for md5_name in self.project.md5_to_resource_path_map:
-#             common.log.info(md5_name)
-#             if os.path.splitext(md5_name)[1] in {".png", ".svg"}:
-#                 count_svg_and_png_files += 1
-#
-#         converter.save_as_catrobat_program_to(self.project, self.temp_dir)
-#
-#         images_dir = converter.images_dir_of_project(self.temp_dir)
-#         assert os.path.exists(images_dir)
-#         sounds_dir = converter.sounds_dir_of_project(self.temp_dir)
-#         assert os.path.exists(sounds_dir)
-#         code_xml_path = os.path.join(self.temp_dir, catrobat.PROGRAM_SOURCE_FILE_NAME)
-#         assert os.path.exists(code_xml_path)
-#         assert not glob.glob(os.path.join(images_dir, "*.svg")), "Unsupported svg files are in Catrobat folder."
-#
-#         self.assertValidCatrobatProgramStructure(self.temp_dir, self.project.name)
-#         actual_count = len(glob.glob(os.path.join(images_dir, "*.png")))
-#         assert actual_count - len(self.project.listened_keys) == count_svg_and_png_files
-#
-#     def test_can_get_catrobat_resource_file_name_of_scratch_resources(self):
-#         resource_names_scratch_to_catrobat_map = {
-#             "83a9787d4cb6f3b7632b4ddfebf74367.wav": ["83a9787d4cb6f3b7632b4ddfebf74367_pop.wav"] * 2,
-#             "510da64cf172d53750dffd23fbf73563.png": ["510da64cf172d53750dffd23fbf73563_backdrop1.png"],
-#             "033f926829a446a28970f59302b0572d.png": ["033f926829a446a28970f59302b0572d_castle1.png"],
-#             "83c36d806dc92327b9e7049a565c6bff.wav": ["83c36d806dc92327b9e7049a565c6bff_meow.wav"]}
-#         for resource_name in resource_names_scratch_to_catrobat_map:
-#             expected = resource_names_scratch_to_catrobat_map[resource_name]
-#             assert converter._catrobat_resource_file_name_for(resource_name, self.project) == expected
-#
-#     def test_can_convert_scratch_project_to_catrobat_zip(self):
-#         catrobat_zip_file_name = converter.save_as_catrobat_program_package_to(self.project, self.temp_dir)
-#
-#         self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, self.project.name)
-#
-#     def test_can_convert_scratch_project_with_utf8_characters_catrobat_zip(self):
-#         project = scratch.Project(common_testing.get_test_project_path("utf_encoding"))
-#         catrobat_zip_file_name = converter.save_as_catrobat_program_package_to(project, self._testresult_folder_path)
-#
-#         self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, project.name)
-#
-#     def test_can_convert_complete_project_to_catrobat_project_class(self):
-#         _catr_project = converter.catrobat_program_from(self.project)
-#         assert isinstance(_catr_project, catbase.Project)
-#
-#         assert _catr_project.getXmlHeader().virtualScreenHeight == scratch.STAGE_HEIGHT_IN_PIXELS
-#         assert _catr_project.getXmlHeader().virtualScreenWidth == scratch.STAGE_WIDTH_IN_PIXELS
-#
-#         catr_sprites = _catr_project.getSpriteList()
-#         assert catr_sprites
-#         assert all(isinstance(_, catbase.Sprite) for _ in catr_sprites)
-#         assert catr_sprites[0].getName() == catrobat.BACKGROUND_SPRITE_NAME
-#
-#     def test_can_convert_object_to_catrobat_sprite_class(self):
-#         sprites = [converter._catrobat_sprite_from(scratchobj) for scratchobj in self.project.objects]
-#         assert all(isinstance(_, catbase.Sprite) for _ in sprites)
-#
-#         sprite_0 = sprites[0]
-#         assert sprite_0.getName() == scratch.STAGE_OBJECT_NAME
-#         assert [_.__class__ for _ in sprite_0.scriptList] == [catbase.StartScript]
-#         start_script = sprite_0.scriptList[0]
-#         # TODO into own test case
-#         set_look_brick = start_script.getBrick(0)
-#         assert isinstance(set_look_brick, catbricks.SetLookBrick), "Mismatch to Scratch behavior: Implicit SetLookBrick is missing"
-#
-#         sprite0_looks = sprite_0.getLookDataList()
-#         assert sprite0_looks
-#         assert all(isinstance(look, catcommon.LookData) for look in sprite0_looks)
-#         sprite0_sounds = sprite_0.getSoundList()
-#         assert sprite0_sounds
-#         assert all(isinstance(sound, catcommon.SoundInfo) for sound in sprite0_sounds)
-#
-#         sprite_1 = sprites[1]
-#         assert sprite_1.getName() == "Sprite1"
-#         assert [_.__class__ for _ in sprite_1.scriptList] == [catbase.StartScript, catbase.BroadcastScript]
-#
-#         start_script = sprite_1.scriptList[0]
-#         # TODO into own test case
-#         place_at_brick = start_script.getBrick(1)
-#         assert isinstance(place_at_brick, catbricks.PlaceAtBrick), "Mismatch to Scratch behavior: Implicit PlaceAtBrick is missing"
-#         assert place_at_brick.xPosition.formulaTree.type == catformula.FormulaElement.ElementType.NUMBER
-#         assert place_at_brick.xPosition.formulaTree.value == str(self.project.objects[1].get_scratchX())
-#         assert place_at_brick.yPosition.formulaTree.type == catformula.FormulaElement.ElementType.OPERATOR
-#         assert place_at_brick.yPosition.formulaTree.value == "MINUS"
-#         assert place_at_brick.yPosition.formulaTree.rightChild.type == catformula.FormulaElement.ElementType.NUMBER
-#         assert place_at_brick.yPosition.formulaTree.rightChild.value == str(-self.project.objects[1].get_scratchY())
-#         # TODO: test for implicit bricks
-#
-#         sprite1_looks = sprite_1.getLookDataList()
-#         assert sprite1_looks
-#         assert all(isinstance(_, catcommon.LookData) for _ in sprite1_looks)
-#         sprite1_sounds = sprite_1.getSoundList()
-#         assert sprite1_sounds
-#         assert all(isinstance(_, catcommon.SoundInfo) for _ in sprite1_sounds)
-#
-#         sprite_2 = sprites[2]
-#         assert sprite_2.getName() == "Cassy Dance"
-#         assert [_.__class__ for _ in sprite_2.scriptList] == [catbase.StartScript]
-#         sprite2_looks = sprite_2.getLookDataList()
-#         assert sprite2_looks
-#         assert all(isinstance(_, catcommon.LookData) for _ in sprite2_looks)
-#
-#     def test_can_convert_script_to_catrobat_script_class(self):
-#         scratch_script = self.project.objects[1].scripts[0]
-#         catr_script = converter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.test_project)
-#         assert catr_script
-#         expected_script_class = [catbase.StartScript]
-#         expected_brick_classes = [catbricks.WaitBrick, catbricks.NoteBrick, catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.NoteBrick, catbricks.LoopEndBrick]
-#         self.assertScriptClasses(expected_script_class, expected_brick_classes, catr_script)
-#
-#     def test_can_convert_costume_to_catrobat_lookdata_class(self):
-#         costumes = self.project.objects[1].get_costumes()
-#         for (expected_name, expected_file_name), costume in zip([("costume1", "f9a1c175dbe2e5dee472858dd30d16bb_costume1.svg"), ("costume2", "6e8bd9ae68fdb02b7e1e3df656a75635_costume2.svg")], costumes):
-#             look = converter._catrobat_look_from(costume)
-#             assert isinstance(look, catcommon.LookData)
-#             assert look.getName() == expected_name
-#             assert look.getLookFileName() == expected_file_name
-#
-#     def test_can_convert_sound_to_catrobat_soundinfo_class(self):
-#         sounds = self.project.objects[1].get_sounds()
-#         for (expected_name, expected_file_name), sound in zip([("meow", "83c36d806dc92327b9e7049a565c6bff_meow.wav"), ], sounds):
-#             soundinfo = converter._catrobat_sound_from(sound)
-#             assert isinstance(soundinfo, catcommon.SoundInfo)
-#             assert soundinfo.getTitle() == expected_name
-#             assert soundinfo.getSoundFileName() == expected_file_name
+
+class TestConvertExampleProject(common_testing.ProjectTestCase):
+
+    expected_sprite_names = ["Sprite1, Cassy Dance"]
+    expected_script_classes = [[catbase.StartScript, ], []]
+    expected_brick_classes = [[catbricks.WaitBrick, catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.MoveNStepsBrick, catbricks.WaitBrick, catbricks.LoopEndBrick], []]
+
+    def __init__(self, *args, **kwargs):
+        super(TestConvertExampleProject, self).__init__(*args, **kwargs)
+        self.converted_project = None
+
+    def setUp(self):
+        super(TestConvertExampleProject, self).setUp()
+        self.project = scratch.Project(TEST_PROJECT_PATH, name="dummy")
+        cv = converter.Converter(self.project)
+        catrobat_project = cv._converted_catrobat_program(None, None)
+        self.converted_project = converter.ConvertedProject(catrobat_project, self.project)
+        self.object_converter = converter._ScratchObjectConverter(catrobat_project, self.project)
+
+    #test is going to fail and i cant fix it, beacuase a bug in my environment does not allow me to convert svg to png
+    #I couldnt figure out why
+    # TODO: Fix this test
+    # def test_can_convert_to_catrobat_structure_including_svg_to_png(self):
+    #     count_svg_and_png_files = 0
+    #     for md5_name in self.project.md5_to_resource_path_map:
+    #         common.log.info(md5_name)
+    #         if os.path.splitext(md5_name)[1] in {".png", ".svg"}:
+    #             count_svg_and_png_files += 1
+    #
+    #     converter.ConvertedProject.save_as_catrobat_directory_structure_to(self.converted_project, self.temp_dir)
+    #
+    #     images_dir = converter.ConvertedProject._images_dir_of_project(self.temp_dir)
+    #     assert os.path.exists(images_dir)
+    #     sounds_dir = converter.ConvertedProject._sounds_dir_of_project(self.temp_dir)
+    #     assert os.path.exists(sounds_dir)
+    #     code_xml_path = os.path.join(self.temp_dir, catrobat.PROGRAM_SOURCE_FILE_NAME)
+    #     assert os.path.exists(code_xml_path)
+    #     assert not glob.glob(os.path.join(images_dir, "*.svg")), "Unsupported svg files are in Catrobat folder."
+    #
+    #     self.assertValidCatrobatProgramStructure(self.temp_dir, self.project.name)
+    #     actual_count = len(glob.glob(os.path.join(images_dir, "*.png")))
+    #     assert actual_count - len(self.project.listened_keys) == count_svg_and_png_files
+
+    def test_can_get_catrobat_resource_file_name_of_scratch_resources(self):
+        resource_names_scratch_to_catrobat_map = {
+            "83a9787d4cb6f3b7632b4ddfebf74367.wav": {"83a9787d4cb6f3b7632b4ddfebf74367_#0.wav"},
+            "510da64cf172d53750dffd23fbf73563.png": {"510da64cf172d53750dffd23fbf73563_#0.png"},
+            "033f926829a446a28970f59302b0572d.png": {"033f926829a446a28970f59302b0572d_#0.png"},
+            "83c36d806dc92327b9e7049a565c6bff.wav": {"83c36d806dc92327b9e7049a565c6bff_#0.wav"}}
+
+        for resource_name in resource_names_scratch_to_catrobat_map:
+            expected = resource_names_scratch_to_catrobat_map[resource_name]
+            names = set()
+            helpers.create_catrobat_md5_filename(resource_name, names)
+            assert names == expected
+
+    def test_can_convert_scratch_project_to_catrobat_zip(self):
+        catrobat_zip_file_name = converter.ConvertedProject.save_as_catrobat_package_to(self.converted_project, self.temp_dir)
+
+        self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, self.project.name)
+
+    def test_can_convert_scratch_project_with_utf8_characters_catrobat_zip(self):
+        project = scratch.Project(common_testing.get_test_project_path("utf_encoding"))
+        cv = converter.Converter(project)
+        catrobat_project = cv._converted_catrobat_program(None, None)
+        converted_project = converter.ConvertedProject(catrobat_project, project)
+        catrobat_zip_file_name = converter.ConvertedProject.save_as_catrobat_package_to(converted_project, self._testresult_folder_path)
+
+        self.assertValidCatrobatProgramPackageAndUnpackIf(catrobat_zip_file_name, project.name)
+
+    def test_can_convert_complete_project_to_catrobat_project_class(self):
+        cv = converter.Converter(self.project)
+        _catr_project = cv._converted_catrobat_program(None, None)
+
+        assert isinstance(_catr_project, catbase.Project)
+
+        assert _catr_project.getXmlHeader().virtualScreenHeight == scratch.STAGE_HEIGHT_IN_PIXELS
+        assert _catr_project.getXmlHeader().virtualScreenWidth == scratch.STAGE_WIDTH_IN_PIXELS
+
+        catr_sprites = _catr_project.getSceneList()[0].getSpriteList()
+        assert catr_sprites
+        assert all(isinstance(_, catbase.Sprite) for _ in catr_sprites)
+        assert catr_sprites[0].getName() == catrobat._BACKGROUND_SPRITE_NAME
+
+    def test_can_convert_bricks_in_sprite_class(self):
+        sprites = [converter._ScratchObjectConverter._catrobat_sprite_from(self.object_converter, scratchobj, set()) for scratchobj in self.project.objects]
+        assert all(isinstance(_, catbase.Sprite) for _ in sprites)
+
+        sprite_2 = sprites[2]
+        start_script = sprite_2.scriptList[0]
+        place_at_brick = start_script.getBrickList()[0]
+
+        assert isinstance(place_at_brick, catbricks.PlaceAtBrick), "Mismatch to Scratch behavior: Implicit PlaceAtBrick is missing"
+        place_at_brick_formula = place_at_brick.getFormulaWithBrickField(catbricks.Brick.BrickField.X_POSITION).formulaTree
+        assert place_at_brick_formula.type == catformula.FormulaElement.ElementType.NUMBER
+        assert place_at_brick_formula.value == str(self.project.objects[2].get_scratchX())
+        place_at_brick_formula = place_at_brick.getFormulaWithBrickField(catbricks.Brick.BrickField.Y_POSITION).formulaTree
+        assert place_at_brick_formula.type == catformula.FormulaElement.ElementType.OPERATOR
+        assert place_at_brick_formula.value == "MINUS"
+        assert place_at_brick_formula.rightChild.type == catformula.FormulaElement.ElementType.NUMBER
+        assert place_at_brick_formula.rightChild.value == str(-self.project.objects[2].get_scratchY())
 
 
-# def ConverterTestClass(class_):
-#     class Wrapper:
-#         def __init__(self, *args, **kwargs):
-#             _dummy_project = catbase.Project(None, "__test_project__")
-#             self.block_converter = converter._ScratchObjectConverter(_dummy_project, None)
-#             class_(*args, **kwargs)
-#     return Wrapper
+    def test_can_convert_look_and_sound_in_sprite_class(self):
+        sprites = [converter._ScratchObjectConverter._catrobat_sprite_from(self.object_converter, scratchobj, set()) for scratchobj in self.project.objects]
+        assert all(isinstance(_, catbase.Sprite) for _ in sprites)
+
+        sprite_0 = sprites[0]
+        sprite0_looks = sprite_0.getLookList()
+        assert sprite0_looks
+        assert all(isinstance(look, catcommon.LookData) for look in sprite0_looks)
+        sprite0_sounds = sprite_0.getSoundList()
+        assert sprite0_sounds
+        assert all(isinstance(sound, catcommon.SoundInfo) for sound in sprite0_sounds)
+
+        sprite_1 = sprites[1]
+        sprite1_looks = sprite_1.getLookList()
+        assert sprite1_looks
+        assert all(isinstance(_, catcommon.LookData) for _ in sprite1_looks)
+
+        sprite_2 = sprites[2]
+        sprite2_looks = sprite_2.getLookList()
+        assert sprite2_looks
+        assert all(isinstance(_, catcommon.LookData) for _ in sprite2_looks)
+        sprite2_sounds = sprite_2.getSoundList()
+        assert sprite2_sounds
+        assert all(isinstance(_, catcommon.SoundInfo) for _ in sprite2_sounds)
+
+    def test_can_convert_object_to_catrobat_sprite_class(self):
+        sprites = [converter._ScratchObjectConverter._catrobat_sprite_from(self.object_converter, scratchobj, set()) for scratchobj in self.project.objects]
+        assert all(isinstance(_, catbase.Sprite) for _ in sprites)
+
+        sprite_0 = sprites[0]
+        assert sprite_0.getName() == "Hintergrund"
+        assert [_.__class__ for _ in sprite_0.scriptList] == [catbase.StartScript]
+
+        sprite_1 = sprites[1]
+        assert sprite_1.getName() == "Cassy Dance"
+        assert [_.__class__ for _ in sprite_1.scriptList] == [catbase.StartScript]
+
+        sprite_2 = sprites[2]
+        assert sprite_2.getName() == "Sprite1"
+        assert [_.__class__ for _ in sprite_2.scriptList] == [catbase.StartScript, catbase.BroadcastScript]
+
+    def test_can_convert_script_to_catrobat_script_class(self):
+        scratch_script = self.project.objects[2].scripts[0]
+        catr_script = converter._ScratchObjectConverter._catrobat_script_from(scratch_script, DUMMY_CATR_SPRITE, self.converted_project)
+        assert catr_script
+        expected_script_class = [catbase.StartScript]
+        # TODO change Notebrick to PlayDrumForBeatsBrick as soon as its implemented
+        expected_brick_classes = [catbricks.SayForBubbleBrick, catbricks.RepeatBrick, catbricks.MoveNStepsBrick, catbricks.NoteBrick, catbricks.MoveNStepsBrick, catbricks.NoteBrick]
+        bricks = catr_script.getBrickList()
+        bricks += catr_script.getBrickList()[1].loopBricks
+
+        self.assertScriptClasses(expected_script_class, expected_brick_classes, catr_script)
+
+    def test_can_convert_costume_to_catrobat_lookdata_class(self):
+        costumes = self.project.objects[2].get_costumes()
+        for (expected_name, expected_file_name), costume in zip([("costume1", "f9a1c175dbe2e5dee472858dd30d16bb_#0.svg"), ("costume2", "6e8bd9ae68fdb02b7e1e3df656a75635_#0.svg")], costumes):
+            look = converter._ScratchObjectConverter._catrobat_look_from(costume, set())
+            assert isinstance(look, catcommon.LookData)
+            assert look.getName() == expected_name
+            assert look.getXstreamFileName() == expected_file_name
+
+    def test_can_convert_sound_to_catrobat_soundinfo_class(self):
+        sounds = self.project.objects[2].get_sounds()
+        for (expected_name, expected_file_name), sound in zip([("meow", "83c36d806dc92327b9e7049a565c6bff_#0.wav"), ], sounds):
+            soundinfo = converter._ScratchObjectConverter._catrobat_sound_from(sound, set())
+            assert isinstance(soundinfo, catcommon.SoundInfo)
+            assert soundinfo.getName() == expected_name
+            assert soundinfo.getXstreamFileName() == expected_file_name
+
+
+def ConverterTestClass(class_):
+    class Wrapper:
+        def __init__(self, *args, **kwargs):
+            _dummy_project = catbase.Project(None, "__test_project__")
+            self.block_converter = converter._ScratchObjectConverter(_dummy_project, None)
+            class_(*args, **kwargs)
+    return Wrapper
 
 class TestConvertBlocks(common_testing.BaseTestCase):
 

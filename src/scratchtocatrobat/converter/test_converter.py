@@ -1092,7 +1092,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     # setGraphicEffect:to: (brightness)
     def test_can_convert_set_graphic_effect_with_float_value_brightness_block(self):
-        scratch_block = _, _, expected_value = ["setGraphicEffect:to:", "brightness", 10.1]
+        scratch_block = _, _, expected_value = ["setGraphicEffect:to:", "BRIGHTNESS", 10.1]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.SetBrightnessBrick)
         formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.BRIGHTNESS).formulaTree # @UndefinedVariable
@@ -1117,7 +1117,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def test_can_convert_set_graphic_effect_with_formula_value_brightness_block(self):
         expected_left_operand = 10.1
         expected_right_operand = 1
-        scratch_block = ["setGraphicEffect:to:", "brightness", ["+", expected_left_operand,
+        scratch_block = ["setGraphicEffect:to:", "BRIGHTNESS", ["+", expected_left_operand,
                                                                 expected_right_operand]]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.SetBrightnessBrick)
@@ -1153,7 +1153,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     # setGraphicEffect:to: (ghost)
     def test_can_convert_set_graphic_effect_with_float_value_ghost_block(self):
-        scratch_block = _, _, expected_value = ["setGraphicEffect:to:", "ghost", 10.2]
+        scratch_block = _, _, expected_value = ["setGraphicEffect:to:", "GHOST", 10.2]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.SetTransparencyBrick)
         formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.TRANSPARENCY).formulaTree # @UndefinedVariable
@@ -1166,7 +1166,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def test_can_convert_set_graphic_effect_with_formula_value_ghost_block(self):
         expected_left_operand = 10.2
         expected_right_operand = 1
-        scratch_block = ["setGraphicEffect:to:", "ghost", ["+", expected_left_operand, expected_right_operand]]
+        scratch_block = ["setGraphicEffect:to:", "GHOST", ["+", expected_left_operand, expected_right_operand]]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.SetTransparencyBrick)
         formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.TRANSPARENCY).formulaTree # @UndefinedVariable
@@ -1189,7 +1189,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     # setGraphicEffect:to: (color)
     def test_can_convert_set_graphic_effect_with_float_value_color_block(self):
-        scratch_block = _, _, expected_value = ["setGraphicEffect:to:", "color", 10.2]
+        scratch_block = _, _, expected_value = ["setGraphicEffect:to:", "COLOR", 10.2]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.SetColorBrick)
         formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.COLOR).formulaTree # @UndefinedVariable
@@ -1202,7 +1202,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def test_can_convert_set_graphic_effect_with_formula_value_color_block(self):
         expected_left_operand = 10.2
         expected_right_operand = 1
-        scratch_block = ["setGraphicEffect:to:", "color", ["+", expected_left_operand, expected_right_operand]]
+        scratch_block = ["setGraphicEffect:to:", "COLOR", ["+", expected_left_operand, expected_right_operand]]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.SetColorBrick)
         formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.COLOR).formulaTree # @UndefinedVariable
@@ -1225,7 +1225,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     # changeGraphicEffect:by: (brightness)
     def test_can_convert_change_graphic_effect_with_float_value_brightness_block(self):
-        scratch_block = _, _, expected_value = ["changeGraphicEffect:by:", "brightness", 10.1]
+        scratch_block = _, _, expected_value = ["changeGraphicEffect:by:", "BRIGHTNESS", 10.1]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.ChangeBrightnessByNBrick)
         formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.BRIGHTNESS_CHANGE).formulaTree # @UndefinedVariable
@@ -1238,7 +1238,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def test_can_convert_change_graphic_effect_with_formula_value_brightness_block(self):
         expected_left_operand = 10.2
         expected_right_operand = 1
-        scratch_block = ["changeGraphicEffect:by:", "brightness", ["+", expected_left_operand, expected_right_operand]]
+        scratch_block = ["changeGraphicEffect:by:", "BRIGHTNESS", ["+", expected_left_operand, expected_right_operand]]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.ChangeBrightnessByNBrick)
         formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.BRIGHTNESS_CHANGE).formulaTree # @UndefinedVariable
@@ -1261,7 +1261,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     # changeGraphicEffect:by: (ghost)
     def test_can_convert_change_graphic_effect_with_float_value_ghost_block(self):
-        scratch_block = _, _, expected_value = ["changeGraphicEffect:by:", "ghost", 10.2]
+        scratch_block = _, _, expected_value = ["changeGraphicEffect:by:", "GHOST", 10.2]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.ChangeTransparencyByNBrick)
         formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.TRANSPARENCY_CHANGE).formulaTree # @UndefinedVariable
@@ -1274,7 +1274,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def test_can_convert_change_graphic_effect_with_formula_value_ghost_block(self):
         expected_left_operand = 10.2
         expected_right_operand = 1
-        scratch_block = ["changeGraphicEffect:by:", "ghost", ["+", expected_left_operand, expected_right_operand]]
+        scratch_block = ["changeGraphicEffect:by:", "GHOST", ["+", expected_left_operand, expected_right_operand]]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.ChangeTransparencyByNBrick)
         formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.TRANSPARENCY_CHANGE).formulaTree # @UndefinedVariable
@@ -1297,7 +1297,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
 
     # changeGraphicEffect:by: (color)
     def test_can_convert_change_graphic_effect_with_float_value_color_block(self):
-        scratch_block = _, _, expected_value = ["changeGraphicEffect:by:", "color", 10.2]
+        scratch_block = _, _, expected_value = ["changeGraphicEffect:by:", "COLOR", 10.2]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.ChangeColorByNBrick)
         formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.COLOR_CHANGE).formulaTree # @UndefinedVariable
@@ -1310,7 +1310,7 @@ class TestConvertBlocks(common_testing.BaseTestCase):
     def test_can_convert_change_graphic_effect_with_formula_value_color_block(self):
         expected_left_operand = 10.2
         expected_right_operand = 1
-        scratch_block = ["changeGraphicEffect:by:", "color", ["+", expected_left_operand, expected_right_operand]]
+        scratch_block = ["changeGraphicEffect:by:", "COLOR", ["+", expected_left_operand, expected_right_operand]]
         [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
         assert isinstance(catr_brick, catbricks.ChangeColorByNBrick)
         formula_tree_value = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.COLOR_CHANGE).formulaTree # @UndefinedVariable

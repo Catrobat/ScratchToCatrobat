@@ -418,11 +418,16 @@ class _ScratchToCatrobat(object):
             catbricks.CameraBrick(int(status.lower() != 'off'))
         ],
 
-        "changeGraphicEffect:by:": None,
+        "changeGraphicEffect:by:": lambda effect_type, value:
+        catbricks.ChangeBrightnessByNBrick if effect_type == 'BRIGHTNESS' else
+        catbricks.ChangeTransparencyByNBrick if effect_type == 'GHOST' else
+        catbricks.ChangeColorByNBrick if effect_type == 'COLOR' else
+        _placeholder_for_unmapped_blocks_to("changeGraphicEffect:by:", effect_type, value),
         "setGraphicEffect:to:": lambda effect_type, value:
-            catbricks.SetBrightnessBrick(value) if effect_type == 'brightness' else
-            catbricks.SetTransparencyBrick(value) if effect_type == 'ghost' else
-            _placeholder_for_unmapped_blocks_to("setGraphicEffect:to:", effect_type, value),
+        catbricks.SetBrightnessBrick if effect_type == 'BRIGHTNESS' else
+        catbricks.SetTransparencyBrick if effect_type == 'GHOST' else
+        catbricks.SetColorBrick if effect_type == 'COLOR' else
+        _placeholder_for_unmapped_blocks_to("setGraphicEffect:to:", effect_type, value),
         "filterReset": catbricks.ClearGraphicEffectBrick,
         "changeSizeBy:": catbricks.ChangeSizeByNBrick,
         "setSizeTo:": catbricks.SetSizeToBrick,
@@ -2374,53 +2379,54 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
     def _regular_block_conversion(self):
         CatrobatClass = self.CatrobatClass
-        # TODO: replace with UnmappedBlock as a None object
-        if CatrobatClass is not None:
-            is_catrobat_enum = not hasattr(CatrobatClass, "__module__") and hasattr(CatrobatClass, "getClass")
-            self.arguments = _with_unmapped_blocks_replaced_as_default_formula_value(self.arguments)
-            for try_number in range(6):
-                try:
-                    # TODO: simplify
-                    if try_number == 0:
-                        converted_args = [(common.int_or_float(arg) or arg if isinstance(arg, (str, unicode)) else arg) for arg in self.arguments]
-                    elif try_number == 1:
-                        def handleBoolean(arg):
-                            if isinstance(arg, bool):
-                                return int(arg)
-                            else:
-                                return arg
 
-                        converted_args = [catformula.FormulaElement(catElementType.NUMBER, str(handleBoolean(arg)), None) if isinstance(arg, numbers.Number) else arg for arg in converted_args]  # @UndefinedVariable
-                    elif try_number == 4:
-                        converted_args = self.arguments
-                    elif try_number == 2:
-                        args = [arg if arg != None else "" for arg in self.arguments]
-                        converted_args = [catrobat.create_formula_with_value(arg) for arg in args]
-                    elif try_number == 3:
-                        if len(self.arguments) == 2 and self.arguments[0] in { "brightness", "color", "ghost" }:
-                            converted_args = [self.arguments[0]] + [catrobat.create_formula_with_value(arg) for arg in self.arguments[1:]]
-
-                    if not is_catrobat_enum:
-                        converted_value = CatrobatClass(*converted_args)
-                    else:
-                        converted_value = catrobat.formula_element_for(CatrobatClass, converted_args)
-                    assert converted_value, "No result for {} with args {}".format(self.block_name, converted_args)
-                    break
-                except (TypeError) as e:
-                    log.debug("instantiation try %d failed for class: %s, raw_args: %s, Catroid args: %s",
-                              try_number, CatrobatClass, self.arguments, map(catrobat.simple_name_for, converted_args))
-                    class_exception = e
-            else:
-                log.error("General instantiation failed for class: %s, raw_args: %s, Catroid args: %s",
-                          CatrobatClass, self.arguments, map(catrobat.simple_name_for, converted_args))
-                raise class_exception
-                log.exception(class_exception)
-                self.errors += [class_exception]
-            new_stack_values = converted_value
-        else:
+        if CatrobatClass is None:
             log.debug("no Class for: %s, args: %s", self.block_name, map(catrobat.simple_name_for, self.arguments))
-            new_stack_values = UnmappedBlock(self.sprite, *([self.block_name] + self.arguments))
-        return new_stack_values
+            return UnmappedBlock(self.sprite, *([self.block_name] + self.arguments))
+
+        is_catrobat_enum = not hasattr(CatrobatClass, "__module__") and hasattr(CatrobatClass, "getClass")
+        self.arguments = _with_unmapped_blocks_replaced_as_default_formula_value(self.arguments)
+
+        for try_number in range(4):
+            try:
+                if try_number == 0:
+                    converted_args = [(common.int_or_float(arg) or arg if isinstance(arg, (str, unicode)) else arg) for arg in self.arguments]
+
+                elif try_number == 1:
+                    def handleBoolean(arg):
+                        if isinstance(arg, bool):
+                            return int(arg)
+                        else:
+                            return arg
+
+                    converted_args = [catformula.FormulaElement(catElementType.NUMBER, str(handleBoolean(arg)), None) if isinstance(arg, numbers.Number) else arg for arg in converted_args]  # @UndefinedVariable
+
+                elif try_number == 2:
+                    args = [arg if arg != None else "" for arg in self.arguments]
+                    converted_args = [catrobat.create_formula_with_value(arg) for arg in args]
+
+                elif try_number == 3:
+                    converted_args = self.arguments
+
+                if not is_catrobat_enum:
+                    converted_value = CatrobatClass(*converted_args)
+                else:
+                    converted_value = catrobat.formula_element_for(CatrobatClass, converted_args)
+
+                assert converted_value, "No result for {} with args {}".format(self.block_name, converted_args)
+                break
+            except TypeError as e:
+                log.debug("instantiation try %d failed for class: %s, raw_args: %s, Catroid args: %s",
+                          try_number, CatrobatClass, self.arguments, map(catrobat.simple_name_for, converted_args))
+                class_exception = e
+        else:
+            log.error("General instantiation failed for class: %s, raw_args: %s, Catroid args: %s",
+                      CatrobatClass, self.arguments, map(catrobat.simple_name_for, converted_args))
+            raise class_exception
+            log.exception(class_exception)
+            self.errors += [class_exception]
+
+        return converted_value
 
     def _converted_helper_brick_or_formula_element(self, arguments, block_name):
         preserved_args = self.arguments
@@ -2933,16 +2939,16 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "setGraphicEffect:to:")
     def _convert_set_graphic_effect_block(self):
         [effect_type, value] = self.arguments
-        if effect_type == 'brightness':
+        if effect_type == 'BRIGHTNESS':
             # range  Scratch:  -100 to 100  (default:   0)
             # range Catrobat:     0 to 200% (default: 100%)
             formula_elem = self._converted_helper_brick_or_formula_element([value, 100], "+")
             return catbricks.SetBrightnessBrick(catrobat.create_formula_with_value(formula_elem))
-        elif effect_type == 'ghost':
+        elif effect_type == 'GHOST':
             # range  Scratch:     0 to 100  (default:   0)
             # range Catrobat:     0 to 100% (default:   0%)
             return catbricks.SetTransparencyBrick(catrobat.create_formula_with_value(value))
-        elif effect_type == 'color':
+        elif effect_type == 'COLOR':
             # range  Scratch:     0 to 200  (default:   0)
             # range Catrobat:     0 to 200% (default:   0%)
             return catbricks.SetColorBrick(catrobat.create_formula_with_value(value))
@@ -2952,16 +2958,16 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "changeGraphicEffect:by:")
     def _convert_change_graphic_effect_block(self):
         [effect_type, value] = self.arguments
-        if effect_type == 'brightness':
+        if effect_type == 'BRIGHTNESS':
             # range  Scratch:  -100 to 100  (default:   0)
             # range Catrobat:     0 to 200% (default: 100%)
             # since ChangeBrightnessByNBrick adds increment -> no range-conversion needed
             return catbricks.ChangeBrightnessByNBrick(catrobat.create_formula_with_value(value))
-        elif effect_type == 'ghost':
+        elif effect_type == 'GHOST':
             # range  Scratch:     0 to 100  (default:   0)
             # range Catrobat:     0 to 100% (default:   0%)
             return catbricks.ChangeTransparencyByNBrick(catrobat.create_formula_with_value(value))
-        elif effect_type == 'color':
+        elif effect_type == 'COLOR':
             # range  Scratch:     0 to 200  (default:   0)
             # range Catrobat:     0 to 200% (default:   0%)
             return catbricks.ChangeColorByNBrick(catrobat.create_formula_with_value(value))

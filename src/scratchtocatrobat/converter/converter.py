@@ -418,11 +418,16 @@ class _ScratchToCatrobat(object):
             catbricks.CameraBrick(int(status.lower() != 'off'))
         ],
 
-        "changeGraphicEffect:by:": None,
+        "changeGraphicEffect:by:": lambda effect_type, value:
+        catbricks.ChangeBrightnessByNBrick if effect_type == 'BRIGHTNESS' else
+        catbricks.ChangeTransparencyByNBrick if effect_type == 'GHOST' else
+        catbricks.ChangeColorByNBrick if effect_type == 'COLOR' else
+        _placeholder_for_unmapped_blocks_to("changeGraphicEffect:by:", effect_type, value),
         "setGraphicEffect:to:": lambda effect_type, value:
-            catbricks.SetBrightnessBrick(value) if effect_type == 'brightness' else
-            catbricks.SetTransparencyBrick(value) if effect_type == 'ghost' else
-            _placeholder_for_unmapped_blocks_to("setGraphicEffect:to:", effect_type, value),
+        catbricks.SetBrightnessBrick if effect_type == 'BRIGHTNESS' else
+        catbricks.SetTransparencyBrick if effect_type == 'GHOST' else
+        catbricks.SetColorBrick if effect_type == 'COLOR' else
+        _placeholder_for_unmapped_blocks_to("setGraphicEffect:to:", effect_type, value),
         "filterReset": catbricks.ClearGraphicEffectBrick,
         "changeSizeBy:": catbricks.ChangeSizeByNBrick,
         "setSizeTo:": catbricks.SetSizeToBrick,
@@ -2933,16 +2938,16 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "setGraphicEffect:to:")
     def _convert_set_graphic_effect_block(self):
         [effect_type, value] = self.arguments
-        if effect_type == 'brightness':
+        if effect_type == 'BRIGHTNESS':
             # range  Scratch:  -100 to 100  (default:   0)
             # range Catrobat:     0 to 200% (default: 100%)
             formula_elem = self._converted_helper_brick_or_formula_element([value, 100], "+")
             return catbricks.SetBrightnessBrick(catrobat.create_formula_with_value(formula_elem))
-        elif effect_type == 'ghost':
+        elif effect_type == 'GHOST':
             # range  Scratch:     0 to 100  (default:   0)
             # range Catrobat:     0 to 100% (default:   0%)
             return catbricks.SetTransparencyBrick(catrobat.create_formula_with_value(value))
-        elif effect_type == 'color':
+        elif effect_type == 'COLOR':
             # range  Scratch:     0 to 200  (default:   0)
             # range Catrobat:     0 to 200% (default:   0%)
             return catbricks.SetColorBrick(catrobat.create_formula_with_value(value))
@@ -2952,16 +2957,16 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
     @_register_handler(_block_name_to_handler_map, "changeGraphicEffect:by:")
     def _convert_change_graphic_effect_block(self):
         [effect_type, value] = self.arguments
-        if effect_type == 'brightness':
+        if effect_type == 'BRIGHTNESS':
             # range  Scratch:  -100 to 100  (default:   0)
             # range Catrobat:     0 to 200% (default: 100%)
             # since ChangeBrightnessByNBrick adds increment -> no range-conversion needed
             return catbricks.ChangeBrightnessByNBrick(catrobat.create_formula_with_value(value))
-        elif effect_type == 'ghost':
+        elif effect_type == 'GHOST':
             # range  Scratch:     0 to 100  (default:   0)
             # range Catrobat:     0 to 100% (default:   0%)
             return catbricks.ChangeTransparencyByNBrick(catrobat.create_formula_with_value(value))
-        elif effect_type == 'color':
+        elif effect_type == 'COLOR':
             # range  Scratch:     0 to 200  (default:   0)
             # range Catrobat:     0 to 200% (default:   0%)
             return catbricks.ChangeColorByNBrick(catrobat.create_formula_with_value(value))

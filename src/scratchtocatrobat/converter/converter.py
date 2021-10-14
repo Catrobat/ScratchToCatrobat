@@ -2379,53 +2379,54 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
 
     def _regular_block_conversion(self):
         CatrobatClass = self.CatrobatClass
-        # TODO: replace with UnmappedBlock as a None object
-        if CatrobatClass is not None:
-            is_catrobat_enum = not hasattr(CatrobatClass, "__module__") and hasattr(CatrobatClass, "getClass")
-            self.arguments = _with_unmapped_blocks_replaced_as_default_formula_value(self.arguments)
-            for try_number in range(6):
-                try:
-                    # TODO: simplify
-                    if try_number == 0:
-                        converted_args = [(common.int_or_float(arg) or arg if isinstance(arg, (str, unicode)) else arg) for arg in self.arguments]
-                    elif try_number == 1:
-                        def handleBoolean(arg):
-                            if isinstance(arg, bool):
-                                return int(arg)
-                            else:
-                                return arg
 
-                        converted_args = [catformula.FormulaElement(catElementType.NUMBER, str(handleBoolean(arg)), None) if isinstance(arg, numbers.Number) else arg for arg in converted_args]  # @UndefinedVariable
-                    elif try_number == 4:
-                        converted_args = self.arguments
-                    elif try_number == 2:
-                        args = [arg if arg != None else "" for arg in self.arguments]
-                        converted_args = [catrobat.create_formula_with_value(arg) for arg in args]
-                    elif try_number == 3:
-                        if len(self.arguments) == 2 and self.arguments[0] in { "brightness", "color", "ghost" }:
-                            converted_args = [self.arguments[0]] + [catrobat.create_formula_with_value(arg) for arg in self.arguments[1:]]
-
-                    if not is_catrobat_enum:
-                        converted_value = CatrobatClass(*converted_args)
-                    else:
-                        converted_value = catrobat.formula_element_for(CatrobatClass, converted_args)
-                    assert converted_value, "No result for {} with args {}".format(self.block_name, converted_args)
-                    break
-                except (TypeError) as e:
-                    log.debug("instantiation try %d failed for class: %s, raw_args: %s, Catroid args: %s",
-                              try_number, CatrobatClass, self.arguments, map(catrobat.simple_name_for, converted_args))
-                    class_exception = e
-            else:
-                log.error("General instantiation failed for class: %s, raw_args: %s, Catroid args: %s",
-                          CatrobatClass, self.arguments, map(catrobat.simple_name_for, converted_args))
-                raise class_exception
-                log.exception(class_exception)
-                self.errors += [class_exception]
-            new_stack_values = converted_value
-        else:
+        if CatrobatClass is None:
             log.debug("no Class for: %s, args: %s", self.block_name, map(catrobat.simple_name_for, self.arguments))
-            new_stack_values = UnmappedBlock(self.sprite, *([self.block_name] + self.arguments))
-        return new_stack_values
+            return UnmappedBlock(self.sprite, *([self.block_name] + self.arguments))
+
+        is_catrobat_enum = not hasattr(CatrobatClass, "__module__") and hasattr(CatrobatClass, "getClass")
+        self.arguments = _with_unmapped_blocks_replaced_as_default_formula_value(self.arguments)
+
+        for try_number in range(4):
+            try:
+                if try_number == 0:
+                    converted_args = [(common.int_or_float(arg) or arg if isinstance(arg, (str, unicode)) else arg) for arg in self.arguments]
+
+                elif try_number == 1:
+                    def handleBoolean(arg):
+                        if isinstance(arg, bool):
+                            return int(arg)
+                        else:
+                            return arg
+
+                    converted_args = [catformula.FormulaElement(catElementType.NUMBER, str(handleBoolean(arg)), None) if isinstance(arg, numbers.Number) else arg for arg in converted_args]  # @UndefinedVariable
+
+                elif try_number == 2:
+                    args = [arg if arg != None else "" for arg in self.arguments]
+                    converted_args = [catrobat.create_formula_with_value(arg) for arg in args]
+
+                elif try_number == 3:
+                    converted_args = self.arguments
+
+                if not is_catrobat_enum:
+                    converted_value = CatrobatClass(*converted_args)
+                else:
+                    converted_value = catrobat.formula_element_for(CatrobatClass, converted_args)
+
+                assert converted_value, "No result for {} with args {}".format(self.block_name, converted_args)
+                break
+            except TypeError as e:
+                log.debug("instantiation try %d failed for class: %s, raw_args: %s, Catroid args: %s",
+                          try_number, CatrobatClass, self.arguments, map(catrobat.simple_name_for, converted_args))
+                class_exception = e
+        else:
+            log.error("General instantiation failed for class: %s, raw_args: %s, Catroid args: %s",
+                      CatrobatClass, self.arguments, map(catrobat.simple_name_for, converted_args))
+            raise class_exception
+            log.exception(class_exception)
+            self.errors += [class_exception]
+
+        return converted_value
 
     def _converted_helper_brick_or_formula_element(self, arguments, block_name):
         preserved_args = self.arguments

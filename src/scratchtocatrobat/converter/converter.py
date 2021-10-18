@@ -2033,6 +2033,10 @@ class _ScratchObjectConverter(object):
                 set_rotation_style_brick = traverser._converted_helper_brick_or_formula_element([rotation_style], "setRotationStyle")
                 assert set_rotation_style_brick is not None
                 implicit_bricks_to_add += [set_rotation_style_brick]
+            elif rotation_style == "all around":
+                set_rotation_style_brick = traverser._converted_helper_brick_or_formula_element([rotation_style], "setRotationStyle")
+                assert set_rotation_style_brick is not None
+                implicit_bricks_to_add += [set_rotation_style_brick]
 
         # initialization of object's variables
         for scratch_variable in scratch_object.get_variables():

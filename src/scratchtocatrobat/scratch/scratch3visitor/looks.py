@@ -87,8 +87,12 @@ def visitCostumenumbername(blockcontext):
 def visitBackdropnumbername(blockcontext):
     block = blockcontext.block
     name_number = block.fields["NUMBER_NAME"][0]
-    log.warn("[Scratch3] block {} ({}) possibly not available in Scratch2".format(blockcontext.block.opcode, blockcontext.block.name))
-    return ["sceneNamePlaceholder"] #TODO: implement properly
+    if name_number == "number":
+        return ["backgroundIndex"]
+    if name_number == "name":
+        return ["sceneName"]
+
+    return ["sceneNamePlaceholder"]
 
 def visitSize(blockcontext):
     return ["scale"]

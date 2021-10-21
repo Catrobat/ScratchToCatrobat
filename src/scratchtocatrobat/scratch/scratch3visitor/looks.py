@@ -33,7 +33,7 @@ def visitSwitchbackdropto(blockcontext):
     return ["startScene", backdrop]
 
 def visitNextbackdrop(blockcontext):
-    return ["nextCostume"]
+    return ["nextScene"]
 
 def visitChangesizeby(blockcontext):
     size = visitGeneric(blockcontext, "CHANGE")

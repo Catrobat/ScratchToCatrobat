@@ -242,11 +242,16 @@ class Object(common.DictAccessWrapper):
         for script in self.scripts:
             for blocks in script.blocks:
                 if isinstance(blocks, list) and len(blocks) >= 2:
-                    if not self.is_stage() and isinstance(blocks[1], basestring) and 'backdrop' in blocks[1]:
+                    if not self.is_stage() and isinstance(blocks[1], basestring) and blocks[1] in {'next backdrop', 'previous backdrop', 'random backdrop'}:
                         blocks[0] = 'broadcast:'
                         workaround_info[ADD_BACKDROP_RECEIVE].add(blocks[1])
                     elif self.is_stage() and blocks[1] == 'random backdrop':
                         blocks[1] = ['randomFrom:to:', 1.0, float(len(self._dict_object[JsonKeys.COSTUMES]))]
+                # workaround for the next backdrop scratch block
+                if len(blocks) == 1 and not self.is_stage() and 'nextScene' in blocks[0]:
+                    blocks.append('next backdrop')
+                    blocks[0] = 'broadcast:'
+                    workaround_info[ADD_BACKDROP_RECEIVE].add(blocks[1])
             script.script_element = script.script_element.from_raw_block(script.blocks)
 
         ############################################################################################

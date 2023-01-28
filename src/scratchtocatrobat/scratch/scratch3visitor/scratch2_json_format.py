@@ -169,6 +169,13 @@ class Scratch3_2Opcodes(object):
     OPERATOR_OR = "operator_or"
     OPERATOR_LENGTH = "operator_length"
 
+    # music #
+    MUSIC_PLAY_DRUM_FOR_BEATS = "music_playDrumForBeats"
+    MUSIC_MENU_DRUM = "music_menu_DRUM"
+    MUSIC_PLAY_NOTE_FOR_BEATS = "music_playNoteForBeats"
+    NOTE = "note"
+    MUSIC_CHANGE_TEMPO = "music_changeTempo"
+
     # not supported block #
     NOT_SUPPORTED = "not_supported_block"
 
@@ -323,6 +330,12 @@ class Scratch3_2Opcodes(object):
         OPERATOR_CONTAINS: "contains:",
         OPERATOR_OR: "|",
         OPERATOR_LENGTH: "stringLength:",
+
+        # music #
+        MUSIC_PLAY_DRUM_FOR_BEATS: "drum:duration:elapsed:from:",
+        MUSIC_PLAY_NOTE_FOR_BEATS: "noteOn:duration:elapsed:from:",
+        MUSIC_CHANGE_TEMPO: "changeTempoBy:",
+
 
         ### not suported block ###
         NOT_SUPPORTED: "note:",

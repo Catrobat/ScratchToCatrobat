@@ -32,6 +32,7 @@ from codecs import open
 from org.catrobat.catroid import ProjectManager
 import org.catrobat.catroid.common as catcommon
 import org.catrobat.catroid.content as catbase
+from org.catrobat.catroid.content.bricks.brickspinner import PickableDrum
 from org.catrobat.catroid.ui.fragment import SpriteFactory
 import org.catrobat.catroid.content.bricks as catbricks
 import org.catrobat.catroid.formulaeditor as catformula
@@ -437,6 +438,10 @@ class _ScratchToCatrobat(object):
         "stopAllSounds": catbricks.StopAllSoundsBrick,
         "changeVolumeBy:": catbricks.ChangeVolumeByNBrick,
         "setVolumeTo:": catbricks.SetVolumeToBrick,
+
+        # music
+        "drum:duration:elapsed:from:": catbricks.PlayDrumForBeatsBrick,
+        "noteOn:duration:elapsed:from:": catbricks.PlayNoteForBeatsBrick,
 
         # bubble bricks
         "say:duration:elapsed:from:": catbricks.SayForBubbleBrick,
@@ -2858,6 +2863,7 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             deleteItemBrick.setFormulaWithBrickField(catbricks.Brick.BrickField.LIST_DELETE_ITEM, index_formula)
 
             return deleteItemBrick
+
         if position == "all":
             loop_condition_formula = catrobat.create_formula_with_value(self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:"))
             catr_loop_start_brick = catbricks.RepeatBrick(loop_condition_formula)
@@ -3436,3 +3442,28 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
         if isinstance(arg, (str, unicode)) or isinstance(arg, catformula.Formula):
             return self.CatrobatClass(arg)
         log.warn("Invalid argument for NoteBrick: " + arg)
+
+    @_register_handler(_block_name_to_handler_map, "drum:duration:elapsed:from:")
+    def _convert_play_drum_for_beats_block(self):
+        [drum, duration] = self.arguments
+
+        try:
+            drum_int = int(drum)
+        except ValueError:
+            log.debug("There is no integer in DRUM")
+            return
+
+        drum_selection = PickableDrum.values()[drum_int - 1]
+        assert drum_selection is not None
+
+        play_drum_brick = self.CatrobatClass(catformula.Formula(duration))
+        play_drum_brick.drumSelection = drum_selection
+
+        return play_drum_brick
+
+    @_register_handler(_block_name_to_handler_map, "noteOn:duration:elapsed:from:")
+    def _convert_play_note_for_beats_block(self):
+        [note, duration] = self.arguments
+
+        play_note_brick = self.CatrobatClass(catformula.Formula(note), catformula.Formula(duration))
+        return play_note_brick

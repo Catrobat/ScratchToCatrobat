@@ -46,12 +46,12 @@ assert System.getProperty("python.security.respectJavaAccessibility") == 'false'
 TEST_PROJECT_URL_TO_ID_MAP = {
     # These projects are all Scratch3 projects now.
     'https://scratch.mit.edu/projects/390299427/':   '390299427',  # dance back
-    # FIXME: fails with error 'http://scratch.mit.edu/projects/10189712/': '10189712',  # kick the ball
+    'https://scratch.mit.edu/projects/10189712/':    '10189712',  # kick the ball
     'https://scratch.mit.edu/projects/390300019/':   '390300019',  # dancing in the castle
     'https://scratch.mit.edu/projects/390300135/':   '390300135',  # cat has message
     'https://scratch.mit.edu/projects/390300261/':   '390300261',  # jai ho!
-    'https://scratch.mit.edu/projects/390300374/':  '390300374',  # simple memory
-    'https://scratch.mit.edu/projects/390300542/':  '390300542',  # same image, different objects
+    'https://scratch.mit.edu/projects/390300374/':   '390300374',  # simple memory
+    'https://scratch.mit.edu/projects/390300542/':   '390300542',  # same image, different objects
 }
 TEST_PROJECT_FILENAME_TO_ID_MAP = {
     'dancing_castle.zip': '390300019',
@@ -153,6 +153,11 @@ class ProjectTestCase(BaseTestCase):
                     except:
                         self.fail("Expection '{}' with url '{}'".format(sys.exc_info()[0], xml_node.text))
 
+    def assertSoundAndLookProgramStructure(self, file_names, directory):
+        for node in file_names:
+            path = os.path.join(directory, node.text)
+            assert os.path.exists(path), "Missing: {}, available files: {}".format(repr(path), os.listdir(os.path.dirname(path)))
+
     def assertValidCatrobatProgramStructure(self, project_path, project_name):
         project_xml_path = os.path.join(project_path, catrobat.PROGRAM_SOURCE_FILE_NAME)
         with open(project_xml_path) as fp:
@@ -168,16 +173,11 @@ class ProjectTestCase(BaseTestCase):
         catrobat_version_from_xml = root.find("header/catrobatLanguageVersion")
         assert float(catrobat_version_from_xml.text) > 0.0
 
-        # TODO: refactor duplication
         sounds_dir = converter.ConvertedProject._sounds_dir_of_project(project_path)
-        for node in root.findall('.//sound/fileName'):
-            sound_path = os.path.join(sounds_dir, node.text)
-            assert os.path.exists(sound_path)
+        self.assertSoundAndLookProgramStructure(root.findall('.//sound/fileName'), sounds_dir)
 
         images_dir = converter.ConvertedProject._images_dir_of_project(project_path)
-        for node in root.findall('.//look/fileName'):
-            image_path = os.path.join(images_dir, node.text)
-            assert os.path.exists(image_path), "Missing: {}, available files: {}".format(repr(image_path), os.listdir(os.path.dirname(image_path)))
+        self.assertSoundAndLookProgramStructure(root.findall('.//look/fileName'), images_dir)
 
     def assertValidCatrobatProgramPackageAndUnpackIf(self, zip_path, project_name, unused_scratch_resources=None):
         if unused_scratch_resources is None:

@@ -1,171 +1,171 @@
 import looks, motion, event, sensing, sound, operator, control, data, pen
+from scratchtocatrobat.scratch.scratch3visitor.scratch2_json_format import Scratch3_2Opcodes as opcodes
+
 visitormap = {
     ### event blocks ####
-    "event_whenflagclicked" : event.visitWhenflagclicked, #tested
-    "event_broadcast" : event.visitBroadcast, #tested
-    "event_broadcastandwait" : event.visitBroadcastandwait, #tested
-    "event_whenkeypressed" : event.visitWhenkeypressed, #tested
-    "event_whenthisspriteclicked" : event.visitWhenthisspriteclicked, #tested
-    "event_whengreaterthan" : event.visitWhengreaterthan, #tested
-    "event_whenbackdropswitchesto" : event.visitWhenbackdropswitchesto, #tested
-    "event_whenbroadcastreceived" : event.visitWhenbroadcastreceived, #tested
+    opcodes.FLAG_CLICKED: event.visitWhenflagclicked,  # tested
+    opcodes.BROADCAST: event.visitBroadcast,  # tested
+    opcodes.BROADCAST_AND_WAIT: event.visitBroadcastandwait,  # tested
+    opcodes.KEY_PRESSED: event.visitWhenkeypressed,  # tested
+    opcodes.SPRITE_CLICKED: event.visitWhenthisspriteclicked,  # tested
+    opcodes.GREATER_THAN: event.visitWhengreaterthan,  # tested
+    opcodes.BACKDROP_SWITCHED_TO: event.visitWhenbackdropswitchesto,  # tested
+    opcodes.BROADCAST_RECEIVED: event.visitWhenbroadcastreceived,  # tested
 
     ### motion blocks ####
-    "motion_movesteps" : motion.visitMovesteps, #tested
-    "motion_turnright" : motion.visitTurnright, #tested
-    "motion_turnleft" : motion.visitTurnleft,#tested
-    "motion_goto" : motion.visitGoto,#tested
-    "motion_gotoxy" : motion.visitGotoxy,#tested
-    "motion_glideto" : motion.visitGlideto,#tested
-    "motion_glidesecstoxy" : motion.visitGlidesecstoxy,#tested
-    "motion_pointindirection" : motion.visitPointindirection,#tested
-    "motion_pointtowards" : motion.visitPointtowards,#tested
-    "motion_changexby" : motion.visitChangexby,#tested
-    "motion_setx" : motion.visitSetx,#tested
-    "motion_changeyby" : motion.visitChangeyby,#tested
-    "motion_sety" : motion.visitSety,#tested
-    "motion_ifonedgebounce" : motion.visitIfonedgebounce,#tested
-    "motion_setrotationstyle" : motion.visitSetrotationstyle,#tested
-    "motion_goto_menu" : motion.visitGoto_menu,#tested
-    "motion_glideto_menu" : motion.visitGlideto_menu,#tested
-    "motion_pointtowards_menu" : motion.visitPointtowards_menu,#tested
-    "motion_direction" : motion.visitDirection,#tested
-    "motion_yposition" : motion.visitYposition,#tested
-    "motion_xposition" : motion.visitXposition,#tested
+    opcodes.MOTION_MOVE_STEPS: motion.visitMovesteps,  # tested
+    opcodes.MOTION_TURN_RIGHT: motion.visitTurnright,  # tested
+    opcodes.MOTION_TURN_LEFT: motion.visitTurnleft,  # tested
+    opcodes.MOTION_GOTO: motion.visitGoto,  # tested
+    opcodes.MOTION_GOTO_XY: motion.visitGotoxy,  # tested
+    opcodes.MOTION_GLIDE_TO: motion.visitGlideto,  # tested
+    opcodes.MOTION_GLIDE_SECS_TO_XY: motion.visitGlidesecstoxy,  # tested
+    opcodes.MOTION_POINT_IN_DIR: motion.visitPointindirection,  # tested
+    opcodes.MOTION_POINT_TOWARDS: motion.visitPointtowards,  # tested
+    opcodes.MOTION_CHANGE_BY_XY: motion.visitChangexby,  # tested
+    opcodes.MOTION_SET_X: motion.visitSetx,  # tested
+    opcodes.MOTION_CHANGE_Y_BY: motion.visitChangeyby,  # tested
+    opcodes.MOTION_SET_Y: motion.visitSety,  # tested
+    opcodes.MOTION_BOUNCE_OFF_EDGE: motion.visitIfonedgebounce,  # tested
+    opcodes.MOTION_SET_ROTATIONSTYLE: motion.visitSetrotationstyle,  # tested
+    opcodes.MOTION_GOTO_MENU: motion.visitGoto_menu,  # tested
+    opcodes.MOTION_GLIDE_TO_MENU: motion.visitGlideto_menu,  # tested
+    opcodes.MOTION_POINT_TOWARDS_MENU: motion.visitPointtowards_menu,  # tested
+    opcodes.MOTION_DIR: motion.visitDirection,  # tested
+    opcodes.MOTION_Y_POS: motion.visitYposition,  # tested
+    opcodes.MOTION_X_POS: motion.visitXposition,  # tested
 
     ### look blocks ####
-    "looks_sayforsecs" : looks.visitSayforsecs,#tested
-    "looks_say" : looks.visitSay,#tested
-    "looks_thinkforsecs" : looks.visitThinkforsecs,#tested
-    "looks_think" : looks.visitThink,#tested
-    "looks_switchcostumeto" : looks.visitSwitchcostumeto,#tested
-    "looks_nextcostume" : looks.visitNextcostume,#tested
-    "looks_switchbackdropto" : looks.visitSwitchbackdropto,#tested
-    "looks_nextbackdrop" : looks.visitNextbackdrop,#tested
-    "looks_changesizeby" : looks.visitChangesizeby,#tested
-    "looks_setsizeto" : looks.visitSetsizeto,#tested
-    "looks_changeeffectby" : looks.visitChangeeffectby,#tested
-    "looks_seteffectto" : looks.visitSeteffectto,#tested
-    "looks_cleargraphiceffects" : looks.visitCleargraphiceffects,#tested
-    "looks_show" : looks.visitShow,#tested
-    "looks_hide" : looks.visitHide,#tested
-    "looks_gotofrontback" : looks.visitGotofrontback,#tested
-    "looks_goforwardbackwardlayers" : looks.visitGoforwardbackwardlayers, #tested by fleischhacker
-    "looks_costume" : looks.visitCostume, #tested
-    "looks_backdrops" : looks.visitBackdrops, #tested
-    "looks_costumenumbername" : looks.visitCostumenumbername, #tested
-    "looks_size" : looks.visitSize,#tested
-    "looks_backdropnumbername" : looks.visitBackdropnumbername,
+    opcodes.LOOKS_SAY_FOR_SECS: looks.visitSayforsecs,  # tested
+    opcodes.LOOKS_SAY: looks.visitSay,  # tested
+    opcodes.LOOKS_THINK_FOR_SECS: looks.visitThinkforsecs,  # tested
+    opcodes.LOOKS_THINK: looks.visitThink,  # tested
+    opcodes.LOOKS_SWITCH_COSTUME_TO: looks.visitSwitchcostumeto,  # tested
+    opcodes.LOOKS_NEXT_COSTUME: looks.visitNextcostume,  # tested
+    opcodes.LOOKS_SWITCH_BACKDROP_TO: looks.visitSwitchbackdropto,  # tested
+    opcodes.LOOKS_NEXT_BACKDROP: looks.visitNextbackdrop,  # tested
+    opcodes.LOOKS_CHANGE_SIZE_BY: looks.visitChangesizeby,  # tested
+    opcodes.LOOKS_SET_SIZE_TO: looks.visitSetsizeto,  # tested
+    opcodes.LOOKS_CHANGE_EFFECT_BY: looks.visitChangeeffectby,  # tested
+    opcodes.LOOKS_SET_EFFECT_TO: looks.visitSeteffectto,  # tested
+    opcodes.LOOKS_CLEAR_EFFECTS: looks.visitCleargraphiceffects,  # tested
+    opcodes.LOOKS_SHOW: looks.visitShow,  # tested
+    opcodes.LOOKS_HIDE: looks.visitHide,  # tested
+    opcodes.LOOKS_GOTO_FRONT_BACK: looks.visitGotofrontback,  # tested
+    opcodes.LOOKS_FORWARD_BACKWARD_LAYERS: looks.visitGoforwardbackwardlayers,  # tested by fleischhacker
+    opcodes.LOOKS_COSTUME: looks.visitCostume,  # tested
+    opcodes.LOOKS_BACKDROPS: looks.visitBackdrops,  # tested
+    opcodes.LOOKS_COSTUME_NUMBER_NAME: looks.visitCostumenumbername,  # tested
+    opcodes.LOOKS_SIZE: looks.visitSize,  # tested
+    opcodes.LOOKS_BACK_DROP_NUMBER_NAME: looks.visitBackdropnumbername,
 
     ### sound blocks ####
-    "sound_play" : sound.visitPlay,#tested
-    "sound_playuntildone" : sound.visitPlayuntildone,#tested
-    "sound_stopallsounds" : sound.visitStopallsounds,#tested
-    "sound_changeeffectby" : sound.visitChangeeffectby, # TODO not implemented in catrobat yet
-    "sound_seteffectto" : sound.visitSeteffectto, # TODO not implemented in catrobat yet
-    "sound_cleareffects" : sound.visitCleareffects, # TODO not implemented in scratch2, workaroundq
-    "sound_changevolumeby" : sound.visitChangevolumeby,#tested
-    "sound_setvolumeto" : sound.visitSetvolumeto,#tested
-    "sound_sounds_menu" : sound.visitSounds_menu, #tested
-    "sound_volume" : sound.visitVolume,#tested
+    opcodes.SOUNDS_PLAY: sound.visitPlay,  # tested
+    opcodes.SOUNDS_PLAY_UNTIL_DONE: sound.visitPlayuntildone,  # tested
+    opcodes.SOUNDS_STOP_ALL: sound.visitStopallsounds,  # tested
+    "sound_changeeffectby": sound.visitChangeeffectby,  # TODO not implemented in catrobat yet
+    "sound_seteffectto": sound.visitSeteffectto,  # TODO not implemented in catrobat yet
+    "sound_cleareffects": sound.visitCleareffects,  # TODO not implemented in scratch2, workaroundq
+    opcodes.SOUNDS_CHANGE_VOLUME_BY: sound.visitChangevolumeby,  # tested
+    opcodes.SOUNDS_SET_VOLUME_TO: sound.visitSetvolumeto,  # tested
+    opcodes.SOUNDS_MENU: sound.visitSounds_menu,  # tested
+    opcodes.SOUNDS_VOLUME: sound.visitVolume,  # tested
 
     ### control blocks ####
-    "control_wait" : control.visitWait,#tested
-    "control_repeat" : control.visitRepeat,#tested
-    "control_if" : control.visitIf,#tested
-    "control_if_else" : control.visitIf_else,#tested
-    "control_wait_until" : control.visitWait_until,#tested
-    "control_repeat_until" : control.visitRepeat_until,#tested
-    "control_create_clone_of" : control.visitCreate_clone_of,#tested
-    "control_create_clone_of_menu" : control.visitCreate_clone_of_menu, #tested
-    "control_stop" : control.visitStop,#tested
-    "control_start_as_clone" : control.visitStart_as_clone,#tested
-    "control_forever" : control.visitForever,#tested
-    "control_delete_this_clone" : control.visitDelete_this_clone,#tested
-    "procedures_call" : control.visitProcedures_call, #tested
-    "procedures_definition" : control.visitProcedures_definition, #tested
-    "argument_reporter_string_number" : control.visitArgumentIntOrString, #tested
-    "argument_reporter_boolean" : control.visitArgumentBool, #tested
-    "procedures_prototype" : control.visitProcedures_prototype, #tested
+    opcodes.CONTROL_WAIT: control.visitWait,  # tested
+    opcodes.CONTROL_REPEAT: control.visitRepeat,  # tested
+    opcodes.CONTROL_IF: control.visitIf,  # tested
+    opcodes.CONTROL_IF_ELSE: control.visitIf_else,  # tested
+    opcodes.CONTROL_WAIT_UNTIL: control.visitWait_until,  # tested
+    opcodes.CONTROL_REPEAT_UNTIL: control.visitRepeat_until,  # tested
+    opcodes.CONTROL_CREATE_CLONE_OF: control.visitCreate_clone_of,  # tested
+    opcodes.CONTROL_CREATE_CLONE_OF_MENU: control.visitCreate_clone_of_menu,  # tested
+    opcodes.CONTROL_STOP: control.visitStop,  # tested
+    opcodes.CONTROL_START_AS_CLONE: control.visitStart_as_clone,  # tested
+    opcodes.CONTROL_FOREVER: control.visitForever,  # tested
+    opcodes.CONTROL_DELETE_THIS_CLONE: control.visitDelete_this_clone,  # tested
+    opcodes.CONTROL_PROCEDURES_CALL: control.visitProcedures_call,  # tested
+    opcodes.CONTROL_PROCEDURES_DEFINITION: control.visitProcedures_definition,  # tested
+    opcodes.CONTROL_ARGUMENT_REPORTER_STRING: control.visitArgumentIntOrString,  # tested
+    opcodes.CONTROL_ARGUMENT_REPORTER_BOOL: control.visitArgumentBool,  # tested
+    opcodes.CONTROL_PROCEDURES_PROTOTYPE: control.visitProcedures_prototype,  # tested
 
     ### sensing blocks ####
-    "sensing_askandwait" : sensing.visitAskandwait,#tested
-    "sensing_setdragmode" : sensing.visitSetdragmode,#tested
-    "sensing_resettimer" : sensing.visitResettimer,#tested
-    "sensing_distanceto" : sensing.visitDistanceto,#tested
-    "sensing_distancetomenu" : sensing.visitDistanceto_menu, #tested
-    "sensing_loudness" : sensing.visitLoudness,#tested
-    "sensing_coloristouchingcolor" : sensing.visitColoristouchingcolor,#tested
-    "sensing_of" : sensing.visitOf,#tested
-    "sensing_current" : sensing.visitCurrent,#tested
-    "sensing_answer" : sensing.visitAnswer,#tested
-    "sensing_dayssince2000" : sensing.visitDayssince2000,#tested
-    "sensing_keypressed" : sensing.visitKeypressed,#tested
-    "sensing_keyoptions" : sensing.visitKey_options,
-    "sensing_mousex" : sensing.visitMousex,#tested
-    "sensing_mousedown" : sensing.visitMousedown,#tested
-    "sensing_mousey" : sensing.visitMousey,#tested
-    "sensing_timer" : sensing.visitTimer,#tested
-    "sensing_touchingcolor" : sensing.visitTouchingcolor,#tested
-    "sensing_touchingobject" : sensing.visitTouchingObject,#tested
-    "sensing_currentmenu" : sensing.visitCurrent_menu, #tested
-    "sensing_touchingobjectmenu" : sensing.visitTouchingObjectMenu,#tested
-    "sensing_username" : sensing.visitUsername,#tested
-    "sensing_of_object_menu" : sensing.visitOf_object_menu, #tested
+    opcodes.SENSING_ASK_AND_WAIT: sensing.visitAskandwait,  # tested
+    opcodes.SENSING_SET_DRAG_MODE: sensing.visitSetdragmode,  # tested
+    opcodes.SENSING_RESET_TIMER: sensing.visitResettimer,  # tested
+    opcodes.SENSING_DISTANCE_TO: sensing.visitDistanceto,  # tested
+    opcodes.SENSING_TO_DISTANCE_MENU: sensing.visitDistanceto_menu,  # tested
+    opcodes.SENSING_LOUDNESS: sensing.visitLoudness,  # tested
+    opcodes.SENSING_COLOR_TOUCHING_COLOR: sensing.visitColoristouchingcolor,  # tested
+    opcodes.SENSING_OF: sensing.visitOf,  # tested
+    opcodes.SENSING_CURRENT: sensing.visitCurrent,  # tested
+    opcodes.SENSING_ANSWER: sensing.visitAnswer,  # tested
+    opcodes.SENSING_DAYS_SINCE_2000: sensing.visitDayssince2000,  # tested
+    opcodes.SENSING_KEYPRESSED: sensing.visitKeypressed,  # tested
+    opcodes.SENSING_KEY_OPTIONS: sensing.visitKey_options,
+    opcodes.SENSING_MOUSEX: sensing.visitMousex,  # tested
+    opcodes.SENSING_MOUSE_DOWN: sensing.visitMousedown,  # tested
+    opcodes.SENSING_MOUSEY: sensing.visitMousey,  # tested
+    opcodes.SENSING_TIMER: sensing.visitTimer,  # tested
+    opcodes.SENSING_TOUCHING_COLOR: sensing.visitTouchingcolor,  # tested
+    opcodes.SENSING_TOUCHING_OBJECT: sensing.visitTouchingObject,  # tested
+    opcodes.SENSING_CURRENT_MENU: sensing.visitCurrent_menu,  # tested
+    opcodes.SENSING_TOUCHING_OBJECT_MENU: sensing.visitTouchingObjectMenu,  # tested
+    opcodes.SENSING_USERNAME: sensing.visitUsername,  # tested
+    opcodes.SENSING_OF_OBJECT_MENU: sensing.visitOf_object_menu,  # tested
 
     ### operator blocks ####
-    "operator_subtract" : operator.visitSubtract,#tested
-    "operator_gt" : operator.visitGt,#tested
-    "operator_join" : operator.visitJoin,#tested
-    "operator_letter_of" : operator.visitLetter_of,#tested
-    "operator_lt" : operator.visitLt,#tested
-    "operator_not" : operator.visitNot,#tested
-    "operator_mod" : operator.visitMod,#tested
-    "operator_add" : operator.visitAdd,#tested
-    "operator_equals" : operator.visitEquals,#tested
-    "operator_mathop" : operator.visitMathop,#tested
-    "operator_and" : operator.visitAnd,#tested
-    "operator_round" : operator.visitRound,#tested
-    "operator_multiply" : operator.visitMultiply,#tested
-    "operator_random" : operator.visitRandom,#tested
-    "operator_divide" : operator.visitDivide,#tested
-    "operator_contains" : operator.visitContains,#tested
-    "operator_or" : operator.visitOr,#tested
-    "operator_length" : operator.visitLength,#tested
+    opcodes.OPERATOR_SUBSTRACT: operator.visitSubtract,  # tested
+    opcodes.OPERATOR_GREATER: operator.visitGt,  # tested
+    opcodes.OPERATOR_JOIN: operator.visitJoin,  # tested
+    opcodes.OPERATOR_LETTER_OF: operator.visitLetter_of,  # tested
+    opcodes.OPERATOR_LESS_THAN: operator.visitLt,  # tested
+    opcodes.OPERATOR_NOT: operator.visitNot,  # tested
+    opcodes.OPERATOR_MODULO: operator.visitMod,  # tested
+    opcodes.OPERATOR_ADD: operator.visitAdd,  # tested
+    opcodes.OPERATOR_EQUALS: operator.visitEquals,  # tested
+    opcodes.OPERATOR_MATH_OP: operator.visitMathop,  # tested
+    opcodes.OPERATOR_AND: operator.visitAnd,  # tested
+    opcodes.OPERATOR_ROUND: operator.visitRound,  # tested
+    opcodes.OPERATOR_MULTIPLY: operator.visitMultiply,  # tested
+    opcodes.OPERATOR_RANDOM: operator.visitRandom,  # tested
+    opcodes.OPERATOR_DIVIDE: operator.visitDivide,  # tested
+    opcodes.OPERATOR_CONTAINS: operator.visitContains,  # tested
+    opcodes.OPERATOR_OR: operator.visitOr,  # tested
+    opcodes.OPERATOR_LENGTH: operator.visitLength,  # tested
 
     ### data blocks ####
-    "data_addtolist" : data.visitAddtolist,#tested
-    "data_deleteoflist" : data.visitDeleteoflist,#tested
-    "data_insertatlist" : data.visitInsertatlist,#tested
-    "data_replaceitemoflist" : data.visitReplaceitemoflist,#tested
-    "data_itemoflist" : data.visitItemoflist,#tested
-    "data_itemnumoflist" : data.visitItemnumoflist,#tested
-    "data_lengthoflist" : data.visitLengthoflist,#tested
-    "data_listcontainsitem" : data.visitListcontainsitem,#tested
-    "data_showlist" : data.visitShowlist,#tested
-    "data_hidelist" : data.visitHidelist,#tested
-    "data_contentsoflist" : data.visitContentsoflist,#tested
-    "data_setvariableto" : data.visitSetvariableto,#tested
-    "data_changevariableby" : data.visitChangevariableby,#tested
-    "data_showvariable" : data.visitShowvariable,#tested
-    "data_hidevariable" : data.visitHidevariable,#tested
-
+    opcodes.DATA_ADD_TO_LIST: data.visitAddtolist,  # tested
+    opcodes.DATA_DELETE_OF_LIST: data.visitDeleteoflist,  # tested
+    opcodes.DATA_INSERT_AT_LIST: data.visitInsertatlist,  # tested
+    opcodes.DATA_REPLACE_ITEM_OF_LIST: data.visitReplaceitemoflist,  # tested
+    opcodes.DATA_ITEM_OF_LIST: data.visitItemoflist,  # tested
+    opcodes.DATA_ITEMNUM_OF_LIST: data.visitItemnumoflist,  # tested
+    opcodes.DATA_LENGTH_OF_LIST: data.visitLengthoflist,  # tested
+    opcodes.DATA_LIST_CONTAINS_ITEM: data.visitListcontainsitem,  # tested
+    opcodes.DATA_SHOW_LIST: data.visitShowlist,  # tested
+    opcodes.DATA_HIDE_LIST: data.visitHidelist,  # tested
+    opcodes.DATA_CONTENTS_OF_LIST: data.visitContentsoflist,  # tested
+    opcodes.DATA_SET_VARIABLE_TO: data.visitSetvariableto,  # tested
+    opcodes.DATA_CHANGE_VARIABLE_BY: data.visitChangevariableby,  # tested
+    opcodes.DATA_SHOW_VARIABLE: data.visitShowvariable,  # tested
+    opcodes.DATA_HIDE_VARIABLE: data.visitHidevariable,  # tested
 
     # TODO: While writing tests I noticed, that the pen blocks changed a bit now,
     # TODO: check if the conversion of those blocks is still correct / necessary.
     #### pen blocks ####
-    "pen_clear" : pen.visitClear,#tested
-    "pen_stamp" : pen.visitStamp,#tested
-    "pen_penDown" : pen.visitPenDown,#tested
-    "pen_penUp" : pen.visitPenUp,#tested
-    "pen_setPenColorToColor" : pen.visitSetPenColorToColor,#tested
-    "pen_changePenColorParamBy" : pen.visitChangePenColorParamBy,#tested
-    "pen_menu_colorParam" : pen.visitPen_menu_colorParam, #tested
-    "pen_setPenColorParamTo" : pen.visitSetPenColorParamTo, #tested
-    "pen_changePenSizeBy" : pen.visitChangePenSizeBy,#tested
-    "pen_setPenSizeTo" : pen.visitSetPenSizeTo,#tested
-    "pen_setPenShadeToNumber" : pen.visitSetPenShadeToNumber, #tested
-    "pen_changePenShadeBy" : pen.visitChangePenShadeByNumber, #tested
-    "pen_setPenHueToNumber" : pen.visitSetPenHueToNumber, #tested
+    opcodes.PEN_CLEAR: pen.visitClear,  # tested
+    opcodes.PEN_STAMP: pen.visitStamp,  # tested
+    opcodes.PEN_DOWN: pen.visitPenDown,  # tested
+    opcodes.PEN_UP: pen.visitPenUp,  # tested
+    opcodes.PEN_SET_COLOR: pen.visitSetPenColorToColor,  # tested
+    opcodes.PEN_CHANGE_COLOR: pen.visitChangePenColorParamBy,  # tested
+    opcodes.PEN_COLOR_PARAM_MENU: pen.visitPen_menu_colorParam,  # tested
+    opcodes.PEN_SET_PARAM: pen.visitSetPenColorParamTo,  # tested
+    opcodes.PEN_CHANGE_SIZE: pen.visitChangePenSizeBy,  # tested
+    opcodes.PEN_SET_SIZE: pen.visitSetPenSizeTo,  # tested
+    opcodes.PEN_SET_SHADE_TO_NUMBER: pen.visitSetPenShadeToNumber,  # tested
+    opcodes.PEN_CHANGE_PEN_SHADE_BY: pen.visitChangePenShadeByNumber,  # tested
+    opcodes.PEN_SET_PEN_HUE_TO_NUMBER: pen.visitSetPenHueToNumber,  # tested
 }
-

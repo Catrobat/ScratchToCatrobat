@@ -31,6 +31,7 @@ import org.catrobat.catroid.content.bricks as catbricks
 import org.catrobat.catroid.content.bricks.Brick as catbasebrick
 import org.catrobat.catroid.formulaeditor as catformula
 import org.catrobat.catroid.formulaeditor.FormulaElement.ElementType as catElementType
+from scratchtocatrobat.scratch.scratch3visitor.scratch2_json_format import Scratch3_2Opcodes as opcodes
 import xml.etree.cElementTree as ET
 
 from scratchtocatrobat.converter import catrobat, converter, mediaconverter
@@ -1417,6 +1418,57 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert formula_tree_value.leftChild == None
         assert formula_tree_value.rightChild == None
 
+    # drum:duration:elapsed:from:
+    def test_can_convert_play_drum_for_beats_block(self):
+        drum = 2
+        beats = 1.0
+        scratch_block = ["drum:duration:elapsed:from:", drum, beats]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.PlayDrumForBeatsBrick)
+
+        formula_tree_list_delete_item = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.PLAY_DRUM).formulaTree # @UndefinedVariable
+        assert formula_tree_list_delete_item.type == catformula.FormulaElement.ElementType.NUMBER
+        assert formula_tree_list_delete_item.value == str(beats)
+        assert catr_brick.drumSelection.value == 35
+
+    # noteOn:duration:elapsed:from:
+    def test_can_convert_play_note_for_beats_block(self):
+        note = 60.0
+        beats = 1.0
+        scratch_block = ["noteOn:duration:elapsed:from:", note, beats]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.PlayNoteForBeatsBrick)
+
+        formula_tree_list_delete_item = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.NOTE_TO_PLAY).formulaTree # @UndefinedVariable
+        assert formula_tree_list_delete_item.type == catformula.FormulaElement.ElementType.NUMBER
+        assert formula_tree_list_delete_item.value == str(note)
+
+        formula_tree_list_delete_item = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.BEATS_TO_PLAY_NOTE).formulaTree # @UndefinedVariable
+        assert formula_tree_list_delete_item.type == catformula.FormulaElement.ElementType.NUMBER
+        assert formula_tree_list_delete_item.value == str(beats)
+
+    # changeTempoBy:
+    def test_can_convert_change_tempo_by_block(self):
+        tempo = 20.0
+        scratch_block = ["changeTempoBy:", tempo]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.ChangeTempoByNBrick)
+
+        formula_tree_list_delete_item = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.TEMPO_CHANGE).formulaTree # @UndefinedVariable
+        assert formula_tree_list_delete_item.type == catformula.FormulaElement.ElementType.NUMBER
+        assert formula_tree_list_delete_item.value == str(tempo)
+
+    # setTempoTo:
+    def test_can_convert_set_tempo_to_block(self):
+        tempo = 20.0
+        scratch_block = ["setTempoTo:", tempo]
+        [catr_brick] = self.block_converter._catrobat_bricks_from(scratch_block, DUMMY_CATR_SPRITE)
+        assert isinstance(catr_brick, catbricks.SetTempoBrick)
+
+        formula_tree_list_delete_item = catr_brick.getFormulaWithBrickField(catbasebrick.BrickField.TEMPO).formulaTree # @UndefinedVariable
+        assert formula_tree_list_delete_item.type == catformula.FormulaElement.ElementType.NUMBER
+        assert formula_tree_list_delete_item.value == str(tempo)
+
     # deleteLine:ofList:
     def test_can_convert_delete_line_from_list_by_index_block(self):
         index = 2
@@ -1470,7 +1522,6 @@ class TestConvertBlocks(common_testing.BaseTestCase):
         assert formula_tree_list_delete_item.value == "1"
         assert formula_tree_list_delete_item.leftChild == None
         assert formula_tree_list_delete_item.rightChild == None
-
 
     # setLine:ofList:to:
     def test_can_convert_set_line_via_str_index_of_list_to_block(self):

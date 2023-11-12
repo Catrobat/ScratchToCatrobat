@@ -1,4 +1,6 @@
-import looks, motion, event, sensing, sound, operator, control, data, pen
+import looks, motion, event, sensing, sound, operator, control, data, pen, music
+from scratchtocatrobat.scratch.scratch3visitor.scratch2_json_format import Scratch3_2Opcodes as opcodes
+
 visitormap = {
     ### event blocks ####
     "event_whenflagclicked" : event.visitWhenflagclicked, #tested
@@ -167,5 +169,12 @@ visitormap = {
     "pen_setPenShadeToNumber" : pen.visitSetPenShadeToNumber, #tested
     "pen_changePenShadeBy" : pen.visitChangePenShadeByNumber, #tested
     "pen_setPenHueToNumber" : pen.visitSetPenHueToNumber, #tested
+
+    opcodes.MUSIC_PLAY_DRUM_FOR_BEATS: music.visitPlayDrumForBeats,
+    opcodes.MUSIC_MENU_DRUM: music.visitDrumMenu,
+    opcodes.MUSIC_PLAY_NOTE_FOR_BEATS: music.visitPlayNoteForBeats,
+    opcodes.NOTE: music.visitNoteMenu,
+    opcodes.MUSIC_CHANGE_TEMPO: music.visitChangeTempoBy,
+    opcodes.MUSIC_SET_TEMPO: music.visitSetTempoTo,
 }
 

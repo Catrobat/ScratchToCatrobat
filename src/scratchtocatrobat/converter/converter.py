@@ -400,6 +400,7 @@ class _ScratchToCatrobat(object):
         "append:toList:": catbricks.AddItemToUserListBrick,
         "insert:at:ofList:": catbricks.InsertItemIntoUserListBrick,
         "deleteLine:ofList:": catbricks.DeleteItemOfUserListBrick,
+        "data_deletealloflist": catbricks.ClearUserListBrick,
         "setLine:ofList:to:": catbricks.ReplaceItemInUserListBrick,
         "contentsOfList:": None,
         "showList:": None,
@@ -2858,20 +2859,20 @@ class _BlocksConversionTraverser(scratch.AbstractBlocksTraverser):
             deleteItemBrick.setFormulaWithBrickField(catbricks.Brick.BrickField.LIST_DELETE_ITEM, index_formula)
 
             return deleteItemBrick
-        if position == "all":
-            loop_condition_formula = catrobat.create_formula_with_value(self._converted_helper_brick_or_formula_element([list_name], "lineCountOfList:"))
-            catr_loop_start_brick = catbricks.RepeatBrick(loop_condition_formula)
-
-            index_formula = catrobat.create_formula_with_value("1") # first item to be deleted for n-times!
-            assert index_formula is not None
-            deleteItemBrick.setFormulaWithBrickField(catbricks.Brick.BrickField.LIST_DELETE_ITEM, index_formula)
-            catr_loop_start_brick.loopBricks.add(deleteItemBrick)
-
-            return catr_loop_start_brick
 
         index_formula = catrobat.create_formula_with_value(position)
         assert index_formula is not None
         deleteItemBrick.setFormulaWithBrickField(catbricks.Brick.BrickField.LIST_DELETE_ITEM, index_formula)
+
+        return deleteItemBrick
+
+    @_register_handler(_block_name_to_handler_map, "data_deletealloflist")
+    def _convert_delete_all_of_list_block(self):
+        [list_name] = self.arguments
+        user_list = catrobat.find_global_or_sprite_user_list_by_name(self.scene, self.sprite, list_name)
+        assert user_list is not None
+        deleteItemBrick = self.CatrobatClass()
+        deleteItemBrick.userList = user_list
 
         return deleteItemBrick
 

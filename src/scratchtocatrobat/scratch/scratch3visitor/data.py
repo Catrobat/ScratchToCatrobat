@@ -37,6 +37,11 @@ def visitDeleteoflist(blockcontext):
     index = visitGeneric(blockcontext, "INDEX")
     return ["deleteLine:ofList:", index, list]
 
+def visitDeletealloflist(blockcontext):
+    block = blockcontext.block
+    list = block.fields["LIST"][0]
+    return ["data_deletealloflist", list]
+
 def visitInsertatlist(blockcontext):
     block = blockcontext.block
     list = block.fields["LIST"][0]
